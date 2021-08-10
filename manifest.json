@@ -1,10 +1,10 @@
 {
-	"id": "obsidian-sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.1",
-	"minAppVersion": "0.9.12",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
+	"id": "obsidian-reminder-plugin",
+	"name": "Reminder",
+	"version": "1.0.0",
+	"minAppVersion": "0.12.12",
+	"description": "Reminder plugin for Obsidian. This plugin adds feature to manage TODOs with reminder.",
+	"author": "uphy",
 	"authorUrl": "https://obsidian.md/about",
 	"isDesktopOnly": false
 }

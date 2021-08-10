@@ -1,23 +1,35 @@
 {
-  "name": "obsidian-sample-plugin",
-  "version": "0.12.0",
-  "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+  "name": "obsidian-reminder-plugin",
+  "version": "1.0.0",
+  "description": "Reminder plugin for Obsidian",
   "main": "main.js",
   "scripts": {
     "dev": "rollup --config rollup.config.js -w",
     "build": "rollup --config rollup.config.js --environment BUILD:production"
   },
   "keywords": [],
-  "author": "",
+  "author": "uphy",
   "license": "MIT",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^18.0.0",
+    "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^11.2.1",
     "@rollup/plugin-typescript": "^8.2.1",
+    "@tsconfig/svelte": "^2.0.1",
     "@types/node": "^14.14.37",
+    "moment": "^2.29.1",
     "obsidian": "^0.12.0",
     "rollup": "^2.32.1",
+    "rollup-plugin-svelte": "^7.1.0",
+    "svelte-check": "^2.2.4",
+    "svelte-jester": "^2.0.1",
+    "svelte-preprocess": "^4.7.4",
     "tslib": "^2.2.0",
     "typescript": "^4.2.4"
+  },
+  "dependencies": {
+    "electron": "^13.1.8",
+    "markdown-it": "^12.2.0",
+    "svelte": "^3.42.1"
   }
 }
