@@ -17,8 +17,11 @@ import {
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { RemindersController } from "./controller";
 import { PluginDataIO } from "./data";
+import { Completion } from "./model/autocomplete";
 import { Reminders } from "./model/reminder";
+import { Laters } from "./model/time";
 import { ReminderSettingTab } from "./settings";
+import { AutoCompleteView } from "./ui/autocomplete";
 import { showReminder } from "./ui/reminder";
 import { ReminderListItemViewProxy } from "./ui/reminder-list";
 
@@ -72,6 +75,16 @@ export default class ReminderPlugin extends Plugin {
 
     this.registerDomEvent(document, "keydown", (evt: KeyboardEvent) => {
       this.editDetector.fileChanged();
+    });
+    this.registerCodeMirror((cm: CodeMirror.Editor) => {
+      const autoComplete = new AutoCompleteView(cm);
+      cm.on(
+        "change",
+        (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
+          this.showAutoCompletion(cmEditor, changeObj, autoComplete);
+          return false;
+        }
+      );
     });
 
     // Open reminder list view
@@ -200,6 +213,32 @@ export default class ReminderPlugin extends Plugin {
     this.app.workspace.getRightLeaf(false).setViewState({
       type: VIEW_TYPE_REMINDER_LIST,
     });
+  }
+
+  private isAutoCompletionTrigger(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange): boolean {
+    if (changeObj.text.contains("@")) {
+      const prev = cmEditor.getRange({
+        ch: changeObj.from.ch - 1,
+        line: changeObj.from.line
+      }, changeObj.from);
+      if (prev === "(") {
+        const line = cmEditor.getLine(changeObj.from.line);
+        if (line.match(/^\s*\- \[.\]\s.*/)) {
+          // is a TODO line
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private showAutoCompletion(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange, autoComplete: AutoCompleteView): void {
+    if (!this.isAutoCompletionTrigger(cmEditor, changeObj)) {
+      return;
+    }
+    autoComplete.show(Laters.map(l => ({ title: l.label, completion: l.later().toString() }))).then(value => {
+      cmEditor.replaceRange(value.completion as any, cmEditor.getCursor());
+    }).catch(() => { /* do nothing on cancel */ });
   }
 }
 
