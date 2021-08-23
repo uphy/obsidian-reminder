@@ -50,13 +50,18 @@ export class Calendar {
     private _current: Month;
     public today: moment.Moment;
 
-    constructor(today?: moment.Moment) {
+    constructor(today?: moment.Moment, monthStart?: moment.Moment) {
         if (today) {
             this.today = today;
         } else {
             this.today = moment();
         }
-        this.setCurrent(this.today.clone());
+
+        if (monthStart) {
+            this.setCurrent(monthStart);
+        } else {
+            this.setCurrent(this.today.clone());
+        }
     }
 
     private setCurrent(monthStart: moment.Moment) {
@@ -64,11 +69,11 @@ export class Calendar {
     }
 
     public nextMonth() {
-        this.setCurrent(this._current.monthStart.clone().add(1, "month"));
+        return new Calendar(this.today, this._current.monthStart.clone().add(1, "month"));
     }
 
     public previousMonth() {
-        this.setCurrent(this._current.monthStart.clone().add(-1, "month"));
+        return new Calendar(this.today, this._current.monthStart.clone().add(-1, "month"));
     }
 
     public calendarString() {

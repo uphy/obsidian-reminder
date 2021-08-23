@@ -1,4 +1,6 @@
+import { Calendar } from "model/calendar";
 import { DateTime, Laters } from "model/time";
+import moment from "moment";
 import DateTimeChooser from "./components/DateTimeChooser.svelte";
 
 export class DateTimeChooserView {
@@ -7,13 +9,15 @@ export class DateTimeChooserView {
     private resultResolve: (result: DateTime) => void = null;
     private resultReject: () => void = null;
     private keyMaps = {
-        'Ctrl-P': () => this.up(),
-        'Ctrl-N': () => this.down(),
+        'Ctrl-P': () => this.dateTimeChooser.moveUp(),
+        'Ctrl-N': () => this.dateTimeChooser.moveDown(),
+        'Ctrl-B': () => this.dateTimeChooser.moveLeft(),
+        'Ctrl-F': () => this.dateTimeChooser.moveRight(),
         'Enter': () => this.select(),
-        Up: () => this.up(),
-        Down: () => this.down(),
-        Right: () => this.cancel(),
-        Left: () => this.cancel(),
+        Up: () => this.dateTimeChooser.moveUp(),
+        Down: () => this.dateTimeChooser.moveDown(),
+        Right: () => this.dateTimeChooser.moveRight(),
+        Left: () => this.dateTimeChooser.moveLeft(),
         Esc: () => this.cancel(),
     }
 
@@ -23,7 +27,6 @@ export class DateTimeChooserView {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             target: this.view,
             props: {
-                relativeDateTimes: [],
                 onClick: (time: DateTime) => {
                     this.setResult(time);
                     this.hide();
@@ -36,7 +39,8 @@ export class DateTimeChooserView {
         this.setResult(null);
         this.hide();
         this.dateTimeChooser.$set({
-            selectedIndex: 0
+            selectedDate: moment(),
+            calendar: new Calendar()
         });
 
         const cursor = this.editor.getCursor();
@@ -49,14 +53,6 @@ export class DateTimeChooserView {
             this.resultResolve = resolve;
             this.resultReject = reject;
         });
-    }
-
-    private up() {
-        this.dateTimeChooser.up();
-    }
-
-    private down() {
-        this.dateTimeChooser.down();
     }
 
     private select() {

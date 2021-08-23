@@ -2,7 +2,7 @@ import moment from "moment";
 import { Calendar } from "./calendar"
 
 describe('Calendar', (): void => {
-    const calendar = new Calendar(moment("2021-09-23"));
+    let calendar = new Calendar(moment("2021-09-23"));
     test('constructor()', (): void => {
         expect(calendar.current.monthStart.format("YYYY-MM-DD")).toBe("2021-09-01");
         expect(calendar.current.weeks.length).toBe(5);
@@ -14,7 +14,7 @@ describe('Calendar', (): void => {
         expect(calendar.current.isThisMonth(calendar.current.weeks[4].days[5].date)).toBe(false); // 10/1
     });
     test('nextMonth()', (): void => {
-        calendar.nextMonth();
+        calendar = calendar.nextMonth();
         expect(calendar.current.monthStart.format("YYYY-MM-DD")).toBe("2021-10-01");
         expect(calendar.current.weeks.length).toBe(6);
         expect(calendar.current.weeks[0].days[0].date.format("YYYY-MM-DD")).toBe("2021-09-26");
@@ -25,7 +25,7 @@ describe('Calendar', (): void => {
         expect(calendar.current.isThisMonth(calendar.current.weeks[5].days[1].date)).toBe(false); // 11/1
     });
     test('previousMonth()', (): void => {
-        calendar.previousMonth();
+        calendar = calendar.previousMonth();
         expect(calendar.current.monthStart.format("YYYY-MM-DD")).toBe("2021-09-01");
         expect(calendar.current.weeks.length).toBe(5);
         expect(calendar.current.weeks[0].days[0].date.format("YYYY-MM-DD")).toBe("2021-08-29");
