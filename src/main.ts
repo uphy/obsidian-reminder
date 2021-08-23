@@ -1,27 +1,15 @@
 import {
   App,
-  MarkdownEditView,
-  MarkdownView,
-  Modal,
-  Notice,
   Plugin,
   PluginManifest,
-  PluginSettingTab,
-  Setting,
-  SuggestModal,
-  TAbstractFile,
-  TFile,
-  Vault,
   WorkspaceLeaf,
 } from "obsidian";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { RemindersController } from "./controller";
 import { PluginDataIO } from "./data";
-import { Completion } from "./model/autocomplete";
 import { Reminders } from "./model/reminder";
-import { Laters } from "./model/time";
 import { ReminderSettingTab } from "./settings";
-import { AutoCompleteView } from "./ui/autocomplete";
+import { DateTimeChooserView } from "./ui/datetime-chooser";
 import { showReminder } from "./ui/reminder";
 import { ReminderListItemViewProxy } from "./ui/reminder-list";
 
@@ -77,11 +65,11 @@ export default class ReminderPlugin extends Plugin {
       this.editDetector.fileChanged();
     });
     this.registerCodeMirror((cm: CodeMirror.Editor) => {
-      const autoComplete = new AutoCompleteView(cm);
+      const dateTimeChooser = new DateTimeChooserView(cm);
       cm.on(
         "change",
         (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
-          this.showAutoCompletion(cmEditor, changeObj, autoComplete);
+          this.showDateTimeChooser(cmEditor, changeObj, dateTimeChooser);
           return false;
         }
       );
@@ -215,7 +203,7 @@ export default class ReminderPlugin extends Plugin {
     });
   }
 
-  private isAutoCompletionTrigger(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange): boolean {
+  private isDateTimeChooserTrigger(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange): boolean {
     if (changeObj.text.contains("@")) {
       const prev = cmEditor.getRange({
         ch: changeObj.from.ch - 1,
@@ -232,13 +220,16 @@ export default class ReminderPlugin extends Plugin {
     return false;
   }
 
-  private showAutoCompletion(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange, autoComplete: AutoCompleteView): void {
-    if (!this.isAutoCompletionTrigger(cmEditor, changeObj)) {
+  private showDateTimeChooser(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange, dateTimeChooserView: DateTimeChooserView): void {
+    if (!this.isDateTimeChooserTrigger(cmEditor, changeObj)) {
+      dateTimeChooserView.cancel();
       return;
     }
-    autoComplete.show(Laters.map(l => ({ title: l.label, completion: l.later().toString() }))).then(value => {
-      cmEditor.replaceRange(value.completion as any, cmEditor.getCursor());
-    }).catch(() => { /* do nothing on cancel */ });
+    dateTimeChooserView.show()
+      .then(value => {
+        cmEditor.replaceRange(value.toString(), cmEditor.getCursor());
+      })
+      .catch(() => { /* do nothing on cancel */ });
   }
 }
 

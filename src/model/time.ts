@@ -23,7 +23,7 @@ export class DateTime {
     return to.fixedTime(defaultTime).diff(from.fixedTime(defaultTime), unit);
   }
 
-  constructor(private time: moment.Moment, private hasTimePart: boolean) {}
+  constructor(private time: moment.Moment, private hasTimePart: boolean) { }
 
   public getTimeInMillis(defaultTime?: Time): number {
     return this.fixedTime(defaultTime).valueOf();
@@ -83,7 +83,7 @@ export class Time {
     }
     return new Time(hour, minute);
   }
-  private constructor(private hour: number, private minute: number) {}
+  private constructor(private hour: number, private minute: number) { }
 
   get minutes(): number {
     return this.hour * 60 + this.minute;
@@ -142,7 +142,7 @@ export function nextWeek(): later {
 }
 
 export class Later {
-  constructor(public label: string, public later: later) {}
+  constructor(public label: string, public later: later) { }
 }
 
 export const Laters: Array<Later> = [
@@ -151,11 +151,4 @@ export const Laters: Array<Later> = [
   new Later("In 3 hours", inHours(3)),
   new Later("Tomorrow", tomorrow()),
   new Later("Next week", nextWeek()),
-  new Later("Next Monday", nextWeekday(1)),
-  new Later("Next Tuesday", nextWeekday(2)),
-  new Later("Next Wednesday", nextWeekday(3)),
-  new Later("Next Thursday", nextWeekday(4)),
-  new Later("Next Friday", nextWeekday(5)),
-  new Later("Next Saturday", nextWeekday(6)),
-  new Later("Next Sunday", nextWeekday(7)),
 ];

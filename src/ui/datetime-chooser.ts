@@ -1,10 +1,10 @@
-import { Completion } from "src/model/autocomplete";
-import AutoComplete from "./components/AutoComplete.svelte";
+import { DateTime, Laters } from "model/time";
+import DateTimeChooser from "./components/DateTimeChooser.svelte";
 
-export class AutoCompleteView {
+export class DateTimeChooserView {
     private view: HTMLElement;
-    private autoComplete: AutoComplete;
-    private resultResolve: (result: Completion) => void = null;
+    private dateTimeChooser: DateTimeChooser;
+    private resultResolve: (result: DateTime) => void = null;
     private resultReject: () => void = null;
     private keyMaps = {
         'Ctrl-P': () => this.up(),
@@ -19,24 +19,23 @@ export class AutoCompleteView {
 
     constructor(private editor: CodeMirror.Editor) {
         this.view = document.createElement("div");
-        this.autoComplete = new AutoComplete({
+        this.dateTimeChooser = new DateTimeChooser({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             target: this.view,
             props: {
-                completions: [],
-                onClick: (completion: Completion) => {
-                    this.setResult(completion);
+                relativeDateTimes: [],
+                onClick: (time: DateTime) => {
+                    this.setResult(time);
                     this.hide();
                 }
             },
         });
     }
 
-    show(completions: Array<Completion>) {
+    show() {
         this.setResult(null);
         this.hide();
-        this.autoComplete.$set({
-            completions,
+        this.dateTimeChooser.$set({
             selectedIndex: 0
         });
 
@@ -46,22 +45,22 @@ export class AutoCompleteView {
             line: cursor.line
         }, this.view, true);
         this.editor.addKeyMap(this.keyMaps);
-        return new Promise<Completion>((resolve, reject) => {
+        return new Promise<DateTime>((resolve, reject) => {
             this.resultResolve = resolve;
             this.resultReject = reject;
         });
     }
 
     private up() {
-        this.autoComplete.up();
+        this.dateTimeChooser.up();
     }
 
     private down() {
-        this.autoComplete.down();
+        this.dateTimeChooser.down();
     }
 
     private select() {
-        this.setResult(this.autoComplete.selection())
+        this.setResult(this.dateTimeChooser.selection())
         this.hide();
     }
 
@@ -70,7 +69,7 @@ export class AutoCompleteView {
         this.hide();
     }
 
-    private setResult(result: Completion | null) {
+    private setResult(result: DateTime | null) {
         if (this.resultReject === null || this.resultResolve === null) {
             return;
         }
