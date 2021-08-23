@@ -7,7 +7,7 @@ export class Reminder {
     public title: string,
     public time: DateTime,
     public rowNumber: number
-  ) {}
+  ) { }
 }
 
 export class Reminders {
@@ -15,7 +15,7 @@ export class Reminders {
   public reminders: Array<Reminder> = [];
   public reminderTime: ReadOnlyReference<Time>;
 
-  constructor(private onChange: () => void) {}
+  constructor(private onChange: () => void) { }
 
   public getExpiredReminders(defaultTime: Time): Array<Reminder> {
     const now = new Date().getTime();
@@ -29,6 +29,10 @@ export class Reminders {
       }
     }
     return result;
+  }
+
+  public byDate(date: DateTime) {
+    return this.reminders.filter(reminder => reminder.time.toYYYYMMDD() === date.toYYYYMMDD());
   }
 
   public removeReminder(reminder: Reminder) {
@@ -114,7 +118,7 @@ class Group {
   constructor(
     public name: string,
     private timeToStringFunc: (time: DateTime) => string
-  ) {}
+  ) { }
 
   timeToString(time: DateTime): string {
     return this.timeToStringFunc(time);
@@ -149,7 +153,7 @@ export function groupReminders(
 }
 
 export class GroupedReminder {
-  constructor(private group: Group, public reminders: Array<Reminder>) {}
+  constructor(private group: Group, public reminders: Array<Reminder>) { }
 
   get name() {
     return this.group.name;

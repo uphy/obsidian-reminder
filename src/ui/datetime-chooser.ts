@@ -1,4 +1,5 @@
 import { Calendar } from "model/calendar";
+import { Reminders } from "model/reminder";
 import { DateTime, Laters } from "model/time";
 import moment from "moment";
 import DateTimeChooser from "./components/DateTimeChooser.svelte";
@@ -21,7 +22,7 @@ export class DateTimeChooserView {
         Esc: () => this.cancel(),
     }
 
-    constructor(private editor: CodeMirror.Editor) {
+    constructor(private editor: CodeMirror.Editor, reminders: Reminders) {
         this.view = document.createElement("div");
         this.dateTimeChooser = new DateTimeChooser({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,7 +31,8 @@ export class DateTimeChooserView {
                 onClick: (time: DateTime) => {
                     this.setResult(time);
                     this.hide();
-                }
+                },
+                reminders
             },
         });
     }
