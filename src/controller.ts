@@ -20,23 +20,23 @@ export class RemindersController {
       console.error("Cannot open file because it isn't a TFile: %o", file);
       return;
     }
+    
     // Open the reminder file and select the reminder
-    leaf.openFile(file).then(() => {
-      if (!(leaf.view instanceof MarkdownView)) {
-        return;
+    await leaf.openFile(file);    
+    if (!(leaf.view instanceof MarkdownView)) {
+      return;
+    }
+    leaf.view.editor.setSelection(
+      {
+        line: reminder.rowNumber,
+        ch: 0,
+      },
+      {
+        line: reminder.rowNumber,
+        // End of the line
+        ch: 1000,
       }
-      leaf.view.editor.setSelection(
-        {
-          line: reminder.rowNumber,
-          ch: 0,
-        },
-        {
-          line: reminder.rowNumber,
-          // End of the line
-          ch: 1000,
-        }
-      );
-    });
+    );
   }
 
   async removeFile(path: string) {
