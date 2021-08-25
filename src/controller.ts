@@ -59,7 +59,7 @@ export class RemindersController {
       console.debug("Not a markdown file: file=%o", file);
       return;
     }
-    const content = new Content(file.path, await this.vault.read(file));
+    const content = new Content(file.path, await this.vault.cachedRead(file));
     const reminders = content.getReminders();
     if (reminders.length > 0) {
       this.reminders.replaceFile(file.path, reminders);
