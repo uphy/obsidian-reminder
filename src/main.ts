@@ -110,16 +110,20 @@ export default class ReminderPlugin extends Plugin {
   }
 
   private watchVault() {
-    this.app.vault.on("modify", async (file) => {
-      this.remindersController.reloadFile(file, true);
-    });
-    this.app.vault.on("delete", (file) => {
-      this.remindersController.removeFile(file.path);
-    });
-    this.app.vault.on("rename", (file, oldPath) => {
-      this.remindersController.removeFile(oldPath);
-      this.remindersController.reloadFile(file);
-    });
+    [
+      this.app.vault.on("modify", async (file) => {
+        this.remindersController.reloadFile(file, true);
+      }),
+      this.app.vault.on("delete", (file) => {
+        this.remindersController.removeFile(file.path);
+      }),
+      this.app.vault.on("rename", (file, oldPath) => {
+        this.remindersController.removeFile(oldPath);
+        this.remindersController.reloadFile(file);
+      }),
+    ].forEach(eventRef => {
+      this.registerEvent(eventRef);
+    })
   }
 
   private startPeriodicTask() {
