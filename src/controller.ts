@@ -55,6 +55,10 @@ export class RemindersController {
       console.debug("Cannot read file other than TFile: file=%o", file);
       return;
     }
+    if (!this.isMarkdownFile(file)) {
+      console.debug("Not a markdown file: file=%o", file);
+      return;
+    }
     const content = new Content(file.path, await this.vault.read(file));
     const reminders = content.getReminders();
     if (reminders.length > 0) {
@@ -65,6 +69,10 @@ export class RemindersController {
     if (reloadUI) {
       this.reloadUI();
     }
+  }
+
+  private isMarkdownFile(file: TFile) {
+    return file.extension.toLowerCase() === "md";
   }
 
   async reloadAllFiles() {
