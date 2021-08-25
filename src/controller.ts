@@ -20,9 +20,9 @@ export class RemindersController {
       console.error("Cannot open file because it isn't a TFile: %o", file);
       return;
     }
-    
+
     // Open the reminder file and select the reminder
-    await leaf.openFile(file);    
+    await leaf.openFile(file);
     if (!(leaf.view instanceof MarkdownView)) {
       return;
     }
@@ -70,12 +70,10 @@ export class RemindersController {
   async reloadAllFiles() {
     console.debug("Reload all files and collect reminders");
     this.reminders.clear();
-    Vault.recurseChildren(this.vault.getRoot(), (file) => {
-      // Vault.recurseChildren() doesn't accept `async` function.
-      this.reloadFile(file, false);
-    });
-    // No means to reload because the above reloadFile() executions are async function.
-    // this.reloadUI();
+    for (const file of this.vault.getMarkdownFiles()) {
+      await this.reloadFile(file, false);
+    }
+    this.reloadUI();
   }
 
   async updateReminder(reminder: Reminder, checked: boolean) {
