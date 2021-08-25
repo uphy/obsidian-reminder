@@ -7,12 +7,11 @@ import {
 } from "obsidian";
 import { Content } from "./model/content";
 import { Reminders, Reminder } from "./model/reminder";
-import { ReminderListItemView } from "./ui/reminder-list";
+import { ReminderListItemViewProxy } from "./ui/reminder-list";
 
 export class RemindersController {
-  private view: ReminderListItemView | null = null;
 
-  constructor(private vault: Vault, private reminders: Reminders) {}
+  constructor(private vault: Vault, private viewProxy: ReminderListItemViewProxy, private reminders: Reminders) { }
 
   async openReminder(reminder: Reminder, leaf: WorkspaceLeaf) {
     console.log("Open reminder: ", reminder);
@@ -79,11 +78,6 @@ export class RemindersController {
     // this.reloadUI();
   }
 
-  setView(view: ReminderListItemView) {
-    this.view = view;
-    this.reloadUI();
-  }
-
   async updateReminder(reminder: Reminder, checked: boolean) {
     const file = this.vault.getAbstractFileByPath(reminder.file);
     if (!(file instanceof TFile)) {
@@ -97,10 +91,10 @@ export class RemindersController {
 
   private reloadUI() {
     console.debug("Reload reminder list view");
-    if (this.view === null) {
+    if (this.viewProxy === null) {
       console.debug("reminder list is null.  Skipping UI reload.");
       return;
     }
-    this.view.reload(true);
+    this.viewProxy.reload(true);
   }
 }

@@ -20,11 +20,11 @@ import { PluginDataIO } from "./data";
 import { Reminders } from "./model/reminder";
 import { ReminderSettingTab } from "./settings";
 import { showReminder } from "./ui/reminder";
-import { ReminderListItemView } from "./ui/reminder-list";
+import { ReminderListItemViewProxy } from "./ui/reminder-list";
 
 export default class ReminderPlugin extends Plugin {
   pluginDataIO: PluginDataIO;
-  private reminderListView?: ReminderListItemView;
+  private viewProxy: ReminderListItemViewProxy;
   private reminders: Reminders;
   private remindersController: RemindersController;
   private editDetector = new EditDetector();
@@ -33,15 +33,22 @@ export default class ReminderPlugin extends Plugin {
     super(app, manifest);
     this.reminders = new Reminders(() => {
       // on changed
-      if (this.reminderListView) {
-        this.reminderListView.invalidate();
+      if (this.viewProxy) {
+        this.viewProxy.invalidate();
       }
       this.pluginDataIO.changed = true;
     });
     this.pluginDataIO = new PluginDataIO(this, this.reminders);
     this.reminders.reminderTime = this.pluginDataIO.reminderTime;
+    this.viewProxy = new ReminderListItemViewProxy(app.workspace, this.reminders, this.pluginDataIO.reminderTime,
+      // On select a reminder in the list
+      (reminder) => {
+        const leaf = this.app.workspace.getUnpinnedLeaf();
+        this.remindersController.openReminder(reminder, leaf);
+      });
     this.remindersController = new RemindersController(
       app.vault,
+      this.viewProxy,
       this.reminders
     );
   }
@@ -57,18 +64,7 @@ export default class ReminderPlugin extends Plugin {
   private setupUI() {
     // Reminder List
     this.registerView(VIEW_TYPE_REMINDER_LIST, (leaf: WorkspaceLeaf) => {
-      this.reminderListView = new ReminderListItemView(
-        leaf,
-        this.reminders,
-        this.pluginDataIO.reminderTime,
-        // On select a reminder in the list
-        (reminder) => {
-          const leaf = this.app.workspace.getUnpinnedLeaf();
-          this.remindersController.openReminder(reminder, leaf);
-        }
-      );
-      this.remindersController.setView(this.reminderListView);
-      return this.reminderListView;
+      return this.viewProxy.createView(leaf);
     });
     this.addSettingTab(
       new ReminderSettingTab(this.app, this, this.pluginDataIO.reminderTime)
@@ -77,19 +73,15 @@ export default class ReminderPlugin extends Plugin {
     this.registerDomEvent(document, "keydown", (evt: KeyboardEvent) => {
       this.editDetector.fileChanged();
     });
-    this.registerCodeMirror((cm: CodeMirror.Editor) => {
-      // TODO reminder input assistant
-      /*
-      cm.on(
-        "change",
-        (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
-          console.log(changeObj)
-          return false;
-        }
-      );
-      console.log("codemirror", cm);
-      */
-    });
+
+    // Open reminder list view
+    if (this.app.workspace.layoutReady) {
+      this.viewProxy.openView();
+    } else {
+      (this.app.workspace as any).on("layout-ready", () => {
+        this.viewProxy.openView();
+      });
+    }
   }
 
   private setupCommands() {
@@ -149,15 +141,13 @@ export default class ReminderPlugin extends Plugin {
   }
 
   private async periodicTask(): Promise<void> {
-    if (this.reminderListView) {
-      this.reminderListView.reload(false);
+    this.viewProxy.reload(false);
 
-      if (!this.pluginDataIO.scanned.value) {
-        this.remindersController.reloadAllFiles().then(() => {
-          this.pluginDataIO.scanned.value = true;
-          this.pluginDataIO.save();
-        });
-      }
+    if (!this.pluginDataIO.scanned.value) {
+      this.remindersController.reloadAllFiles().then(() => {
+        this.pluginDataIO.scanned.value = true;
+        this.pluginDataIO.save();
+      });
     }
 
     this.pluginDataIO.save(false);
