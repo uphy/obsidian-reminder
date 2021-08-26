@@ -29,7 +29,9 @@
               {timeToString(reminder.time)}
             </td>
             <td>
-              {@html renderMarkdown(reminder.title)}
+              <div class="reminder-title">
+                {@html renderMarkdown(reminder.title)}
+              </div>
             </td>
           </tr>
         {/each}
@@ -44,22 +46,32 @@
     font-size: 13px;
     color: var(--text-muted);
   }
+  .reminder-group > table {
+    width: 100%;
+    table-layout: fixed;
+    word-break: break-all;
+    word-wrap: break-all;
+  }
   .reminder-list-item {
     list-style: none;
     line-height: 14px;
     padding: 3px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
   }
   .reminder-list-item:hover {
     color: var(--text-normal);
     background-color: var(--background-secondary-alt);
   }
   .reminder-time {
-    max-width: 50px;
+    max-width: 40px;
+    width: 40px;
     font-size: 14px;
     font-family: monospace, serif;
+  }
+  .reminder-title {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    word-break: break-all;
   }
   .no-reminders {
     font-style: italic;
