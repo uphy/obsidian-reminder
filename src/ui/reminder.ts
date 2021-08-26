@@ -2,7 +2,7 @@ import { App, Modal } from "obsidian";
 import type { Reminder } from "../model/reminder";
 import ReminderView from "./components/Reminder.svelte";
 import { inMinutes } from "../model/time";
-import type { DateTime } from "src/model/time";
+import type { DateTime } from "model/time";
 const electron = require("electron");
 
 export function isMobile() {

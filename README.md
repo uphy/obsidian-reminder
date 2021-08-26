@@ -14,6 +14,9 @@ You can set reminders for TODO list items with the following format.
 - [x] You will not be notified about the reminders you have already checked. (@2021-08-14)
 ```
 
+If you input `(@` (start of the reminder date time), calendar popup to set the reminder date time will show.
+<img src="images/input-reminder-time.gif" width="600" />
+
 #### List Reminders
 
 You can view the list of reminders contained in all files.

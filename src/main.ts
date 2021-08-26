@@ -1,17 +1,7 @@
 import {
   App,
-  MarkdownEditView,
-  MarkdownView,
-  Modal,
-  Notice,
   Plugin,
   PluginManifest,
-  PluginSettingTab,
-  Setting,
-  SuggestModal,
-  TAbstractFile,
-  TFile,
-  Vault,
   WorkspaceLeaf,
 } from "obsidian";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
@@ -19,6 +9,7 @@ import { RemindersController } from "./controller";
 import { PluginDataIO } from "./data";
 import { Reminders } from "./model/reminder";
 import { ReminderSettingTab } from "./settings";
+import { DateTimeChooserView } from "./ui/datetime-chooser";
 import { showReminder } from "./ui/reminder";
 import { ReminderListItemViewProxy } from "./ui/reminder-list";
 
@@ -72,6 +63,16 @@ export default class ReminderPlugin extends Plugin {
 
     this.registerDomEvent(document, "keydown", (evt: KeyboardEvent) => {
       this.editDetector.fileChanged();
+    });
+    this.registerCodeMirror((cm: CodeMirror.Editor) => {
+      const dateTimeChooser = new DateTimeChooserView(cm, this.reminders);
+      cm.on(
+        "change",
+        (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
+          this.showDateTimeChooser(cmEditor, changeObj, dateTimeChooser);
+          return false;
+        }
+      );
     });
 
     // Open reminder list view
@@ -200,6 +201,35 @@ export default class ReminderPlugin extends Plugin {
     this.app.workspace.getRightLeaf(false).setViewState({
       type: VIEW_TYPE_REMINDER_LIST,
     });
+  }
+
+  private isDateTimeChooserTrigger(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange): boolean {
+    if (changeObj.text.contains("@")) {
+      const prev = cmEditor.getRange({
+        ch: changeObj.from.ch - 1,
+        line: changeObj.from.line
+      }, changeObj.from);
+      if (prev === "(") {
+        const line = cmEditor.getLine(changeObj.from.line);
+        if (line.match(/^\s*\- \[.\]\s.*/)) {
+          // is a TODO line
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private showDateTimeChooser(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange, dateTimeChooserView: DateTimeChooserView): void {
+    if (!this.isDateTimeChooserTrigger(cmEditor, changeObj)) {
+      dateTimeChooserView.cancel();
+      return;
+    }
+    dateTimeChooserView.show()
+      .then(value => {
+        cmEditor.replaceRange(value.toString(), cmEditor.getCursor());
+      })
+      .catch(() => { /* do nothing on cancel */ });
   }
 }
 
