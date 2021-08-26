@@ -1,14 +1,17 @@
 <script lang="typescript">
+  import { log } from "console";
+
   import { Reminder } from "../../model/reminder";
-  import { Laters, Later, DateTime } from "../../model/time";
+  import { Laters, DateTime } from "../../model/time";
 
   export let reminder: Reminder;
   export let onRemindMeLater: (time: DateTime) => void;
   export let onDone: () => void;
-  let selectedLater: Later | null = null;
+  // Do not set initial value so that svelte can render the placeholder `Remind Me Later`.
+  let selectedIndex: number;
 
   function remindMeLater() {
-    onRemindMeLater(selectedLater.later());
+    onRemindMeLater(Laters[selectedIndex].later());
   }
 </script>
 
@@ -18,22 +21,15 @@
   <div class="reminder-actions">
     <button class="mod-cta" on:click={onDone}>Mark as Done</button>
     <select
-      bind:value={selectedLater}
       class="dropdown"
+      bind:value={selectedIndex}
       on:change={remindMeLater}
     >
       <!-- placeholder -->
-      <option
-        value=""
-        disabled
-        selected={selectedLater === null}
-        style="display:none;">Remind Me Later</option
-      >
+      <option selected disabled hidden>Remind Me Later</option>
       <!-- options -->
-      {#each Laters as later}
-        <option value={later} selected={selectedLater === later}>
-          {later.label}
-        </option>
+      {#each Laters as later, i}
+        <option value={i} selected={selectedIndex === i}>{later.label}</option>
       {/each}
     </select>
   </div>
