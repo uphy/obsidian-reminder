@@ -1,13 +1,12 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, View, Workspace, WorkspaceLeaf } from "obsidian";
 import { ReadOnlyReference } from "src/model/ref";
 import { Time } from "src/model/time";
 import { VIEW_TYPE_REMINDER_LIST } from "../constants";
 import { groupReminders, Reminder, Reminders } from "../model/reminder";
 import ReminderListView from "./components/ReminderList.svelte";
-export class ReminderListItemView extends ItemView {
+
+class ReminderListItemView extends ItemView {
   private view: ReminderListView;
-  // valid is a flag which means that this view should be re-rendered if true;
-  private valid: boolean = false;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -37,26 +36,15 @@ export class ReminderListItemView extends ItemView {
     });
   }
 
-  reload(force: boolean = false) {
-    if (force || !this.valid) {
-      if (this.view) {
-        this.view.$set({
-          groups: this.remindersForView(),
-          onOpenReminder: this.onOpenReminder,
-        });
-        this.valid = true;
-      } else {
-        console.debug("view is null.  Skipping reminder list view reload");
-      }
-    }
+  reload() {
+    this.view.$set({
+      groups: this.remindersForView(),
+      onOpenReminder: this.onOpenReminder,
+    });
   }
 
   private remindersForView() {
     return groupReminders(this.reminders.reminders, this.reminderTime.value);
-  }
-
-  invalidate() {
-    this.valid = false;
   }
 
   onClose(): Promise<void> {
@@ -65,4 +53,60 @@ export class ReminderListItemView extends ItemView {
     }
     return Promise.resolve();
   }
+}
+
+export class ReminderListItemViewProxy {
+  // valid is a flag which means that this view should be re-rendered if true;
+  private valid: boolean = false;
+
+  constructor(
+    private workspace: Workspace,
+    private reminders: Reminders,
+    private reminderTime: ReadOnlyReference<Time>,
+    private onOpenReminder: (reminder: Reminder) => void
+  ) { }
+
+  createView(leaf: WorkspaceLeaf): View {
+    return new ReminderListItemView(
+      leaf,
+      this.reminders,
+      this.reminderTime,
+      this.onOpenReminder
+    );
+  }
+
+  openView(): void {
+    if (this.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).length) {
+      // reminder list view is already in workspace
+      return;
+    }
+    // Create new view
+    this.workspace.getRightLeaf(false).setViewState({
+      type: VIEW_TYPE_REMINDER_LIST,
+    });
+  }
+
+  reload(force: boolean = false) {
+    if (force || !this.valid) {
+      const views = this.getViews();
+      if (views.length > 0) {
+        views.forEach(view => view.reload());
+        this.valid = true;
+      } else {
+        this.valid = false;
+        console.debug("view is null.  Skipping reminder list view reload");
+      }
+    }
+  }
+
+  private getViews() {
+    return this.workspace
+      .getLeavesOfType(VIEW_TYPE_REMINDER_LIST)
+      .map(leaf => leaf.view as ReminderListItemView);
+  }
+
+  invalidate() {
+    this.valid = false;
+  }
+
 }
