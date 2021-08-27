@@ -39,6 +39,15 @@ Alternatively, you can postpone the reminder by selecting `Remind Me Later`.
 ### Settings
 
 - Reminder Time: Time when the reminder which has time part will show (HH:mm)
+
+### FAQ
+
+- Interoperability between this plugin and [nldates-obsidian](https://github.com/argenos/nldates-obsidian)
+  - [nldates-obsidian](https://github.com/argenos/nldates-obsidian) also provides auto complete with `@` character.
+  - The autocompletion conflicts with this plugin
+  - I'm planning to provide a setting to change completion trigger.
+  - If you have any opinion, please post it in [#4](https://github.com/uphy/obsidian-reminder/issues/4)
+
 ### TODO
 
 - [ ] Reminder input support (develop a CodeMirror plugin)
