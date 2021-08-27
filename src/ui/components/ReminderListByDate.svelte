@@ -16,27 +16,23 @@
   {#if reminders.length === 0}
     <div class="reminder-list-item no-reminders">No reminders</div>
   {:else}
-    <table>
-      <tbody>
-        {#each reminders as reminder}
-          <tr
-            class="reminder-list-item"
-            on:click={() => {
-              onOpenReminder(reminder);
-            }}
-          >
-            <td class="reminder-time">
-              {timeToString(reminder.time)}
-            </td>
-            <td>
-              <div class="reminder-title">
-                {@html renderMarkdown(reminder.title)}
-              </div>
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+    <div>
+      {#each reminders as reminder}
+        <div
+          class="reminder-list-item"
+          on:click={() => {
+            onOpenReminder(reminder);
+          }}
+        >
+          <span class="reminder-time">
+            {timeToString(reminder.time)}
+          </span>
+          <span class="reminder-title">
+            {@html renderMarkdown(reminder.title)}
+          </span>
+        </div>
+      {/each}
+    </div>
   {/if}
 </div>
 
@@ -46,32 +42,23 @@
     font-size: 13px;
     color: var(--text-muted);
   }
-  .reminder-group > table {
-    width: 100%;
-    table-layout: fixed;
-    word-break: break-all;
-    word-wrap: break-all;
-  }
   .reminder-list-item {
     list-style: none;
     line-height: 14px;
     padding: 3px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    word-break: break-all;
+    width: 100%;
   }
   .reminder-list-item:hover {
     color: var(--text-normal);
     background-color: var(--background-secondary-alt);
   }
   .reminder-time {
-    max-width: 40px;
-    width: 40px;
     font-size: 14px;
     font-family: monospace, serif;
-  }
-  .reminder-title {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    word-break: break-all;
   }
   .no-reminders {
     font-style: italic;

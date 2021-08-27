@@ -64,5 +64,6 @@
     }
     .reminder-list-container {
         padding: 0.5rem;
+        max-width: 16rem;
     }
 </style>
