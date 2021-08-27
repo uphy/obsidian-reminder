@@ -18,13 +18,12 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: "14.x" # You might need to adjust this value to your own version
+          node-version: "16.x" # You might need to adjust this value to your own version
       - name: Build
         id: build
         run: |
-          npm install -g yarn
-          yarn
-          yarn run build --if-present
+          npm install
+          npm run build
           mkdir ${{ env.PLUGIN_NAME }}
           cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
           zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}

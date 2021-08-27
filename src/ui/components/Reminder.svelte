@@ -1,6 +1,4 @@
 <script lang="typescript">
-  import { log } from "console";
-
   import { Reminder } from "../../model/reminder";
   import { Laters, DateTime } from "../../model/time";
 
