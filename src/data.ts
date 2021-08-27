@@ -18,11 +18,13 @@ interface ReminderData {
 
 interface ReminderSettings {
   reminderTime: string;
+  useSystemNotification: boolean;
 }
 
 const DEFAULT_PLUGIN_DATA: ReminderPluginData = {
   settings: {
     reminderTime: "09:00",
+    useSystemNotification: false,
   },
   reminders: {} as Map<string, Array<ReminderData>>,
   scanned: false,
@@ -33,14 +35,14 @@ export class PluginDataIO {
   changed: boolean = false;
   public scanned: Reference<boolean> = new Reference(false);
   public reminderTime: Reference<Time> = new Reference(Time.parse("09:00"));
+  public useSystemNotification: Reference<boolean> = new Reference(false);
 
   constructor(private plugin: Plugin_2, private reminders: Reminders) {
-    this.reminderTime.onChanged(() => {
-      this.changed = true;
-    });
-    this.scanned.onChanged(() => {
-      this.changed = true;
-    });
+    [this.reminderTime, this.scanned, this.useSystemNotification].forEach((setting) => {
+      setting.onChanged(() => {
+        this.changed = true;
+      });
+    })
   }
 
   async load() {
@@ -52,6 +54,7 @@ export class PluginDataIO {
     ) as ReminderPluginData;
     this.scanned.value = data.scanned;
     this.reminderTime.value = Time.parse(data.settings.reminderTime);
+    this.useSystemNotification.value = data.settings.useSystemNotification;
     if (data.reminders) {
       Object.keys(data.reminders).forEach((filePath) => {
         const remindersInFile = data.reminders[filePath] as Array<ReminderData>;
@@ -97,6 +100,7 @@ export class PluginDataIO {
       reminders: remindersData,
       settings: {
         reminderTime: this.reminderTime.value.toString(),
+        useSystemNotification: this.useSystemNotification.value
       },
     });
     this.changed = false;

@@ -36,9 +36,10 @@ Alternatively, you can postpone the reminder by selecting `Remind Me Later`.
 
 <img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/reminder-notification2.png" width="600" />
 
-### Settings
+Also you can receive notification with System Notification.
+Check `Use system notification` setting.
 
-- Reminder Time: Time when the reminder which has time part will show (HH:mm)
+<img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/system-notification.png" width="300" />
 
 ### FAQ
 

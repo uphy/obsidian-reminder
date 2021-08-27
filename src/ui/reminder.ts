@@ -3,49 +3,55 @@ import type { Reminder } from "../model/reminder";
 import ReminderView from "./components/Reminder.svelte";
 import { inMinutes } from "../model/time";
 import type { DateTime } from "model/time";
+import { ReadOnlyReference } from "model/ref";
 const electron = require("electron");
 
-export function isMobile() {
-  return electron !== undefined;
-}
+export class ReminderModal {
 
-function isBuiltinNotification() {
-  if (isMobile()) {
-    return true;
+  constructor(private app: App, private useSystemNotification: ReadOnlyReference<boolean>) { }
+
+  public show(
+    reminder: Reminder,
+    onRemindMeLater: (time: DateTime) => void,
+    onDone: () => void
+  ) {
+    if (!this.isSystemNotification()) {
+      this.showBuiltinReminder(reminder, onRemindMeLater, onDone);
+    } else {
+      // Show system notification
+      const Notification = electron.remote.Notification;
+      const n = new Notification({
+        title: "Obsidian Reminder",
+        body: reminder.title,
+      });
+      n.show();
+      n.on("click", () => {
+        n.close();
+        this.showBuiltinReminder(reminder, onRemindMeLater, onDone);
+      });
+    }
   }
-  // TODO load from setting
-  return true;
-}
 
-function showBuiltinReminder(
-  app: App,
-  reminder: Reminder,
-  onRemindMeLater: (time: DateTime) => void,
-  onDone: () => void
-) {
-  new NotificationModal(app, reminder, onRemindMeLater, onDone).open();
-}
-
-export function showReminder(
-  app: App,
-  reminder: Reminder,
-  onRemindMeLater: (time: DateTime) => void,
-  onDone: () => void
-) {
-  if (isBuiltinNotification()) {
-    showBuiltinReminder(app, reminder, onRemindMeLater, onDone);
-  } else {
-    // Show system notification
-    const Notification = electron.remote.Notification;
-    const n = new Notification({
-      title: "Obsidian Reminder",
-      body: reminder.title,
-    });
-    n.show();
-    n.on("click", () => {
-      showBuiltinReminder(app, reminder, onRemindMeLater, onDone);
-    });
+  private showBuiltinReminder(
+    reminder: Reminder,
+    onRemindMeLater: (time: DateTime) => void,
+    onDone: () => void
+  ) {
+    new NotificationModal(this.app, reminder, onRemindMeLater, onDone).open();
   }
+
+  private isSystemNotification() {
+    if (this.isMobile()) {
+      return false;
+    }
+    return this.useSystemNotification.value;
+  }
+
+  private isMobile() {
+    return electron === undefined;
+  }
+  
+
 }
 
 class NotificationModal extends Modal {

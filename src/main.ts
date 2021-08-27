@@ -10,7 +10,7 @@ import { PluginDataIO } from "./data";
 import { Reminders } from "./model/reminder";
 import { ReminderSettingTab } from "./settings";
 import { DateTimeChooserView } from "./ui/datetime-chooser";
-import { showReminder } from "./ui/reminder";
+import { ReminderModal } from "./ui/reminder";
 import { ReminderListItemViewProxy } from "./ui/reminder-list";
 
 export default class ReminderPlugin extends Plugin {
@@ -19,6 +19,7 @@ export default class ReminderPlugin extends Plugin {
   private reminders: Reminders;
   private remindersController: RemindersController;
   private editDetector = new EditDetector();
+  private reminderModal: ReminderModal;
 
   constructor(app: App, manifest: PluginManifest) {
     super(app, manifest);
@@ -42,6 +43,7 @@ export default class ReminderPlugin extends Plugin {
       this.viewProxy,
       this.reminders
     );
+    this.reminderModal = new ReminderModal(this.app, this.pluginDataIO.useSystemNotification);
   }
 
   async onload() {
@@ -58,7 +60,7 @@ export default class ReminderPlugin extends Plugin {
       return this.viewProxy.createView(leaf);
     });
     this.addSettingTab(
-      new ReminderSettingTab(this.app, this, this.pluginDataIO.reminderTime)
+      new ReminderSettingTab(this.app, this, this.pluginDataIO)
     );
 
     this.registerDomEvent(document, "keydown", (evt: KeyboardEvent) => {
@@ -165,8 +167,7 @@ export default class ReminderPlugin extends Plugin {
     );
     const reminderNotifications = expired.map((reminder) => {
       return new Promise((resolve) => {
-        showReminder(
-          this.app,
+        this.reminderModal.show(
           reminder,
           (time) => {
             console.info("Remind me later: time=%o", time);
