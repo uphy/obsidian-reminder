@@ -1,5 +1,4 @@
 import moment from "moment";
-import { ReadOnlyReference } from "./ref";
 
 export class DateTime {
   public static now(): DateTime {
@@ -141,11 +140,83 @@ export function nextWeek(): later {
   };
 }
 
+export function nextMonth(): later {
+  return () => {
+    return new DateTime(moment().add(1, "months"), false);
+  };
+}
+
+export function nextYear(): later {
+  return () => {
+    return new DateTime(moment().add(1, "years"), false);
+  };
+}
+
 export class Later {
   constructor(public label: string, public later: later) { }
 }
 
-export const Laters: Array<Later> = [
+export function parseLaters(laters: string): Array<Later> {
+  return laters.split("\n").map(l => parseLater(l.trim()));
+}
+
+export function parseLater(later: string): Later {
+  later = later.toLowerCase();
+  if (later.startsWith("in")) {
+    const tokens = later.split(" ");
+    if (tokens.length !== 3) {
+      throw `Unsupported format.  Should be 'In N (minutes|hours)'`;
+    }
+    const n = parseInt(tokens[1]);
+    switch (tokens[2]) {
+      case "minute":
+      case "minutes":
+        {
+          const unit = n == 1 ? "minute" : "minutes";
+          return new Later(`In ${n} ${unit}`, inMinutes(n));
+        }
+      case "hour":
+      case "hours":
+        {
+          const unit = n == 1 ? "hour" : "hours";
+          return new Later(`In ${n} ${unit}`, inHours(n));
+        }
+    }
+  } else if (later.startsWith("next")) {
+    const weekday = later.substring(5);
+    switch (weekday) {
+      case "sunday":
+        return new Later("Next Sunday", nextWeekday(0));
+      case "monday":
+        return new Later("Next Monday", nextWeekday(1));
+      case "tuesday":
+        return new Later("Next Tuesday", nextWeekday(2));
+      case "wednesday":
+        return new Later("Next Wednesday", nextWeekday(3));
+      case "thursday":
+        return new Later("Next Thursday", nextWeekday(4));
+      case "friday":
+        return new Later("Next Friday", nextWeekday(5));
+      case "saturday":
+        return new Later("Next Saturday", nextWeekday(6));
+      case "day":
+        return new Later("Tomorrow", tomorrow());
+      case "week":
+        return new Later("Next week", nextWeek());
+      case "month":
+        return new Later("Next month", nextMonth());
+      case "year":
+        return new Later("Next year", nextYear());
+      default:
+        throw `Unsupported weekday: ${weekday}`;
+    }
+  } else if (later === "tomorrow") {
+    return new Later("Tomorrow", tomorrow());
+  }
+  throw `Unsupported format: ${later}`;
+}
+
+export const DEFAULT_LATERS: Array<Later> = [
   new Later("In 30 minutes", inMinutes(30)),
   new Later("In 1 hours", inHours(1)),
   new Later("In 3 hours", inHours(3)),

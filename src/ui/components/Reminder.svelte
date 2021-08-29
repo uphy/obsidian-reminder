@@ -1,6 +1,6 @@
 <script lang="typescript">
   import { Reminder } from "../../model/reminder";
-  import { Laters, DateTime } from "../../model/time";
+  import { DateTime, Later } from "../../model/time";
 
   export let reminder: Reminder;
   export let onRemindMeLater: (time: DateTime) => void;
@@ -8,8 +8,10 @@
   // Do not set initial value so that svelte can render the placeholder `Remind Me Later`.
   let selectedIndex: number;
 
+  export let laters: Array<Later>;
+
   function remindMeLater() {
-    onRemindMeLater(Laters[selectedIndex].later());
+    onRemindMeLater(laters[selectedIndex].later());
   }
 </script>
 
@@ -26,7 +28,7 @@
       <!-- placeholder -->
       <option selected disabled hidden>Remind Me Later</option>
       <!-- options -->
-      {#each Laters as later, i}
+      {#each laters as later, i}
         <option value={i} selected={selectedIndex === i}>{later.label}</option>
       {/each}
     </select>

@@ -1,7 +1,6 @@
 import { App, PluginSettingTab, Plugin_2, Setting } from "obsidian";
 import { PluginDataIO } from "./data";
-import { Reference } from "./model/ref";
-import { Time } from "./model/time";
+import { parseLaters, Time } from "./model/time";
 
 // TODO notification type
 export class ReminderSettingTab extends PluginSettingTab {
@@ -20,6 +19,7 @@ export class ReminderSettingTab extends PluginSettingTab {
 
     const reminderTime = this.pluginDataIO.reminderTime;
     const useSystemNotification = this.pluginDataIO.useSystemNotification;
+    const laters = this.pluginDataIO.laters;
 
     new Setting(containerEl)
       .setName("Reminder Time")
@@ -46,5 +46,20 @@ export class ReminderSettingTab extends PluginSettingTab {
             useSystemNotification.value = value;
           })
       );
+    new Setting(containerEl)
+      .setName("Remind me later")
+      .setDesc("Comma-separated list of remind me later items")
+      .addTextArea((textarea) => {
+        textarea
+          .setValue(laters.value)
+          .setPlaceholder("In 30 minutes, In 1 hour, In 3 hours, Tomorrow, Next week")
+          .onChange(async (value) => {
+            try {
+              const parsed = parseLaters(value);
+              console.log(parsed.map(p => p.label));
+              laters.value = value;
+            } catch (e) { }
+          });
+      })
   }
 }

@@ -2,6 +2,10 @@ import { ReadOnlyReference } from "./ref";
 import { DateTime, Time } from "./time";
 
 export class Reminder {
+
+  // To avoid duplicate notification, set this flag true before notification and set false on notification done.
+  public notificationVisible: boolean = false;
+
   constructor(
     public file: string,
     public title: string,

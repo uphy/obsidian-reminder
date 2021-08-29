@@ -1,5 +1,5 @@
 <script lang="typescript">
-    import { DateTime, Laters } from "model/time";
+    import { DateTime } from "model/time";
     import moment from "moment";
     import { Calendar } from "model/calendar";
     import ReminderListByDate from "./ReminderListByDate.svelte";
@@ -12,9 +12,6 @@
         completion: DateTime;
     };
 
-    export const relativeDateTimes: Array<RelativeDateTime> = Laters.map(
-        (l) => ({ title: l.label, completion: l.later() })
-    );
     export let calendar: Calendar = new Calendar();
     export let selectedDate = moment();
     export let reminders: Reminders;

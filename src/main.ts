@@ -43,7 +43,7 @@ export default class ReminderPlugin extends Plugin {
       this.viewProxy,
       this.reminders
     );
-    this.reminderModal = new ReminderModal(this.app, this.pluginDataIO.useSystemNotification);
+    this.reminderModal = new ReminderModal(this.app, this.pluginDataIO.useSystemNotification, this.pluginDataIO.laters);
   }
 
   async onload() {
@@ -165,28 +165,29 @@ export default class ReminderPlugin extends Plugin {
     const expired = this.reminders.getExpiredReminders(
       this.pluginDataIO.reminderTime.value
     );
-    const reminderNotifications = expired.map((reminder) => {
-      return new Promise((resolve) => {
-        this.reminderModal.show(
-          reminder,
-          (time) => {
-            console.info("Remind me later: time=%o", time);
-            reminder.time = time;
-            this.remindersController.updateReminder(reminder, false);
-            this.pluginDataIO.save(true);
-            resolve(null);
-          },
-          () => {
-            console.info("done");
-            this.remindersController.updateReminder(reminder, true);
-            this.reminders.removeReminder(reminder);
-            this.pluginDataIO.save(true);
-            resolve(null);
-          }
-        );
-      });
+    expired.map((reminder) => {
+      if (reminder.notificationVisible) {
+        return;
+      }
+      reminder.notificationVisible = true;
+      this.reminderModal.show(
+        reminder,
+        (time) => {
+          console.info("Remind me later: time=%o", time);
+          reminder.time = time;
+          reminder.notificationVisible = false;
+          this.remindersController.updateReminder(reminder, false);
+          this.pluginDataIO.save(true);
+        },
+        () => {
+          console.info("done");
+          reminder.notificationVisible = false;
+          this.remindersController.updateReminder(reminder, true);
+          this.reminders.removeReminder(reminder);
+          this.pluginDataIO.save(true);
+        },
+      );
     });
-    await Promise.all(reminderNotifications);
   }
 
   onunload(): void {

@@ -1,22 +1,26 @@
 import { App, Modal } from "obsidian";
 import type { Reminder } from "../model/reminder";
 import ReminderView from "./components/Reminder.svelte";
-import { inMinutes } from "../model/time";
+import { DEFAULT_LATERS, inMinutes, Later, parseLaters } from "../model/time";
 import type { DateTime } from "model/time";
 import { ReadOnlyReference } from "model/ref";
 const electron = require("electron");
 
 export class ReminderModal {
 
-  constructor(private app: App, private useSystemNotification: ReadOnlyReference<boolean>) { }
+  constructor(private app: App, private useSystemNotification: ReadOnlyReference<boolean>, private laters: ReadOnlyReference<string>) { }
 
   public show(
     reminder: Reminder,
     onRemindMeLater: (time: DateTime) => void,
-    onDone: () => void
+    onDone: () => void,
   ) {
+    const onCancel = () => {
+      onRemindMeLater(inMinutes(10)());
+    };
+
     if (!this.isSystemNotification()) {
-      this.showBuiltinReminder(reminder, onRemindMeLater, onDone);
+      this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onCancel);
     } else {
       // Show system notification
       const Notification = electron.remote.Notification;
@@ -27,7 +31,10 @@ export class ReminderModal {
       n.show();
       n.on("click", () => {
         n.close();
-        this.showBuiltinReminder(reminder, onRemindMeLater, onDone);
+        this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onCancel);
+      });
+      n.on("close", () => {
+        onCancel();
       });
     }
   }
@@ -35,9 +42,22 @@ export class ReminderModal {
   private showBuiltinReminder(
     reminder: Reminder,
     onRemindMeLater: (time: DateTime) => void,
-    onDone: () => void
+    onDone: () => void,
+    onCancel: () => void
   ) {
-    new NotificationModal(this.app, reminder, onRemindMeLater, onDone).open();
+    let parsedLaters: Array<Later>;
+    try {
+      parsedLaters = parseLaters(this.laters.value);
+    } catch (e) {
+      console.error("failed to load 'laters': %s", this.laters.value);
+      parsedLaters = [];
+    }
+
+    if (parsedLaters.length === 0) {
+      parsedLaters = DEFAULT_LATERS;
+    }
+
+    new NotificationModal(this.app, parsedLaters, reminder, onRemindMeLater, onDone, onCancel).open();
   }
 
   private isSystemNotification() {
@@ -50,26 +70,23 @@ export class ReminderModal {
   private isMobile() {
     return electron === undefined;
   }
-  
+
 
 }
 
 class NotificationModal extends Modal {
-  reminder: Reminder;
-  onRemindMeLater: (time: DateTime) => void;
-  onDone: () => void;
+
   canceled: boolean = true;
 
   constructor(
     app: App,
-    reminder: Reminder,
-    onRemindMeLater: (time: DateTime) => void,
-    onDone: () => void
+    private laters: Array<Later>,
+    private reminder: Reminder,
+    private onRemindMeLater: (time: DateTime) => void,
+    private onDone: () => void,
+    private onCancel: () => void,
   ) {
     super(app);
-    this.reminder = reminder;
-    this.onRemindMeLater = onRemindMeLater;
-    this.onDone = onDone;
   }
 
   onOpen() {
@@ -78,6 +95,7 @@ class NotificationModal extends Modal {
       target: contentEl,
       props: {
         reminder: this.reminder,
+        laters: this.laters,
         onRemindMeLater: (time: DateTime) => {
           this.onRemindMeLater(time);
           this.canceled = false;
@@ -96,7 +114,7 @@ class NotificationModal extends Modal {
     let { contentEl } = this;
     contentEl.empty();
     if (this.canceled) {
-      this.onRemindMeLater(inMinutes(10)());
+      this.onCancel();
     }
   }
 }

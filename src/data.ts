@@ -1,4 +1,3 @@
-import { relativeTimeThreshold } from "moment";
 import { Plugin_2 } from "obsidian";
 import { Reference } from "./model/ref";
 import { Reminder, Reminders } from "./model/reminder";
@@ -19,26 +18,34 @@ interface ReminderData {
 interface ReminderSettings {
   reminderTime: string;
   useSystemNotification: boolean;
+  laters: string;
 }
 
 const DEFAULT_PLUGIN_DATA: ReminderPluginData = {
   settings: {
     reminderTime: "09:00",
     useSystemNotification: false,
+    laters: "In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week"
   },
   reminders: {} as Map<string, Array<ReminderData>>,
   scanned: false,
 };
 
 export class PluginDataIO {
-  // data: ReminderPluginData = DEFAULT_PLUGIN_DATA;
+
   changed: boolean = false;
   public scanned: Reference<boolean> = new Reference(false);
   public reminderTime: Reference<Time> = new Reference(Time.parse("09:00"));
   public useSystemNotification: Reference<boolean> = new Reference(false);
+  public laters: Reference<string> = new Reference(DEFAULT_PLUGIN_DATA.settings.laters);
 
   constructor(private plugin: Plugin_2, private reminders: Reminders) {
-    [this.reminderTime, this.scanned, this.useSystemNotification].forEach((setting) => {
+    [
+      this.reminderTime,
+      this.scanned,
+      this.useSystemNotification,
+      this.laters
+    ].forEach((setting) => {
       setting.onChanged(() => {
         this.changed = true;
       });
@@ -100,7 +107,8 @@ export class PluginDataIO {
       reminders: remindersData,
       settings: {
         reminderTime: this.reminderTime.value.toString(),
-        useSystemNotification: this.useSystemNotification.value
+        useSystemNotification: this.useSystemNotification.value,
+        laters: this.laters
       },
     });
     this.changed = false;
