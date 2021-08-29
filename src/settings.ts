@@ -1,13 +1,71 @@
-import { App, PluginSettingTab, Plugin_2, Setting } from "obsidian";
-import { PluginDataIO } from "./data";
-import { parseLaters, Time } from "./model/time";
+import { App, PluginSettingTab, Plugin_2 } from "obsidian";
+import { SettingModel, SettingModelBuilder, TimeSerde, RawSerde, LatersSerde } from "model/settings";
+import { Time, Later } from "model/time";
 
-// TODO notification type
+class SettingGroup {
+  constructor(public name: string, public settings: Array<SettingModel<any, any>>) {
+  }
+}
+
+class Settings {
+
+  groups: Array<SettingGroup> = [];
+  reminderTime: SettingModel<string, Time>;
+  useSystemNotification: SettingModel<boolean, boolean>;
+  laters: SettingModel<string, Array<Later>>;
+
+  constructor() {
+    this.reminderTime = this.builder()
+      .key("reminderTime")
+      .name("Reminder Time")
+      .desc("Time when the reminder which has time part will show.")
+      .text("09:00")
+      .placeHolder("Time (hh:mm)")
+      .build(new TimeSerde());
+
+    this.useSystemNotification = this.builder()
+      .key("useSystemNotification")
+      .name("Use system notification")
+      .desc("Use system notification for reminder notifications")
+      .toggle(false)
+      .build(new RawSerde());
+
+    this.laters = this.builder()
+      .key("laters")
+      .name("Remind me later")
+      .desc("Comma-separated list of remind me later items")
+      .textArea("In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week")
+      .placeHolder("In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week")
+      .build(new LatersSerde());
+
+    this.groups.push(new SettingGroup("Reminder Settings", [
+      this.reminderTime,
+      this.laters
+    ]));
+    this.groups.push(new SettingGroup("Notification Settings", [
+      this.useSystemNotification
+    ]));
+  }
+
+  public forEach(consumer: (setting: SettingModel<any, any>) => void) {
+    this.groups.forEach(group => {
+      group.settings.forEach(setting => {
+        consumer(setting);
+      })
+    })
+  }
+
+  private builder(): SettingModelBuilder {
+    return new SettingModelBuilder();
+  }
+}
+
+export const SETTINGS = new Settings();
+
 export class ReminderSettingTab extends PluginSettingTab {
   constructor(
     app: App,
-    plugin: Plugin_2,
-    private pluginDataIO: PluginDataIO
+    plugin: Plugin_2
   ) {
     super(app, plugin);
   }
@@ -17,49 +75,11 @@ export class ReminderSettingTab extends PluginSettingTab {
 
     containerEl.empty();
 
-    const reminderTime = this.pluginDataIO.reminderTime;
-    const useSystemNotification = this.pluginDataIO.useSystemNotification;
-    const laters = this.pluginDataIO.laters;
-
-    new Setting(containerEl)
-      .setName("Reminder Time")
-      .setDesc("Time when the reminder which has time part will show.")
-      .addText((text) =>
-        text
-          .setPlaceholder("Time (hh:mm)")
-          .setValue(reminderTime.value.toString())
-          .onChange(async (value) => {
-            try {
-              reminderTime.value = Time.parse(value);
-            } catch (e) {
-              console.log(e);
-            }
-          })
-      );
-    new Setting(containerEl)
-      .setName("Use system notification")
-      .setDesc("Use system notification for reminder notifications")
-      .addToggle((toggle) =>
-        toggle
-          .setValue(useSystemNotification.value)
-          .onChange(async (value) => {
-            useSystemNotification.value = value;
-          })
-      );
-    new Setting(containerEl)
-      .setName("Remind me later")
-      .setDesc("Comma-separated list of remind me later items")
-      .addTextArea((textarea) => {
-        textarea
-          .setValue(laters.value)
-          .setPlaceholder("In 30 minutes, In 1 hour, In 3 hours, Tomorrow, Next week")
-          .onChange(async (value) => {
-            try {
-              const parsed = parseLaters(value);
-              console.log(parsed.map(p => p.label));
-              laters.value = value;
-            } catch (e) { }
-          });
-      })
+    SETTINGS.groups.forEach(group => {
+      containerEl.createEl('h3', { text: group.name });
+      group.settings.forEach(settings => {
+        settings.createSetting(containerEl);
+      });
+    })
   }
 }

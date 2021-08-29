@@ -1,13 +1,8 @@
 import { Plugin_2 } from "obsidian";
 import { Reference } from "./model/ref";
 import { Reminder, Reminders } from "./model/reminder";
-import { DateTime, Time } from "./model/time";
-
-interface ReminderPluginData {
-  settings: ReminderSettings;
-  reminders: any;
-  scanned: boolean;
-}
+import { DateTime } from "./model/time";
+import { SETTINGS } from "./settings"
 
 interface ReminderData {
   title: string;
@@ -15,38 +10,15 @@ interface ReminderData {
   rowNumber: number;
 }
 
-interface ReminderSettings {
-  reminderTime: string;
-  useSystemNotification: boolean;
-  laters: string;
-}
-
-const DEFAULT_PLUGIN_DATA: ReminderPluginData = {
-  settings: {
-    reminderTime: "09:00",
-    useSystemNotification: false,
-    laters: "In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week"
-  },
-  reminders: {} as Map<string, Array<ReminderData>>,
-  scanned: false,
-};
-
 export class PluginDataIO {
 
   changed: boolean = false;
   public scanned: Reference<boolean> = new Reference(false);
-  public reminderTime: Reference<Time> = new Reference(Time.parse("09:00"));
-  public useSystemNotification: Reference<boolean> = new Reference(false);
-  public laters: Reference<string> = new Reference(DEFAULT_PLUGIN_DATA.settings.laters);
 
   constructor(private plugin: Plugin_2, private reminders: Reminders) {
-    [
-      this.reminderTime,
-      this.scanned,
-      this.useSystemNotification,
-      this.laters
-    ].forEach((setting) => {
-      setting.onChanged(() => {
+    SETTINGS.forEach(setting => {
+      setting.rawValue.onChanged(() => {
+        console.log(setting);
         this.changed = true;
       });
     })
@@ -54,14 +26,14 @@ export class PluginDataIO {
 
   async load() {
     console.debug("Load reminder plugin data");
-    const data = Object.assign(
-      {},
-      DEFAULT_PLUGIN_DATA,
-      await this.plugin.loadData()
-    ) as ReminderPluginData;
+    const data = await this.plugin.loadData();
     this.scanned.value = data.scanned;
-    this.reminderTime.value = Time.parse(data.settings.reminderTime);
-    this.useSystemNotification.value = data.settings.useSystemNotification;
+
+    const loadedSettings = data.settings;
+    SETTINGS.forEach(setting => {
+      setting.load(loadedSettings);
+    })
+
     if (data.reminders) {
       Object.keys(data.reminders).forEach((filePath) => {
         const remindersInFile = data.reminders[filePath] as Array<ReminderData>;
@@ -102,14 +74,14 @@ export class PluginDataIO {
         rowNumber: rr.rowNumber,
       }));
     });
+    const settings = {};
+    SETTINGS.forEach(setting => {
+      setting.store(settings);
+    })
     await this.plugin.saveData({
       scanned: this.scanned.value,
       reminders: remindersData,
-      settings: {
-        reminderTime: this.reminderTime.value.toString(),
-        useSystemNotification: this.useSystemNotification.value,
-        laters: this.laters
-      },
+      settings
     });
     this.changed = false;
   }

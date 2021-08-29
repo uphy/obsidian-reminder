@@ -1,4 +1,3 @@
-import { ReadOnlyReference } from "./ref";
 import { Reminder } from "./reminder";
 import { DateTime, Time } from "./time";
 

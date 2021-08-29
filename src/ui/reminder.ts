@@ -1,14 +1,14 @@
 import { App, Modal } from "obsidian";
 import type { Reminder } from "../model/reminder";
 import ReminderView from "./components/Reminder.svelte";
-import { DEFAULT_LATERS, inMinutes, Later, parseLaters } from "../model/time";
+import { inMinutes, Later } from "../model/time";
 import type { DateTime } from "model/time";
 import { ReadOnlyReference } from "model/ref";
 const electron = require("electron");
 
 export class ReminderModal {
 
-  constructor(private app: App, private useSystemNotification: ReadOnlyReference<boolean>, private laters: ReadOnlyReference<string>) { }
+  constructor(private app: App, private useSystemNotification: ReadOnlyReference<boolean>, private laters: ReadOnlyReference<Array<Later>>) { }
 
   public show(
     reminder: Reminder,
@@ -45,19 +45,7 @@ export class ReminderModal {
     onDone: () => void,
     onCancel: () => void
   ) {
-    let parsedLaters: Array<Later>;
-    try {
-      parsedLaters = parseLaters(this.laters.value);
-    } catch (e) {
-      console.error("failed to load 'laters': %s", this.laters.value);
-      parsedLaters = [];
-    }
-
-    if (parsedLaters.length === 0) {
-      parsedLaters = DEFAULT_LATERS;
-    }
-
-    new NotificationModal(this.app, parsedLaters, reminder, onRemindMeLater, onDone, onCancel).open();
+    new NotificationModal(this.app, this.laters.value, reminder, onRemindMeLater, onDone, onCancel).open();
   }
 
   private isSystemNotification() {

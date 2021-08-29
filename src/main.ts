@@ -8,7 +8,7 @@ import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { RemindersController } from "./controller";
 import { PluginDataIO } from "./data";
 import { Reminders } from "./model/reminder";
-import { ReminderSettingTab } from "./settings";
+import { ReminderSettingTab, SETTINGS } from "./settings";
 import { DateTimeChooserView } from "./ui/datetime-chooser";
 import { ReminderModal } from "./ui/reminder";
 import { ReminderListItemViewProxy } from "./ui/reminder-list";
@@ -31,8 +31,8 @@ export default class ReminderPlugin extends Plugin {
       this.pluginDataIO.changed = true;
     });
     this.pluginDataIO = new PluginDataIO(this, this.reminders);
-    this.reminders.reminderTime = this.pluginDataIO.reminderTime;
-    this.viewProxy = new ReminderListItemViewProxy(app.workspace, this.reminders, this.pluginDataIO.reminderTime,
+    this.reminders.reminderTime = SETTINGS.reminderTime;
+    this.viewProxy = new ReminderListItemViewProxy(app.workspace, this.reminders, SETTINGS.reminderTime,
       // On select a reminder in the list
       (reminder) => {
         const leaf = this.app.workspace.getUnpinnedLeaf();
@@ -43,7 +43,7 @@ export default class ReminderPlugin extends Plugin {
       this.viewProxy,
       this.reminders
     );
-    this.reminderModal = new ReminderModal(this.app, this.pluginDataIO.useSystemNotification, this.pluginDataIO.laters);
+    this.reminderModal = new ReminderModal(this.app, SETTINGS.useSystemNotification, SETTINGS.laters);
   }
 
   async onload() {
@@ -60,7 +60,7 @@ export default class ReminderPlugin extends Plugin {
       return this.viewProxy.createView(leaf);
     });
     this.addSettingTab(
-      new ReminderSettingTab(this.app, this, this.pluginDataIO)
+      new ReminderSettingTab(this.app, this)
     );
 
     this.registerDomEvent(document, "keydown", (evt: KeyboardEvent) => {
@@ -163,7 +163,7 @@ export default class ReminderPlugin extends Plugin {
       return;
     }
     const expired = this.reminders.getExpiredReminders(
-      this.pluginDataIO.reminderTime.value
+      SETTINGS.reminderTime.value
     );
     expired.map((reminder) => {
       if (reminder.notificationVisible) {

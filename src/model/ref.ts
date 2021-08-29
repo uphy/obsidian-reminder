@@ -1,22 +1,14 @@
 type OnChangeFunction = <T>(oldValue: T, newValue: T) => void;
 
-export class ReadOnlyReference<T> {
-  constructor(protected _value: T) {}
+export interface ReadOnlyReference<T> {
 
-  public get value() {
-    return this._value;
-  }
+  get value(): T;
 
-  public toString(): string {
-    return `Ref<${this._value}>`;
-  }
 }
 
-export class Reference<T> extends ReadOnlyReference<T> {
+export class Reference<T> implements ReadOnlyReference<T> {
   private onChangeFunctions: Array<OnChangeFunction> = [];
-  constructor(protected _value: T) {
-    super(_value);
-  }
+  constructor(private _value: T) { }
 
   public onChanged(listener: OnChangeFunction) {
     this.onChangeFunctions.push(listener);
