@@ -25,6 +25,10 @@ class ReminderListItemView extends ItemView {
     return "Reminders";
   }
 
+  getIcon(): string {
+    return "clock";
+  }
+
   async onOpen(): Promise<void> {
     this.view = new ReminderListView({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
