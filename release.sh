@@ -8,9 +8,15 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-echo $VERSION | egrep '^\d+\.\d+\.\d+$'
+echo $VERSION | egrep '^\d+\.\d+\.\d+$' > /dev/null
 if [ $? -ne 0 ]; then
     echo "Invalid version format: $VERSION"
+    exit 1
+fi
+
+git branch --show-current | grep '^master$' > /dev/null
+if [ $? -ne 0 ]; then
+    echo "Not in master branch."
     exit 1
 fi
 
