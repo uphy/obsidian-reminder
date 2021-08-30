@@ -6,6 +6,16 @@ export interface ReadOnlyReference<T> {
 
 }
 
+export class ConstantReference<T> implements ReadOnlyReference<T>{
+
+  constructor(private _value: T) { }
+  
+  get value(): T {
+    return this._value;
+  }
+
+}
+
 export class Reference<T> implements ReadOnlyReference<T> {
   private onChangeFunctions: Array<OnChangeFunction> = [];
   constructor(private _value: T) { }

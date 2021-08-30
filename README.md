@@ -41,6 +41,18 @@ Check `Use system notification` setting.
 
 <img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/system-notification.png" width="300" />
 
+### Customization
+
+#### Date Format
+
+You can change date time format with command (Command palette > Convert reminder time format).
+This command replace all existing markdown files.
+Please execute carefully.
+
+<img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/convert-date-time-format.gif" width="300" />
+
+More formats can be set via setting page.
+
 ### FAQ
 
 - Interoperability between this plugin and [nldates-obsidian](https://github.com/argenos/nldates-obsidian)

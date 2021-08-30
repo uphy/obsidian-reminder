@@ -1,9 +1,11 @@
+import { DATE_TIME_FORMATTER } from "model/time";
 import {
   App,
   Plugin,
   PluginManifest,
   WorkspaceLeaf,
 } from "obsidian";
+import { DateTimeFormatModal } from "ui/datetime-format-modal";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { RemindersController } from "./controller";
 import { PluginDataIO } from "./data";
@@ -32,6 +34,7 @@ export default class ReminderPlugin extends Plugin {
     });
     this.pluginDataIO = new PluginDataIO(this, this.reminders);
     this.reminders.reminderTime = SETTINGS.reminderTime;
+    DATE_TIME_FORMATTER.setTimeFormat(SETTINGS.dateFormat, SETTINGS.dateTimeFormat);
     this.viewProxy = new ReminderListItemViewProxy(app.workspace, this.reminders, SETTINGS.reminderTime,
       // On select a reminder in the list
       (reminder) => {
@@ -110,6 +113,24 @@ export default class ReminderPlugin extends Plugin {
         return true;
       },
     });
+
+    this.addCommand({
+      id: "convert-reminder-time-format",
+      name: "Convert reminder time format",
+      checkCallback: (checking: boolean) => {
+        if (!checking) {
+          new DateTimeFormatModal(this.app, ["YYYY-MM-DD", "YYYY/MM/DD", "DD-MM-YYYY", "DD/MM/YYYY"], (dateFormat) => {
+            new DateTimeFormatModal(this.app, ["YYYY-MM-DD HH:mm", "YYYY/MM/DD HH:mm", "DD-MM-YYYY HH:mm", "DD/MM/YYYY HH:mm", "YYYY-MM-DDTHH:mm:ss:SSS"], (dateTimeFormat) => {
+              this.remindersController.convertDateTimeFormat(dateFormat, dateTimeFormat).then(() => {
+                SETTINGS.dateFormat.rawValue.value = dateFormat;
+                SETTINGS.dateTimeFormat.rawValue.value = dateTimeFormat;
+              }).catch(() => { /* ignore */ });
+            }).open();
+          }).open();
+        }
+        return true;
+      },
+    })
   }
 
   private watchVault() {
@@ -229,7 +250,7 @@ export default class ReminderPlugin extends Plugin {
     }
     dateTimeChooserView.show()
       .then(value => {
-        cmEditor.replaceRange(value.toString(), cmEditor.getCursor());
+        cmEditor.replaceRange(DATE_TIME_FORMATTER.toString(value), cmEditor.getCursor());
       })
       .catch(() => { /* do nothing on cancel */ });
   }

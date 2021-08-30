@@ -1,4 +1,5 @@
 import moment from "moment";
+import { ConstantReference, ReadOnlyReference } from "./ref";
 
 export class DateTime {
   public static now(): DateTime {
@@ -22,7 +23,7 @@ export class DateTime {
     return to.fixedTime(defaultTime).diff(from.fixedTime(defaultTime), unit);
   }
 
-  constructor(private time: moment.Moment, private hasTimePart: boolean) { }
+  constructor(private time: moment.Moment, private _hasTimePart: boolean) { }
 
   public getTimeInMillis(defaultTime?: Time): number {
     return this.fixedTime(defaultTime).valueOf();
@@ -43,12 +44,12 @@ export class DateTime {
   public add(amount: number, unit: Unit, defaultTime?: Time): DateTime {
     return new DateTime(
       this.fixedTime(defaultTime).clone().add(amount, unit),
-      this.hasTimePart
+      this._hasTimePart
     );
   }
 
   private fixedTime(defaultTime?: Time): moment.Moment {
-    if (this.hasTimePart) {
+    if (this._hasTimePart) {
       return this.time;
     }
     if (defaultTime === undefined) {
@@ -57,8 +58,12 @@ export class DateTime {
     return this.time.clone().add(defaultTime.minutes, "minutes");
   }
 
+  public get hasTimePart() {
+    return this._hasTimePart;
+  }
+
   public toString(): string {
-    if (this.hasTimePart) {
+    if (this._hasTimePart) {
       return this.format("YYYY-MM-DD HH:mm");
     } else {
       return this.format("YYYY-MM-DD");
@@ -223,3 +228,37 @@ export const DEFAULT_LATERS: Array<Later> = [
   new Later("Tomorrow", tomorrow()),
   new Later("Next week", nextWeek()),
 ];
+
+class DateTimeFormatter {
+
+  private dateFormat: ReadOnlyReference<string> = new ConstantReference("YYYY-MM-DD");
+  private dateTimeFormat: ReadOnlyReference<string> = new ConstantReference("YYYY-MM-DD HH:mm");
+
+  setTimeFormat(dateFormat: ReadOnlyReference<string>, dateTimeFormat: ReadOnlyReference<string>) {
+    this.dateFormat = dateFormat;
+    this.dateTimeFormat = dateTimeFormat;
+  }
+
+  parse(text: string): DateTime | null {
+    const dateTime = moment(text, this.dateTimeFormat.value, true);
+    if (dateTime.isValid()) {
+      return new DateTime(dateTime, true);
+    }
+    const date = moment(text, this.dateFormat.value, true);
+    if (date.isValid()) {
+      return new DateTime(date, false);
+    }
+    return null;
+  }
+
+  toString(time: DateTime): string {
+    if (time.hasTimePart) {
+      return time.format(this.dateTimeFormat.value);
+    } else {
+      return time.format(this.dateFormat.value);
+    }
+  }
+
+}
+
+export const DATE_TIME_FORMATTER = new DateTimeFormatter();

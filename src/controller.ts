@@ -1,3 +1,4 @@
+import { DATE_TIME_FORMATTER } from "model/time";
 import {
   MarkdownView,
   TAbstractFile,
@@ -68,6 +69,26 @@ export class RemindersController {
     }
     if (reloadUI) {
       this.reloadUI();
+    }
+  }
+
+  async convertDateTimeFormat(dateFormat: string, dateTimeFormat: string) {
+    for (const file of this.vault.getMarkdownFiles()) {
+      const content = new Content(file.path, await this.vault.read(file));
+      content.modifyReminderLines(reminderLine => {
+        const time = DATE_TIME_FORMATTER.parse(reminderLine.time.trim());
+        if (time === null) {
+          return;
+        }
+        let converted: string;
+        if (time.hasTimePart) {
+          converted = time.format(dateTimeFormat);
+        } else {
+          converted = time.format(dateFormat);
+        }
+        reminderLine.time = converted;
+      })
+      await this.vault.modify(file, content.getContent())
     }
   }
 

@@ -1,5 +1,6 @@
+import { ReminderListItemViewProxy } from "ui/reminder-list";
 import { Reminder } from "./reminder";
-import { DateTime, Time } from "./time";
+import { DateTime, DATE_TIME_FORMATTER, Time } from "./time";
 
 const reminderRegexp =
   /^(?<prefix>\s*)\- \[(?<check>.)\]\s(?<title1>.*?)\(@(?<time>.+?)\)(?<title2>.*)$/;
@@ -11,7 +12,7 @@ export class ReminderLine {
     public title1: string,
     public time: string,
     public title2: string
-  ) {}
+  ) { }
 
   toLine(): string {
     return `${this.prefix}- [${this.check}] ${this.title1}(@${this.time})${this.title2}`;
@@ -41,26 +42,38 @@ export class Content {
       }
 
       const title = `${parsed.title1.trim()} ${parsed.title2.trim()}`.trim();
-      const parsedTime = DateTime.parse(parsed.time);
-      reminders.push(new Reminder(this.file, title, parsedTime, lineIndex));
+      const parsedTime = DATE_TIME_FORMATTER.parse(parsed.time);
+      if (parsedTime !== null) {
+        reminders.push(new Reminder(this.file, title, parsedTime, lineIndex));
+      }
     });
     return reminders;
+  }
+
+  public modifyReminderLines(modifyFunc: (reminder: ReminderLine) => void) {
+    this.forEachLines((line, lineIndex) => {
+      this.modifyReminderLine(lineIndex, modifyFunc, true);
+    })
   }
 
   public updateReminder(reminder: Reminder, check: boolean) {
     this.modifyReminderLine(reminder.rowNumber, (line) => {
       line.check = check ? "x" : " ";
-      line.time = reminder.time.toString();
-    });
+      line.time = DATE_TIME_FORMATTER.toString(reminder.time)
+    }, false);
   }
 
   private modifyReminderLine(
     index: number,
-    modifyFunc: (r: ReminderLine) => void
+    modifyFunc: (r: ReminderLine) => void,
+    silent: boolean
   ) {
     const line = this.getLine(index);
     const r = this.parseReminderLine(line);
     if (r === null) {
+      if (silent) {
+        return;
+      }
       throw `not a reminder line: ${line}`;
     }
     modifyFunc(r);

@@ -13,6 +13,8 @@ class Settings {
   reminderTime: SettingModel<string, Time>;
   useSystemNotification: SettingModel<boolean, boolean>;
   laters: SettingModel<string, Array<Later>>;
+  dateFormat: SettingModel<string, string>;
+  dateTimeFormat: SettingModel<string, string>;
 
   constructor() {
     this.reminderTime = this.builder()
@@ -38,9 +40,27 @@ class Settings {
       .placeHolder("In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week")
       .build(new LatersSerde());
 
+    this.dateFormat = this.builder()
+      .key("dateFormat")
+      .name("Date format")
+      .desc("moment style date format: https://momentjs.com/docs/#/displaying/format/")
+      .text("YYYY-MM-DD")
+      .placeHolder("YYYY-MM-DD")
+      .build(new RawSerde());
+
+    this.dateTimeFormat = this.builder()
+      .key("dateTimeFormat")
+      .name("Date and time format")
+      .desc("moment() style date time format: https://momentjs.com/docs/#/displaying/format/")
+      .text("YYYY-MM-DD HH:mm")
+      .placeHolder("YYYY-MM-DD HH:mm")
+      .build(new RawSerde());
+
     this.groups.push(new SettingGroup("Reminder Settings", [
       this.reminderTime,
-      this.laters
+      this.laters,
+      this.dateFormat,
+      this.dateTimeFormat
     ]));
     this.groups.push(new SettingGroup("Notification Settings", [
       this.useSystemNotification
