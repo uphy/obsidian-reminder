@@ -125,7 +125,7 @@ class SettingModelImpl<R, E> implements SettingModel<R, E>{
 
     rawValue: Reference<R>;
 
-    constructor(private key: string, private name: string, private desc: string, private serde: Serde<R, E>, private initRawValue: R, private settingInitializer: (setting: Setting, rawValue: Reference<R>) => void) {
+    constructor(private key: string, private name: string, private desc: string, private serde: Serde<R, E>, initRawValue: R, private settingInitializer: (setting: Setting, rawValue: Reference<R>) => void) {
         this.rawValue = new Reference(initRawValue);
     }
 

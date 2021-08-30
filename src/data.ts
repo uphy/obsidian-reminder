@@ -18,7 +18,6 @@ export class PluginDataIO {
   constructor(private plugin: Plugin_2, private reminders: Reminders) {
     SETTINGS.forEach(setting => {
       setting.rawValue.onChanged(() => {
-        console.log(setting);
         this.changed = true;
       });
     })
@@ -27,6 +26,10 @@ export class PluginDataIO {
   async load() {
     console.debug("Load reminder plugin data");
     const data = await this.plugin.loadData();
+    if (!data) {
+      this.scanned.value = false;
+      return;
+    }
     this.scanned.value = data.scanned;
 
     const loadedSettings = data.settings;
