@@ -18,7 +18,7 @@ class Settings {
     this.reminderTime = this.builder()
       .key("reminderTime")
       .name("Reminder Time")
-      .desc("Time when the reminder which has time part will show.")
+      .desc("Time when a reminder with no time part will show")
       .text("09:00")
       .placeHolder("Time (hh:mm)")
       .build(new TimeSerde());
@@ -33,7 +33,7 @@ class Settings {
     this.laters = this.builder()
       .key("laters")
       .name("Remind me later")
-      .desc("Comma-separated list of remind me later items")
+      .desc("Line-separated list of remind me later items")
       .textArea("In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week")
       .placeHolder("In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week")
       .build(new LatersSerde());
