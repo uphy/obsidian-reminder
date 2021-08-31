@@ -125,10 +125,8 @@ export default class ReminderPlugin extends Plugin {
               return;
             }
             openDateTimeFormatChooser(this.app, (dateFormat, dateTimeFormat) => {
-              this.remindersController.convertDateTimeFormat(dateFormat, dateTimeFormat).then(() => {
-                SETTINGS.dateFormat.rawValue.value = dateFormat;
-                SETTINGS.dateTimeFormat.rawValue.value = dateTimeFormat;
-              }).catch(() => { /* ignore */ });
+              this.remindersController.convertDateTimeFormat(dateFormat, dateTimeFormat)
+                .catch(() => { /* ignore */ });
             });
           });
         }

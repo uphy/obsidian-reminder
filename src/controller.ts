@@ -6,7 +6,8 @@ import {
   Vault,
   WorkspaceLeaf,
 } from "obsidian";
-import { Content } from "./model/content";
+import { SETTINGS } from "settings";
+import { Content, ReminderEdit } from "./model/content";
 import { Reminders, Reminder } from "./model/reminder";
 import { ReminderListItemViewProxy } from "./ui/reminder-list";
 
@@ -72,24 +73,30 @@ export class RemindersController {
     }
   }
 
-  async convertDateTimeFormat(dateFormat: string, dateTimeFormat: string) {
+  async convertDateTimeFormat(dateFormat: string, dateTimeFormat: string): Promise<number> {
+    let updated = 0;
     for (const file of this.vault.getMarkdownFiles()) {
       const content = new Content(file.path, await this.vault.read(file));
-      content.modifyReminderLines(reminderLine => {
-        const time = DATE_TIME_FORMATTER.parse(reminderLine.time.trim());
-        if (time === null) {
-          return;
-        }
+      content.modifyReminderLines(reminder => {
+        const edit = new ReminderEdit();
         let converted: string;
-        if (time.hasTimePart) {
-          converted = time.format(dateTimeFormat);
+        if (reminder.time.hasTimePart) {
+          converted = reminder.time.format(dateTimeFormat);
         } else {
-          converted = time.format(dateFormat);
+          converted = reminder.time.format(dateFormat);
         }
-        reminderLine.time = converted;
+        edit.rawTime = converted;
+        updated++;
+        return edit;
       })
       await this.vault.modify(file, content.getContent())
     }
+    SETTINGS.dateFormat.rawValue.value = dateFormat;
+    SETTINGS.dateTimeFormat.rawValue.value = dateTimeFormat;
+    if (updated > 0) {
+      await this.reloadAllFiles();
+    }
+    return updated;
   }
 
   private isMarkdownFile(file: TFile) {

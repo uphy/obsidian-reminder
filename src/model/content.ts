@@ -1,4 +1,3 @@
-import { ReminderListItemViewProxy } from "ui/reminder-list";
 import { Reminder } from "./reminder";
 import { DateTime, DATE_TIME_FORMATTER, Time } from "./time";
 
@@ -17,6 +16,12 @@ export class ReminderLine {
   toLine(): string {
     return `${this.prefix}- [${this.check}] ${this.title1}(@${this.time})${this.title2}`;
   }
+}
+
+export class ReminderEdit {
+  public checked: boolean | null = null;
+  public time: DateTime | null = null;
+  public rawTime: string | null = null;
 }
 
 export class Content {
@@ -50,33 +55,40 @@ export class Content {
     return reminders;
   }
 
-  public modifyReminderLines(modifyFunc: (reminder: ReminderLine) => void) {
-    this.forEachLines((line, lineIndex) => {
-      this.modifyReminderLine(lineIndex, modifyFunc, true);
-    })
+  public modifyReminderLines(modifyFunc: (reminder: Reminder) => ReminderEdit | null) {
+    this.getReminders().forEach(reminder => {
+      const edit = modifyFunc(reminder);
+      if (edit === null) {
+        return;
+      }
+      this.modifyReminderLine(reminder.rowNumber, edit);
+    });
   }
 
   public updateReminder(reminder: Reminder, check: boolean) {
-    this.modifyReminderLine(reminder.rowNumber, (line) => {
-      line.check = check ? "x" : " ";
-      line.time = DATE_TIME_FORMATTER.toString(reminder.time)
-    }, false);
+    const edit = new ReminderEdit();
+    edit.checked = check;
+    edit.time = reminder.time;
+    this.modifyReminderLine(reminder.rowNumber, edit);
   }
 
   private modifyReminderLine(
     index: number,
-    modifyFunc: (r: ReminderLine) => void,
-    silent: boolean
+    edit: ReminderEdit
   ) {
     const line = this.getLine(index);
     const r = this.parseReminderLine(line);
     if (r === null) {
-      if (silent) {
-        return;
-      }
       throw `not a reminder line: ${line}`;
     }
-    modifyFunc(r);
+    if (edit.checked !== null) {
+      r.check = edit.checked ? "x" : " ";
+    }
+    if (edit.rawTime !== null) {
+      r.time = edit.rawTime;
+    } else if (edit.time !== null) {
+      r.time = DATE_TIME_FORMATTER.toString(edit.time);
+    }
     const newLine = r.toLine();
     this.lines[index] = newLine;
     console.info(
