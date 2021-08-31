@@ -1,6 +1,7 @@
 import { ReadOnlyReference, Reference } from "model/ref";
 import { AbstractTextComponent, Setting } from "obsidian";
 import { Later, parseLaters, Time } from "model/time";
+import { DefaultReminderFormat, ReminderFormat, TasksPluginFormat } from "./format";
 
 export class SettingModelBuilder {
     _key: string;
@@ -36,6 +37,10 @@ export class SettingModelBuilder {
 
     toggle(initValue: boolean) {
         return new ToggleSettingModelBuilder(this, initValue);
+    }
+
+    dropdown(initValue: string) {
+        return new DropdownSettingModelBuilder(this, initValue);
     }
 }
 
@@ -104,6 +109,35 @@ class ToggleSettingModelBuilder extends AbstractSettingModelBuilder<boolean>{
                         rawValue.value = value;
                     })
             );
+        })
+    }
+
+}
+
+class DropdownOption {
+    constructor(public label: string, public value: string) { }
+}
+
+class DropdownSettingModelBuilder<E> extends AbstractSettingModelBuilder<string>{
+
+    private options: Array<DropdownOption> = [];
+
+    addOption(label: string, value: string) {
+        this.options.push(new DropdownOption(label, value));
+        return this;
+    }
+
+    build<E>(serde: Serde<string, E>): SettingModel<string, E> {
+        return new SettingModelImpl(this.baseBuilder._key, this.baseBuilder._name, this.baseBuilder._desc, serde, this.initValue, (setting, rawValue) => {
+            setting.addDropdown(d => {
+                this.options.forEach(option => {
+                    d.addOption(option.value, option.label);
+                });
+                d.setValue(rawValue.value);
+                d.onChange(async (value) => {
+                    rawValue.value = value;
+                });
+            })
         })
     }
 
@@ -180,5 +214,25 @@ export class LatersSerde implements Serde<string, Array<Later>>{
     }
     marshal(value: Later[]): string {
         return value.map(v => v.label).join("\n");
+    }
+}
+
+export class ReminderFormatSerde implements Serde<string, ReminderFormat>{
+    unmarshal(rawValue: string): ReminderFormat {
+        switch (rawValue) {
+            case "reminder":
+                return DefaultReminderFormat.instance;
+            case "tasks":
+                return TasksPluginFormat.instance;
+        }
+        return null;
+    }
+    marshal(value: ReminderFormat): string {
+        if (value === DefaultReminderFormat.instance) {
+            return "reminder";
+        } else if (value === TasksPluginFormat.instance) {
+            return "tasks";
+        }
+        return null;
     }
 }

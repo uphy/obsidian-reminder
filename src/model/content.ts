@@ -1,9 +1,8 @@
-import { DefaultReminderFormat, ReminderEdit, ReminderFormat } from "./format";
+import { ReminderEdit, REMINDER_FORMAT } from "./format";
 import { Reminder } from "./reminder";
 
 export class Content {
   private lines: Array<string>;
-  private format: ReminderFormat = new DefaultReminderFormat();
 
   constructor(private file: string, content: string) {
     this.lines = content.split("\n");
@@ -16,7 +15,7 @@ export class Content {
   public getReminders(): Array<Reminder> {
     const reminders: Array<Reminder> = [];
     this.forEachLines((line, lineIndex) => {
-      const parsed = this.format.parse(this.file, lineIndex, line);
+      const parsed = REMINDER_FORMAT.parse(this.file, lineIndex, line);
       if (parsed === null) {
         return;
       }
@@ -46,7 +45,7 @@ export class Content {
     edit: ReminderEdit
   ) {
     const line = this.getLine(index);
-    const newLine = this.format.modify(line, edit);
+    const newLine = REMINDER_FORMAT.modify(line, edit);
     if (newLine === null) {
       throw `not a reminder line: ${line}`;
     }

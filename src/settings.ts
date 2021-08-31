@@ -1,6 +1,8 @@
 import { App, PluginSettingTab, Plugin_2 } from "obsidian";
-import { SettingModel, SettingModelBuilder, TimeSerde, RawSerde, LatersSerde } from "model/settings";
+import { SettingModel, SettingModelBuilder, TimeSerde, RawSerde, LatersSerde, ReminderFormatSerde } from "model/settings";
 import { Time, Later } from "model/time";
+import { DefaultReminderFormat, ReminderFormat, REMINDER_FORMAT, TasksPluginFormat } from "model/format";
+import { Reference } from "model/ref";
 
 class SettingGroup {
   constructor(public name: string, public settings: Array<SettingModel<any, any>>) {
@@ -15,6 +17,11 @@ class Settings {
   laters: SettingModel<string, Array<Later>>;
   dateFormat: SettingModel<string, string>;
   dateTimeFormat: SettingModel<string, string>;
+
+  // reminder format
+  enableReminderPluginReminderFormat: SettingModel<boolean, boolean>;
+  enableTasksPluginReminderFormat: SettingModel<boolean, boolean>;
+  reminderFormat: Reference<ReminderFormat>;
 
   constructor() {
     this.reminderTime = this.builder()
@@ -56,15 +63,58 @@ class Settings {
       .placeHolder("YYYY-MM-DD HH:mm")
       .build(new RawSerde());
 
+    this.enableReminderPluginReminderFormat = this.builder()
+      .key("enableReminderPluginReminderFormat")
+      .name("Enable reminder plugin format")
+      .desc("Enable reminder plugin format e.g. (@2021-09-08)")
+      .toggle(true)
+      .build(new RawSerde());
+
+    this.enableTasksPluginReminderFormat = this.builder()
+      .key("enableTasksPluginReminderFormat")
+      .name("Enable tasks plugin format")
+      .desc("Enable reminder plugin format e.g. 📅2021-09-08")
+      .toggle(false)
+      .build(new RawSerde());
+
     this.groups.push(new SettingGroup("Reminder Settings", [
       this.reminderTime,
       this.laters,
       this.dateFormat,
       this.dateTimeFormat
     ]));
+    this.groups.push(new SettingGroup("Reminder Format", [
+      this.enableReminderPluginReminderFormat,
+      this.enableTasksPluginReminderFormat,
+    ]));
     this.groups.push(new SettingGroup("Notification Settings", [
       this.useSystemNotification
     ]));
+
+    this.initReminderFormat();
+  }
+
+  private initReminderFormat() {
+    const updateReminderFormat = () => {
+      const formats: Array<ReminderFormat> = []
+      if (this.enableReminderPluginReminderFormat.value) {
+        formats.push(DefaultReminderFormat.instance);
+      }
+      if (this.enableTasksPluginReminderFormat.value) {
+        formats.push(TasksPluginFormat.instance);
+      }
+      if (formats.length === 0) {
+        formats.push(DefaultReminderFormat.instance);
+      }
+      REMINDER_FORMAT.resetFormat(formats);
+    }
+    this.enableReminderPluginReminderFormat.rawValue.onChanged(() => {
+      updateReminderFormat();
+    })
+    this.enableTasksPluginReminderFormat.rawValue.onChanged(() => {
+      updateReminderFormat();
+    });
+    updateReminderFormat();
   }
 
   public forEach(consumer: (setting: SettingModel<any, any>) => void) {
