@@ -4,6 +4,7 @@ import ReminderView from "./components/Reminder.svelte";
 import { inMinutes, Later } from "../model/time";
 import type { DateTime } from "model/time";
 import { ReadOnlyReference } from "model/ref";
+import { SETTINGS } from "settings";
 const electron = require("electron");
 
 export class ReminderModal {
@@ -28,7 +29,6 @@ export class ReminderModal {
         title: "Obsidian Reminder",
         body: reminder.title,
       });
-      n.show();
       n.on("click", () => {
         n.close();
         this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onCancel);
@@ -36,6 +36,25 @@ export class ReminderModal {
       n.on("close", () => {
         onCancel();
       });
+      // Only for macOS
+      {
+        const laters = SETTINGS.laters.value;
+        n.on("action", (_, index) => {
+          if (index === 0) {
+            onDone();
+            return;
+          }
+          const later = laters[index - 1];
+          onRemindMeLater(later.later());
+        });
+        const actions = [{ type: "button", text: "Mark as Done" }];
+        laters.forEach(later => {
+          actions.push({ type: "button", text: later.label })
+        });
+        n.actions = actions as any;
+      }
+
+      n.show();
     }
   }
 
