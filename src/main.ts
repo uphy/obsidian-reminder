@@ -5,7 +5,8 @@ import {
   PluginManifest,
   WorkspaceLeaf,
 } from "obsidian";
-import { DateTimeFormatModal } from "ui/datetime-format-modal";
+import { openDateTimeFormatChooser } from "ui/datetime-format-modal";
+import { OkCancel, showOkCancelDialog } from "ui/util";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { RemindersController } from "./controller";
 import { PluginDataIO } from "./data";
@@ -119,14 +120,17 @@ export default class ReminderPlugin extends Plugin {
       name: "Convert reminder time format",
       checkCallback: (checking: boolean) => {
         if (!checking) {
-          new DateTimeFormatModal(this.app, ["YYYY-MM-DD", "YYYY/MM/DD", "DD-MM-YYYY", "DD/MM/YYYY"], (dateFormat) => {
-            new DateTimeFormatModal(this.app, ["YYYY-MM-DD HH:mm", "YYYY/MM/DD HH:mm", "DD-MM-YYYY HH:mm", "DD/MM/YYYY HH:mm", "YYYY-MM-DDTHH:mm:ss:SSS"], (dateTimeFormat) => {
+          showOkCancelDialog("Convert reminder time format", "This command rewrite reminder dates in all markdown files.  You should make a backup of your vault before you execute this.  May I continue to convert?").then((res) => {
+            if (res !== OkCancel.OK) {
+              return;
+            }
+            openDateTimeFormatChooser(this.app, (dateFormat, dateTimeFormat) => {
               this.remindersController.convertDateTimeFormat(dateFormat, dateTimeFormat).then(() => {
                 SETTINGS.dateFormat.rawValue.value = dateFormat;
                 SETTINGS.dateTimeFormat.rawValue.value = dateTimeFormat;
               }).catch(() => { /* ignore */ });
-            }).open();
-          }).open();
+            });
+          });
         }
         return true;
       },

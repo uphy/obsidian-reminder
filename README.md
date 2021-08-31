@@ -60,10 +60,14 @@ More formats can be set via setting page.
   - The autocompletion conflicts with this plugin
   - I'm planning to provide a setting to change completion trigger.
   - If you have any opinion, please post it in [#4](https://github.com/uphy/obsidian-reminder/issues/4)
+- Notification in mobile (Android/iOS)
+  - System notification in mobile device is not available because Obsidian doesn't provide the feature.
 
 ### TODO
 
 - [ ] Reminder input support (develop a CodeMirror plugin)
 - [ ] More settings
-  - [ ] Date time format
-  - [ ] Use system notification
+  - [x] Date time format
+  - [x] Use system notification
+  - [ ] Change popup triggers
+- [ ] Interoperability between reminder plugin and [tasks plugin](https://github.com/schemar/obsidian-tasks)
