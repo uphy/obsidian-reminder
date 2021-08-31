@@ -1,7 +1,6 @@
 import moment from "moment";
 import { ReadOnlyReference } from "./ref";
 import { Reminder } from "./reminder";
-import { ReminderFormatSerde } from "./settings";
 import { DateTime, DATE_TIME_FORMATTER } from "./time";
 
 export class ReminderEdit {

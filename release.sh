@@ -20,6 +20,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+npm run build
+if [ $? -ne 0 ]; then
+    echo "build error"
+    exit 1
+fi
+
 sed -i '' -e 's/"version": .*/"version": "'$VERSION'",/' package.json
 sed -i '' -e 's/"version": .*/"version": "'$VERSION'",/' manifest.json
 
@@ -33,5 +39,4 @@ git tag $VERSION
 git push
 git push --tags
 
-npm run build
 gh release create "$VERSION" --notes "$VERSION" main.js styles.css manifest.json

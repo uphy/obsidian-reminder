@@ -13,7 +13,7 @@ import { RemindersController } from "./controller";
 import { PluginDataIO } from "./data";
 import { Reminders } from "./model/reminder";
 import { ReminderSettingTab, SETTINGS } from "./settings";
-import { DateTimeChooserModal, DateTimeChooserView } from "./ui/datetime-chooser";
+import { DateTimeChooserView } from "./ui/datetime-chooser";
 import { ReminderModal } from "./ui/reminder";
 import { ReminderListItemViewProxy } from "./ui/reminder-list";
 
