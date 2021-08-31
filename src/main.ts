@@ -1,6 +1,7 @@
 import { DATE_TIME_FORMATTER } from "model/time";
 import {
   App,
+  MarkdownView,
   Plugin,
   PluginManifest,
   WorkspaceLeaf,
@@ -12,7 +13,7 @@ import { RemindersController } from "./controller";
 import { PluginDataIO } from "./data";
 import { Reminders } from "./model/reminder";
 import { ReminderSettingTab, SETTINGS } from "./settings";
-import { DateTimeChooserView } from "./ui/datetime-chooser";
+import { DateTimeChooserModal, DateTimeChooserView } from "./ui/datetime-chooser";
 import { ReminderModal } from "./ui/reminder";
 import { ReminderListItemViewProxy } from "./ui/reminder-list";
 
@@ -75,7 +76,11 @@ export default class ReminderPlugin extends Plugin {
       cm.on(
         "change",
         (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
-          this.showDateTimeChooser(cmEditor, changeObj, dateTimeChooser);
+          if (!this.isDateTimeChooserTrigger(cmEditor, changeObj)) {
+            dateTimeChooser.cancel();
+            return;
+          }
+          this.showDateTimeChooser(cmEditor, dateTimeChooser);
           return false;
         }
       );
@@ -132,7 +137,24 @@ export default class ReminderPlugin extends Plugin {
         }
         return true;
       },
-    })
+    });
+
+    this.addCommand({
+      id: "show-date-chooser",
+      name: "Show date chooser popup",
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.activeLeaf.view;
+        if (!(view instanceof MarkdownView)) {
+          return false;
+        }
+        if (!checking) {
+          const cm: CodeMirror.Editor = (view.editor as any).cm;
+          const v = new DateTimeChooserView(cm, this.reminders);
+          this.showDateTimeChooser(cm, v);
+        }
+        return true;
+      },
+    });
   }
 
   private watchVault() {
@@ -245,11 +267,7 @@ export default class ReminderPlugin extends Plugin {
     return false;
   }
 
-  private showDateTimeChooser(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange, dateTimeChooserView: DateTimeChooserView): void {
-    if (!this.isDateTimeChooserTrigger(cmEditor, changeObj)) {
-      dateTimeChooserView.cancel();
-      return;
-    }
+  private showDateTimeChooser(cmEditor: CodeMirror.Editor, dateTimeChooserView: DateTimeChooserView): void {
     dateTimeChooserView.show()
       .then(value => {
         cmEditor.replaceRange(DATE_TIME_FORMATTER.toString(value), cmEditor.getCursor());

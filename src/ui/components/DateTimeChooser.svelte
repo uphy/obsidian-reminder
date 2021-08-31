@@ -7,11 +7,6 @@
     import CalendarView from "./Calendar.svelte";
     import { Reminders } from "model/reminder";
 
-    type RelativeDateTime = {
-        title: string;
-        completion: DateTime;
-    };
-
     export let calendar: Calendar = new Calendar();
     export let selectedDate = moment();
     export let reminders: Reminders;
