@@ -1,4 +1,4 @@
-import { DATE_TIME_FORMATTER } from "model/time";
+import { ReminderEdit } from "model/format";
 import {
   MarkdownView,
   TAbstractFile,
@@ -7,7 +7,7 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { SETTINGS } from "settings";
-import { Content, ReminderEdit } from "./model/content";
+import { Content } from "./model/content";
 import { Reminders, Reminder } from "./model/reminder";
 import { ReminderListItemViewProxy } from "./ui/reminder-list";
 
@@ -119,7 +119,10 @@ export class RemindersController {
       return;
     }
     const content = new Content(file.path, await this.vault.read(file));
-    content.updateReminder(reminder, checked);
+    const edit = new ReminderEdit();
+    edit.checked = checked;
+    edit.time = reminder.time;
+    content.updateReminder(reminder, edit);
     await this.vault.modify(file, content.getContent());
   }
 
