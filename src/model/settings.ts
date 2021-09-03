@@ -1,7 +1,6 @@
 import { ReadOnlyReference, Reference } from "model/ref";
 import { AbstractTextComponent, Setting } from "obsidian";
 import { Later, parseLaters, Time } from "model/time";
-import { DefaultReminderFormat, ReminderFormat, TasksPluginFormat } from "./format";
 
 export class SettingModelBuilder {
     _key: string;
@@ -153,6 +152,8 @@ export interface SettingModel<R, E> extends ReadOnlyReference<E> {
 
     rawValue: Reference<R>;
 
+    readonly key: string;
+
     createSetting(containerEl: HTMLElement): Setting;
 
     load(settings: any): void;
@@ -166,7 +167,7 @@ export interface SettingModel<R, E> extends ReadOnlyReference<E> {
 class SettingModelImpl<R, E> implements SettingModel<R, E>{
 
     rawValue: Reference<R>;
-    private key: string;
+    public readonly key: string;
     private name: string;
     private desc: string;
     private tags: Array<string>;
@@ -234,25 +235,5 @@ export class LatersSerde implements Serde<string, Array<Later>>{
     }
     marshal(value: Later[]): string {
         return value.map(v => v.label).join("\n");
-    }
-}
-
-export class ReminderFormatSerde implements Serde<string, ReminderFormat>{
-    unmarshal(rawValue: string): ReminderFormat {
-        switch (rawValue) {
-            case "reminder":
-                return DefaultReminderFormat.instance;
-            case "tasks":
-                return TasksPluginFormat.instance;
-        }
-        return null;
-    }
-    marshal(value: ReminderFormat): string {
-        if (value === DefaultReminderFormat.instance) {
-            return "reminder";
-        } else if (value === TasksPluginFormat.instance) {
-            return "tasks";
-        }
-        return null;
     }
 }

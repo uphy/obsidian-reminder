@@ -1,4 +1,3 @@
-import { ReminderEdit } from "model/format";
 import {
   MarkdownView,
   TAbstractFile,
@@ -7,9 +6,9 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { SETTINGS } from "settings";
-import { Content } from "./model/content";
-import { Reminders, Reminder } from "./model/reminder";
-import { ReminderListItemViewProxy } from "./ui/reminder-list";
+import { Content } from "model/content";
+import { Reminders, Reminder } from "model/reminder";
+import { ReminderListItemViewProxy } from "ui/reminder-list";
 
 export class RemindersController {
 

@@ -1,8 +1,7 @@
 import { App, PluginSettingTab, Plugin_2 } from "obsidian";
-import { SettingModel, SettingModelBuilder, TimeSerde, RawSerde, LatersSerde, ReminderFormatSerde } from "model/settings";
+import { SettingModel, SettingModelBuilder, TimeSerde, RawSerde, LatersSerde } from "model/settings";
 import { Time, Later } from "model/time";
-import { DefaultReminderFormat, ReminderFormat, REMINDER_FORMAT, TasksPluginFormat } from "model/format";
-import { Reference } from "model/ref";
+import { changeReminderFormat, ReminderFormatType, ReminderFormatTypes } from "model/format";
 
 export const TAG_RESCAN = "re-scan";
 
@@ -13,18 +12,12 @@ class SettingGroup {
 
 class Settings {
 
-
   groups: Array<SettingGroup> = [];
   reminderTime: SettingModel<string, Time>;
   useSystemNotification: SettingModel<boolean, boolean>;
   laters: SettingModel<string, Array<Later>>;
   dateFormat: SettingModel<string, string>;
   dateTimeFormat: SettingModel<string, string>;
-
-  // reminder format
-  enableReminderPluginReminderFormat: SettingModel<boolean, boolean>;
-  enableTasksPluginReminderFormat: SettingModel<boolean, boolean>;
-  reminderFormat: Reference<ReminderFormat>;
 
   constructor() {
     this.reminderTime = this.builder()
@@ -69,21 +62,27 @@ class Settings {
       .placeHolder("YYYY-MM-DD HH:mm")
       .build(new RawSerde());
 
-    this.enableReminderPluginReminderFormat = this.builder()
-      .key("enableReminderPluginReminderFormat")
-      .name("Enable reminder plugin format")
-      .desc("Enable reminder plugin format e.g. (@2021-09-08)")
-      .tag(TAG_RESCAN)
-      .toggle(true)
-      .build(new RawSerde());
-
-    this.enableTasksPluginReminderFormat = this.builder()
-      .key("enableTasksPluginReminderFormat")
-      .name("Enable tasks plugin format")
-      .desc("Enable tasks plugin format e.g. 📅2021-09-08")
-      .tag(TAG_RESCAN)
-      .toggle(false)
-      .build(new RawSerde());
+    const settingKeyToFormatName = new Map<string, ReminderFormatType>();
+    const reminderFormatSettings = ReminderFormatTypes.map(format => {
+      const key = `enable${format.name}`;
+      const setting = this.builder()
+        .key(key)
+        .name(`Enable ${format.description}`)
+        .desc(`Enable ${format.description} e.g. ${format.example}`)
+        .tag(TAG_RESCAN)
+        .toggle(true)
+        .build(new RawSerde());
+      settingKeyToFormatName.set(key, format);
+      return setting;
+    });
+    reminderFormatSettings.forEach(setting => {
+      setting.rawValue.onChanged(() => {
+        const selectedFormats = reminderFormatSettings
+          .filter(s => s.value)
+          .map(s => settingKeyToFormatName.get(s.key));
+        changeReminderFormat(selectedFormats);
+      });
+    });
 
     this.groups.push(new SettingGroup("Reminder Settings", [
       this.reminderTime,
@@ -92,37 +91,11 @@ class Settings {
       this.dateTimeFormat
     ]));
     this.groups.push(new SettingGroup("Reminder Format", [
-      this.enableReminderPluginReminderFormat,
-      this.enableTasksPluginReminderFormat,
+      ...reminderFormatSettings
     ]));
     this.groups.push(new SettingGroup("Notification Settings", [
       this.useSystemNotification
     ]));
-
-    this.initReminderFormat();
-  }
-
-  private initReminderFormat() {
-    const updateReminderFormat = () => {
-      const formats: Array<ReminderFormat> = []
-      if (this.enableReminderPluginReminderFormat.value) {
-        formats.push(DefaultReminderFormat.instance);
-      }
-      if (this.enableTasksPluginReminderFormat.value) {
-        formats.push(TasksPluginFormat.instance);
-      }
-      if (formats.length === 0) {
-        formats.push(DefaultReminderFormat.instance);
-      }
-      REMINDER_FORMAT.resetFormat(formats);
-    }
-    this.enableReminderPluginReminderFormat.rawValue.onChanged(() => {
-      updateReminderFormat();
-    })
-    this.enableTasksPluginReminderFormat.rawValue.onChanged(() => {
-      updateReminderFormat();
-    });
-    updateReminderFormat();
   }
 
   public forEach(consumer: (setting: SettingModel<any, any>) => void) {

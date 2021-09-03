@@ -1,8 +1,8 @@
 import { Plugin_2 } from "obsidian";
-import { Reference } from "./model/ref";
-import { Reminder, Reminders } from "./model/reminder";
-import { DateTime } from "./model/time";
-import { SETTINGS, TAG_RESCAN } from "./settings"
+import { Reference } from "model/ref";
+import { Reminder, Reminders } from "model/reminder";
+import { DateTime } from "model/time";
+import { SETTINGS, TAG_RESCAN } from "settings"
 
 interface ReminderData {
   title: string;

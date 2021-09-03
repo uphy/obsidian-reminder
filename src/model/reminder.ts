@@ -1,5 +1,5 @@
-import { ReadOnlyReference } from "./ref";
-import { DateTime, Time } from "./time";
+import { ReadOnlyReference } from "model/ref";
+import { DateTime, Time } from "model/time";
 
 export class Reminder {
 

@@ -1,4 +1,4 @@
-import { MarkdownDocument, Todo } from "./content";
+import { MarkdownDocument, Todo } from "./markdown";
 
 describe('MarkdownDocument', (): void => {
     test('getTodos()', (): void => {

@@ -1,5 +1,5 @@
 import moment from "moment";
-import { Calendar } from "./calendar"
+import { Calendar } from "model/calendar"
 
 describe('Calendar', (): void => {
     let calendar = new Calendar(moment("2021-09-23"));

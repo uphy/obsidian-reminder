@@ -9,13 +9,13 @@ import {
 import { openDateTimeFormatChooser } from "ui/datetime-format-modal";
 import { OkCancel, showOkCancelDialog } from "ui/util";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
-import { RemindersController } from "./controller";
-import { PluginDataIO } from "./data";
-import { Reminders } from "./model/reminder";
-import { ReminderSettingTab, SETTINGS } from "./settings";
-import { DateTimeChooserView } from "./ui/datetime-chooser";
-import { ReminderModal } from "./ui/reminder";
-import { ReminderListItemViewProxy } from "./ui/reminder-list";
+import { RemindersController } from "controller";
+import { PluginDataIO } from "data";
+import { Reminders } from "model/reminder";
+import { ReminderSettingTab, SETTINGS } from "settings";
+import { DateTimeChooserView } from "ui/datetime-chooser";
+import { ReminderModal } from "ui/reminder";
+import { ReminderListItemViewProxy } from "ui/reminder-list";
 
 export default class ReminderPlugin extends Plugin {
   pluginDataIO: PluginDataIO;
