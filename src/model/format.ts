@@ -1,12 +1,10 @@
 import moment from "moment";
-import { ReadOnlyReference } from "./ref";
 import { Reminder } from "./reminder";
 import { DateTime, DATE_TIME_FORMATTER } from "./time";
 
-export class ReminderEdit {
-    public checked: boolean | null = null;
-    public time: DateTime | null = null;
-    public rawTime: string | null = null;
+export type ReminderEdit = {
+    time?: DateTime,
+    rawTime?: string
 }
 
 export interface ReminderFormat {
@@ -31,15 +29,13 @@ export interface ReminderFormat {
 
 class DefaultReminderLine {
     constructor(
-        public prefix: string,
-        public check: string,
         public title1: string,
         public time: string,
         public title2: string
     ) { }
 
     toLine(): string {
-        return `${this.prefix}- [${this.check}] ${this.title1}(@${this.time})${this.title2}`;
+        return `${this.title1}(@${this.time})${this.title2}`;
     }
 }
 
@@ -47,16 +43,13 @@ export class DefaultReminderFormat implements ReminderFormat {
 
     public static readonly instance = new DefaultReminderFormat();
 
-    private static reminderRegexp = /^(?<prefix>\s*)\- \[(?<check>.)\]\s(?<title1>.*?)\(@(?<time>.+?)\)(?<title2>.*)$/;
+    private static reminderRegexp = /^(?<title1>.*?)\(@(?<time>.+?)\)(?<title2>.*)$/;
 
     private constructor() { }
 
     parse(file: string, lineIndex: number, line: string): Reminder | null {
         const parsed = this.parseReminderLine(line);
         if (parsed === null) {
-            return null;
-        }
-        if (parsed.check === "x") {
             return null;
         }
 
@@ -73,12 +66,9 @@ export class DefaultReminderFormat implements ReminderFormat {
         if (r === null) {
             return null;
         }
-        if (edit.checked !== null) {
-            r.check = edit.checked ? "x" : " ";
-        }
-        if (edit.rawTime !== null) {
+        if (edit.rawTime !== undefined) {
             r.time = edit.rawTime;
-        } else if (edit.time !== null) {
+        } else if (edit.time !== undefined) {
             r.time = DATE_TIME_FORMATTER.toString(edit.time);
         }
         return r.toLine();
@@ -89,160 +79,297 @@ export class DefaultReminderFormat implements ReminderFormat {
         if (result === null) {
             return null;
         }
-        const prefix = result.groups.prefix;
-        const check = result.groups.check;
         const title1 = result.groups.title1;
         const time = result.groups.time;
         const title2 = result.groups.title2;
-        return new DefaultReminderLine(prefix, check, title1, time, title2);
+        return new DefaultReminderLine(title1, time, title2);
     }
 
 }
 
-class TasksPluginReminderLine {
-    constructor(
-        public prefix: string,
-        public check: string,
-        public title: string,
-        public dueDate: string | null,
-        public doneDate: string | null,
-        public recurrence: string | null) { }
+export type Token = {
+    symbol: string,
+    text: string
+}
 
-    toLine(): string {
-        let line = `${this.prefix}- [${this.check}] ${this.title}`
-        if (this.recurrence !== null) {
-            line = `${line} 🔁${this.recurrence}`
+export class Symbol {
+
+    static ofChar(ch: string): Symbol {
+        return new Symbol(ch, text => {
+            return text === ch;
+        });
+    }
+
+    static ofChars(ch: Array<string>): Symbol {
+        if (ch.length === 0) {
+            throw "empty symbol";
         }
-        if (this.dueDate !== null) {
-            line = `${line} 📅${this.dueDate}`;
+        if (ch.length === 0) {
+            return this.ofChar(ch[0]);
         }
-        if (this.doneDate !== null) {
-            line = `${line} ✅${this.doneDate}`;
-        }
-        return line;
+        return new Symbol(ch[0], text => {
+            return ch.filter(c => text === c).length > 0;
+        });
+    }
+
+    private constructor(public primary: string, private func: (text: string) => boolean) { }
+
+    isSymbol(text: string) {
+        return this.func(text);
     };
+}
+
+export class Tokens {
+    constructor(private tokens: Array<Token>) { }
+
+    public setTokenText(
+        symbol: Symbol | string,
+        text: string,
+        keepSpace = false,
+        create = false,
+        separateSymbolAndText = false): Token | null {
+        let token = this.getToken(symbol);
+        if (token === null) {
+            if (!create) {
+                return null;
+            }
+            // append new token
+            if (symbol instanceof Symbol) {
+                token = { symbol: symbol.primary, text };
+            } else {
+                token = { symbol, text };
+            }
+            if (separateSymbolAndText && token.symbol !== '' && !token.text.startsWith(" ")) {
+                token.text = ' ' + token.text;
+            }
+
+            if (this.tokens.length > 0) {
+                const lastToken = this.tokens[this.tokens.length - 1];
+                if (!this.isTokenEndsWithSpace(lastToken)) {
+                    // last token doesn't end with space.  Append space to last token.
+                    lastToken.text += ' ';
+                }
+            }
+            this.tokens.push(token);
+            return token;
+        }
+
+        this.replaceTokenText(token, text, keepSpace);
+        return token;
+    }
+
+    private replaceTokenText(token: Token, text: string, keepSpace = false) {
+        if (!keepSpace) {
+            token.text = text;
+            return;
+        }
+
+        token.text = token.text.replace(/^(\s*).*?(\s*)$/, `$1${text}$2`);
+    }
+
+    private isTokenEndsWithSpace(token: Token) {
+        return token.text.match(/^.*\s$/);
+    }
+
+    public getToken(symbol: Symbol | string): Token | null {
+        for (let token of this.tokens) {
+            if (symbol instanceof Symbol) {
+                if (symbol.isSymbol(token.symbol)) {
+                    return token;
+                }
+            } else {
+                if (symbol === token.symbol) {
+                    return token;
+                }
+            }
+        }
+        return null;
+    }
+
+    public getTokenText(symbol: Symbol | string, removeSpace = false): string | null {
+        const token = this.getToken(symbol);
+        if (token === null) {
+            return null;
+        }
+        if (!removeSpace) {
+            return token.text;
+        }
+        return token.text.replace(/^\s*(.*?)\s*$/, `$1`);
+    }
+
+    forEachTokens(consumer: (token: Token) => void) {
+        this.tokens.forEach(consumer);
+    }
+
+    public join(): string {
+        return this.tokens.map(t => t.symbol + t.text).join("");
+    }
+}
+
+export function splitBySymbol(line: string, symbols: Array<Symbol>): Array<Token> {
+    const chars = [...line];
+    let text: string = "";
+    let currentToken: Token = null;
+    const splitted: Array<Token> = [];
+
+    const fillPreviousToken = () => {
+        if (currentToken === null) {
+            // previous token
+            splitted.push({ symbol: '', text });
+        } else {
+            // previous token
+            currentToken.text = text;
+        }
+    }
+    chars.forEach(c => {
+        let isSymbol = symbols.filter(s => s.isSymbol(c)).length > 0;
+        if (isSymbol) {
+            fillPreviousToken();
+
+            // new token
+            currentToken = { symbol: c, text: '' };
+            splitted.push(currentToken);
+            text = '';
+        } else {
+            text += c;
+        }
+    });
+    if (text.length > 0) {
+        fillPreviousToken();
+    }
+    return splitted;
+}
+
+export class TasksPluginReminderLine {
+
+    private static readonly dateFormat = "YYYY-MM-DD";
+    private static readonly symbolDueDate = Symbol.ofChars([..."📅📆🗓"]);
+    private static readonly symbolDoneDate = Symbol.ofChar("✅");
+    private static readonly symbolRecurrence = Symbol.ofChar("🔁");
+    private static readonly allSymbols = [
+        TasksPluginReminderLine.symbolDueDate,
+        TasksPluginReminderLine.symbolDoneDate,
+        TasksPluginReminderLine.symbolRecurrence
+    ];
+
+    public static parse(line: string): TasksPluginReminderLine {
+        return new TasksPluginReminderLine(new Tokens(splitBySymbol(line, this.allSymbols)));
+    }
+
+    private constructor(private tokens: Tokens) {
+    }
+
+    public getDescription(): string | null {
+        return this.tokens.getTokenText("", true);
+    }
+
+    public setDescription(description: string) {
+        this.tokens.setTokenText("", description, true, true);
+    }
+
+    public getDueDate(): DateTime | null {
+        return this.getDate(TasksPluginReminderLine.symbolDueDate);
+    }
+
+    public getDoneDate(): DateTime | null {
+        return this.getDate(TasksPluginReminderLine.symbolDoneDate);
+    }
+
+    public setDueDate(time: DateTime | string) {
+        this.setDate(TasksPluginReminderLine.symbolDueDate, time);
+    }
+
+    public setDoneDate(time: DateTime | string) {
+        this.setDate(TasksPluginReminderLine.symbolDoneDate, time);
+    }
+
+    private getDate(symbol: Symbol): DateTime | null {
+        const dateText = this.tokens.getTokenText(symbol, true);
+        if (dateText === null) {
+            return null;
+        }
+        const date = moment(dateText, TasksPluginReminderLine.dateFormat, true);
+        if (!date.isValid()) {
+            return null;
+        }
+        return new DateTime(date, false);
+    }
+
+    private setDate(symbol: Symbol, time: DateTime | string) {
+        let timeStr: string;
+        if (time instanceof DateTime) {
+            timeStr = time.format(TasksPluginReminderLine.dateFormat);
+        } else {
+            timeStr = time;
+        }
+
+        this.tokens.setTokenText(symbol, timeStr, true, true, this.shouldSplitBetweenSymbolAndText());
+    }
+
+    private shouldSplitBetweenSymbolAndText(): boolean {
+        let withSpace = 0;
+        let noSpace = 0;
+        this.tokens.forEachTokens(token => {
+            if (token.symbol === '') {
+                return;
+            }
+            if (token.text.match(/^\s.*$/)) {
+                withSpace += 1;
+            } else {
+                noSpace++;
+            }
+        })
+        if (withSpace > noSpace) {
+            return true;
+        } else if (withSpace < noSpace) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    public toLine(): string {
+        return this.tokens.join();
+    }
 }
 
 export class TasksPluginFormat implements ReminderFormat {
 
     public static readonly instance = new TasksPluginFormat();
 
-    private static readonly dateFormat = "YYYY-MM-DD";
-    private static readonly reminderRegexp = /^(?<prefix>\s*)\- \[(?<check>.)\]\s(?<content>.*)$/;
-    private static readonly dueDateRegexp = /[📅📆🗓] ?(\d{4}-\d{2}-\d{2})/u;
-    public static readonly doneDateRegex = /✅ ?(\d{4}-\d{2}-\d{2})/u;
-    public static readonly recurrenceRegex = /🔁([a-zA-Z0-9, !]+)/u;
-
     private constructor() { };
 
     parse(file: string, lineIndex: number, line: string): Reminder | null {
-        const parsed = TasksPluginFormat.parseReminderLine(line);
+        const parsed = TasksPluginReminderLine.parse(line);
         if (parsed === null) {
             return null;
         }
-        if (parsed.check === "x") {
+        const dueDate = parsed.getDueDate();
+        if (dueDate === null) {
             return null;
         }
-        if (parsed.dueDate === null) {
+        const description = parsed.getDescription();
+        if (description === null) {
             return null;
         }
-        const dueDate = moment(parsed.dueDate, TasksPluginFormat.dateFormat, true);
 
-        if (!dueDate.isValid()) {
-            return null;
-        }
-        return new Reminder(file, parsed.title, new DateTime(dueDate, false), lineIndex);
+        return new Reminder(file, description, dueDate, lineIndex);
     }
 
     modify(line: string, edit: ReminderEdit): string | null {
-        const parsed = TasksPluginFormat.parseReminderLine(line);
+        const parsed = TasksPluginReminderLine.parse(line);
         if (parsed === null) {
             return null;
         }
-        if (edit.checked !== null) {
-            parsed.check = edit.checked ? "x" : " ";
-            if (edit.checked) {
-                // TODO add doneDate to default reminder and extract this code to caller-side.
-                parsed.doneDate = moment().format(TasksPluginFormat.dateFormat);
-            }
-        }
-        if (edit.rawTime !== null) {
-            parsed.dueDate = edit.rawTime;
-        } else if (edit.time !== null) {
-            parsed.dueDate = edit.time.format(TasksPluginFormat.dateFormat);
+        if (edit.rawTime !== undefined) {
+            parsed.setDueDate(edit.rawTime);
+        } else if (edit.time !== undefined) {
+            parsed.setDueDate(edit.time)
+            parsed.setDoneDate(DateTime.now())
         }
         return parsed.toLine();
     }
 
-    // visible for test
-    static parseReminderLine(line: string): TasksPluginReminderLine | null {
-        const baseResult = TasksPluginFormat.reminderRegexp.exec(line);
-        if (baseResult === null) {
-            return null;
-        }
-        const prefix = baseResult.groups.prefix;
-        const check = baseResult.groups.check;
-        let body = baseResult.groups.content;
-
-        let dueDate: string = null;
-        let doneDate: string = null;
-        let recurrence: string = null;
-        const dueDateMatch = body.match(TasksPluginFormat.dueDateRegexp);
-        if (dueDateMatch !== null) {
-            dueDate = dueDateMatch[1];
-            body = body.replace(TasksPluginFormat.dueDateRegexp, '').trim();
-        }
-        const doneDateMatch = body.match(TasksPluginFormat.doneDateRegex);
-        if (doneDateMatch !== null) {
-            doneDate = doneDateMatch[1];
-            body = body.replace(TasksPluginFormat.doneDateRegex, '').trim();
-        }
-        const recurrenceMatch = body.match(TasksPluginFormat.recurrenceRegex);
-        if (recurrenceMatch !== null) {
-            recurrence = recurrenceMatch[1].trim();
-            body = body.replace(TasksPluginFormat.recurrenceRegex, '').trim();
-        }
-        const title = body;
-        return new TasksPluginReminderLine(prefix, check, title, dueDate, doneDate, recurrence);
-    }
-
-}
-
-class DynamicReminderFormat implements ReminderFormat {
-
-    useDefaultReminderFormat: ReadOnlyReference<boolean>;
-    useTasksPluginFormat: ReadOnlyReference<boolean>;
-
-    parse(file: string, lineIndex: number, line: string): Reminder {
-        if (this.useDefaultReminderFormat.value) {
-            const parsed = DefaultReminderFormat.instance.parse(file, lineIndex, line);
-            if (parsed !== null) {
-                return parsed;
-            }
-        }
-        if (this.useTasksPluginFormat.value) {
-            const parsed = TasksPluginFormat.instance.parse(file, lineIndex, line);
-            if (parsed !== null) {
-                return parsed;
-            }
-        }
-        return null;
-    }
-    modify(line: string, edit: ReminderEdit): string {
-        if (this.useDefaultReminderFormat.value) {
-            const modified = DefaultReminderFormat.instance.modify(line, edit);
-            if (modified !== null) {
-                return modified;
-            }
-        }
-        if (this.useTasksPluginFormat.value) {
-            const modified = TasksPluginFormat.instance.modify(line, edit);
-            if (modified !== null) {
-                return modified;
-            }
-        }
-        return null;
-    }
 }
 
 class CompositeReminderFormat implements ReminderFormat {

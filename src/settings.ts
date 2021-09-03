@@ -4,12 +4,15 @@ import { Time, Later } from "model/time";
 import { DefaultReminderFormat, ReminderFormat, REMINDER_FORMAT, TasksPluginFormat } from "model/format";
 import { Reference } from "model/ref";
 
+export const TAG_RESCAN = "re-scan";
+
 class SettingGroup {
   constructor(public name: string, public settings: Array<SettingModel<any, any>>) {
   }
 }
 
 class Settings {
+
 
   groups: Array<SettingGroup> = [];
   reminderTime: SettingModel<string, Time>;
@@ -28,6 +31,7 @@ class Settings {
       .key("reminderTime")
       .name("Reminder Time")
       .desc("Time when a reminder with no time part will show")
+      .tag(TAG_RESCAN)
       .text("09:00")
       .placeHolder("Time (hh:mm)")
       .build(new TimeSerde());
@@ -51,6 +55,7 @@ class Settings {
       .key("dateFormat")
       .name("Date format")
       .desc("moment style date format: https://momentjs.com/docs/#/displaying/format/")
+      .tag(TAG_RESCAN)
       .text("YYYY-MM-DD")
       .placeHolder("YYYY-MM-DD")
       .build(new RawSerde());
@@ -59,6 +64,7 @@ class Settings {
       .key("dateTimeFormat")
       .name("Date and time format")
       .desc("moment() style date time format: https://momentjs.com/docs/#/displaying/format/")
+      .tag(TAG_RESCAN)
       .text("YYYY-MM-DD HH:mm")
       .placeHolder("YYYY-MM-DD HH:mm")
       .build(new RawSerde());
@@ -67,13 +73,15 @@ class Settings {
       .key("enableReminderPluginReminderFormat")
       .name("Enable reminder plugin format")
       .desc("Enable reminder plugin format e.g. (@2021-09-08)")
+      .tag(TAG_RESCAN)
       .toggle(true)
       .build(new RawSerde());
 
     this.enableTasksPluginReminderFormat = this.builder()
       .key("enableTasksPluginReminderFormat")
       .name("Enable tasks plugin format")
-      .desc("Enable reminder plugin format e.g. 📅2021-09-08")
+      .desc("Enable tasks plugin format e.g. 📅2021-09-08")
+      .tag(TAG_RESCAN)
       .toggle(false)
       .build(new RawSerde());
 

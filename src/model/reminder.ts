@@ -12,6 +12,10 @@ export class Reminder {
     public time: DateTime,
     public rowNumber: number
   ) { }
+
+  key() {
+    return this.file + this.title + this.time.toString();
+  }
 }
 
 export class Reminders {
@@ -65,6 +69,22 @@ export class Reminders {
   }
 
   public replaceFile(filePath: string, reminders: Array<Reminder>) {
+    // migrate notificationVisible property
+    const oldReminders = this.fileToReminders.get(filePath);
+    if (oldReminders) {
+      const reminderToNotificationVisible = new Map<string, boolean>();
+      for (const reminder of oldReminders) {
+        reminderToNotificationVisible.set(reminder.key(), reminder.notificationVisible);
+      }
+      for (const reminder of reminders) {
+        const visible = reminderToNotificationVisible.get(reminder.key());
+        reminderToNotificationVisible.set(reminder.key(), reminder.notificationVisible);
+        if (visible !== undefined) {
+          reminder.notificationVisible = visible;
+        }
+      }
+    }
+    // update
     this.fileToReminders.set(filePath, reminders);
     this.sortReminders();
   }

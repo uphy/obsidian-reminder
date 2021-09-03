@@ -2,7 +2,7 @@ import { Plugin_2 } from "obsidian";
 import { Reference } from "./model/ref";
 import { Reminder, Reminders } from "./model/reminder";
 import { DateTime } from "./model/time";
-import { SETTINGS } from "./settings"
+import { SETTINGS, TAG_RESCAN } from "./settings"
 
 interface ReminderData {
   title: string;
@@ -18,6 +18,9 @@ export class PluginDataIO {
   constructor(private plugin: Plugin_2, private reminders: Reminders) {
     SETTINGS.forEach(setting => {
       setting.rawValue.onChanged(() => {
+        if (setting.hasTag(TAG_RESCAN)) {
+          this.scanned.value = false;
+        }
         this.changed = true;
       });
     })

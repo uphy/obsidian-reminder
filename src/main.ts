@@ -210,7 +210,7 @@ export default class ReminderPlugin extends Plugin {
     const expired = this.reminders.getExpiredReminders(
       SETTINGS.reminderTime.value
     );
-    expired.map((reminder) => {
+    expired.forEach((reminder) => {
       if (reminder.notificationVisible) {
         return;
       }

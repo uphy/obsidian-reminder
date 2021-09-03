@@ -7,6 +7,7 @@ export class SettingModelBuilder {
     _key: string;
     _name: string;
     _desc: string;
+    _tags: Array<string> = [];
 
     key(key: string) {
         this._key = key;
@@ -20,6 +21,11 @@ export class SettingModelBuilder {
 
     desc(desc: string) {
         this._desc = desc;
+        return this;
+    }
+
+    tag(tag: string) {
+        this._tags.push(tag);
         return this;
     }
 
@@ -71,7 +77,7 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
     }
 
     build<E>(serde: Serde<string, E>): SettingModel<string, E> {
-        return new SettingModelImpl(this.baseBuilder._key, this.baseBuilder._name, this.baseBuilder._desc, serde, this.initValue, (setting, rawValue) => {
+        return new SettingModelImpl(this.baseBuilder, serde, this.initValue, (setting, rawValue) => {
             const initText = (text: AbstractTextComponent<any>) => {
                 text
                     .setPlaceholder(this._placeHolder)
@@ -101,7 +107,7 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
 class ToggleSettingModelBuilder extends AbstractSettingModelBuilder<boolean>{
 
     build<E>(serde: Serde<boolean, E>): SettingModel<boolean, E> {
-        return new SettingModelImpl(this.baseBuilder._key, this.baseBuilder._name, this.baseBuilder._desc, serde, this.initValue, (setting, rawValue) => {
+        return new SettingModelImpl(this.baseBuilder, serde, this.initValue, (setting, rawValue) => {
             setting.addToggle((toggle) =>
                 toggle
                     .setValue(rawValue.value)
@@ -128,7 +134,7 @@ class DropdownSettingModelBuilder<E> extends AbstractSettingModelBuilder<string>
     }
 
     build<E>(serde: Serde<string, E>): SettingModel<string, E> {
-        return new SettingModelImpl(this.baseBuilder._key, this.baseBuilder._name, this.baseBuilder._desc, serde, this.initValue, (setting, rawValue) => {
+        return new SettingModelImpl(this.baseBuilder, serde, this.initValue, (setting, rawValue) => {
             setting.addDropdown(d => {
                 this.options.forEach(option => {
                     d.addOption(option.value, option.label);
@@ -153,14 +159,24 @@ export interface SettingModel<R, E> extends ReadOnlyReference<E> {
 
     store(settings: any): void;
 
+    hasTag(tag: string): boolean;
+
 }
 
 class SettingModelImpl<R, E> implements SettingModel<R, E>{
 
     rawValue: Reference<R>;
+    private key: string;
+    private name: string;
+    private desc: string;
+    private tags: Array<string>;
 
-    constructor(private key: string, private name: string, private desc: string, private serde: Serde<R, E>, initRawValue: R, private settingInitializer: (setting: Setting, rawValue: Reference<R>) => void) {
+    constructor(baseBuilder: SettingModelBuilder, private serde: Serde<R, E>, initRawValue: R, private settingInitializer: (setting: Setting, rawValue: Reference<R>) => void) {
         this.rawValue = new Reference(initRawValue);
+        this.key = baseBuilder._key;
+        this.name = baseBuilder._name;
+        this.desc = baseBuilder._desc;
+        this.tags = baseBuilder._tags;
     }
 
     createSetting(containerEl: HTMLElement): Setting {
@@ -187,6 +203,10 @@ class SettingModelImpl<R, E> implements SettingModel<R, E>{
 
     store(settings: any): void {
         settings[this.key] = this.rawValue.value;
+    }
+
+    hasTag(tag: string): boolean {
+        return this.tags.filter(t => t === tag).length > 0;
     }
 }
 

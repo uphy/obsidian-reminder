@@ -78,16 +78,16 @@ export class RemindersController {
     for (const file of this.vault.getMarkdownFiles()) {
       const content = new Content(file.path, await this.vault.read(file));
       content.modifyReminderLines(reminder => {
-        const edit = new ReminderEdit();
         let converted: string;
         if (reminder.time.hasTimePart) {
           converted = reminder.time.format(dateTimeFormat);
         } else {
           converted = reminder.time.format(dateFormat);
         }
-        edit.rawTime = converted;
         updated++;
-        return edit;
+        return {
+          rawTime: converted
+        };
       })
       await this.vault.modify(file, content.getContent())
     }
@@ -119,10 +119,10 @@ export class RemindersController {
       return;
     }
     const content = new Content(file.path, await this.vault.read(file));
-    const edit = new ReminderEdit();
-    edit.checked = checked;
-    edit.time = reminder.time;
-    content.updateReminder(reminder, edit);
+    content.updateReminder(reminder, {
+      checked,
+      time: reminder.time
+    });
     await this.vault.modify(file, content.getContent());
   }
 
