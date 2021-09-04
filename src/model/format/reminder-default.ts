@@ -14,13 +14,12 @@ class DefaultReminderLine {
     }
 }
 
-export class DefaultReminderFormat implements ReminderFormat {
+export class RegexpReminderFormat implements ReminderFormat {
 
-    public static readonly instance = new DefaultReminderFormat();
+    public static readonly instance = new RegexpReminderFormat(/^(?<title1>.*?)\(@(?<time>.+?)\)(?<title2>.*)$/);
+    public static readonly kanban = new RegexpReminderFormat(/^(?<title1>.*?)@\{(?<time>.+?)\}(?<title2>.*)$/);
 
-    private static reminderRegexp = /^(?<title1>.*?)\(@(?<time>.+?)\)(?<title2>.*)$/;
-
-    private constructor() { }
+    private constructor(private readonly reminderRegexp: RegExp) { }
 
     parse(file: string, lineIndex: number, line: string): Reminder | null {
         const parsed = this.parseReminderLine(line);
@@ -50,7 +49,7 @@ export class DefaultReminderFormat implements ReminderFormat {
     }
 
     private parseReminderLine(line: string): DefaultReminderLine | null {
-        const result = DefaultReminderFormat.reminderRegexp.exec(line);
+        const result = this.reminderRegexp.exec(line);
         if (result === null) {
             return null;
         }

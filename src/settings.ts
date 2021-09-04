@@ -70,7 +70,7 @@ class Settings {
         .name(`Enable ${format.description}`)
         .desc(`Enable ${format.description} e.g. ${format.example}`)
         .tag(TAG_RESCAN)
-        .toggle(true)
+        .toggle(format.defaultEnabled)
         .build(new RawSerde());
       settingKeyToFormatName.set(key, format);
       return setting;

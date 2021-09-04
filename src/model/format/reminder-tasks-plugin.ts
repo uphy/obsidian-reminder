@@ -125,6 +125,10 @@ export class TasksPluginFormat implements ReminderFormat {
         if (parsed === null) {
             return null;
         }
+        if(parsed.getDueDate() === null){
+            return null;
+        }
+
         if (edit.rawTime !== undefined) {
             parsed.setDueDate(edit.rawTime);
         } else if (edit.time !== undefined) {
