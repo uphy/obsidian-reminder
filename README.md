@@ -53,13 +53,21 @@ Please execute carefully.
 
 More formats can be set via setting page.
 
+#### Interoperability with other plugins
+
+In addition to original format `@YYYY-MM-DD`, this plugin also supports following plugin formats.
+
+- [Obsidian Tasks](https://github.com/schemar/obsidian-tasks) (e.g. `📅 2021-05-02`)
+- [Kanban](https://github.com/mgmeyers/obsidian-kanban) (e.g. `@{YYYY-MM-DD}`)
+
+They can be enabled by `Reminder Format` section in setting.
+
+For [nldates-obsidian](https://github.com/argenos/nldates-obsidian) users, the autocompletion(`@`) conflicts with this plugin.
+I'm planning to provide a setting to change completion trigger.
+If you have any opinion, please post it in [#4](https://github.com/uphy/obsidian-reminder/issues/4)
+
 ### FAQ
 
-- Interoperability between this plugin and [nldates-obsidian](https://github.com/argenos/nldates-obsidian)
-  - [nldates-obsidian](https://github.com/argenos/nldates-obsidian) also provides auto complete with `@` character.
-  - The autocompletion conflicts with this plugin
-  - I'm planning to provide a setting to change completion trigger.
-  - If you have any opinion, please post it in [#4](https://github.com/uphy/obsidian-reminder/issues/4)
 - Notification in mobile (Android/iOS)
   - System notification in mobile device is not available because Obsidian doesn't provide the feature.
 
