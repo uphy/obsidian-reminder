@@ -30,6 +30,9 @@
           <span class="reminder-title">
             {@html renderMarkdown(reminder.title)}
           </span>
+          <span class="reminder-file">
+            - {reminder.getFileName()}
+          </span>
         </div>
       {/each}
     </div>
@@ -59,6 +62,9 @@
   .reminder-time {
     font-size: 14px;
     font-family: monospace, serif;
+  }
+  .reminder-file {
+    color:var(--text-faint)
   }
   .no-reminders {
     font-style: italic;

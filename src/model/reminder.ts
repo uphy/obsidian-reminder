@@ -16,6 +16,16 @@ export class Reminder {
   key() {
     return this.file + this.title + this.time.toString();
   }
+
+  public getFileName(): string {
+    const p = this.file.split(/[\/\\]/);
+    return p[p.length - 1].replace(/^(.*?)(\..+)?$/, "$1");
+  }
+
+  static extractFileName(path: string) {
+    const p = path.split(/[\/\\]/);
+    return p[p.length - 1].replace(/^(.*?)(\..+)?$/, "$1");
+  }
 }
 
 export class Reminders {
