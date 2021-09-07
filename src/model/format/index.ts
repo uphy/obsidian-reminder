@@ -4,6 +4,7 @@ import { MarkdownDocument } from "./markdown";
 import type { ReminderEdit, ReminderFormat } from "./reminder-base";
 import { CompositeReminderFormat } from "./reminder-base";
 import { RegexpReminderFormat } from "./reminder-default";
+import { KanbanReminderFormat } from "./reminder-kanban-plugin";
 import { TasksPluginFormat } from "./reminder-tasks-plugin";
 
 const REMINDER_FORMAT = new CompositeReminderFormat();
@@ -37,7 +38,7 @@ export function changeReminderFormat(formatTypes: Array<ReminderFormatType>) {
 export const ReminderFormatTypes = [
     new ReminderFormatType("ReminderPluginReminderFormat", "reminder plugin format", "(@2021-09-08)", RegexpReminderFormat.instance, true),
     new ReminderFormatType("TasksPluginReminderFormat", "tasks plugin format", "📅2021-09-08", TasksPluginFormat.instance, false),
-    new ReminderFormatType("KanbanPluginReminderFormat", "Kanban plugin format", "@{2021-09-08}", RegexpReminderFormat.kanban, false),
+    new ReminderFormatType("KanbanPluginReminderFormat", "Kanban plugin format", "@{2021-09-08}", KanbanReminderFormat.instance, false),
 ];
 
 export {
