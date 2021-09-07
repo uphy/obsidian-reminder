@@ -76,6 +76,7 @@ export class RemindersController {
     let updated = 0;
     for (const file of this.vault.getMarkdownFiles()) {
       const content = new Content(file.path, await this.vault.read(file));
+      let updatedInFile = 0;
       content.modifyReminderLines(reminder => {
         let converted: string;
         if (reminder.time.hasTimePart) {
@@ -84,11 +85,14 @@ export class RemindersController {
           converted = reminder.time.format(dateFormat);
         }
         updated++;
+        updatedInFile++;
         return {
           rawTime: converted
         };
       })
-      await this.vault.modify(file, content.getContent())
+      if (updatedInFile > 0) {
+        await this.vault.modify(file, content.getContent())
+      }
     }
     SETTINGS.dateFormat.rawValue.value = dateFormat;
     SETTINGS.dateTimeFormat.rawValue.value = dateTimeFormat;
