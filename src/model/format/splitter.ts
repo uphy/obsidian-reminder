@@ -69,6 +69,10 @@ export class Tokens {
         return token;
     }
 
+    public length() {
+        return this.tokens.length;
+    }
+
     private replaceTokenText(token: Token, text: string, keepSpace = false) {
         if (!keepSpace) {
             token.text = text;

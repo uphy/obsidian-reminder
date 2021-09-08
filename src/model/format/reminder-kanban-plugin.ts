@@ -1,9 +1,24 @@
-import { ReminderFormat, ReminderEdit } from "./reminder-base";
-import { Reminder } from "model/reminder";
-import { DateTime, DATE_TIME_FORMATTER } from "model/time";
+import { ReminderModel, TodoBasedReminderFormat } from "./reminder-base";
+import { DateTime } from "model/time";
 import moment from "moment";
+import { Todo } from "./markdown";
 
-class KanbanReminderLine {
+export class KanbanReminderModel implements ReminderModel {
+
+    private static readonly regexp = /^(?<title1>.*?)@\{(?<date>.+?)\}( @@\{(?<time>.+?)\})?(?<title2>.*)$/;
+
+    static parse(line: string): KanbanReminderModel | null {
+        const result = KanbanReminderModel.regexp.exec(line);
+        if (result === null) {
+            return null;
+        }
+        const title1 = result.groups.title1;
+        const date = result.groups.date;
+        const title2 = result.groups.title2;
+        const time = result.groups.time;
+        return new KanbanReminderModel(title1, title2, date, time);
+    }
+
     constructor(
         public title1: string,
         public title2: string,
@@ -11,7 +26,11 @@ class KanbanReminderLine {
         public time?: string,
     ) { }
 
-    getDateTime(): DateTime | null {
+    getTitle(): string {
+        return `${this.title1.trim()} ${this.title2.trim()}`;
+    }
+
+    getTime(): DateTime | null {
         if (this.time) {
             const m = moment(`${this.date} ${this.time}`, "YYYY-MM-DD HH:mm", true);
             if (!m.isValid()) {
@@ -27,7 +46,21 @@ class KanbanReminderLine {
         }
     }
 
-    toLine(): string {
+    setTime(time: DateTime): void {
+        if (time.hasTimePart) {
+            this.time = time.format("HH:mm");
+            this.date = time.format("YYYY-MM-DD");
+        } else {
+            this.time = undefined;
+            this.date = time.format("YYYY-MM-DD");
+        }
+    }
+
+    setRawTime(rawTime: string): boolean {
+        return false;
+    }
+
+    toMarkdown(): string {
         let dateTime: string = `@{${this.date}}`;
         if (this.time) {
             dateTime += ` @@{${this.time}}`;
@@ -35,60 +68,15 @@ class KanbanReminderLine {
 
         return `${this.title1}${dateTime}${this.title2}`;
     }
+
 }
 
-export class KanbanReminderFormat implements ReminderFormat {
+export class KanbanReminderFormat extends TodoBasedReminderFormat<KanbanReminderModel> {
 
     public static readonly instance = new KanbanReminderFormat();
-    public static readonly regexp = /^(?<title1>.*?)@\{(?<date>.+?)\}( @@\{(?<time>.+?)\})?(?<title2>.*)$/;
 
-    private constructor() { }
-
-    parse(file: string, lineIndex: number, line: string): Reminder | null {
-        const parsed = KanbanReminderFormat.parse(line);
-        if (parsed === null) {
-            return null;
-        }
-
-        const title = `${parsed.title1.trim()} ${parsed.title2.trim()}`.trim();
-        const parsedTime = parsed.getDateTime();
-        if (parsedTime !== null) {
-            return new Reminder(file, title, parsedTime, lineIndex);
-        }
-        return null;
-    }
-
-    modify(line: string, edit: ReminderEdit): string {
-        const r = KanbanReminderFormat.parse(line);
-        if (r === null) {
-            return null;
-        }
-        // rawTime is not supported
-        if (edit.time !== undefined) {
-            if (edit.time.hasTimePart) {
-                const date = edit.time.format("YYYY-MM-DD");
-                const time = edit.time.format("HH:mm");
-                r.time = time;
-                r.date = date;
-            } else {
-                const date = edit.time.format("YYYY-MM-DD");
-                r.time = undefined;
-                r.date = date;
-            }
-        }
-        return r.toLine();
-    }
-
-    static parse(line: string): KanbanReminderLine | null {
-        const result = KanbanReminderFormat.regexp.exec(line);
-        if (result === null) {
-            return null;
-        }
-        const title1 = result.groups.title1;
-        const date = result.groups.date;
-        const title2 = result.groups.title2;
-        const time = result.groups.time;
-        return new KanbanReminderLine(title1, title2, date, time);
+    parseReminder(todo: Todo): KanbanReminderModel {
+        return KanbanReminderModel.parse(todo.body);
     }
 
 }

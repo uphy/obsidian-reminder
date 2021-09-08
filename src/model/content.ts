@@ -13,57 +13,34 @@ export class Content {
   }
 
   public getReminders(): Array<Reminder> {
-    const reminders: Array<Reminder> = [];
-    this.doc.getTodos().forEach(todo => {
-      if (todo.isChecked()) {
-        return;
-      }
-      const parsed = parseReminder(this.doc.file, todo.lineIndex, todo.body);
-      if (parsed === null) {
-        return;
-      }
-      if (parsed !== null) {
-        reminders.push(parsed);
-      }
-    });
-    return reminders;
+    return parseReminder(this.doc);
   }
 
-  public modifyReminderLines(modifyFunc: (reminder: Reminder) => ReminderTodoEdit | null) {
-    this.getReminders().forEach(reminder => {
+  public async modifyReminderLines(modifyFunc: (reminder: Reminder) => ReminderTodoEdit | null) {
+    for (const reminder of this.getReminders()) {
       const edit = modifyFunc(reminder);
       if (edit === null) {
         return;
       }
-      this.modifyReminderLine(reminder.rowNumber, edit);
-    });
+      await this.modifyReminderLine(reminder, edit);
+    }
   }
 
-  public updateReminder(reminder: Reminder, edit: ReminderTodoEdit) {
-    this.modifyReminderLine(reminder.rowNumber, edit);
+  public async updateReminder(reminder: Reminder, edit: ReminderTodoEdit) {
+    await this.modifyReminderLine(reminder, edit);
   }
 
-  private modifyReminderLine(
-    lineNumber: number,
+  private async modifyReminderLine(
+    reminder: Reminder,
     edit: ReminderTodoEdit
   ) {
-    const todo = this.doc.getTodo(lineNumber);
-    const newBody = modifyReminder(todo.body, edit);
-    if (newBody === null) {
-      throw `not a reminder line: ${todo.toMarkdown()}`;
+    const modified = await modifyReminder(this.doc, reminder, edit);
+    if (modified) {
+      console.info("Reminder was updated: reminder=%o", reminder);
+    } else {
+      console.warn("Cannot modify reminder because it's not a reminder todo: reminder=%o", reminder);
     }
-    if (edit.checked !== undefined) {
-      todo.setChecked(edit.checked);
-    }
-
-    console.info(
-      "Modify reminder: file=%s, index=%d, oldBody=%s, newBody=%s",
-      this.doc.file,
-      lineNumber,
-      todo.body,
-      newBody
-    );
-    todo.body = newBody;
+    return modified;
   }
 
   public getContent(): string {

@@ -1,50 +1,55 @@
 import { DateTime } from "model/time";
 import { splitBySymbol, Symbol, Tokens } from "./splitter";
-import { ReminderFormat, ReminderEdit } from "./reminder-base";
-import { Reminder } from "model/reminder";
+import { ReminderModel, TodoBasedReminderFormat, ReminderEdit } from "./reminder-base";
 import moment from "moment";
+import { Todo } from "./markdown";
 
-export class TasksPluginReminderLine {
+export class TasksPluginReminderModel implements ReminderModel {
 
     private static readonly dateFormat = "YYYY-MM-DD";
     private static readonly symbolDueDate = Symbol.ofChars([..."📅📆🗓"]);
     private static readonly symbolDoneDate = Symbol.ofChar("✅");
     private static readonly symbolRecurrence = Symbol.ofChar("🔁");
     private static readonly allSymbols = [
-        TasksPluginReminderLine.symbolDueDate,
-        TasksPluginReminderLine.symbolDoneDate,
-        TasksPluginReminderLine.symbolRecurrence
+        TasksPluginReminderModel.symbolDueDate,
+        TasksPluginReminderModel.symbolDoneDate,
+        TasksPluginReminderModel.symbolRecurrence
     ];
 
-    public static parse(line: string): TasksPluginReminderLine {
-        return new TasksPluginReminderLine(new Tokens(splitBySymbol(line, this.allSymbols)));
+    public static parse(line: string): TasksPluginReminderModel {
+        return new TasksPluginReminderModel(new Tokens(splitBySymbol(line, this.allSymbols)));
     }
 
     private constructor(private tokens: Tokens) {
     }
 
-    public getDescription(): string | null {
+    getTitle(): string {
         return this.tokens.getTokenText("", true);
     }
+    getTime(): DateTime {
+        return this.getDate(TasksPluginReminderModel.symbolDueDate);
+    }
+    setTime(time: DateTime): void {
+        this.setDate(TasksPluginReminderModel.symbolDueDate, time);
+    }
+    setRawTime(rawTime: string): boolean {
+        this.setDate(TasksPluginReminderModel.symbolDueDate, rawTime);
+        return true;
+    }
+    toMarkdown(): string {
+        return this.tokens.join();
+    }
 
-    public setDescription(description: string) {
+    setTitle(description: string) {
         this.tokens.setTokenText("", description, true, true);
     }
 
-    public getDueDate(): DateTime | null {
-        return this.getDate(TasksPluginReminderLine.symbolDueDate);
+    getDoneDate(): DateTime | null {
+        return this.getDate(TasksPluginReminderModel.symbolDoneDate);
     }
 
-    public getDoneDate(): DateTime | null {
-        return this.getDate(TasksPluginReminderLine.symbolDoneDate);
-    }
-
-    public setDueDate(time: DateTime | string) {
-        this.setDate(TasksPluginReminderLine.symbolDueDate, time);
-    }
-
-    public setDoneDate(time: DateTime | string) {
-        this.setDate(TasksPluginReminderLine.symbolDoneDate, time);
+    setDoneDate(time: DateTime | string) {
+        this.setDate(TasksPluginReminderModel.symbolDoneDate, time);
     }
 
     private getDate(symbol: Symbol): DateTime | null {
@@ -52,7 +57,7 @@ export class TasksPluginReminderLine {
         if (dateText === null) {
             return null;
         }
-        const date = moment(dateText, TasksPluginReminderLine.dateFormat, true);
+        const date = moment(dateText, TasksPluginReminderModel.dateFormat, true);
         if (!date.isValid()) {
             return null;
         }
@@ -62,7 +67,7 @@ export class TasksPluginReminderLine {
     private setDate(symbol: Symbol, time: DateTime | string) {
         let timeStr: string;
         if (time instanceof DateTime) {
-            timeStr = time.format(TasksPluginReminderLine.dateFormat);
+            timeStr = time.format(TasksPluginReminderModel.dateFormat);
         } else {
             timeStr = time;
         }
@@ -91,51 +96,24 @@ export class TasksPluginReminderLine {
             return true;
         }
     }
-
-    public toLine(): string {
-        return this.tokens.join();
-    }
 }
 
-export class TasksPluginFormat implements ReminderFormat {
+export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginReminderModel> {
 
     public static readonly instance = new TasksPluginFormat();
 
-    private constructor() { };
-
-    parse(file: string, lineIndex: number, line: string): Reminder | null {
-        const parsed = TasksPluginReminderLine.parse(line);
-        if (parsed === null) {
-            return null;
-        }
-        const dueDate = parsed.getDueDate();
-        if (dueDate === null) {
-            return null;
-        }
-        const description = parsed.getDescription();
-        if (description === null) {
-            return null;
-        }
-
-        return new Reminder(file, description, dueDate, lineIndex);
+    parseReminder(todo: Todo): TasksPluginReminderModel {
+        return TasksPluginReminderModel.parse(todo.body);
     }
 
-    modify(line: string, edit: ReminderEdit): string | null {
-        const parsed = TasksPluginReminderLine.parse(line);
-        if (parsed === null) {
-            return null;
+    modifyReminder(todo: Todo, parsed: TasksPluginReminderModel, edit: ReminderEdit): boolean {
+        if (!super.modifyReminder(todo, parsed, edit)) {
+            return false;
         }
-        if(parsed.getDueDate() === null){
-            return null;
+        if (edit.checked !== undefined && edit.checked) {
+            parsed.setDoneDate(DateTime.now());
         }
-
-        if (edit.rawTime !== undefined) {
-            parsed.setDueDate(edit.rawTime);
-        } else if (edit.time !== undefined) {
-            parsed.setDueDate(edit.time)
-            parsed.setDoneDate(DateTime.now())
-        }
-        return parsed.toLine();
+        return true;
     }
 
 }

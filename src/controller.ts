@@ -77,7 +77,7 @@ export class RemindersController {
     for (const file of this.vault.getMarkdownFiles()) {
       const content = new Content(file.path, await this.vault.read(file));
       let updatedInFile = 0;
-      content.modifyReminderLines(reminder => {
+      await content.modifyReminderLines(reminder => {
         let converted: string;
         if (reminder.time.hasTimePart) {
           converted = reminder.time.format(dateTimeFormat);
@@ -122,7 +122,7 @@ export class RemindersController {
       return;
     }
     const content = new Content(file.path, await this.vault.read(file));
-    content.updateReminder(reminder, {
+    await content.updateReminder(reminder, {
       checked,
       time: reminder.time
     });
