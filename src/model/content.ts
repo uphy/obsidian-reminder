@@ -15,7 +15,7 @@ export class Content {
   public getReminders(): Array<Reminder> {
     const reminders: Array<Reminder> = [];
     this.doc.getTodos().forEach(todo => {
-      if (todo.checked) {
+      if (todo.isChecked()) {
         return;
       }
       const parsed = parseReminder(this.doc.file, todo.lineIndex, todo.body);
@@ -52,10 +52,18 @@ export class Content {
     if (newBody === null) {
       throw `not a reminder line: ${todo.toMarkdown()}`;
     }
-    this.doc.modifyTodo(lineNumber, {
-      checked: edit.checked,
-      body: newBody
-    });
+    if (edit.checked !== undefined) {
+      todo.setChecked(edit.checked);
+    }
+
+    console.info(
+      "Modify reminder: file=%s, index=%d, oldBody=%s, newBody=%s",
+      this.doc.file,
+      lineNumber,
+      todo.body,
+      newBody
+    );
+    todo.body = newBody;
   }
 
   public getContent(): string {
