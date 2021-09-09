@@ -1,8 +1,10 @@
 import { DateTime } from "model/time";
 import { splitBySymbol, Symbol, Tokens } from "./splitter";
 import { ReminderModel, TodoBasedReminderFormat, ReminderEdit } from "./reminder-base";
+import { MarkdownDocument } from "./markdown";
 import moment from "moment";
 import { Todo } from "./markdown";
+import { RRule } from "rrule";
 
 export class TasksPluginReminderModel implements ReminderModel {
 
@@ -50,6 +52,14 @@ export class TasksPluginReminderModel implements ReminderModel {
 
     setDoneDate(time: DateTime | string) {
         this.setDate(TasksPluginReminderModel.symbolDoneDate, time);
+    }
+
+    getRecurrence() {
+        return this.tokens.getTokenText(TasksPluginReminderModel.symbolRecurrence, true);
+    }
+
+    clone(): TasksPluginReminderModel {
+        return TasksPluginReminderModel.parse(this.toMarkdown());
     }
 
     private getDate(symbol: Symbol): DateTime | null {
@@ -106,11 +116,26 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
         return TasksPluginReminderModel.parse(todo.body);
     }
 
-    modifyReminder(todo: Todo, parsed: TasksPluginReminderModel, edit: ReminderEdit): boolean {
-        if (!super.modifyReminder(todo, parsed, edit)) {
+    modifyReminder(doc: MarkdownDocument, todo: Todo, parsed: TasksPluginReminderModel, edit: ReminderEdit): boolean {
+        if (!super.modifyReminder(doc, todo, parsed, edit)) {
             return false;
         }
         if (edit.checked !== undefined && edit.checked) {
+            const r = parsed.getRecurrence();
+            if (r !== null) {
+                const rrule = RRule.fromText(r);
+                const dtStart = parsed.getTime().moment();
+                const today = window.moment().endOf('day').utc(true);
+                const after = today.isAfter(dtStart) ? today : dtStart;
+                const next: Date = rrule.after(after.toDate(), false);
+
+                const nextReminderTodo = todo.clone();
+                const nextReminder = parsed.clone();
+                nextReminder.setTime(new DateTime(moment(next), false));
+                nextReminderTodo.body = nextReminder.toMarkdown();
+                nextReminderTodo.setChecked(false);
+                doc.insertTodo(todo.lineIndex, nextReminderTodo);
+            }
             parsed.setDoneDate(DateTime.now());
         }
         return true;

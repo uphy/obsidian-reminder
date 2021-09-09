@@ -61,7 +61,7 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
             return false;
         }
 
-        if (!this.modifyReminder(todo, parsed, edit)) {
+        if (!this.modifyReminder(doc, todo, parsed, edit)) {
             return false;
         }
         todo.body = parsed.toMarkdown();
@@ -85,7 +85,7 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
 
     abstract parseReminder(todo: Todo): E;
 
-    modifyReminder(todo: Todo, parsed: E, edit: ReminderEdit): boolean {
+    modifyReminder(doc: MarkdownDocument, todo: Todo, parsed: E, edit: ReminderEdit): boolean {
         if (edit.rawTime !== undefined) {
             if (!parsed.setRawTime(edit.rawTime)) {
                 console.warn("The reminder doesn't support raw time: parsed=%o", parsed);

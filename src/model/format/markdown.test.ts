@@ -27,5 +27,16 @@ describe('MarkdownDocument', (): void => {
 - [ ] Task2
   - [x] Task2-1
   - [ ]   Task2-2`);
+
+        const todoToInsert = todos[1].clone();
+        todoToInsert.body = 'Inserted Task';
+        doc.insertTodo(2, todoToInsert);
+        expect(doc.toMarkdown()).toEqual(`# TODO
+        
+- [ ] Inserted Task
+- [x] New Task1 
+- [ ] Task2
+  - [x] Task2-1
+  - [ ]   Task2-2`);
     });
 })

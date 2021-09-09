@@ -62,6 +62,10 @@ export class DateTime {
     return this._hasTimePart;
   }
 
+  public moment() {
+    return this.time;
+  }
+
   public toString(): string {
     if (this._hasTimePart) {
       return this.format("YYYY-MM-DD HH:mm");
