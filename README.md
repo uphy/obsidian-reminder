@@ -17,6 +17,8 @@ You can set reminders for TODO list items with the following format.
 If you input `(@` (start of the reminder date time), calendar popup to set the reminder date time will show.
 <img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/input-reminder-time.gif" width="600" />
 
+Note: This popup trigger can be changed by setting.
+
 #### List Reminders
 
 You can view the list of reminders contained in all files.
@@ -63,19 +65,9 @@ In addition to original format `@YYYY-MM-DD`, this plugin also supports followin
 They can be enabled by `Reminder Format` section in setting.
 
 For [nldates-obsidian](https://github.com/argenos/nldates-obsidian) users, the autocompletion(`@`) conflicts with this plugin.
-I'm planning to provide a setting to change completion trigger.
-If you have any opinion, please post it in [#4](https://github.com/uphy/obsidian-reminder/issues/4)
+You can change the popup trigger string to another by setting.
 
 ### FAQ
 
 - Notification in mobile (Android/iOS)
   - System notification in mobile device is not available because Obsidian doesn't provide the feature.
-
-### TODO
-
-- [ ] Reminder input support (develop a CodeMirror plugin)
-- [ ] More settings
-  - [x] Date time format
-  - [x] Use system notification
-  - [ ] Change popup triggers
-- [ ] Interoperability between reminder plugin and [tasks plugin](https://github.com/schemar/obsidian-tasks)

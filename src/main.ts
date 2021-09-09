@@ -16,6 +16,7 @@ import { ReminderSettingTab, SETTINGS } from "settings";
 import { DateTimeChooserView } from "ui/datetime-chooser";
 import { ReminderModal } from "ui/reminder";
 import { ReminderListItemViewProxy } from "ui/reminder-list";
+import { AutoComplete } from "ui/autocomplete";
 
 export default class ReminderPlugin extends Plugin {
   pluginDataIO: PluginDataIO;
@@ -24,6 +25,7 @@ export default class ReminderPlugin extends Plugin {
   private remindersController: RemindersController;
   private editDetector = new EditDetector();
   private reminderModal: ReminderModal;
+  private autoComplete: AutoComplete;
 
   constructor(app: App, manifest: PluginManifest) {
     super(app, manifest);
@@ -49,6 +51,7 @@ export default class ReminderPlugin extends Plugin {
       this.reminders
     );
     this.reminderModal = new ReminderModal(this.app, SETTINGS.useSystemNotification, SETTINGS.laters);
+    this.autoComplete = new AutoComplete(SETTINGS.autoCompleteTrigger);
   }
 
   async onload() {
@@ -76,11 +79,11 @@ export default class ReminderPlugin extends Plugin {
       cm.on(
         "change",
         (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
-          if (!this.isDateTimeChooserTrigger(cmEditor, changeObj)) {
+          if (!this.autoComplete.isTrigger(cmEditor, changeObj)) {
             dateTimeChooser.cancel();
             return;
           }
-          this.showDateTimeChooser(cmEditor, dateTimeChooser);
+          this.autoComplete.show(cmEditor, dateTimeChooser);
           return false;
         }
       );
@@ -150,7 +153,7 @@ export default class ReminderPlugin extends Plugin {
         if (!checking) {
           const cm: CodeMirror.Editor = (view.editor as any).cm;
           const v = new DateTimeChooserView(cm, this.reminders);
-          this.showDateTimeChooser(cm, v);
+          this.autoComplete.show(cm, v);
         }
         return true;
       },
@@ -250,30 +253,6 @@ export default class ReminderPlugin extends Plugin {
     });
   }
 
-  private isDateTimeChooserTrigger(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange): boolean {
-    if (changeObj.text.contains("@")) {
-      const prev = cmEditor.getRange({
-        ch: changeObj.from.ch - 1,
-        line: changeObj.from.line
-      }, changeObj.from);
-      if (prev === "(") {
-        const line = cmEditor.getLine(changeObj.from.line);
-        if (line.match(/^\s*\- \[.\]\s.*/)) {
-          // is a TODO line
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  private showDateTimeChooser(cmEditor: CodeMirror.Editor, dateTimeChooserView: DateTimeChooserView): void {
-    dateTimeChooserView.show()
-      .then(value => {
-        cmEditor.replaceRange(DATE_TIME_FORMATTER.toString(value), cmEditor.getCursor());
-      })
-      .catch(() => { /* do nothing on cancel */ });
-  }
 }
 
 class EditDetector {

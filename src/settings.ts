@@ -18,6 +18,7 @@ class Settings {
   laters: SettingModel<string, Array<Later>>;
   dateFormat: SettingModel<string, string>;
   dateTimeFormat: SettingModel<string, string>;
+  autoCompleteTrigger: SettingModel<string, string>;
 
   constructor() {
     this.reminderTime = this.builder()
@@ -62,6 +63,14 @@ class Settings {
       .placeHolder("YYYY-MM-DD HH:mm")
       .build(new RawSerde());
 
+    this.autoCompleteTrigger = this.builder()
+      .key("autoCompleteTrigger")
+      .name("Calendar popup trigger")
+      .desc("Trigger text to show calendar popup")
+      .text("(@")
+      .placeHolder("(@")
+      .build(new RawSerde());
+
     const settingKeyToFormatName = new Map<string, ReminderFormatType>();
     const reminderFormatSettings = ReminderFormatTypes.map(format => {
       const key = `enable${format.name}`;
@@ -95,6 +104,9 @@ class Settings {
     ]));
     this.groups.push(new SettingGroup("Notification Settings", [
       this.useSystemNotification
+    ]));
+    this.groups.push(new SettingGroup("Editor", [
+      this.autoCompleteTrigger
     ]));
   }
 
