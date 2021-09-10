@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Plugin_2 } from "obsidian";
-import { SettingModel, SettingModelBuilder, TimeSerde, RawSerde, LatersSerde } from "model/settings";
+import { SettingModel, SettingModelBuilder, TimeSerde, RawSerde, LatersSerde, ReminderFormatTypeSerde } from "model/settings";
 import { Time, Later } from "model/time";
 import { changeReminderFormat, ReminderFormatType, ReminderFormatTypes } from "model/format";
 
@@ -19,6 +19,7 @@ class Settings {
   dateFormat: SettingModel<string, string>;
   dateTimeFormat: SettingModel<string, string>;
   autoCompleteTrigger: SettingModel<string, string>;
+  primaryFormat: SettingModel<string, ReminderFormatType>;
 
   constructor() {
     this.reminderTime = this.builder()
@@ -71,6 +72,14 @@ class Settings {
       .placeHolder("(@")
       .build(new RawSerde());
 
+    const primaryFormatBuilder = this.builder()
+      .key("primaryReminderFormat")
+      .name("Primary reminder format")
+      .desc("Reminder format for generated reminder by calendar popup")
+      .dropdown(ReminderFormatTypes[0].name);
+    ReminderFormatTypes.forEach(f => primaryFormatBuilder.addOption(`${f.description} - ${f.example}`, f.name));
+    this.primaryFormat = primaryFormatBuilder.build(new ReminderFormatTypeSerde());
+
     const settingKeyToFormatName = new Map<string, ReminderFormatType>();
     const reminderFormatSettings = ReminderFormatTypes.map(format => {
       const key = `enable${format.name}`;
@@ -100,6 +109,7 @@ class Settings {
       this.dateTimeFormat
     ]));
     this.groups.push(new SettingGroup("Reminder Format", [
+      this.primaryFormat,
       ...reminderFormatSettings
     ]));
     this.groups.push(new SettingGroup("Notification Settings", [

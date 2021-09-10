@@ -141,4 +141,11 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
         return true;
     }
 
+    newReminder(title: string, time: DateTime): TasksPluginReminderModel {
+        const parsed = TasksPluginReminderModel.parse(title);
+        parsed.setTime(time);
+        parsed.setTitle(title);
+        return parsed;
+    }
+
 }

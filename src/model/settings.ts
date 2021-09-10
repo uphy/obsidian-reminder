@@ -1,6 +1,7 @@
 import { ReadOnlyReference, Reference } from "model/ref";
 import { AbstractTextComponent, Setting } from "obsidian";
 import { Later, parseLaters, Time } from "model/time";
+import { ReminderFormatType, ReminderFormatTypes } from "./format";
 
 export class SettingModelBuilder {
     _key: string;
@@ -236,4 +237,20 @@ export class LatersSerde implements Serde<string, Array<Later>>{
     marshal(value: Later[]): string {
         return value.map(v => v.label).join("\n");
     }
+}
+
+export class ReminderFormatTypeSerde implements Serde<string, ReminderFormatType>{
+
+    unmarshal(rawValue: string): ReminderFormatType | null {
+        const format = ReminderFormatTypes.filter(format => format.name === rawValue);
+        if (format.length > 0) {
+            return format[0];
+        }
+        console.error("unexpected format: %s", rawValue);
+        return null;
+    }
+    marshal(value: ReminderFormatType): string {
+        return value.name;
+    }
+
 }

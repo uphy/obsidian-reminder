@@ -32,9 +32,18 @@ export interface ReminderFormat {
      * @returns true if modified
      */
     modify(doc: MarkdownDocument, reminder: Reminder, edit: ReminderEdit): Promise<boolean>;
+
+    /**
+     * Append a reminder information to the given line.
+     * 
+     * @param line line in editor
+     * @param time time to append
+     */
+    appendReminder(line: string, time: DateTime): string;
 }
 
 export abstract class TodoBasedReminderFormat<E extends ReminderModel> implements ReminderFormat {
+
     parse(doc: MarkdownDocument): Reminder[] {
         return doc.getTodos()
             .map(todo => {
@@ -83,8 +92,6 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
         return reminder.getTime() !== null;
     }
 
-    abstract parseReminder(todo: Todo): E;
-
     modifyReminder(doc: MarkdownDocument, todo: Todo, parsed: E, edit: ReminderEdit): boolean {
         if (edit.rawTime !== undefined) {
             if (!parsed.setRawTime(edit.rawTime)) {
@@ -99,6 +106,27 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
         }
         return true;
     }
+
+    appendReminder(line: string, time: DateTime): string {
+        const todo = Todo.parse(0, line);
+        if (todo === null) {
+            return null;
+        }
+        let parsed = this.parseReminder(todo);
+        if (parsed !== null) {
+            parsed.setTime(time);
+        } else {
+            parsed = this.newReminder(todo.body, time);
+            parsed.setTime(time);
+        }
+        todo.body = parsed.toMarkdown();
+        return todo.toMarkdown();
+    }
+
+    abstract parseReminder(todo: Todo): E;
+
+    abstract newReminder(title: string, time: DateTime): E;
+
 }
 
 export class CompositeReminderFormat implements ReminderFormat {
@@ -126,6 +154,10 @@ export class CompositeReminderFormat implements ReminderFormat {
 
     resetFormat(formats: Array<ReminderFormat>) {
         this.formats = formats;
+    }
+
+    appendReminder(line: string, time: DateTime): string {
+        return this.formats[0].appendReminder(line, time);
     }
 
 }

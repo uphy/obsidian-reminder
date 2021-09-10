@@ -49,5 +49,8 @@ export class DefaultReminderFormat extends TodoBasedReminderFormat<DefaultRemind
         return DefaultReminderModel.parse(todo.body);
     }
 
+    newReminder(title: string, time: DateTime): DefaultReminderModel {
+        return new DefaultReminderModel(title, time.toString(), "");
+    }
 }
 

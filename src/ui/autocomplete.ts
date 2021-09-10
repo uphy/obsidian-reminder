@@ -1,5 +1,6 @@
 import { ReadOnlyReference } from "model/ref";
 import { DATE_TIME_FORMATTER } from "model/time";
+import { SETTINGS } from "settings";
 import { DateTimeChooserView } from "./datetime-chooser";
 
 export class AutoComplete {
@@ -33,9 +34,20 @@ export class AutoComplete {
                     line: pos.line,
                     ch: line.length
                 };
-                // remove trigger
+
+                // remove trigger string
                 line = line.substring(0, pos.ch - 2);
-                cmEditor.replaceRange(`${line}(@${DATE_TIME_FORMATTER.toString(value)})`, { line: pos.line, ch: 0 }, endPos);
+                // append reminder to the line
+                const format = SETTINGS.primaryFormat.value.format;
+                console.log(format);
+                try{
+                line = format.appendReminder(line, value);
+                console.log(line);
+                
+                cmEditor.replaceRange(line, { line: pos.line, ch: 0 }, endPos);
+                }catch(ex){
+                    console.log(ex);
+                }
             })
             .catch(() => { /* do nothing on cancel */ });
     }

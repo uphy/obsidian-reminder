@@ -35,8 +35,8 @@ export function changeReminderFormat(formatTypes: Array<ReminderFormatType>) {
 }
 
 export const ReminderFormatTypes = [
-    new ReminderFormatType("ReminderPluginReminderFormat", "reminder plugin format", "(@2021-09-08)", DefaultReminderFormat.instance, true),
-    new ReminderFormatType("TasksPluginReminderFormat", "tasks plugin format", "📅2021-09-08", TasksPluginFormat.instance, false),
+    new ReminderFormatType("ReminderPluginReminderFormat", "Reminder plugin format", "(@2021-09-08)", DefaultReminderFormat.instance, true),
+    new ReminderFormatType("TasksPluginReminderFormat", "Tasks plugin format", "📅 2021-09-08", TasksPluginFormat.instance, false),
     new ReminderFormatType("KanbanPluginReminderFormat", "Kanban plugin format", "@{2021-09-08}", KanbanReminderFormat.instance, false),
 ];
 

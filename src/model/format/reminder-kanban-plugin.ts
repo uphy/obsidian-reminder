@@ -79,5 +79,10 @@ export class KanbanReminderFormat extends TodoBasedReminderFormat<KanbanReminder
         return KanbanReminderModel.parse(todo.body);
     }
 
+    newReminder(title: string, time: DateTime): KanbanReminderModel {
+        const parsed = new KanbanReminderModel(title, "", time.format("YYYY-MM-DD"))
+        parsed.setTime(time);
+        return parsed;
+    }
 }
 
