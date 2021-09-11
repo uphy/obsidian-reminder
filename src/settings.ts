@@ -1,18 +1,14 @@
 import { App, PluginSettingTab, Plugin_2 } from "obsidian";
-import { SettingModel, SettingModelBuilder, TimeSerde, RawSerde, LatersSerde, ReminderFormatTypeSerde } from "model/settings";
+import { SettingModel, TimeSerde, RawSerde, LatersSerde, ReminderFormatTypeSerde, SettingTabModel } from "model/settings";
 import { Time, Later } from "model/time";
 import { changeReminderFormat, ReminderFormatType, ReminderFormatTypes } from "model/format";
 
 export const TAG_RESCAN = "re-scan";
 
-class SettingGroup {
-  constructor(public name: string, public settings: Array<SettingModel<any, any>>) {
-  }
-}
-
 class Settings {
 
-  groups: Array<SettingGroup> = [];
+  settings: SettingTabModel = new SettingTabModel();
+
   reminderTime: SettingModel<string, Time>;
   useSystemNotification: SettingModel<boolean, boolean>;
   laters: SettingModel<string, Array<Later>>;
@@ -22,7 +18,7 @@ class Settings {
   primaryFormat: SettingModel<string, ReminderFormatType>;
 
   constructor() {
-    this.reminderTime = this.builder()
+    this.reminderTime = this.settings.newSettingBuilder()
       .key("reminderTime")
       .name("Reminder Time")
       .desc("Time when a reminder with no time part will show")
@@ -31,14 +27,14 @@ class Settings {
       .placeHolder("Time (hh:mm)")
       .build(new TimeSerde());
 
-    this.useSystemNotification = this.builder()
+    this.useSystemNotification = this.settings.newSettingBuilder()
       .key("useSystemNotification")
       .name("Use system notification")
       .desc("Use system notification for reminder notifications")
       .toggle(false)
       .build(new RawSerde());
 
-    this.laters = this.builder()
+    this.laters = this.settings.newSettingBuilder()
       .key("laters")
       .name("Remind me later")
       .desc("Line-separated list of remind me later items")
@@ -46,7 +42,7 @@ class Settings {
       .placeHolder("In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week")
       .build(new LatersSerde());
 
-    this.dateFormat = this.builder()
+    this.dateFormat = this.settings.newSettingBuilder()
       .key("dateFormat")
       .name("Date format")
       .desc("moment style date format: https://momentjs.com/docs/#/displaying/format/")
@@ -55,7 +51,7 @@ class Settings {
       .placeHolder("YYYY-MM-DD")
       .build(new RawSerde());
 
-    this.dateTimeFormat = this.builder()
+    this.dateTimeFormat = this.settings.newSettingBuilder()
       .key("dateTimeFormat")
       .name("Date and time format")
       .desc("moment() style date time format: https://momentjs.com/docs/#/displaying/format/")
@@ -64,7 +60,7 @@ class Settings {
       .placeHolder("YYYY-MM-DD HH:mm")
       .build(new RawSerde());
 
-    this.autoCompleteTrigger = this.builder()
+    this.autoCompleteTrigger = this.settings.newSettingBuilder()
       .key("autoCompleteTrigger")
       .name("Calendar popup trigger")
       .desc("Trigger text to show calendar popup")
@@ -72,7 +68,7 @@ class Settings {
       .placeHolder("(@")
       .build(new RawSerde());
 
-    const primaryFormatBuilder = this.builder()
+    const primaryFormatBuilder = this.settings.newSettingBuilder()
       .key("primaryReminderFormat")
       .name("Primary reminder format")
       .desc("Reminder format for generated reminder by calendar popup")
@@ -83,7 +79,7 @@ class Settings {
     const settingKeyToFormatName = new Map<string, ReminderFormatType>();
     const reminderFormatSettings = ReminderFormatTypes.map(format => {
       const key = `enable${format.name}`;
-      const setting = this.builder()
+      const setting = this.settings.newSettingBuilder()
         .key(key)
         .name(`Enable ${format.description}`)
         .desc(`Enable ${format.description} e.g. ${format.example}`)
@@ -102,35 +98,36 @@ class Settings {
       });
     });
 
-    this.groups.push(new SettingGroup("Reminder Settings", [
-      this.reminderTime,
-      this.laters,
-      this.dateFormat,
-      this.dateTimeFormat
-    ]));
-    this.groups.push(new SettingGroup("Reminder Format", [
-      this.primaryFormat,
-      ...reminderFormatSettings
-    ]));
-    this.groups.push(new SettingGroup("Notification Settings", [
-      this.useSystemNotification
-    ]));
-    this.groups.push(new SettingGroup("Editor", [
-      this.autoCompleteTrigger
-    ]));
+    this.settings
+      .newGroup("Reminder Settings")
+      .addSettings(
+        this.reminderTime,
+        this.laters,
+        this.dateFormat,
+        this.dateTimeFormat
+      );
+    this.settings
+      .newGroup("Reminder Format")
+      .addSettings(
+        this.primaryFormat,
+        ...reminderFormatSettings
+      );
+    this.settings
+      .newGroup("Notification Settings")
+      .addSettings(
+        this.useSystemNotification
+      );
+    this.settings
+      .newGroup("Editor")
+      .addSettings(
+        this.autoCompleteTrigger
+      );
   }
 
   public forEach(consumer: (setting: SettingModel<any, any>) => void) {
-    this.groups.forEach(group => {
-      group.settings.forEach(setting => {
-        consumer(setting);
-      })
-    })
+    this.settings.forEach(consumer);
   }
 
-  private builder(): SettingModelBuilder {
-    return new SettingModelBuilder();
-  }
 }
 
 export const SETTINGS = new Settings();
@@ -146,13 +143,6 @@ export class ReminderSettingTab extends PluginSettingTab {
   display(): void {
     let { containerEl } = this;
 
-    containerEl.empty();
-
-    SETTINGS.groups.forEach(group => {
-      containerEl.createEl('h3', { text: group.name });
-      group.settings.forEach(settings => {
-        settings.createSetting(containerEl);
-      });
-    })
+    SETTINGS.settings.displayOn(containerEl);
   }
 }
