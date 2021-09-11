@@ -77,7 +77,7 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
     }
 
     build<E>(serde: Serde<string, E>): SettingModel<string, E> {
-        return new SettingModelImpl(this.baseBuilder, serde, this.initValue, (setting, rawValue) => {
+        return new SettingModelImpl(this.baseBuilder, serde, this.initValue, ({ setting, rawValue, context }) => {
             const initText = (text: AbstractTextComponent<any>) => {
                 text
                     .setPlaceholder(this._placeHolder)
@@ -86,8 +86,9 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
                         try {
                             serde.unmarshal(value);
                             rawValue.value = value;
+                            context.setValidationError(null);
                         } catch (e) {
-                            console.log("invalid value: value=%s, exception=%s", value, e);
+                            context.setValidationError(e);
                         }
                     })
             }
@@ -107,7 +108,7 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
 class ToggleSettingModelBuilder extends AbstractSettingModelBuilder<boolean>{
 
     build<E>(serde: Serde<boolean, E>): SettingModel<boolean, E> {
-        return new SettingModelImpl(this.baseBuilder, serde, this.initValue, (setting, rawValue) => {
+        return new SettingModelImpl(this.baseBuilder, serde, this.initValue, ({ setting, rawValue }) => {
             setting.addToggle((toggle) =>
                 toggle
                     .setValue(rawValue.value)
@@ -134,7 +135,7 @@ class DropdownSettingModelBuilder<E> extends AbstractSettingModelBuilder<string>
     }
 
     build<E>(serde: Serde<string, E>): SettingModel<string, E> {
-        return new SettingModelImpl(this.baseBuilder, serde, this.initValue, (setting, rawValue) => {
+        return new SettingModelImpl(this.baseBuilder, serde, this.initValue, ({ setting, rawValue }) => {
             setting.addDropdown(d => {
                 this.options.forEach(option => {
                     d.addOption(option.value, option.label);
@@ -165,6 +166,24 @@ export interface SettingModel<R, E> extends ReadOnlyReference<E> {
 
 }
 
+class SettingContext {
+    constructor(private validationEl: HTMLElement) { }
+    setValidationError(error: string | null) {
+        if (!this.validationEl) {
+            console.error("validation span not created");
+            return;
+        }
+        if (error === null) {
+            this.validationEl.style.display = "none";
+        } else {
+            this.validationEl.style.display = "block";
+            this.validationEl.innerHTML = error;
+        }
+    }
+}
+
+type SettingInitilizer<R> = ({ setting, rawValue, context }: { setting: Setting, rawValue: Reference<R>, context: SettingContext }) => void;
+
 class SettingModelImpl<R, E> implements SettingModel<R, E>{
 
     rawValue: Reference<R>;
@@ -173,7 +192,7 @@ class SettingModelImpl<R, E> implements SettingModel<R, E>{
     private desc: string;
     private tags: Array<string>;
 
-    constructor(baseBuilder: SettingModelBuilder, private serde: Serde<R, E>, initRawValue: R, private settingInitializer: (setting: Setting, rawValue: Reference<R>) => void) {
+    constructor(baseBuilder: SettingModelBuilder, private serde: Serde<R, E>, initRawValue: R, private settingInitializer: SettingInitilizer<R>) {
         this.rawValue = new Reference(initRawValue);
         this.key = baseBuilder._key;
         this.name = baseBuilder._name;
@@ -185,7 +204,17 @@ class SettingModelImpl<R, E> implements SettingModel<R, E>{
         const setting = new Setting(containerEl)
             .setName(this.name)
             .setDesc(this.desc);
-        this.settingInitializer(setting, this.rawValue);
+        const validationEl = containerEl.createDiv("validation", el => {
+            el.style.color = 'var(--text-error)';
+            el.style.marginBottom = '1rem';
+            el.style.display = 'none';
+        });
+        const context = new SettingContext(validationEl);
+        this.settingInitializer({
+            setting,
+            rawValue: this.rawValue,
+            context
+        });
         return setting;
     }
 

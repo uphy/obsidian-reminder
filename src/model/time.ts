@@ -77,9 +77,12 @@ export class DateTime {
 
 export class Time {
   public static parse(text: string): Time {
+    if (!text.match(/^\d{1,2}:\d{1,2}$/)) {
+      throw `Unexpected format time(${text}). Time must be HH:mm.`;
+    }
     const s = text.split(":");
     if (s.length !== 2) {
-      throw `unexpected format time: ${text}`;
+      throw `Unexpected format time(${text}).  time must be HH:mm.`;
     }
     const hour = parseInt(s[0]);
     const minute = parseInt(s[1]);
