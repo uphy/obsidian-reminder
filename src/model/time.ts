@@ -66,6 +66,10 @@ export class DateTime {
     return this.time;
   }
 
+  public isValid() {
+    return this.time.isValid();
+  }
+
   public toString(): string {
     if (this._hasTimePart) {
       return this.format("YYYY-MM-DD HH:mm");

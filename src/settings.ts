@@ -1,7 +1,8 @@
 import { App, PluginSettingTab, Plugin_2 } from "obsidian";
 import { SettingModel, TimeSerde, RawSerde, LatersSerde, ReminderFormatTypeSerde, SettingTabModel } from "model/settings";
-import { Time, Later } from "model/time";
+import { Time, Later, DateTime } from "model/time";
 import { changeReminderFormat, ReminderFormatType, ReminderFormatTypes } from "model/format";
+import { findPlugin } from "obsidian-hack/plugin";
 
 export const TAG_RESCAN = "re-scan";
 
@@ -78,13 +79,17 @@ class Settings {
 
     const settingKeyToFormatName = new Map<string, ReminderFormatType>();
     const reminderFormatSettings = ReminderFormatTypes.map(format => {
+      console.log(format.format);
       const key = `enable${format.name}`;
       const setting = this.settings.newSettingBuilder()
         .key(key)
         .name(`Enable ${format.description}`)
-        .desc(`Enable ${format.description} e.g. ${format.example}`)
+        .desc(`Enable ${format.description}`)
         .tag(TAG_RESCAN)
         .toggle(format.defaultEnabled)
+        .onAnyValueChanged(context =>{
+          context.setInfo(`Example: ${format.format.appendReminder("- [ ] Task 1", DateTime.now())}`);
+        })
         .build(new RawSerde());
       settingKeyToFormatName.set(key, format);
       return setting;

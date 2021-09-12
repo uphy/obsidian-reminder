@@ -26,6 +26,7 @@ class SettingRegistry {
 class SettingContext {
 
     private validationEl: HTMLElement;
+    private infoEl: HTMLElement;
     private _setting: Setting;
     public key: string;
     public name: string;
@@ -36,22 +37,40 @@ class SettingContext {
 
     constructor(private _settingRegistry: SettingRegistry) { }
 
-    init(settingModel: SettingModel<any, any>, setting: Setting, validationEl: HTMLElement) {
+    init(settingModel: SettingModel<any, any>, setting: Setting, containerEl: HTMLElement) {
         this.settingModel = settingModel;
         this._setting = setting;
-        this.validationEl = validationEl;
+
+        this.validationEl = containerEl.createDiv("validation", el => {
+            el.style.color = 'var(--text-error)';
+            el.style.marginBottom = '1rem';
+            el.style.display = 'none';
+        });
+        this.infoEl = containerEl.createDiv("info", el => {
+            el.style.color = 'var(--text-accent)';
+            el.style.marginBottom = '1rem';
+            el.style.display = 'none';
+        });
     }
 
     setValidationError(error: string | null) {
-        if (!this.validationEl) {
-            console.error("validation span not created");
+        this.setText(this.validationEl, error);
+    }
+
+    setInfo(info: string | null) {
+        this.setText(this.infoEl, info);
+    }
+
+    private setText(el: HTMLElement, text: string | null) {
+        if (!el) {
+            console.error("element not created");
             return;
         }
-        if (error === null) {
-            this.validationEl.style.display = "none";
+        if (text === null) {
+            el.style.display = "none";
         } else {
-            this.validationEl.style.display = "block";
-            this.validationEl.innerHTML = error;
+            el.style.display = "block";
+            el.innerHTML = text;
         }
     }
 
@@ -292,12 +311,7 @@ class SettingModelImpl<R, E> implements SettingModel<R, E>{
         const setting = new Setting(containerEl)
             .setName(this.context.name)
             .setDesc(this.context.desc);
-        const validationEl = containerEl.createDiv("validation", el => {
-            el.style.color = 'var(--text-error)';
-            el.style.marginBottom = '1rem';
-            el.style.display = 'none';
-        });
-        this.context.init(this, setting, validationEl);
+        this.context.init(this, setting, containerEl);
         this.settingInitializer({
             setting,
             rawValue: this.rawValue,
