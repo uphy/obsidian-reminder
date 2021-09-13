@@ -1,9 +1,8 @@
-import { DateTime } from "model/time";
+import { DateTime, DATE_TIME_FORMATTER } from "model/time";
 import { splitBySymbol, Symbol, Tokens } from "./splitter";
-import { ReminderModel, TodoBasedReminderFormat, ReminderEdit } from "./reminder-base";
-import { MarkdownDocument } from "./markdown";
-import moment from "moment";
-import { Todo } from "./markdown";
+import { ReminderModel, TodoBasedReminderFormat, ReminderEdit, ReminderFormatParameterKey } from "./reminder-base";
+import { MarkdownDocument, Todo } from "model/format/markdown";
+import moment, { Moment } from "moment";
 import { RRule } from "rrule";
 
 export class TasksPluginReminderModel implements ReminderModel {
@@ -12,31 +11,49 @@ export class TasksPluginReminderModel implements ReminderModel {
     private static readonly symbolDueDate = Symbol.ofChars([..."📅📆🗓"]);
     private static readonly symbolDoneDate = Symbol.ofChar("✅");
     private static readonly symbolRecurrence = Symbol.ofChar("🔁");
+    private static readonly symbolReminder = Symbol.ofChar("⏰");
     private static readonly allSymbols = [
         TasksPluginReminderModel.symbolDueDate,
         TasksPluginReminderModel.symbolDoneDate,
-        TasksPluginReminderModel.symbolRecurrence
+        TasksPluginReminderModel.symbolRecurrence,
+        TasksPluginReminderModel.symbolReminder,
     ];
 
-    public static parse(line: string): TasksPluginReminderModel {
-        return new TasksPluginReminderModel(new Tokens(splitBySymbol(line, this.allSymbols)));
+    public static parse(line: string, useCustomEmoji?: boolean): TasksPluginReminderModel {
+        if (useCustomEmoji == null) {
+            useCustomEmoji = false;
+        }
+        return new TasksPluginReminderModel(useCustomEmoji, new Tokens(splitBySymbol(line, this.allSymbols)));
     }
 
-    private constructor(private tokens: Tokens) {
+    private constructor(private useCustomEmoji: boolean, private tokens: Tokens) {
     }
 
     getTitle(): string {
         return this.tokens.getTokenText("", true);
     }
     getTime(): DateTime {
-        return this.getDate(TasksPluginReminderModel.symbolDueDate);
+        return this.getDate(this.getReminderSymbol());
     }
     setTime(time: DateTime): void {
+        this.setDate(this.getReminderSymbol(), time);
+    }
+    getDueDate(): DateTime {
+        return this.getDate(TasksPluginReminderModel.symbolDueDate);
+    }
+    setDueDate(time: DateTime): void {
         this.setDate(TasksPluginReminderModel.symbolDueDate, time);
     }
     setRawTime(rawTime: string): boolean {
-        this.setDate(TasksPluginReminderModel.symbolDueDate, rawTime);
+        this.setDate(this.getReminderSymbol(), rawTime);
         return true;
+    }
+    private getReminderSymbol(): Symbol {
+        if (this.useCustomEmoji) {
+            return TasksPluginReminderModel.symbolReminder;
+        } else {
+            return TasksPluginReminderModel.symbolDueDate;
+        }
     }
     toMarkdown(): string {
         return this.tokens.join();
@@ -59,7 +76,7 @@ export class TasksPluginReminderModel implements ReminderModel {
     }
 
     clone(): TasksPluginReminderModel {
-        return TasksPluginReminderModel.parse(this.toMarkdown());
+        return TasksPluginReminderModel.parse(this.toMarkdown(), this.useCustomEmoji);
     }
 
     private getDate(symbol: Symbol): DateTime | null {
@@ -67,17 +84,25 @@ export class TasksPluginReminderModel implements ReminderModel {
         if (dateText === null) {
             return null;
         }
-        const date = moment(dateText, TasksPluginReminderModel.dateFormat, true);
-        if (!date.isValid()) {
-            return null;
+        if (symbol === TasksPluginReminderModel.symbolReminder) {
+            return DATE_TIME_FORMATTER.parse(dateText);
+        } else {
+            const date = moment(dateText, TasksPluginReminderModel.dateFormat, true);
+            if (!date.isValid()) {
+                return null;
+            }
+            return new DateTime(date, false);
         }
-        return new DateTime(date, false);
     }
 
     private setDate(symbol: Symbol, time: DateTime | string) {
         let timeStr: string;
         if (time instanceof DateTime) {
-            timeStr = time.format(TasksPluginReminderModel.dateFormat);
+            if (symbol === TasksPluginReminderModel.symbolReminder) {
+                timeStr = DATE_TIME_FORMATTER.toString(time);
+            } else {
+                timeStr = time.format(TasksPluginReminderModel.dateFormat);
+            }
         } else {
             timeStr = time;
         }
@@ -113,7 +138,11 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
     public static readonly instance = new TasksPluginFormat();
 
     parseReminder(todo: Todo): TasksPluginReminderModel {
-        return TasksPluginReminderModel.parse(todo.body);
+        return TasksPluginReminderModel.parse(todo.body, this.useCustomEmoji());
+    }
+
+    private useCustomEmoji() {
+        return this.config.getParameter(ReminderFormatParameterKey.useCustomEmojiForTasksPlugin);
     }
 
     modifyReminder(doc: MarkdownDocument, todo: Todo, parsed: TasksPluginReminderModel, edit: ReminderEdit): boolean {
@@ -121,28 +150,50 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
             return false;
         }
         if (edit.checked !== undefined && edit.checked) {
-            const r = parsed.getRecurrence();
-            if (r !== null) {
-                const rrule = RRule.fromText(r);
-                const dtStart = parsed.getTime().moment();
-                const today = window.moment().endOf('day').utc(true);
-                const after = today.isAfter(dtStart) ? today : dtStart;
-                const next: Date = rrule.after(after.toDate(), false);
+            const recurrence = parsed.getRecurrence();
+            if (recurrence !== null) {
 
                 const nextReminderTodo = todo.clone();
                 const nextReminder = parsed.clone();
-                nextReminder.setTime(new DateTime(moment(next), false));
+                if (this.useCustomEmoji()) {
+                    const nextTime: Date = this.nextDate(recurrence, parsed.getTime().moment());
+                    const nextDueDate: Date = this.nextDate(recurrence, parsed.getDueDate().moment());
+                    nextReminder.setTime(new DateTime(moment(nextTime), true));
+                    nextReminder.setDueDate(new DateTime(moment(nextDueDate), true));
+                } else {
+                    const next: Date = this.nextDate(recurrence, parsed.getDueDate().moment());
+                    const nextDueDate = new DateTime(moment(next), true);
+                    nextReminder.setTime(nextDueDate);
+                }
                 nextReminderTodo.body = nextReminder.toMarkdown();
                 nextReminderTodo.setChecked(false);
                 doc.insertTodo(todo.lineIndex, nextReminderTodo);
             }
-            parsed.setDoneDate(DateTime.now());
+            parsed.setDoneDate(this.config.getParameter(ReminderFormatParameterKey.now));
         }
         return true;
     }
 
+    private nextDate(recurrence: string, dtStart: Moment) {
+        const rruleOptions = RRule.parseText(recurrence);
+
+        const today = this.config.getParameter(ReminderFormatParameterKey.now).moment();
+        today.set("hour", dtStart.get("hour"));
+        today.set("minute", dtStart.get("minute"));
+        today.set("second", dtStart.get("second"));
+        today.set("millisecond", dtStart.get("millisecond"));
+        if(today.isAfter(dtStart)){
+            dtStart = today;
+        }
+
+        rruleOptions.dtstart = dtStart.toDate();
+        
+        const rrule = new RRule(rruleOptions);
+        return rrule.after(dtStart.toDate(), false);
+    }
+
     newReminder(title: string, time: DateTime): TasksPluginReminderModel {
-        const parsed = TasksPluginReminderModel.parse(title);
+        const parsed = TasksPluginReminderModel.parse(title, this.useCustomEmoji());
         parsed.setTime(time);
         parsed.setTitle(title);
         return parsed;

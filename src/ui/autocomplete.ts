@@ -39,14 +39,11 @@ export class AutoComplete {
                 line = line.substring(0, pos.ch - 2);
                 // append reminder to the line
                 const format = SETTINGS.primaryFormat.value.format;
-                console.log(format);
-                try{
-                line = format.appendReminder(line, value);
-                console.log(line);
-                
-                cmEditor.replaceRange(line, { line: pos.line, ch: 0 }, endPos);
-                }catch(ex){
-                    console.log(ex);
+                try {
+                    line = format.appendReminder(line, value);
+                    cmEditor.replaceRange(line, { line: pos.line, ch: 0 }, endPos);
+                } catch (ex) {
+                    console.error(ex);
                 }
             })
             .catch(() => { /* do nothing on cancel */ });

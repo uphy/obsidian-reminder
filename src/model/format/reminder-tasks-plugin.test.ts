@@ -1,6 +1,8 @@
-import { TasksPluginReminderModel } from "model/format/reminder-tasks-plugin";
+import { TasksPluginReminderModel, TasksPluginFormat } from "model/format/reminder-tasks-plugin";
 import { DateTime } from "model/time";
 import moment from "moment";
+import { MarkdownDocument } from "model/format/markdown";
+import { ReminderFormatConfig, ReminderFormatParameterKey } from "./reminder-base";
 
 describe('TasksPluginReminderLine', (): void => {
     test('parse()', (): void => {
@@ -45,4 +47,62 @@ describe('TasksPluginReminderLine', (): void => {
         expect(parsed.getTime().toString()).toBe("2021-09-08");
         expect(parsed.toMarkdown()).toBe("this is a title 📅 2021-09-08");
     });
+    test('modify() - default', async () => {
+        await testModify({
+            now: "2021-09-13",
+            customEmoji: false,
+            inputMarkdown: `- [ ] Task 🔁 every day 📅 2021-09-12`,
+            expectedMarkdown: `- [ ] Task 🔁 every day 📅 2021-09-14
+- [x] Task 🔁 every day 📅 2021-09-12 ✅ 2021-09-13`
+        });
+    });
+    test('modify() - custom emoji', async () => {
+        await testModify({
+            now: "2021-09-13 09:10",
+            customEmoji: true,
+            inputMarkdown: `- [ ] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12`,
+            expectedMarkdown: `- [ ] Task ⏰ 2021-09-14 09:00 🔁 every day 📅 2021-09-14
+- [x] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12 ✅ 2021-09-13`
+        });
+    });
+    test('modify() - custom emoji - reminder omission', async () => {
+        await testModify({
+            now: "2021-09-15 09:10",
+            customEmoji: true,
+            inputMarkdown: `- [ ] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12`,
+            expectedMarkdown: `- [ ] Task ⏰ 2021-09-16 09:00 🔁 every day 📅 2021-09-16
+- [x] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12 ✅ 2021-09-15`
+        });
+    });
+    test('modify() - custom emoji - reminder emoji only', async () => {
+        await testModify({
+            now: "2021-09-15 09:10",
+            customEmoji: true,
+            inputMarkdown: `- [ ] Task ⏰ 2021-09-13 09:00`,
+            expectedMarkdown: `- [x] Task ⏰ 2021-09-13 09:00 ✅ 2021-09-15`
+        });
+    });
 });
+
+async function testModify({
+    now,
+    customEmoji,
+    inputMarkdown,
+    expectedMarkdown
+}: {
+    now: string,
+    customEmoji: boolean,
+    inputMarkdown: string,
+    expectedMarkdown: string
+}) {
+    const doc = new MarkdownDocument("file", inputMarkdown);
+    const sut = new TasksPluginFormat();
+    const config = new ReminderFormatConfig();
+    config.setParameterValue(ReminderFormatParameterKey.now, new DateTime(moment(now), true));
+    config.setParameterValue(ReminderFormatParameterKey.useCustomEmojiForTasksPlugin, customEmoji);
+    sut.setConfig(config);
+
+    const reminders = sut.parse(doc);
+    await sut.modify(doc, reminders[0], { checked: true })
+    expect(doc.toMarkdown()).toBe(expectedMarkdown);
+}

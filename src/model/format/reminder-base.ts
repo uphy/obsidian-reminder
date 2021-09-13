@@ -2,6 +2,7 @@ import { Reminder } from "model/reminder"
 import { DateTime } from "model/time"
 import { MarkdownDocument } from "model/format/markdown";
 import { Todo } from "./markdown";
+import { ConstantReference, ReadOnlyReference } from "model/ref";
 
 export type ReminderEdit = {
     time?: DateTime,
@@ -18,7 +19,54 @@ export interface ReminderModel {
     toMarkdown(): string;
 }
 
+export class ReminderFormatParameterKey<T> {
+    static readonly now = new ReminderFormatParameterKey<DateTime>("now", DateTime.now());
+    static readonly useCustomEmojiForTasksPlugin = new ReminderFormatParameterKey<boolean>("useCustomEmojiForTasksPlugin", false);
+    constructor(public readonly key: string, public readonly defaultValue: T) {
+    }
+}
+
+type ReminderFormatParameterSource<T> = () => T;
+
+export class ReminderFormatConfig {
+    private parameters: Map<string, ReminderFormatParameterSource<any>> = new Map();
+    constructor() { }
+
+    /**
+     * Set parameter for this format.
+     * 
+     * @param key parameter key
+     */
+    setParameter<T>(key: ReminderFormatParameterKey<T>, value: ReadOnlyReference<T>): void {
+        this.parameters.set(key.key, () => value.value);
+    }
+
+    /**
+     * Set parameter for this format.
+     * 
+     * @param key parameter key
+     */
+    setParameterFunc<T>(key: ReminderFormatParameterKey<T>, f: ReminderFormatParameterSource<T>): void {
+        this.parameters.set(key.key, f);
+    }
+
+    setParameterValue<T>(key: ReminderFormatParameterKey<T>, value: T): void {
+        this.parameters.set(key.key, () => value);
+    }
+
+    getParameter<T>(key: ReminderFormatParameterKey<T>): T {
+        const value = this.parameters.get(key.key)
+        if (value == null) {
+            return key.defaultValue;
+        }
+        return value();
+    }
+
+}
+
 export interface ReminderFormat {
+
+    setConfig(config: ReminderFormatConfig): void;
     /**
      * Parse given line if possible.
      */
@@ -43,6 +91,12 @@ export interface ReminderFormat {
 }
 
 export abstract class TodoBasedReminderFormat<E extends ReminderModel> implements ReminderFormat {
+
+    protected config: ReminderFormatConfig = new ReminderFormatConfig();
+
+    setConfig(config: ReminderFormatConfig): void {
+        this.config = config;
+    }
 
     parse(doc: MarkdownDocument): Reminder[] {
         return doc.getTodos()
@@ -131,7 +185,13 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
 
 export class CompositeReminderFormat implements ReminderFormat {
 
+    private config: ReminderFormatConfig;
     private formats: Array<ReminderFormat> = [];
+
+    setConfig(config: ReminderFormatConfig): void {
+        this.config = config;
+        this.syncConfig();
+    }
 
     parse(doc: MarkdownDocument): Reminder[] {
         const reminders: Array<Reminder> = []
@@ -151,9 +211,13 @@ export class CompositeReminderFormat implements ReminderFormat {
         return false;
     }
 
-
     resetFormat(formats: Array<ReminderFormat>) {
         this.formats = formats;
+        this.syncConfig();
+    }
+
+    private syncConfig() {
+        this.formats.forEach(f => f.setConfig(this.config));
     }
 
     appendReminder(line: string, time: DateTime): string {

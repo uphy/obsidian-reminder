@@ -44,11 +44,13 @@ class SettingContext {
         this.validationEl = containerEl.createDiv("validation", el => {
             el.style.color = 'var(--text-error)';
             el.style.marginBottom = '1rem';
+            el.style.fontSize = '14px';
             el.style.display = 'none';
         });
         this.infoEl = containerEl.createDiv("info", el => {
-            el.style.color = 'var(--text-accent)';
+            el.style.color = 'var(--text-faint)';
             el.style.marginBottom = '1rem';
+            el.style.fontSize = '14px';
             el.style.display = 'none';
         });
     }

@@ -46,7 +46,6 @@ const kanbanSetting = new (class KanbanSetting {
             return defaultValue;
         }
         const plugin = plugins["obsidian-kanban"];
-        console.log(plugin);
         if (!plugin) {
             return defaultValue;
         }

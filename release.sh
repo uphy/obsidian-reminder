@@ -39,4 +39,4 @@ git tag $VERSION
 git push
 git push --tags
 
-gh release create "$VERSION" --notes "$VERSION" main.js styles.css manifest.json
+gh release create "$VERSION" --notes-file release-note.md main.js styles.css manifest.json

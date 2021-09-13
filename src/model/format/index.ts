@@ -1,6 +1,6 @@
 import { Reminder } from "model/reminder";
 import { MarkdownDocument } from "./markdown";
-import type { ReminderEdit, ReminderFormat } from "./reminder-base";
+import type { ReminderEdit, ReminderFormat, ReminderFormatConfig } from "./reminder-base";
 import { CompositeReminderFormat } from "./reminder-base";
 import { DefaultReminderFormat } from "./reminder-default";
 import { KanbanReminderFormat } from "./reminder-kanban-plugin";
@@ -34,10 +34,18 @@ export function changeReminderFormat(formatTypes: Array<ReminderFormatType>) {
     }
 }
 
+export function setReminderFormatConfig(config: ReminderFormatConfig) {
+    REMINDER_FORMAT.setConfig(config);
+}
+
+export const reminderPluginReminderFormat = new ReminderFormatType("ReminderPluginReminderFormat", "Reminder plugin format", "(@2021-09-08)", DefaultReminderFormat.instance, true);
+export const tasksPluginReminderFormat = new ReminderFormatType("TasksPluginReminderFormat", "Tasks plugin format", "📅 2021-09-08", TasksPluginFormat.instance, false);
+export const kanbanPluginReminderFormat = new ReminderFormatType("KanbanPluginReminderFormat", "Kanban plugin format", "@{2021-09-08}", KanbanReminderFormat.instance, false);
+
 export const ReminderFormatTypes = [
-    new ReminderFormatType("ReminderPluginReminderFormat", "Reminder plugin format", "(@2021-09-08)", DefaultReminderFormat.instance, true),
-    new ReminderFormatType("TasksPluginReminderFormat", "Tasks plugin format", "📅 2021-09-08", TasksPluginFormat.instance, false),
-    new ReminderFormatType("KanbanPluginReminderFormat", "Kanban plugin format", "@{2021-09-08}", KanbanReminderFormat.instance, false),
+    reminderPluginReminderFormat,
+    tasksPluginReminderFormat,
+    kanbanPluginReminderFormat
 ];
 
 export {
