@@ -165,6 +165,22 @@ export default class ReminderPlugin extends Plugin {
         this.autoComplete.show(cm, v, true);
       },
     });
+    this.addCommand({
+      id: "toggle-checklist-status",
+      name: "Toggle checklist status",
+      hotkeys: [
+        {
+          modifiers: ["Meta", "Shift"],
+          key: "Enter"
+        }
+      ],
+      editorCheckCallback: (checking, editor, view): boolean | void => {
+        if (checking) {
+          return true;
+        }
+        this.remindersController.toggleCheck(view.file, editor.getCursor().line);
+      },
+    });
   }
 
   private watchVault() {

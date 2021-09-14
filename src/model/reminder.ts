@@ -10,7 +10,8 @@ export class Reminder {
     public file: string,
     public title: string,
     public time: DateTime,
-    public rowNumber: number
+    public rowNumber: number,
+    public done: boolean
   ) { }
 
   key() {

@@ -2,6 +2,8 @@
 
 - Introduce custom emoji(⏰) to Tasks Plugin format
 - Add feature to link dates to daily notes #22
+- Meta(Command or Control) + Shift + Enter to toggle TODO items.
+    - In case of Tasks Plugin format, done date is updated.  Also recurring date is processed.
 
 ## 👍 Improvements
 
@@ -13,5 +15,5 @@
 
 ## ✅ TODO
 
-- [ ] Command + Space override
+- [ ] Document for remind me later spec
 - [ ] overdue reminders view

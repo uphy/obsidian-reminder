@@ -129,6 +129,29 @@ export class RemindersController {
     await this.vault.modify(file, content.getContent());
   }
 
+  async toggleCheck(file: TFile, lineNumber: number) {
+    if (!this.isMarkdownFile(file)) {
+      return;
+    }
+    const content = new Content(file.path, await this.vault.read(file));
+
+    const reminder = content.getReminders(false).find(r => r.rowNumber === lineNumber);
+    console.log(reminder);
+    if (reminder) {
+      await content.updateReminder(reminder, {
+        checked: !reminder.done
+      });
+    } else {
+      const todo = content.getTodos().find(t => t.lineIndex === lineNumber);
+      console.log(todo);
+      if (!todo) {
+        return;
+      }
+      todo.setChecked(!todo.isChecked());
+    }
+    await this.vault.modify(file, content.getContent());
+  }
+
   private reloadUI() {
     console.debug("Reload reminder list view");
     if (this.viewProxy === null) {

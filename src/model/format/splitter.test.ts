@@ -87,6 +87,15 @@ describe('Tokens', (): void => {
         tokens.setTokenText("B", "text2", true, true);
         expect(tokens.join()).toBe("Atext1 Btext2");
     });
+    test('remove()', (): void => {
+        const tokens = new Tokens([
+            { symbol: "A", text: "text1" },
+            { symbol: "B", text: "text2" },
+            { symbol: "C", text: "text3" }
+        ]);
+        tokens.removeToken(Symbol.ofChar("B"));
+        expect(tokens.join()).toBe("Atext1Ctext3");
+    });
     test('join', (): void => {
         expect(new Tokens([
             { symbol: "A", text: "text1" },

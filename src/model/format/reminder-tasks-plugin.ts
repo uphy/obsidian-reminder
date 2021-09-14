@@ -67,7 +67,7 @@ export class TasksPluginReminderModel implements ReminderModel {
         return this.getDate(TasksPluginReminderModel.symbolDoneDate);
     }
 
-    setDoneDate(time: DateTime | string) {
+    setDoneDate(time: DateTime | string | undefined) {
         this.setDate(TasksPluginReminderModel.symbolDoneDate, time);
     }
 
@@ -95,7 +95,11 @@ export class TasksPluginReminderModel implements ReminderModel {
         }
     }
 
-    private setDate(symbol: Symbol, time: DateTime | string) {
+    private setDate(symbol: Symbol, time: DateTime | string | undefined) {
+        if (time == null) {
+            this.tokens.removeToken(symbol);
+            return;
+        }
         let timeStr: string;
         if (time instanceof DateTime) {
             if (symbol === TasksPluginReminderModel.symbolReminder) {
@@ -149,27 +153,31 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
         if (!super.modifyReminder(doc, todo, parsed, edit)) {
             return false;
         }
-        if (edit.checked !== undefined && edit.checked) {
-            const recurrence = parsed.getRecurrence();
-            if (recurrence !== null) {
+        if (edit.checked !== undefined) {
+            if (edit.checked) {
+                const recurrence = parsed.getRecurrence();
+                if (recurrence !== null) {
 
-                const nextReminderTodo = todo.clone();
-                const nextReminder = parsed.clone();
-                if (this.useCustomEmoji()) {
-                    const nextTime: Date = this.nextDate(recurrence, parsed.getTime().moment());
-                    const nextDueDate: Date = this.nextDate(recurrence, parsed.getDueDate().moment());
-                    nextReminder.setTime(new DateTime(moment(nextTime), true));
-                    nextReminder.setDueDate(new DateTime(moment(nextDueDate), true));
-                } else {
-                    const next: Date = this.nextDate(recurrence, parsed.getDueDate().moment());
-                    const nextDueDate = new DateTime(moment(next), true);
-                    nextReminder.setTime(nextDueDate);
+                    const nextReminderTodo = todo.clone();
+                    const nextReminder = parsed.clone();
+                    if (this.useCustomEmoji()) {
+                        const nextTime: Date = this.nextDate(recurrence, parsed.getTime().moment());
+                        const nextDueDate: Date = this.nextDate(recurrence, parsed.getDueDate().moment());
+                        nextReminder.setTime(new DateTime(moment(nextTime), true));
+                        nextReminder.setDueDate(new DateTime(moment(nextDueDate), true));
+                    } else {
+                        const next: Date = this.nextDate(recurrence, parsed.getDueDate().moment());
+                        const nextDueDate = new DateTime(moment(next), true);
+                        nextReminder.setTime(nextDueDate);
+                    }
+                    nextReminderTodo.body = nextReminder.toMarkdown();
+                    nextReminderTodo.setChecked(false);
+                    doc.insertTodo(todo.lineIndex, nextReminderTodo);
                 }
-                nextReminderTodo.body = nextReminder.toMarkdown();
-                nextReminderTodo.setChecked(false);
-                doc.insertTodo(todo.lineIndex, nextReminderTodo);
+                parsed.setDoneDate(this.config.getParameter(ReminderFormatParameterKey.now));
+            } else {
+                parsed.setDoneDate(undefined);
             }
-            parsed.setDoneDate(this.config.getParameter(ReminderFormatParameterKey.now));
         }
         return true;
     }
@@ -182,12 +190,12 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
         today.set("minute", dtStart.get("minute"));
         today.set("second", dtStart.get("second"));
         today.set("millisecond", dtStart.get("millisecond"));
-        if(today.isAfter(dtStart)){
+        if (today.isAfter(dtStart)) {
             dtStart = today;
         }
 
         rruleOptions.dtstart = dtStart.toDate();
-        
+
         const rrule = new RRule(rruleOptions);
         return rrule.after(dtStart.toDate(), false);
     }

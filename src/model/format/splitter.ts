@@ -112,6 +112,10 @@ export class Tokens {
         return token.text.replace(/^\s*(.*?)\s*$/, `$1`);
     }
 
+    public removeToken(symbol: Symbol) {
+        this.tokens = this.tokens.filter(token => !symbol.isSymbol(token.symbol));
+    }
+
     forEachTokens(consumer: (token: Token) => void) {
         this.tokens.forEach(consumer);
     }

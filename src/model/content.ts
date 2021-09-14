@@ -1,5 +1,6 @@
 import { ReminderEdit, MarkdownDocument, modifyReminder, parseReminder } from "model/format";
 import { Reminder } from "model/reminder";
+import { Todo } from "./format/markdown";
 
 export type ReminderTodoEdit = ReminderEdit & {
   checked?: boolean
@@ -12,12 +13,20 @@ export class Content {
     this.doc = new MarkdownDocument(file, content);
   }
 
-  public getReminders(): Array<Reminder> {
-    return parseReminder(this.doc);
+  public getReminders(doneOnly: boolean = true): Array<Reminder> {
+    const reminders = parseReminder(this.doc);
+    if (!doneOnly) {
+      return reminders;
+    }
+    return reminders.filter(reminder => !reminder.done);
+  }
+
+  public getTodos(): Array<Todo> {
+    return this.doc.getTodos();
   }
 
   public async modifyReminderLines(modifyFunc: (reminder: Reminder) => ReminderTodoEdit | null) {
-    for (const reminder of this.getReminders()) {
+    for (const reminder of this.getReminders(false)) {
       const edit = modifyFunc(reminder);
       if (edit === null) {
         return;

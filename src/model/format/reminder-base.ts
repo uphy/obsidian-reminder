@@ -102,14 +102,11 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
     parse(doc: MarkdownDocument): Reminder[] {
         return doc.getTodos()
             .map(todo => {
-                if (todo.isChecked()) {
-                    return null;
-                }
                 const parsed = this.parseValidReminder(todo);
                 if (parsed === null) {
                     return null;
                 }
-                return new Reminder(doc.file, parsed.getTitle(), parsed.getTime(), todo.lineIndex);
+                return new Reminder(doc.file, parsed.getTitle(), parsed.getTime(), todo.lineIndex, todo.isChecked());
             })
             .filter(reminder => reminder !== null);
     }

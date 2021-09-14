@@ -54,7 +54,8 @@ export class PluginDataIO {
                 filePath,
                 d.title,
                 DateTime.parse(d.time),
-                d.rowNumber
+                d.rowNumber,
+                false
               )
           )
         );
