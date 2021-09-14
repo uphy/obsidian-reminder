@@ -15,5 +15,4 @@
 
 ## ✅ TODO
 
-- [ ] Document for remind me later spec
 - [ ] overdue reminders view

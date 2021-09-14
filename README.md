@@ -55,6 +55,16 @@ Please execute carefully.
 
 More formats can be set via setting page.
 
+#### Remind me later choices
+
+You can change remind me later options in setting screen.
+Following formats are supported:
+
+- In N minutes
+- In N hours
+- Next Sunday/Monday/Tuesday/Wednesday/Thursday/Friday/Saturday/day/week/month/year
+- Tomorrow
+
 #### Interoperability with other plugins
 
 In addition to original format `@YYYY-MM-DD`, this plugin also supports following plugin formats.
