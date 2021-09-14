@@ -1,7 +1,6 @@
 import { DATE_TIME_FORMATTER } from "model/time";
 import {
   App,
-  MarkdownView,
   Plugin,
   PluginManifest,
   WorkspaceLeaf,
@@ -11,7 +10,7 @@ import { OkCancel, showOkCancelDialog } from "ui/util";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { RemindersController } from "controller";
 import { PluginDataIO } from "data";
-import { Reminders } from "model/reminder";
+import { Reminder, Reminders } from "model/reminder";
 import { ReminderSettingTab, SETTINGS } from "settings";
 import { DateTimeChooserView } from "ui/datetime-chooser";
 import { ReminderModal } from "ui/reminder";
@@ -42,8 +41,11 @@ export default class ReminderPlugin extends Plugin {
     this.viewProxy = new ReminderListItemViewProxy(app.workspace, this.reminders, SETTINGS.reminderTime,
       // On select a reminder in the list
       (reminder) => {
-        const leaf = this.app.workspace.getUnpinnedLeaf();
-        this.remindersController.openReminder(reminder, leaf);
+        if (reminder.muteNotification) {
+          this.showReminder(reminder);
+          return;
+        }
+        this.openReminderFile(reminder);
       });
     this.remindersController = new RemindersController(
       app.vault,
@@ -237,28 +239,46 @@ export default class ReminderPlugin extends Plugin {
       SETTINGS.reminderTime.value
     );
     expired.forEach((reminder) => {
-      if (reminder.notificationVisible) {
+      if (reminder.muteNotification) {
         return;
       }
-      reminder.notificationVisible = true;
-      this.reminderModal.show(
-        reminder,
-        (time) => {
-          console.info("Remind me later: time=%o", time);
-          reminder.time = time;
-          reminder.notificationVisible = false;
-          this.remindersController.updateReminder(reminder, false);
-          this.pluginDataIO.save(true);
-        },
-        () => {
-          console.info("done");
-          reminder.notificationVisible = false;
-          this.remindersController.updateReminder(reminder, true);
-          this.reminders.removeReminder(reminder);
-          this.pluginDataIO.save(true);
-        },
-      );
+      this.showReminder(reminder);
     });
+  }
+
+  private showReminder(reminder: Reminder) {
+    reminder.muteNotification = true;
+    this.reminderModal.show(
+      reminder,
+      (time) => {
+        console.info("Remind me later: time=%o", time);
+        reminder.time = time;
+        reminder.muteNotification = false;
+        this.remindersController.updateReminder(reminder, false);
+        this.pluginDataIO.save(true);
+      },
+      () => {
+        console.info("done");
+        reminder.muteNotification = false;
+        this.remindersController.updateReminder(reminder, true);
+        this.reminders.removeReminder(reminder);
+        this.pluginDataIO.save(true);
+      },
+      () => {
+        console.info("Mute");
+        reminder.muteNotification = true;
+        this.viewProxy.reload(true);
+      },
+      () => {
+        console.info("Open");
+        this.openReminderFile(reminder);
+      }
+    );
+  }
+
+  private async openReminderFile(reminder: Reminder) {
+    const leaf = this.app.workspace.getUnpinnedLeaf();
+    await this.remindersController.openReminder(reminder, leaf);
   }
 
   onunload(): void {

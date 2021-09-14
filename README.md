@@ -38,6 +38,9 @@ Alternatively, you can postpone the reminder by selecting `Remind Me Later`.
 
 <img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/reminder-notification2.png" width="600" />
 
+When you type `Esc` key in the reminder modal or click the out of reminder modal, you can mute the reminder.  
+Muted reminders won't show again until you restart Obsidian.
+
 Also you can receive notification with System Notification.
 Check `Use system notification` setting.
 

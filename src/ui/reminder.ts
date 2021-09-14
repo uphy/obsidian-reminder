@@ -1,7 +1,7 @@
 import { App, Modal } from "obsidian";
 import type { Reminder } from "../model/reminder";
 import ReminderView from "./components/Reminder.svelte";
-import { inMinutes, Later } from "../model/time";
+import { Later } from "../model/time";
 import type { DateTime } from "model/time";
 import { ReadOnlyReference } from "model/ref";
 import { SETTINGS } from "settings";
@@ -15,13 +15,11 @@ export class ReminderModal {
     reminder: Reminder,
     onRemindMeLater: (time: DateTime) => void,
     onDone: () => void,
+    onMute: () => void,
+    onOpenFile: () => void
   ) {
-    const onCancel = () => {
-      onRemindMeLater(inMinutes(10)());
-    };
-
     if (!this.isSystemNotification()) {
-      this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onCancel);
+      this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onMute, onOpenFile);
     } else {
       // Show system notification
       const Notification = electron.remote.Notification;
@@ -31,10 +29,10 @@ export class ReminderModal {
       });
       n.on("click", () => {
         n.close();
-        this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onCancel);
+        this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onMute, onOpenFile);
       });
       n.on("close", () => {
-        onCancel();
+        onMute();
       });
       // Only for macOS
       {
@@ -62,9 +60,10 @@ export class ReminderModal {
     reminder: Reminder,
     onRemindMeLater: (time: DateTime) => void,
     onDone: () => void,
-    onCancel: () => void
+    onCancel: () => void,
+    onOpenFile: () => void
   ) {
-    new NotificationModal(this.app, this.laters.value, reminder, onRemindMeLater, onDone, onCancel).open();
+    new NotificationModal(this.app, this.laters.value, reminder, onRemindMeLater, onDone, onCancel, onOpenFile).open();
   }
 
   private isSystemNotification() {
@@ -92,6 +91,7 @@ class NotificationModal extends Modal {
     private onRemindMeLater: (time: DateTime) => void,
     private onDone: () => void,
     private onCancel: () => void,
+    private onOpenFile: () => void
   ) {
     super(app);
   }
@@ -111,6 +111,11 @@ class NotificationModal extends Modal {
         onDone: () => {
           this.canceled = false;
           this.onDone();
+          this.close();
+        },
+        onOpenFile: () => {
+          this.canceled = true;
+          this.onOpenFile();
           this.close();
         },
       },

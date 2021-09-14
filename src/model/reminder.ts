@@ -4,7 +4,7 @@ import { DateTime, Time } from "model/time";
 export class Reminder {
 
   // To avoid duplicate notification, set this flag true before notification and set false on notification done.
-  public notificationVisible: boolean = false;
+  public muteNotification: boolean = false;
 
   constructor(
     public file: string,
@@ -85,13 +85,13 @@ export class Reminders {
     if (oldReminders) {
       const reminderToNotificationVisible = new Map<string, boolean>();
       for (const reminder of oldReminders) {
-        reminderToNotificationVisible.set(reminder.key(), reminder.notificationVisible);
+        reminderToNotificationVisible.set(reminder.key(), reminder.muteNotification);
       }
       for (const reminder of reminders) {
         const visible = reminderToNotificationVisible.get(reminder.key());
-        reminderToNotificationVisible.set(reminder.key(), reminder.notificationVisible);
+        reminderToNotificationVisible.set(reminder.key(), reminder.muteNotification);
         if (visible !== undefined) {
-          reminder.notificationVisible = visible;
+          reminder.muteNotification = visible;
         }
       }
     }
@@ -150,6 +150,7 @@ function generateGroup(time: DateTime, now: DateTime, reminderTime: Time) {
 
 class Group {
   public isToday: boolean = false;
+  public isOverdue: boolean = false;
   constructor(
     public name: string,
     private timeToStringFunc: (time: DateTime) => string
@@ -167,10 +168,15 @@ export function groupReminders(
   const now = DateTime.now();
   const result: Array<GroupedReminder> = [];
   let currentReminders: Array<Reminder> = [];
+  const overdueReminders: Array<Reminder> = [];
   // Always shows today's group
   let previousGroup: Group = generateGroup(now, now, reminderTime);
   for (let i = 0; i < sortedReminders.length; i++) {
     const r = sortedReminders[i];
+    if (r.muteNotification) {
+      overdueReminders.push(r);
+      continue;
+    }
     const group = generateGroup(r.time, now, reminderTime);
     if (group.name !== previousGroup.name) {
       if (currentReminders.length > 0 || previousGroup.isToday) {
@@ -184,6 +190,13 @@ export function groupReminders(
   if (currentReminders.length > 0) {
     result.push(new GroupedReminder(previousGroup, currentReminders));
   }
+  if (overdueReminders.length > 0) {
+    const overdueGroup: Group = new Group("Overdue", (time) => time.format("HH:mm"));
+    overdueGroup.isOverdue = true;
+    result.splice(0, 0, new GroupedReminder(overdueGroup, overdueReminders));
+    console.log(overdueGroup);
+    console.log(result);
+  }
   return result;
 }
 
@@ -192,6 +205,10 @@ export class GroupedReminder {
 
   get name() {
     return this.group.name;
+  }
+
+  get isOverdue() {
+    return this.group.isOverdue;
   }
 
   timeToString(time: DateTime): string {

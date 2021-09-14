@@ -9,7 +9,9 @@
 <main>
   <div>
     {#each groups as group}
-      <div class="group-name">{group.name}</div>
+      <div class="group-name" class:group-name-overdue={group.isOverdue}>
+        {group.name}
+      </div>
       <ReminderListByDate
         reminders={group.reminders}
         {onOpenReminder}
@@ -25,5 +27,8 @@
     color: var(--text-muted);
     border-bottom: 1px solid var(--text-muted);
     margin-bottom: 0.5rem;
+  }
+  .group-name-overdue {
+    color: var(--text-accent);
   }
 </style>
