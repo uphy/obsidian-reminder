@@ -1,11 +1,19 @@
-## ✨New features
+## ✨ New features
 
 - Introduce custom emoji(⏰) to Tasks Plugin format
+- Add feature to link dates to daily notes #22
 
-## 👍Improvements
+## 👍 Improvements
 
 - Introduce validation in setting screen
 
-## 🐛Bug fix
+## 🐛 Bug fix
 
 - Kaanban plugin format doesn't work if user changes its setting
+
+## ✅ TODO
+
+- [ ] Editor action to show calendar popup
+- [ ] Unavailable setting should be disabled
+- [ ] Command + Space override
+- [ ] overdue reminders view

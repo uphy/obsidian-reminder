@@ -18,6 +18,7 @@ class Settings {
   autoCompleteTrigger: SettingModel<string, string>;
   primaryFormat: SettingModel<string, ReminderFormatType>;
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
+  linkDatesToDailyNotes: SettingModel<boolean, boolean>;
 
   constructor() {
     this.reminderTime = this.settings.newSettingBuilder()
@@ -88,6 +89,14 @@ class Settings {
       .toggle(false)
       .build(new RawSerde());
 
+    this.linkDatesToDailyNotes = this.settings.newSettingBuilder()
+      .key("linkDatesToDailyNotes")
+      .name("Link dates to daily notes")
+      .desc("When toggled, Dates link to daily notes.")
+      .tag(TAG_RESCAN)
+      .toggle(false)
+      .build(new RawSerde());
+
     this.settings
       .newGroup("Notification Settings")
       .addSettings(
@@ -106,7 +115,8 @@ class Settings {
       .addSettings(
         reminderFormatSettings.enableReminderPluginReminderFormat,
         this.dateFormat,
-        this.dateTimeFormat
+        this.dateTimeFormat,
+        this.linkDatesToDailyNotes
       );
     this.settings
       .newGroup("Reminder Format - Tasks Plugin")
@@ -123,6 +133,7 @@ class Settings {
     const config = new ReminderFormatConfig();
     config.setParameterFunc(ReminderFormatParameterKey.now, () => DateTime.now());
     config.setParameter(ReminderFormatParameterKey.useCustomEmojiForTasksPlugin, this.useCustomEmojiForTasksPlugin);
+    config.setParameter(ReminderFormatParameterKey.linkDatesToDailyNotes, this.linkDatesToDailyNotes);
     setReminderFormatConfig(config);
   }
 

@@ -2,10 +2,7 @@ import { ReminderModel, TodoBasedReminderFormat } from "./reminder-base";
 import { DateTime } from "model/time";
 import moment from "moment";
 import { Todo } from "./markdown";
-
-export function escapeRegExpChars(text: string) {
-    return text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
-}
+import { escapeRegExpChars } from "./util";
 
 type KanbanSettingType = {
     dateTrigger: string,

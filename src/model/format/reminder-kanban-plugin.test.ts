@@ -3,14 +3,7 @@
  */
 import { DateTime } from "model/time";
 import moment from "moment";
-import { KanbanDateTimeFormat, KanbanReminderModel, escapeRegExpChars } from "./reminder-kanban-plugin";
-
-describe('toRegExp()', (): void => {
-    test("test", (): void => {
-        expect(escapeRegExpChars("abcd")).toBe("abcd");
-        expect(escapeRegExpChars("\\ ^ $ . * + ? ( ) [ ] { } | abc")).toBe(`\\\\ \\^ \\$ \\. \\* \\+ \\? \\( \\) \\[ \\] \\{ \\} \\| abc`);
-    });
-});
+import { KanbanDateTimeFormat, KanbanReminderModel } from "./reminder-kanban-plugin";
 
 describe('KanbanDateTimeFormat', (): void => {
     test("format - no page link", (): void => {

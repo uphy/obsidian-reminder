@@ -1,4 +1,4 @@
-import { TodoBasedReminderFormat, ReminderModel } from "./reminder-base";
+import { TodoBasedReminderFormat, ReminderModel, ReminderFormatParameterKey } from "./reminder-base";
 import { DateTime, DATE_TIME_FORMATTER } from "model/time";
 import { Todo } from "./markdown";
 
@@ -6,25 +6,33 @@ class DefaultReminderModel implements ReminderModel {
 
     public static readonly regexp = /^(?<title1>.*?)\(@(?<time>.+?)\)(?<title2>.*)$/;
 
-    static parse(line: string): DefaultReminderModel | null {
+    static parse(line: string, linkDatesToDailyNotes?: boolean): DefaultReminderModel | null {
+        if (linkDatesToDailyNotes == null) {
+            linkDatesToDailyNotes = false;
+        }
         const result = DefaultReminderModel.regexp.exec(line);
         if (result === null) {
             return null;
         }
         const title1 = result.groups.title1;
-        const time = result.groups.time;
+        let time = result.groups.time;
         const title2 = result.groups.title2;
-        return new DefaultReminderModel(title1, time, title2);
+        if (linkDatesToDailyNotes) {
+            time = time.replace("[[", "");
+            time = time.replace("]]", "");
+        }
+        return new DefaultReminderModel(linkDatesToDailyNotes, title1, time, title2);
     }
 
     constructor(
+        private linkDatesToDailyNotes: boolean,
         public title1: string,
         public time: string,
         public title2: string
     ) { }
 
     getTitle(): string {
-        return `${this.title1.trim()} ${this.title2.trim()}`;
+        return `${this.title1.trim()} ${this.title2.trim()}`.trim();
     }
     getTime(): DateTime {
         return DATE_TIME_FORMATTER.parse(this.time);
@@ -37,7 +45,18 @@ class DefaultReminderModel implements ReminderModel {
         return true;
     }
     toMarkdown(): string {
-        return `${this.title1}(@${this.time})${this.title2}`;
+        let result = `${this.title1}(@${this.time})${this.title2}`;
+        if (!this.linkDatesToDailyNotes) {
+            return result;
+        }
+
+        let time = DATE_TIME_FORMATTER.parse(this.time);
+        if (!time) {
+            return result;
+        }
+
+        const date = DATE_TIME_FORMATTER.toString(time.clone(false));
+        return result.replace(date, `[[${date}]]`);
     }
 }
 
@@ -46,11 +65,15 @@ export class DefaultReminderFormat extends TodoBasedReminderFormat<DefaultRemind
     public static readonly instance = new DefaultReminderFormat();
 
     parseReminder(todo: Todo): DefaultReminderModel {
-        return DefaultReminderModel.parse(todo.body);
+        return DefaultReminderModel.parse(todo.body, this.linkDatesToDailyNotes());
     }
 
     newReminder(title: string, time: DateTime): DefaultReminderModel {
-        return new DefaultReminderModel(title, time.toString(), "");
+        return new DefaultReminderModel(this.linkDatesToDailyNotes(), title, time.toString(), "");
+    }
+
+    private linkDatesToDailyNotes() {
+        return this.config.getParameter(ReminderFormatParameterKey.linkDatesToDailyNotes);
     }
 }
 

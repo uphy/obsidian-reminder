@@ -70,6 +70,12 @@ export class DateTime {
     return this.time.isValid();
   }
 
+  public clone(hasTimePart?: boolean) {
+    const withTimePart = hasTimePart == null ? this._hasTimePart : hasTimePart;
+    const clone = this.time.clone();
+    return new DateTime(clone, withTimePart);
+  }
+
   public toString(): string {
     if (this._hasTimePart) {
       return this.format("YYYY-MM-DD HH:mm");

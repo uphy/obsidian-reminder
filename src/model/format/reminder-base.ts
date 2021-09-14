@@ -22,6 +22,7 @@ export interface ReminderModel {
 export class ReminderFormatParameterKey<T> {
     static readonly now = new ReminderFormatParameterKey<DateTime>("now", DateTime.now());
     static readonly useCustomEmojiForTasksPlugin = new ReminderFormatParameterKey<boolean>("useCustomEmojiForTasksPlugin", false);
+    static readonly linkDatesToDailyNotes = new ReminderFormatParameterKey<boolean>("linkDatesToDailyNotes", false);
     constructor(public readonly key: string, public readonly defaultValue: T) {
     }
 }
