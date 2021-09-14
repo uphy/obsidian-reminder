@@ -145,17 +145,24 @@ export default class ReminderPlugin extends Plugin {
     this.addCommand({
       id: "show-date-chooser",
       name: "Show date chooser popup",
-      checkCallback: (checking: boolean) => {
-        const view = this.app.workspace.activeLeaf.view;
-        if (!(view instanceof MarkdownView)) {
-          return false;
+      hotkeys: [
+        {
+          modifiers: ["Meta", "Shift"],
+          key: "2" // Shift + 2 = `@`
         }
-        if (!checking) {
-          const cm: CodeMirror.Editor = (view.editor as any).cm;
-          const v = new DateTimeChooserView(cm, this.reminders);
-          this.autoComplete.show(cm, v);
+      ],
+      editorCheckCallback: (checking, editor): boolean | void => {
+        if (checking) {
+          return true;
         }
-        return true;
+        const cm: CodeMirror.Editor = (editor as any).cm;
+        if (cm == null) {
+          console.error("Cannot get codemirror editor.")
+          return;
+        }
+
+        const v = new DateTimeChooserView(cm, this.reminders);
+        this.autoComplete.show(cm, v, true);
       },
     });
   }

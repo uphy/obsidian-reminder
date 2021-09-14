@@ -13,6 +13,5 @@
 
 ## ✅ TODO
 
-- [ ] Editor action to show calendar popup
 - [ ] Command + Space override
 - [ ] overdue reminders view

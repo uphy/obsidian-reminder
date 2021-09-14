@@ -25,7 +25,7 @@ export class AutoComplete {
         return false;
     }
 
-    show(cmEditor: CodeMirror.Editor, dateTimeChooserView: DateTimeChooserView): void {
+    show(cmEditor: CodeMirror.Editor, dateTimeChooserView: DateTimeChooserView, triggerFromCommand: boolean = false): void {
         dateTimeChooserView.show()
             .then(value => {
                 const pos = cmEditor.getCursor();
@@ -36,7 +36,9 @@ export class AutoComplete {
                 };
 
                 // remove trigger string
-                line = line.substring(0, pos.ch - 2);
+                if (!triggerFromCommand) {
+                    line = line.substring(0, pos.ch - this.trigger.value.length);
+                }
                 // append reminder to the line
                 const format = SETTINGS.primaryFormat.value.format;
                 try {
