@@ -21,6 +21,8 @@ class Settings {
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
 
   constructor() {
+    const reminderFormatSettings = new ReminderFormatSettings(this.settings);
+
     this.reminderTime = this.settings.newSettingBuilder()
       .key("reminderTime")
       .name("Reminder Time")
@@ -52,6 +54,9 @@ class Settings {
       .tag(TAG_RESCAN)
       .text("YYYY-MM-DD")
       .placeHolder("YYYY-MM-DD")
+      .onAnyValueChanged(context => {
+        context.setEnabled(reminderFormatSettings.enableReminderPluginReminderFormat.value);
+      })
       .build(new RawSerde());
 
     this.dateTimeFormat = this.settings.newSettingBuilder()
@@ -61,6 +66,20 @@ class Settings {
       .tag(TAG_RESCAN)
       .text("YYYY-MM-DD HH:mm")
       .placeHolder("YYYY-MM-DD HH:mm")
+      .onAnyValueChanged(context => {
+        context.setEnabled(reminderFormatSettings.enableReminderPluginReminderFormat.value);
+      })
+      .build(new RawSerde());
+
+    this.linkDatesToDailyNotes = this.settings.newSettingBuilder()
+      .key("linkDatesToDailyNotes")
+      .name("Link dates to daily notes")
+      .desc("When toggled, Dates link to daily notes.")
+      .tag(TAG_RESCAN)
+      .toggle(false)
+      .onAnyValueChanged(context => {
+        context.setEnabled(reminderFormatSettings.enableReminderPluginReminderFormat.value);
+      })
       .build(new RawSerde());
 
     this.autoCompleteTrigger = this.settings.newSettingBuilder()
@@ -69,6 +88,10 @@ class Settings {
       .desc("Trigger text to show calendar popup")
       .text("(@")
       .placeHolder("(@")
+      .onAnyValueChanged(context => {
+        const value = this.autoCompleteTrigger.value;
+        context.setInfo(`Popup is ${value.length === 0 ? "disabled" : "enabled"}`);
+      })
       .build(new RawSerde());
 
     const primaryFormatBuilder = this.settings.newSettingBuilder()
@@ -79,22 +102,15 @@ class Settings {
     ReminderFormatTypes.forEach(f => primaryFormatBuilder.addOption(`${f.description} - ${f.example}`, f.name));
     this.primaryFormat = primaryFormatBuilder.build(new ReminderFormatTypeSerde());
 
-    const reminderFormatSettings = new ReminderFormatSettings(this.settings);
-
     this.useCustomEmojiForTasksPlugin = this.settings.newSettingBuilder()
       .key("useCustomEmojiForTasksPlugin")
       .name("Distinguish between reminder date and due date")
       .desc("Use custom emoji ⏰ instead of 📅 and distinguish between reminder date/time and Tasks Plugin's due date.")
       .tag(TAG_RESCAN)
       .toggle(false)
-      .build(new RawSerde());
-
-    this.linkDatesToDailyNotes = this.settings.newSettingBuilder()
-      .key("linkDatesToDailyNotes")
-      .name("Link dates to daily notes")
-      .desc("When toggled, Dates link to daily notes.")
-      .tag(TAG_RESCAN)
-      .toggle(false)
+      .onAnyValueChanged(context => {
+        context.setEnabled(reminderFormatSettings.enableTasksPluginReminderFormat.value);
+      })
       .build(new RawSerde());
 
     this.settings

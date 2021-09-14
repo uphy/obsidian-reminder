@@ -14,6 +14,5 @@
 ## ✅ TODO
 
 - [ ] Editor action to show calendar popup
-- [ ] Unavailable setting should be disabled
 - [ ] Command + Space override
 - [ ] overdue reminders view
