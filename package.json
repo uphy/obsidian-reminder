@@ -1,63 +1,19 @@
 {
-  "name": "obsidian-reminder-plugin",
-  "version": "1.1.0",
-  "description": "Reminder plugin for Obsidian",
-  "main": "main.js",
-  "scripts": {
-    "dev": "rollup --config rollup.config.js -w",
-    "build": "cross-env NODE_OPTIONS='--no-deprecation' rollup --config rollup.config.js --environment BUILD:production",
-    "test": "jest"
+  "name": "obsidian-reminder-plugin-docs",
+  "version": "0.0.1",
+  "description": "Obsidian Reminder plugin adds feature to manage markdown TODOs with reminder.",
+  "main": "index.js",
+  "authors": {
+    "name": "uphy",
+    "email": "yuhi.ishikura@gmail.com"
   },
-  "keywords": [],
-  "author": "uphy",
+  "repository": "https://github.com/uphy/obsidian-reminder",
+  "scripts": {
+    "dev": "vuepress dev src",
+    "build": "vuepress build src"
+  },
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^18.0.0",
-    "@rollup/plugin-json": "^4.1.0",
-    "@rollup/plugin-node-resolve": "^11.2.1",
-    "@rollup/plugin-typescript": "^8.2.1",
-    "@tsconfig/svelte": "^2.0.1",
-    "@types/jest": "^27.0.1",
-    "@types/node": "^14.14.37",
-    "cross-env": "^7.0.3",
-    "jest": "^27.0.6",
-    "moment": "^2.29.1",
-    "obsidian": "^0.12.0",
-    "rollup": "^2.32.1",
-    "rollup-plugin-svelte": "^7.1.0",
-    "svelte-check": "^2.2.4",
-    "svelte-jester": "^2.0.1",
-    "svelte-preprocess": "^4.7.4",
-    "ts-jest": "^27.0.5",
-    "tslib": "^2.2.0",
-    "typescript": "^4.3.5"
-  },
-  "dependencies": {
-    "electron": "^13.1.8",
-    "markdown-it": "^12.2.0",
-    "rrule": "^2.6.8",
-    "svelte": "^3.42.1"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "ts",
-      "js"
-    ],
-    "testEnvironment": "jsdom",
-    "moduleDirectories": [
-      "node_modules",
-      "src"
-    ],
-    "transform": {
-      "^.+\\.ts$": "ts-jest"
-    },
-    "globals": {
-      "ts-jest": {
-        "tsConfig": "tsconfig.json"
-      }
-    },
-    "testMatch": [
-      "**/*.test.ts"
-    ]
+    "vuepress": "^1.5.3"
   }
 }

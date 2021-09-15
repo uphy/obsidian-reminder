@@ -1,15 +1,12 @@
-# Intellij
-*.iml
-.idea
-
-# npm
+pids
+logs
 node_modules
-package-lock.json
-
-# build
-main.js
-*.js.map
-
-# obsidian
-data.json
-/deploy.sh
+npm-debug.log
+coverage/
+run
+dist
+.DS_Store
+.nyc_output
+.basement
+config.local.js
+basement_dist
