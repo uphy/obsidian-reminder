@@ -30,6 +30,24 @@ The date and time in the markdown will be updated according to your choice.
 
 ## System notification
 
+Instead of builtin notification, system notification is also available by [setting](/setting/#use-system-notification).
 
+<img :src="$withBase('/images/notification-mac.png')" width="400px">
+
+- If you click the notification, builtin notificaiton will be displayed in Obsidian app.
+- If you close the notification, the reminder is [muted](#mute-notification)
+
+Also, if you are using macOS, you can mark as done or postpone the reminder with the notification options.
 
 ## Mute notification
+
+The reminder will be muted if you do the following:
+
+- In builtin notification,
+    - press <kbd>Esc</kbd>
+    - click out side of the notification modal
+- Close the system notification
+
+Muted reminder will not be notified again until
+- you restart Obsidian app
+- you click muted reminder in [reminder list view](guide/list-reminders.md)

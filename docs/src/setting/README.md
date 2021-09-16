@@ -78,3 +78,42 @@ You can change option which will be shown when you click `Remind Me Later` butto
     - In N hours
     - Next Sunday/Monday/Tuesday/Wednesday/Thursday/Friday/Saturday/day/week/month/year
     - Tomorrow
+
+## Use system notification
+
+Use system notification instead of builtin notification.
+
+Only available on desktop OS.
+
+- Type: `boolean`
+- Values:
+    - ON: Use system notification.  In mobile devices, this setting is ignored and builtin notification is used.
+    - OFF: Use builtin notification
+
+## Enable Tasks plugin format
+
+Enable support for [Tasks Plugin](https://github.com/schemar/obsidian-tasks)
+
+- Type: `boolean`
+- Values:
+    - ON: Enable Tasks plugin format
+    - OFF: Disable Tasks plugin format (default)
+
+## Distinguish between reminder date and due date
+
+Use custom emoji ⏰ instead of 📅 and distinguish between reminder date/time and Tasks Plugin's due date.
+
+- Type: `boolean`
+- Values:
+    - ON: Reminder is set using ⏰
+    - OFF: Reminder is set using 📅 (default)
+
+
+## Enable Kanban plugin format
+
+Enable support for [Kanban Plugin](https://github.com/mgmeyers/obsidian-kanban)
+
+- Type: `boolean`
+- Values:
+    - ON: Enable Kanban plugin format
+    - OFF: Disable Kanban plugin format (default)

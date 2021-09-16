@@ -16,6 +16,11 @@ Time is omittable.
 
 When you omit the time, reminder will be notified at [default reminder time](/setting/#reminder-time).
 
+::: tip
+Reminder plugin is interoperable with other plugins which has different date time format.  
+For more information on interoperability, please click [here](/guide/interop-tasks).
+:::
+
 ## Date Time Format
 
 You can change time format by setting.
@@ -46,6 +51,25 @@ In this popup, you can select date with keyboard.
 When you select date, the selected date will be entered into the file.
 
 You can change the format by [primary reminder format](/setting/#primary-reminder-format) setting.
+
+## Toggle checklist status
+
+This plugin provides 2 ways to toggle checklist status.
+
+::: tip
+If you are using [Tasks Plugin format](/guide/interop-tasks), this action do the following additionally:
+- Insert done date (`✅ YYYY-MM-DD`)
+- Create next recurring task (if you use `🔁 XXX`)
+:::
+
+**By keyboad shortcut**
+
+By default, <kbd>Meta</kbd> + <kbd>Shift</kbd> + <kbd>Enter</kbd> to toggle checklist status.  
+You can change it from `Obsidian > Settings > Hotkeys > Reminder: Toggle checklist status`.
+
+**From reminder notification**
+
+You can `Mark as Done` from [reminder notification](/guide/notification).
 
 ## Link dates to daily notes
 
