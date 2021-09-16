@@ -54,7 +54,7 @@ You can create links to daily notes in reminder.
 
 First, you have to set [Link dates to daily notes](/setting/#link-dates-to-daily-notes) option ON.
 
-After that, the time part of the reminder will be the link.
+After that, the date part of the reminder will become the link.
 
 ```markdown
 - [ ] Task 1 (@[[2021-09-15]] 20:40)

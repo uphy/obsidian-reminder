@@ -67,3 +67,14 @@ Example (ON)
 ```markdown
 - [ ] Task ([[@2021-09-15]] 10:00)
 ```
+
+## Remind me later
+
+You can change option which will be shown when you click `Remind Me Later` button in the [notification](/guide/notification.html).
+
+- Type: `string`
+- Format: Line-separated following options
+    - In N minutes
+    - In N hours
+    - Next Sunday/Monday/Tuesday/Wednesday/Thursday/Friday/Saturday/day/week/month/year
+    - Tomorrow
