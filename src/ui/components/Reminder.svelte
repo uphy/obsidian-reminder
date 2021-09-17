@@ -1,6 +1,7 @@
 <script lang="typescript">
   import { Reminder } from "../../model/reminder";
   import { DateTime, Later } from "../../model/time";
+  import Icon from "./Icon.svelte";
 
   export let reminder: Reminder;
   export let onRemindMeLater: (time: DateTime) => void;
@@ -18,7 +19,7 @@
 
 <main>
   <h1>{reminder.title}</h1>
-  <span class="reminder-file" on:click={onOpenFile}>{reminder.file}</span>
+  <span class="reminder-file" on:click={onOpenFile}><Icon icon="link"></Icon>{reminder.file}</span>
   <div class="reminder-actions">
     <button class="mod-cta" on:click={onDone}>Mark as Done</button>
     <select
