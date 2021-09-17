@@ -7,8 +7,8 @@ import {
 } from "obsidian";
 import { SETTINGS } from "settings";
 import { Content } from "model/content";
-import { Reminders, Reminder } from "model/reminder";
-import { ReminderListItemViewProxy } from "ui/reminder-list";
+import type { Reminders, Reminder } from "model/reminder";
+import type { ReminderListItemViewProxy } from "ui/reminder-list";
 
 export class RemindersController {
 

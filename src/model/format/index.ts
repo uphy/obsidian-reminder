@@ -1,4 +1,4 @@
-import { Reminder } from "model/reminder";
+import type { Reminder } from "model/reminder";
 import { MarkdownDocument } from "./markdown";
 import type { ReminderEdit, ReminderFormat, ReminderFormatConfig } from "./reminder-base";
 import { CompositeReminderFormat } from "./reminder-base";

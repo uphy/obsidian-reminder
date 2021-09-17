@@ -1,6 +1,6 @@
 import { Calendar } from "model/calendar";
-import { Reminders } from "model/reminder";
-import { DateTime } from "model/time";
+import type { Reminders } from "model/reminder";
+import type { DateTime } from "model/time";
 import moment from "moment";
 import DateTimeChooser from "./components/DateTimeChooser.svelte";
 

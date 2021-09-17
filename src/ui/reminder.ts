@@ -1,9 +1,9 @@
 import { App, Modal } from "obsidian";
 import type { Reminder } from "../model/reminder";
 import ReminderView from "./components/Reminder.svelte";
-import { Later } from "../model/time";
+import type { Later } from "../model/time";
 import type { DateTime } from "model/time";
-import { ReadOnlyReference } from "model/ref";
+import type { ReadOnlyReference } from "model/ref";
 import { SETTINGS } from "settings";
 const electron = require("electron");
 

@@ -26,7 +26,7 @@
       "svelte",
       "jest"
     ],
-    "importsNotUsedAsValues": "preserve",
+    "importsNotUsedAsValues": "error",
     "allowSyntheticDefaultImports": true,
   }
 }

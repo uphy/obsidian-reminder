@@ -1,7 +1,6 @@
-import { ReadOnlyReference } from "model/ref";
-import { DATE_TIME_FORMATTER } from "model/time";
+import type { ReadOnlyReference } from "model/ref";
 import { SETTINGS } from "settings";
-import { DateTimeChooserView } from "./datetime-chooser";
+import type { DateTimeChooserView } from "./datetime-chooser";
 
 export class AutoComplete {
 

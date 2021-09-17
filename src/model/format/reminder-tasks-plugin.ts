@@ -1,7 +1,7 @@
 import { DateTime, DATE_TIME_FORMATTER } from "model/time";
 import { splitBySymbol, Symbol, Tokens } from "./splitter";
 import { ReminderModel, TodoBasedReminderFormat, ReminderEdit, ReminderFormatParameterKey } from "./reminder-base";
-import { MarkdownDocument, Todo } from "model/format/markdown";
+import type { MarkdownDocument, Todo } from "model/format/markdown";
 import moment, { Moment } from "moment";
 import { RRule } from "rrule";
 

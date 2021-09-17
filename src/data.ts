@@ -1,4 +1,4 @@
-import { Plugin_2 } from "obsidian";
+import type { Plugin_2 } from "obsidian";
 import { Reference } from "model/ref";
 import { Reminder, Reminders } from "model/reminder";
 import { DateTime } from "model/time";

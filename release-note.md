@@ -18,3 +18,4 @@
 
 - Custom emoji not work #10
 - カレンダー見切れる問題
+- Overdueのreminder時間が00:00になる？
