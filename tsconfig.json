@@ -27,6 +27,11 @@
       "jest"
     ],
     "importsNotUsedAsValues": "error",
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitOverride": true,
     "allowSyntheticDefaultImports": true,
   }
 }

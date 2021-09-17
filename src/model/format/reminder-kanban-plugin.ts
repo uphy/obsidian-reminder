@@ -106,12 +106,12 @@ export class KanbanDateTimeFormat {
 
         const dateMatch = this.dateRegExp.exec(text);
         if (dateMatch) {
-            date = dateMatch.groups.date;
+            date = dateMatch.groups["date"];
             text = text.replace(this.dateRegExp, "");
         }
         const timeMatch = this.timeRegExp.exec(text);
         if (timeMatch) {
-            time = timeMatch.groups.time;
+            time = timeMatch.groups["time"];
             text = text.replace(this.timeRegExp, "");
         }
         title = text.trim();

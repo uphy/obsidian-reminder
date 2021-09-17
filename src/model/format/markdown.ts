@@ -16,10 +16,10 @@ export class Todo {
         if (match) {
             return new Todo(
                 lineIndex,
-                match.groups.prefix,
-                match.groups.check,
-                match.groups.suffix,
-                match.groups.body);
+                match.groups['prefix'],
+                match.groups['check'],
+                match.groups['suffix'],
+                match.groups['body']);
         }
         return null;
     }

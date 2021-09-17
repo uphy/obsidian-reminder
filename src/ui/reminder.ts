@@ -96,7 +96,7 @@ class NotificationModal extends Modal {
     super(app);
   }
 
-  onOpen() {
+  override onOpen() {
     let { contentEl } = this;
     new ReminderView({
       target: contentEl,
@@ -122,7 +122,7 @@ class NotificationModal extends Modal {
     });
   }
 
-  onClose() {
+  override onClose() {
     let { contentEl } = this;
     contentEl.empty();
     if (this.canceled) {

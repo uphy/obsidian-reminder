@@ -10,15 +10,15 @@ export class DateTimeChooserView {
     private resultResolve: (result: DateTime) => void = null;
     private resultReject: () => void = null;
     private keyMaps = {
-        'Ctrl-P': () => this.dateTimeChooser.moveUp(),
-        'Ctrl-N': () => this.dateTimeChooser.moveDown(),
-        'Ctrl-B': () => this.dateTimeChooser.moveLeft(),
-        'Ctrl-F': () => this.dateTimeChooser.moveRight(),
+        'Ctrl-P': () => this.dateTimeChooser["moveUp"](),
+        'Ctrl-N': () => this.dateTimeChooser["moveDown"](),
+        'Ctrl-B': () => this.dateTimeChooser["moveLeft"](),
+        'Ctrl-F': () => this.dateTimeChooser["moveRight"](),
         'Enter': () => this.select(),
-        Up: () => this.dateTimeChooser.moveUp(),
-        Down: () => this.dateTimeChooser.moveDown(),
-        Right: () => this.dateTimeChooser.moveRight(),
-        Left: () => this.dateTimeChooser.moveLeft(),
+        Up: () => this.dateTimeChooser["moveUp"](),
+        Down: () => this.dateTimeChooser["moveDown"](),
+        Right: () => this.dateTimeChooser["moveRight"](),
+        Left: () => this.dateTimeChooser["moveLeft"](),
         Esc: () => this.cancel(),
     }
 
@@ -58,7 +58,7 @@ export class DateTimeChooserView {
     }
 
     private select() {
-        this.setResult(this.dateTimeChooser.selection())
+        this.setResult(this.dateTimeChooser["selection"]())
         this.hide();
     }
 

@@ -14,9 +14,9 @@ class DefaultReminderModel implements ReminderModel {
         if (result === null) {
             return null;
         }
-        const title1 = result.groups.title1;
-        let time = result.groups.time;
-        const title2 = result.groups.title2;
+        const title1 = result.groups['title1'];
+        let time = result.groups['time'];
+        const title2 = result.groups['title2'];
         if (linkDatesToDailyNotes) {
             time = time.replace("[[", "");
             time = time.replace("]]", "");

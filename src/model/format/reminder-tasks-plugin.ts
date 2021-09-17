@@ -149,7 +149,7 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
         return this.config.getParameter(ReminderFormatParameterKey.useCustomEmojiForTasksPlugin);
     }
 
-    modifyReminder(doc: MarkdownDocument, todo: Todo, parsed: TasksPluginReminderModel, edit: ReminderEdit): boolean {
+    override modifyReminder(doc: MarkdownDocument, todo: Todo, parsed: TasksPluginReminderModel, edit: ReminderEdit): boolean {
         if (!super.modifyReminder(doc, todo, parsed, edit)) {
             return false;
         }

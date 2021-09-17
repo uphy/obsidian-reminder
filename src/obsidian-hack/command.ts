@@ -61,7 +61,7 @@ class RunnableCommand extends AbstractCommand {
 }
 
 class RunnableEditorCommand extends AbstractCommand {
-    constructor(private app: App, protected command: Command) {
+    constructor(private app: App, command: Command) {
         super(command);
     }
 

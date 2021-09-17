@@ -25,11 +25,11 @@ class ReminderListItemView extends ItemView {
     return "Reminders";
   }
 
-  getIcon(): string {
+  override getIcon(): string {
     return "clock";
   }
 
-  async onOpen(): Promise<void> {
+  override async onOpen(): Promise<void> {
     this.view = new ReminderListView({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       target: (this as any).contentEl,
@@ -51,7 +51,7 @@ class ReminderListItemView extends ItemView {
     return groupReminders(this.reminders.reminders, this.reminderTime.value);
   }
 
-  onClose(): Promise<void> {
+  override onClose(): Promise<void> {
     if (this.view) {
       this.view.$destroy();
     }

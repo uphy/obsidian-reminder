@@ -56,7 +56,7 @@ export default class ReminderPlugin extends Plugin {
     this.autoComplete = new AutoComplete(SETTINGS.autoCompleteTrigger);
   }
 
-  async onload() {
+  override async onload() {
     await this.pluginDataIO.load();
     this.setupUI();
     this.setupCommands();
@@ -86,7 +86,7 @@ export default class ReminderPlugin extends Plugin {
             return;
           }
           this.autoComplete.show(cmEditor, dateTimeChooser);
-          return false;
+          return;
         }
       );
     });
@@ -281,7 +281,7 @@ export default class ReminderPlugin extends Plugin {
     await this.remindersController.openReminder(reminder, leaf);
   }
 
-  onunload(): void {
+  override onunload(): void {
     this.app.workspace
       .getLeavesOfType(VIEW_TYPE_REMINDER_LIST)
       .forEach((leaf) => leaf.detach());
