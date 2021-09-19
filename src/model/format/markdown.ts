@@ -16,10 +16,10 @@ export class Todo {
         if (match) {
             return new Todo(
                 lineIndex,
-                match.groups['prefix'],
-                match.groups['check'],
-                match.groups['suffix'],
-                match.groups['body']);
+                match.groups!['prefix']!,
+                match.groups!['check']!,
+                match.groups!['suffix']!,
+                match.groups!['body']!);
         }
         return null;
     }
@@ -82,7 +82,7 @@ export class MarkdownDocument {
         this.lines.splice(lineIndex, 0, todo.toMarkdown());
         let todoIndex = -1;
         for (const i in this.todos) {
-            const todo = this.todos[i];
+            const todo = this.todos[i]!;
             if (todo.lineIndex >= lineIndex) {
                 if (todoIndex < 0) {
                     todoIndex = parseInt(i);
@@ -98,11 +98,11 @@ export class MarkdownDocument {
     }
 
     public getTodo(lineIndex: number): Todo | null {
-        const found = this.todos.filter(todo => todo.lineIndex === lineIndex);
-        if (found.length === 0) {
+        const found = this.todos.find(todo => todo.lineIndex === lineIndex);
+        if (found == null) {
             return null;
         }
-        return found[0];
+        return found;
     }
 
     private applyChanges() {

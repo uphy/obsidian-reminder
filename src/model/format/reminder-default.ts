@@ -11,12 +11,15 @@ class DefaultReminderModel implements ReminderModel {
             linkDatesToDailyNotes = false;
         }
         const result = DefaultReminderModel.regexp.exec(line);
-        if (result === null) {
+        if (result == null) {
             return null;
         }
-        const title1 = result.groups['title1'];
-        let time = result.groups['time'];
-        const title2 = result.groups['title2'];
+        const title1 = result.groups!['title1']!;
+        let time = result.groups!['time'];
+        if (time == null) {
+            return null;
+        }
+        const title2 = result.groups!['title2']!;
         if (linkDatesToDailyNotes) {
             time = time.replace("[[", "");
             time = time.replace("]]", "");
@@ -34,7 +37,7 @@ class DefaultReminderModel implements ReminderModel {
     getTitle(): string {
         return `${this.title1.trim()} ${this.title2.trim()}`.trim();
     }
-    getTime(): DateTime {
+    getTime(): DateTime | null {
         return DATE_TIME_FORMATTER.parse(this.time);
     }
     setTime(time: DateTime): void {
@@ -64,7 +67,7 @@ export class DefaultReminderFormat extends TodoBasedReminderFormat<DefaultRemind
 
     public static readonly instance = new DefaultReminderFormat();
 
-    parseReminder(todo: Todo): DefaultReminderModel {
+    parseReminder(todo: Todo): DefaultReminderModel | null {
         return DefaultReminderModel.parse(todo.body, this.linkDatesToDailyNotes());
     }
 

@@ -42,7 +42,7 @@ export class ReminderModal {
             onDone();
             return;
           }
-          const later = laters[index - 1];
+          const later = laters[index - 1]!;
           onRemindMeLater(later.later());
         });
         const actions = [{ type: "button", text: "Mark as Done" }];

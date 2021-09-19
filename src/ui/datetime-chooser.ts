@@ -7,8 +7,8 @@ import DateTimeChooser from "./components/DateTimeChooser.svelte";
 export class DateTimeChooserView {
     private view: HTMLElement;
     private dateTimeChooser: DateTimeChooser;
-    private resultResolve: (result: DateTime) => void = null;
-    private resultReject: () => void = null;
+    private resultResolve?: (result: DateTime) => void;
+    private resultReject?: () => void;
     private keyMaps = {
         'Ctrl-P': () => this.dateTimeChooser["moveUp"](),
         'Ctrl-N': () => this.dateTimeChooser["moveDown"](),
@@ -68,7 +68,7 @@ export class DateTimeChooserView {
     }
 
     private setResult(result: DateTime | null) {
-        if (this.resultReject === null || this.resultResolve === null) {
+        if (this.resultReject == null || this.resultResolve == null) {
             return;
         }
         if (result === null) {
@@ -76,8 +76,8 @@ export class DateTimeChooserView {
         } else {
             this.resultResolve(result);
         }
-        this.resultReject = null;
-        this.resultResolve = null;
+        this.resultReject = undefined;
+        this.resultResolve = undefined;
     }
 
     private hide() {

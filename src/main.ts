@@ -299,14 +299,14 @@ export default class ReminderPlugin extends Plugin {
 }
 
 class EditDetector {
-  private lastModified: Date = null;
+  private lastModified?: Date;
 
   fileChanged() {
     this.lastModified = new Date();
   }
 
   isEditing(): boolean {
-    if (this.lastModified === null) {
+    if (this.lastModified == null) {
       return false;
     }
     const elapsedSec =

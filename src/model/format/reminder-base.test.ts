@@ -24,7 +24,7 @@ export class ReminderFormatTestUtil<T extends ReminderFormat> {
         sut.setConfig(config);
 
         const reminders = sut.parse(new MarkdownDocument("file", inputMarkdown));
-        const reminder = reminders[0];
+        const reminder = reminders![0]!;
         expect(reminder.time.toString()).toBe(expectedTime);
         expect(reminder.title).toBe(expectedTitle);
     }
@@ -49,7 +49,7 @@ export class ReminderFormatTestUtil<T extends ReminderFormat> {
         sut.setConfig(config);
 
         const reminders = sut.parse(doc);
-        await sut.modify(doc, reminders[0], edit)
+        await sut.modify(doc, reminders![0]!, edit)
         expect(doc.toMarkdown()).toBe(expectedMarkdown);
     }
 }

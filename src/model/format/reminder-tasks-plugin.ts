@@ -4,6 +4,7 @@ import { ReminderModel, TodoBasedReminderFormat, ReminderEdit, ReminderFormatPar
 import type { MarkdownDocument, Todo } from "model/format/markdown";
 import moment, { Moment } from "moment";
 import { RRule } from "rrule";
+import assert from "assert";
 
 export class TasksPluginReminderModel implements ReminderModel {
 
@@ -29,16 +30,16 @@ export class TasksPluginReminderModel implements ReminderModel {
     private constructor(private useCustomEmoji: boolean, private tokens: Tokens) {
     }
 
-    getTitle(): string {
+    getTitle(): string | null {
         return this.tokens.getTokenText("", true);
     }
-    getTime(): DateTime {
+    getTime(): DateTime | null {
         return this.getDate(this.getReminderSymbol());
     }
     setTime(time: DateTime): void {
         this.setDate(this.getReminderSymbol(), time);
     }
-    getDueDate(): DateTime {
+    getDueDate(): DateTime | null {
         return this.getDate(TasksPluginReminderModel.symbolDueDate);
     }
     setDueDate(time: DateTime): void {
@@ -159,14 +160,30 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
                 if (recurrence !== null) {
 
                     const nextReminderTodo = todo.clone();
+                    assert(nextReminderTodo != null);
                     const nextReminder = parsed.clone();
+                    const dueDate = parsed.getDueDate();
+                    if (dueDate == null) {
+                        return false;
+                    }
+
                     if (this.useCustomEmoji()) {
-                        const nextTime: Date = this.nextDate(recurrence, parsed.getTime().moment());
-                        const nextDueDate: Date = this.nextDate(recurrence, parsed.getDueDate().moment());
+                        const time = parsed.getTime();
+                        if (time == null) {
+                            return false;
+                        }
+                        const nextTime: Date | undefined = this.nextDate(recurrence, time.moment());
+                        const nextDueDate: Date | undefined = this.nextDate(recurrence, dueDate.moment());
+                        if (nextTime == null || nextDueDate == null) {
+                            return false;
+                        }
                         nextReminder.setTime(new DateTime(moment(nextTime), true));
                         nextReminder.setDueDate(new DateTime(moment(nextDueDate), true));
                     } else {
-                        const next: Date = this.nextDate(recurrence, parsed.getDueDate().moment());
+                        const next: Date | undefined = this.nextDate(recurrence, dueDate.moment());
+                        if (next == null) {
+                            return false;
+                        }
                         const nextDueDate = new DateTime(moment(next), true);
                         nextReminder.setTime(nextDueDate);
                     }
@@ -182,8 +199,11 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
         return true;
     }
 
-    private nextDate(recurrence: string, dtStart: Moment) {
+    private nextDate(recurrence: string, dtStart: Moment): Date | undefined {
         const rruleOptions = RRule.parseText(recurrence);
+        if (!rruleOptions) {
+            return undefined;
+        }
 
         const today = this.config.getParameter(ReminderFormatParameterKey.now).moment();
         today.set("hour", dtStart.get("hour"));

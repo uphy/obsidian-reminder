@@ -3,6 +3,7 @@ import { SettingModel, TimeSerde, RawSerde, LatersSerde, ReminderFormatTypeSerde
 import { Time, Later, DateTime } from "model/time";
 import { changeReminderFormat, kanbanPluginReminderFormat, ReminderFormatType, ReminderFormatTypes, reminderPluginReminderFormat, setReminderFormatConfig, tasksPluginReminderFormat } from "model/format";
 import { ReminderFormatConfig, ReminderFormatParameterKey } from "model/format/reminder-base";
+import assert from "assert";
 
 export const TAG_RESCAN = "re-scan";
 
@@ -93,6 +94,8 @@ class Settings {
         context.setInfo(`Popup is ${value.length === 0 ? "disabled" : "enabled"}`);
       })
       .build(new RawSerde());
+
+    assert(ReminderFormatTypes[0]);
 
     const primaryFormatBuilder = this.settings.newSettingBuilder()
       .key("primaryReminderFormat")
@@ -199,7 +202,8 @@ class ReminderFormatSettings {
   private updateReminderFormat(setting: SettingModel<boolean, boolean>) {
     const selectedFormats = this.reminderFormatSettings
       .filter(s => s.value)
-      .map(s => this.settingKeyToFormatName.get(s.key));
+      .map(s => this.settingKeyToFormatName.get(s.key))
+      .filter((s): s is ReminderFormatType => s !== undefined);
     changeReminderFormat(selectedFormats);
   }
 }

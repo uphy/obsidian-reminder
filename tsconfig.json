@@ -12,7 +12,6 @@
     "module": "ESNext",
     "target": "es6",
     "allowJs": true,
-    "noImplicitAny": true,
     "moduleResolution": "node",
     "importHelpers": true,
     "lib": [
@@ -26,6 +25,13 @@
       "svelte",
       "jest"
     ],
+    "alwaysStrict": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "strictNullChecks": true,
+    "strictPropertyInitialization": false,
     "importsNotUsedAsValues": "error",
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,

@@ -94,8 +94,8 @@ export class Time {
     if (s.length !== 2) {
       throw `Unexpected format time(${text}).  time must be HH:mm.`;
     }
-    const hour = parseInt(s[0]);
-    const minute = parseInt(s[1]);
+    const hour = parseInt(s[0]!);
+    const minute = parseInt(s[1]!);
     if (hour > 23 || hour < 0) {
       throw `hour must be 0~23`;
     }
@@ -189,7 +189,7 @@ export function parseLater(later: string): Later {
     if (tokens.length !== 3) {
       throw `Unsupported format.  Should be 'In N (minutes|hours)'`;
     }
-    const n = parseInt(tokens[1]);
+    const n = parseInt(tokens[1]!);
     switch (tokens[2]) {
       case "minute":
       case "minutes":

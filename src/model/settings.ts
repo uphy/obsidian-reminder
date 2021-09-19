@@ -2,6 +2,7 @@ import { ReadOnlyReference, Reference } from "model/ref";
 import { AbstractTextComponent, Setting } from "obsidian";
 import { Later, parseLaters, Time } from "model/time";
 import { ReminderFormatType, ReminderFormatTypes } from "./format";
+import assert from "assert";
 
 class SettingRegistry {
     private settingContexts: Array<SettingContext> = [];
@@ -10,12 +11,8 @@ class SettingRegistry {
         this.settingContexts.push(settingContext);
     }
 
-    findByKey(key: string): SettingContext {
-        const found = this.settingContexts.filter(c => c.key === key);
-        if (found.length === 0) {
-            return undefined;
-        }
-        return found[0];
+    findByKey(key: string): SettingContext | undefined {
+        return this.settingContexts.find(c => c.key === key);
     }
 
     forEach(consumer: (context: SettingContext) => void): void {
@@ -423,13 +420,11 @@ export class LatersSerde implements Serde<string, Array<Later>>{
 
 export class ReminderFormatTypeSerde implements Serde<string, ReminderFormatType>{
 
-    unmarshal(rawValue: string): ReminderFormatType | null {
-        const format = ReminderFormatTypes.filter(format => format.name === rawValue);
-        if (format.length > 0) {
-            return format[0];
-        }
-        console.error("unexpected format: %s", rawValue);
-        return null;
+    unmarshal(rawValue: string): ReminderFormatType {
+        const format = ReminderFormatTypes.find(format => format.name === rawValue);
+        // TODO return undefined when it is not found
+        assert(format !== undefined);
+        return format;
     }
     marshal(value: ReminderFormatType): string {
         return value.name;

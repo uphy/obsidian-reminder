@@ -11,7 +11,7 @@ export type ReminderEdit = {
 }
 
 export interface ReminderModel {
-    getTitle(): string;
+    getTitle(): string | null;
     getTime(): DateTime | null;
     setTime(time: DateTime): void;
     /** return false when this reminder doesn't support raw time. */
@@ -88,7 +88,7 @@ export interface ReminderFormat {
      * @param line line in editor
      * @param time time to append
      */
-    appendReminder(line: string, time: DateTime): string;
+    appendReminder(line: string, time: DateTime): string | null;
 }
 
 export abstract class TodoBasedReminderFormat<E extends ReminderModel> implements ReminderFormat {
@@ -103,12 +103,20 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
         return doc.getTodos()
             .map(todo => {
                 const parsed = this.parseValidReminder(todo);
-                if (parsed === null) {
+                if (parsed == null) {
                     return null;
                 }
-                return new Reminder(doc.file, parsed.getTitle(), parsed.getTime(), todo.lineIndex, todo.isChecked());
+                const title = parsed.getTitle();
+                if (title == null) {
+                    return null;
+                }
+                const time = parsed.getTime();
+                if (time == null) {
+                    return null;
+                }
+                return new Reminder(doc.file, title, time, todo.lineIndex, todo.isChecked());
             })
-            .filter(reminder => reminder !== null);
+            .filter((reminder): reminder is Reminder => reminder != null);
     }
 
     async modify(doc: MarkdownDocument, reminder: Reminder, edit: ReminderEdit): Promise<boolean> {
@@ -159,13 +167,13 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
         return true;
     }
 
-    appendReminder(line: string, time: DateTime): string {
+    appendReminder(line: string, time: DateTime): string | null {
         const todo = Todo.parse(0, line);
-        if (todo === null) {
+        if (todo == null) {
             return null;
         }
         let parsed = this.parseReminder(todo);
-        if (parsed !== null) {
+        if (parsed != null) {
             parsed.setTime(time);
         } else {
             parsed = this.newReminder(todo.body, time);
@@ -175,7 +183,7 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
         return todo.toMarkdown();
     }
 
-    abstract parseReminder(todo: Todo): E;
+    abstract parseReminder(todo: Todo): E | null;
 
     abstract newReminder(title: string, time: DateTime): E;
 
@@ -194,7 +202,11 @@ export class CompositeReminderFormat implements ReminderFormat {
     parse(doc: MarkdownDocument): Reminder[] {
         const reminders: Array<Reminder> = []
         for (const format of this.formats) {
-            reminders.push(...format.parse(doc));
+            const parsed = format.parse(doc);
+            if (parsed == null) {
+                continue;
+            }
+            reminders.push(...parsed);
         }
         return reminders;
     }
@@ -218,7 +230,10 @@ export class CompositeReminderFormat implements ReminderFormat {
         this.formats.forEach(f => f.setConfig(this.config));
     }
 
-    appendReminder(line: string, time: DateTime): string {
+    appendReminder(line: string, time: DateTime): string | null {
+        if (this.formats[0] == null) {
+            return null;
+        }
         return this.formats[0].appendReminder(line, time);
     }
 

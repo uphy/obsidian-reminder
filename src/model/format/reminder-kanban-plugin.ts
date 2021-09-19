@@ -102,16 +102,19 @@ export class KanbanDateTimeFormat {
         const originalText = text;
         let title: string;
         let date: string;
-        let time: string;
+        let time: string | undefined;
 
         const dateMatch = this.dateRegExp.exec(text);
         if (dateMatch) {
-            date = dateMatch.groups["date"];
+            date = dateMatch.groups!["date"]!;
             text = text.replace(this.dateRegExp, "");
+        } else {
+            return { title: originalText };
         }
+
         const timeMatch = this.timeRegExp.exec(text);
         if (timeMatch) {
-            time = timeMatch.groups["time"];
+            time = timeMatch.groups!["time"]!;
             text = text.replace(this.timeRegExp, "");
         }
         title = text.trim();
@@ -134,6 +137,9 @@ export class KanbanReminderModel implements ReminderModel {
 
     static parse(line: string): KanbanReminderModel | null {
         const splitted = KanbanDateTimeFormat.instance.split(line);
+        if (splitted.time == null) {
+            return null;
+        }
         return new KanbanReminderModel(splitted.title, splitted.time);
     }
 
@@ -171,7 +177,7 @@ export class KanbanReminderFormat extends TodoBasedReminderFormat<KanbanReminder
 
     public static readonly instance = new KanbanReminderFormat();
 
-    parseReminder(todo: Todo): KanbanReminderModel {
+    parseReminder(todo: Todo): KanbanReminderModel | null {
         return KanbanReminderModel.parse(todo.body);
     }
 

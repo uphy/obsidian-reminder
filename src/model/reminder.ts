@@ -20,12 +20,12 @@ export class Reminder {
 
   public getFileName(): string {
     const p = this.file.split(/[\/\\]/);
-    return p[p.length - 1].replace(/^(.*?)(\..+)?$/, "$1");
+    return p[p.length - 1]!.replace(/^(.*?)(\..+)?$/, "$1");
   }
 
   static extractFileName(path: string) {
     const p = path.split(/[\/\\]/);
-    return p[p.length - 1].replace(/^(.*?)(\..+)?$/, "$1");
+    return p[p.length - 1]!.replace(/^(.*?)(\..+)?$/, "$1");
   }
 }
 
@@ -40,7 +40,7 @@ export class Reminders {
     const now = new Date().getTime();
     const result: Array<Reminder> = [];
     for (let i = 0; i < this.reminders.length; i++) {
-      const reminder = this.reminders[i];
+      const reminder = this.reminders[i]!;
       if (reminder.time.getTimeInMillis(defaultTime) <= now) {
         result.push(reminder);
       } else {
@@ -172,7 +172,7 @@ export function groupReminders(
   // Always shows today's group
   let previousGroup: Group = generateGroup(now, now, reminderTime);
   for (let i = 0; i < sortedReminders.length; i++) {
-    const r = sortedReminders[i];
+    const r = sortedReminders[i]!;
     if (r.muteNotification) {
       overdueReminders.push(r);
       continue;

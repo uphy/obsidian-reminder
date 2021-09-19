@@ -41,8 +41,12 @@ export class AutoComplete {
                 // append reminder to the line
                 const format = SETTINGS.primaryFormat.value.format;
                 try {
-                    line = format.appendReminder(line, value);
-                    cmEditor.replaceRange(line, { line: pos.line, ch: 0 }, endPos);
+                    const appended = format.appendReminder(line, value);
+                    if (appended == null) {
+                        console.error("Cannot append reminder time to the line: line=%s, date=%s", line, value);
+                        return;
+                    }
+                    cmEditor.replaceRange(appended, { line: pos.line, ch: 0 }, endPos);
                 } catch (ex) {
                     console.error(ex);
                 }

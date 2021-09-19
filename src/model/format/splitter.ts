@@ -1,3 +1,5 @@
+import assert from "assert";
+
 export type Token = {
     symbol: string,
     text: string
@@ -14,6 +16,9 @@ export class Symbol {
     static ofChars(ch: Array<string>): Symbol {
         if (ch.length === 0) {
             throw "empty symbol";
+        }
+        if (ch[0] == null) {
+            throw "ch mustn't be null";
         }
         if (ch.length === 0) {
             return this.ofChar(ch[0]);
@@ -56,6 +61,7 @@ export class Tokens {
 
             if (this.tokens.length > 0) {
                 const lastToken = this.tokens[this.tokens.length - 1];
+                assert(lastToken != null);
                 if (!this.isTokenEndsWithSpace(lastToken)) {
                     // last token doesn't end with space.  Append space to last token.
                     lastToken.text += ' ';
@@ -128,7 +134,7 @@ export class Tokens {
 export function splitBySymbol(line: string, symbols: Array<Symbol>): Array<Token> {
     const chars = [...line];
     let text: string = "";
-    let currentToken: Token = null;
+    let currentToken: Token | null = null;
     const splitted: Array<Token> = [];
 
     const fillPreviousToken = () => {

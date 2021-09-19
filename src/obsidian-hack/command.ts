@@ -1,3 +1,4 @@
+import assert from "assert";
 import { App, Command, Editor, MarkdownView, TFile, WorkspaceLeaf } from "obsidian";
 import { findLeafByFile } from "./leaf";
 
@@ -67,11 +68,13 @@ class RunnableEditorCommand extends AbstractCommand {
 
     runInCurrentLeaf() {
         const leaf = this.app.workspace.activeLeaf;
+        assert(leaf !== null);
         this.runInLeaf(leaf);
     }
 
     async openAndRun(file: TFile) {
         const leaf = await findLeafByFile(this.app, file, true);
+        assert(leaf !== null);
         this.runInLeaf(leaf);
     }
 
