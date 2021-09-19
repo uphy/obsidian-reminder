@@ -1,4 +1,3 @@
-import assert from "assert";
 import moment from "moment";
 
 export class Day {

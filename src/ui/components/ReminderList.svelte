@@ -1,5 +1,5 @@
 <script lang="typescript">
-  import { GroupedReminder, Reminder } from "model/reminder";
+  import type { GroupedReminder, Reminder } from "model/reminder";
   import ReminderListByDate from "./ReminderListByDate.svelte";
 
   export let groups: Array<GroupedReminder>;

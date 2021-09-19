@@ -1,6 +1,6 @@
-import { ItemView, View, Workspace, WorkspaceLeaf } from "obsidian";
 import type { ReadOnlyReference } from "model/ref";
 import type { Time } from "model/time";
+import { ItemView, View, Workspace, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_REMINDER_LIST } from "../constants";
 import { groupReminders, Reminder, Reminders } from "../model/reminder";
 import ReminderListView from "./components/ReminderList.svelte";

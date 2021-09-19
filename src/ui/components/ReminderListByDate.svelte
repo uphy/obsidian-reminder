@@ -1,7 +1,7 @@
 <script lang="typescript">
-  import { Reminder } from "../../model/reminder";
   import MarkdownIt from "markdown-it";
-  import { DateTime } from "model/time";
+  import type { DateTime } from "model/time";
+  import type { Reminder } from "../../model/reminder";
   const md = new MarkdownIt();
 
   export let reminders: Array<Reminder>;
@@ -64,7 +64,7 @@
     font-family: monospace, serif;
   }
   .reminder-file {
-    color:var(--text-faint)
+    color: var(--text-faint);
   }
   .no-reminders {
     font-style: italic;

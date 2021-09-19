@@ -1,10 +1,10 @@
-import { DateTime, DATE_TIME_FORMATTER } from "model/time";
-import { splitBySymbol, Symbol, Tokens } from "./splitter";
-import { ReminderModel, TodoBasedReminderFormat, ReminderEdit, ReminderFormatParameterKey } from "./reminder-base";
+import assert from "assert";
 import type { MarkdownDocument, Todo } from "model/format/markdown";
+import { DateTime, DATE_TIME_FORMATTER } from "model/time";
 import moment, { Moment } from "moment";
 import { RRule } from "rrule";
-import assert from "assert";
+import { ReminderEdit, ReminderFormatParameterKey, ReminderModel, TodoBasedReminderFormat } from "./reminder-base";
+import { splitBySymbol, Symbol, Tokens } from "./splitter";
 
 export class TasksPluginReminderModel implements ReminderModel {
 

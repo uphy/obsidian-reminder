@@ -1,11 +1,10 @@
 <script lang="typescript">
+    import { Calendar } from "model/calendar";
+    import type { Reminders } from "model/reminder";
     import { DateTime } from "model/time";
     import moment from "moment";
-    import { Calendar } from "model/calendar";
-    import ReminderListByDate from "./ReminderListByDate.svelte";
-
     import CalendarView from "./Calendar.svelte";
-    import { Reminders } from "model/reminder";
+    import ReminderListByDate from "./ReminderListByDate.svelte";
 
     export let calendar: Calendar = new Calendar();
     export let selectedDate = moment();

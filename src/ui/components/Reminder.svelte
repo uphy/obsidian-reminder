@@ -1,6 +1,6 @@
 <script lang="typescript">
-  import { Reminder } from "../../model/reminder";
-  import { DateTime, Later } from "../../model/time";
+  import type { Reminder } from "../../model/reminder";
+  import type { DateTime, Later } from "../../model/time";
   import Icon from "./Icon.svelte";
 
   export let reminder: Reminder;
@@ -10,16 +10,22 @@
   // Do not set initial value so that svelte can render the placeholder `Remind Me Later`.
   let selectedIndex: number;
 
-  export let laters: Array<Later>;
+  export let laters: Array<Later> = [];
 
   function remindMeLater() {
-    onRemindMeLater(laters[selectedIndex].later());
+    const selected = laters[selectedIndex];
+    if (selected == null) {
+      return;
+    }
+    onRemindMeLater(selected.later());
   }
 </script>
 
 <main>
   <h1>{reminder.title}</h1>
-  <span class="reminder-file" on:click={onOpenFile}><Icon icon="link"></Icon>{reminder.file}</span>
+  <span class="reminder-file" on:click={onOpenFile}>
+    <Icon icon="link" />{reminder.file}
+  </span>
   <div class="reminder-actions">
     <button class="mod-cta" on:click={onDone}>Mark as Done</button>
     <select

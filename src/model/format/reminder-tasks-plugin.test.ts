@@ -1,7 +1,7 @@
-import { TasksPluginReminderModel, TasksPluginFormat } from "model/format/reminder-tasks-plugin";
+import { MarkdownDocument } from "model/format/markdown";
+import { TasksPluginFormat, TasksPluginReminderModel } from "model/format/reminder-tasks-plugin";
 import { DateTime } from "model/time";
 import moment from "moment";
-import { MarkdownDocument } from "model/format/markdown";
 import { ReminderFormatConfig, ReminderFormatParameterKey } from "./reminder-base";
 
 describe('TasksPluginReminderLine', (): void => {

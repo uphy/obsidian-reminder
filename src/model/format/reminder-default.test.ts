@@ -1,8 +1,8 @@
 import { DateTime } from "model/time";
+import moment from "moment";
 import { ReminderFormatParameterKey } from "./reminder-base";
 import { ReminderFormatTestUtil } from "./reminder-base.test";
 import { DefaultReminderFormat } from "./reminder-default";
-import moment from "moment";
 
 describe('DefaultReminderFormat', (): void => {
     const util = new ReminderFormatTestUtil(() => new DefaultReminderFormat());

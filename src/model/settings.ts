@@ -1,8 +1,8 @@
-import { ReadOnlyReference, Reference } from "model/ref";
-import { AbstractTextComponent, Setting } from "obsidian";
-import { Later, parseLaters, Time } from "model/time";
-import { ReminderFormatType, ReminderFormatTypes } from "./format";
 import assert from "assert";
+import { ReadOnlyReference, Reference } from "model/ref";
+import { Later, parseLaters, Time } from "model/time";
+import { AbstractTextComponent, Setting } from "obsidian";
+import { ReminderFormatType, ReminderFormatTypes } from "./format";
 
 class SettingRegistry {
     private settingContexts: Array<SettingContext> = [];

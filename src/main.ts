@@ -1,21 +1,21 @@
+import { RemindersController } from "controller";
+import { PluginDataIO } from "data";
+import { Reminder, Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER } from "model/time";
 import {
   App,
   Plugin,
   PluginManifest,
-  WorkspaceLeaf,
+  WorkspaceLeaf
 } from "obsidian";
-import { openDateTimeFormatChooser } from "ui/datetime-format-modal";
-import { OkCancel, showOkCancelDialog } from "ui/util";
-import { VIEW_TYPE_REMINDER_LIST } from "./constants";
-import { RemindersController } from "controller";
-import { PluginDataIO } from "data";
-import { Reminder, Reminders } from "model/reminder";
 import { ReminderSettingTab, SETTINGS } from "settings";
+import { AutoComplete } from "ui/autocomplete";
 import { DateTimeChooserView } from "ui/datetime-chooser";
+import { openDateTimeFormatChooser } from "ui/datetime-format-modal";
 import { ReminderModal } from "ui/reminder";
 import { ReminderListItemViewProxy } from "ui/reminder-list";
-import { AutoComplete } from "ui/autocomplete";
+import { OkCancel, showOkCancelDialog } from "ui/util";
+import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 
 export default class ReminderPlugin extends Plugin {
   pluginDataIO: PluginDataIO;

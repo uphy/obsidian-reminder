@@ -1,6 +1,6 @@
-import { TodoBasedReminderFormat, ReminderModel, ReminderFormatParameterKey } from "./reminder-base";
 import { DateTime, DATE_TIME_FORMATTER } from "model/time";
 import type { Todo } from "./markdown";
+import { ReminderFormatParameterKey, ReminderModel, TodoBasedReminderFormat } from "./reminder-base";
 
 class DefaultReminderModel implements ReminderModel {
 

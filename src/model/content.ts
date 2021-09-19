@@ -1,4 +1,4 @@
-import { ReminderEdit, MarkdownDocument, modifyReminder, parseReminder } from "model/format";
+import { MarkdownDocument, modifyReminder, parseReminder, ReminderEdit } from "model/format";
 import type { Reminder } from "model/reminder";
 import type { Todo } from "./format/markdown";
 

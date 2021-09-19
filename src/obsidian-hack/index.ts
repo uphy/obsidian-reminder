@@ -5,4 +5,4 @@ export {
     findCommand,
     findEditorCommand,
     isPluginInstalled
-}
+};

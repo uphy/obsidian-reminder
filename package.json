@@ -40,8 +40,8 @@
   },
   "jest": {
     "moduleFileExtensions": [
-      "ts",
-      "js"
+      "js",
+      "ts"
     ],
     "testEnvironment": "jsdom",
     "moduleDirectories": [
@@ -53,11 +53,12 @@
     },
     "globals": {
       "ts-jest": {
-        "tsConfig": "tsconfig.json"
+        "tsconfig": "tsconfig.json"
       }
     },
     "testMatch": [
       "**/*.test.ts"
-    ]
+    ],
+    "preset": "ts-jest"
   }
 }

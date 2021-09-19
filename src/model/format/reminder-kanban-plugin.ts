@@ -1,7 +1,7 @@
-import { ReminderModel, TodoBasedReminderFormat } from "./reminder-base";
 import { DateTime } from "model/time";
 import moment from "moment";
 import type { Todo } from "./markdown";
+import { ReminderModel, TodoBasedReminderFormat } from "./reminder-base";
 import { escapeRegExpChars } from "./util";
 
 type KanbanSettingType = {

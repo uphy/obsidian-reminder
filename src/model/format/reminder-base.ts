@@ -1,9 +1,8 @@
-import { Reminder } from "model/reminder"
-import { DateTime } from "model/time"
 import type { MarkdownDocument } from "model/format/markdown";
-import { Todo } from "./markdown";
 import type { ReadOnlyReference } from "model/ref";
-import assert from "assert";
+import { Reminder } from "model/reminder";
+import { DateTime } from "model/time";
+import { Todo } from "./markdown";
 
 export type ReminderEdit = {
     time?: DateTime,
