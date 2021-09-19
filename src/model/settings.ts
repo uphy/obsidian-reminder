@@ -216,7 +216,11 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
                             context.setValidationError(null);
                             this.onValueChange();
                         } catch (e) {
-                            context.setValidationError(e);
+                            if (e instanceof Error) {
+                                context.setValidationError(e.message);
+                            } else if (typeof e === "string") {
+                                context.setValidationError(e);
+                            }
                         }
                     })
             }

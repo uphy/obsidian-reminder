@@ -30,7 +30,7 @@
     "svelte-preprocess": "^4.7.4",
     "ts-jest": "^27.0.5",
     "tslib": "^2.2.0",
-    "typescript": "^4.3.5"
+    "typescript": "^4.4.3"
   },
   "dependencies": {
     "electron": "^13.1.8",

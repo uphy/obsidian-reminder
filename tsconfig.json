@@ -32,6 +32,7 @@
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
+    "useUnknownInCatchVariables": true,
     "importsNotUsedAsValues": "error",
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
