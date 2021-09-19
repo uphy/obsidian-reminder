@@ -31,7 +31,7 @@
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
-    "strictPropertyInitialization": false,
+    "strictPropertyInitialization": true,
     "importsNotUsedAsValues": "error",
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,

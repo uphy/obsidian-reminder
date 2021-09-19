@@ -55,8 +55,8 @@ export type TodoEdit = {
 
 export class MarkdownDocument {
 
-    private lines: Array<string>;
-    private todos: Array<Todo>;
+    private lines: Array<string> = [];
+    private todos: Array<Todo> = [];
 
     constructor(public file: string, content: string) {
         this.parse(content);

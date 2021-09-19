@@ -22,15 +22,15 @@ class SettingRegistry {
 
 class SettingContext {
 
-    private validationEl: HTMLElement;
-    private infoEl: HTMLElement;
-    private _setting: Setting;
-    public key: string;
-    public name: string;
-    public desc: string;
+    private validationEl?: HTMLElement;
+    private infoEl?: HTMLElement;
+    private _setting?: Setting;
+    public key?: string;
+    public name?: string;
+    public desc?: string;
     public tags: Array<string> = [];
-    public settingModel: SettingModel<any, any>;
-    anyValueChanged: AnyValueChanged;
+    public settingModel?: SettingModel<any, any>;
+    anyValueChanged?: AnyValueChanged;
 
     constructor(private _settingRegistry: SettingRegistry) { }
 
@@ -53,11 +53,11 @@ class SettingContext {
     }
 
     setValidationError(error: string | null) {
-        this.setText(this.validationEl, error);
+        this.setText(this.validationEl!, error);
     }
 
     setInfo(info: string | null) {
-        this.setText(this.infoEl, info);
+        this.setText(this.infoEl!, info);
     }
 
     private setText(el: HTMLElement, text: string | null) {
@@ -93,7 +93,7 @@ class SettingContext {
     }
 
     setEnabled(enable: boolean) {
-        this.setting.setDisabled(!enable);
+        this.setting!.setDisabled(!enable);
     }
 
     findContextByKey(key: string) {
@@ -101,7 +101,7 @@ class SettingContext {
     }
 
     booleanValue() {
-        return this.settingModel.value as boolean;
+        return this.settingModel!.value as boolean;
     }
 
     isInitialized() {
@@ -192,7 +192,7 @@ abstract class AbstractSettingModelBuilder<R> {
 
 class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
 
-    private _placeHolder: string;
+    private _placeHolder?: string;
 
     constructor(context: SettingContext, private longText: boolean, initValue: string) {
         super(context, initValue);
@@ -207,7 +207,7 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
         return this.buildSettingModel(serde, ({ setting, rawValue, context }) => {
             const initText = (text: AbstractTextComponent<any>) => {
                 text
-                    .setPlaceholder(this._placeHolder)
+                    .setPlaceholder(this._placeHolder ?? "")
                     .setValue(rawValue.value)
                     .onChange(async (value) => {
                         try {
@@ -304,12 +304,15 @@ class SettingModelImpl<R, E> implements SettingModel<R, E>{
 
     constructor(private context: SettingContext, private serde: Serde<R, E>, initRawValue: R, private settingInitializer: SettingInitilizer<R>) {
         this.rawValue = new Reference(initRawValue);
+        if (context.key == null) {
+            throw new Error("key is required.");
+        }
     }
 
     createSetting(containerEl: HTMLElement): Setting {
         const setting = new Setting(containerEl)
-            .setName(this.context.name)
-            .setDesc(this.context.desc);
+            .setName(this.context.name ?? "")
+            .setDesc(this.context.desc ?? "");
         this.context.init(this, setting, containerEl);
         this.settingInitializer({
             setting,
@@ -324,7 +327,7 @@ class SettingModelImpl<R, E> implements SettingModel<R, E>{
     }
 
     get key() {
-        return this.context.key;
+        return this.context.key!;
     }
 
     load(settings: any): void {

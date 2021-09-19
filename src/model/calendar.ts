@@ -1,3 +1,4 @@
+import assert from "assert";
 import moment from "moment";
 
 export class Day {
@@ -58,14 +59,10 @@ export class Calendar {
         }
 
         if (monthStart) {
-            this.setCurrent(monthStart);
+            this._current = new Month(monthStart.clone().set("date", 1));
         } else {
-            this.setCurrent(this.today.clone());
+            this._current = new Month(this.today.clone().set("date", 1));
         }
-    }
-
-    private setCurrent(monthStart: moment.Moment) {
-        this._current = new Month(monthStart.clone().set("date", 1));
     }
 
     public nextMonth() {

@@ -32,7 +32,7 @@ export class Reminder {
 export class Reminders {
   public fileToReminders: Map<string, Array<Reminder>> = new Map();
   public reminders: Array<Reminder> = [];
-  public reminderTime: ReadOnlyReference<Time>;
+  public reminderTime?: ReadOnlyReference<Time>;
 
   constructor(private onChange: () => void) { }
 
@@ -109,8 +109,8 @@ export class Reminders {
 
     reminders.sort((a, b) => {
       const d =
-        a.time.getTimeInMillis(this.reminderTime.value) -
-        b.time.getTimeInMillis(this.reminderTime.value);
+        a.time.getTimeInMillis(this.reminderTime?.value) -
+        b.time.getTimeInMillis(this.reminderTime?.value);
       return d > 0 ? 1 : d < 0 ? -1 : 0;
     });
     this.reminders = reminders;

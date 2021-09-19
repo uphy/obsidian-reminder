@@ -3,6 +3,7 @@ import { DateTime } from "model/time"
 import type { MarkdownDocument } from "model/format/markdown";
 import { Todo } from "./markdown";
 import type { ReadOnlyReference } from "model/ref";
+import assert from "assert";
 
 export type ReminderEdit = {
     time?: DateTime,
@@ -191,7 +192,7 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
 
 export class CompositeReminderFormat implements ReminderFormat {
 
-    private config: ReminderFormatConfig;
+    private config?: ReminderFormatConfig;
     private formats: Array<ReminderFormat> = [];
 
     setConfig(config: ReminderFormatConfig): void {
@@ -227,7 +228,10 @@ export class CompositeReminderFormat implements ReminderFormat {
     }
 
     private syncConfig() {
-        this.formats.forEach(f => f.setConfig(this.config));
+        if (this.config == null) {
+            return;
+        }
+        this.formats.forEach(f => f.setConfig(this.config!));
     }
 
     appendReminder(line: string, time: DateTime): string | null {

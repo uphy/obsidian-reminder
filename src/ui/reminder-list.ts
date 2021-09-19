@@ -6,7 +6,7 @@ import { groupReminders, Reminder, Reminders } from "../model/reminder";
 import ReminderListView from "./components/ReminderList.svelte";
 
 class ReminderListItemView extends ItemView {
-  private view: ReminderListView;
+  private view?: ReminderListView;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -41,6 +41,9 @@ class ReminderListItemView extends ItemView {
   }
 
   reload() {
+    if (this.view == null) {
+      return;
+    }
     this.view.$set({
       groups: this.remindersForView(),
       onOpenReminder: this.onOpenReminder,
