@@ -7,6 +7,7 @@
   export let onRemindMeLater: (time: DateTime) => void;
   export let onDone: () => void;
   export let onOpenFile: () => void;
+  export let onMute: () => void;
   // Do not set initial value so that svelte can render the placeholder `Remind Me Later`.
   let selectedIndex: number;
 
@@ -24,10 +25,16 @@
 <main>
   <h1>{reminder.title}</h1>
   <span class="reminder-file" on:click={onOpenFile}>
-    <Icon icon="link" />{reminder.file}
+    <Icon icon="link" />
+    {reminder.file}
   </span>
   <div class="reminder-actions">
-    <button class="mod-cta" on:click={onDone}>Mark as Done</button>
+    <button class="mod-cta" on:click={onDone}>
+      <Icon icon="check-small" /> Mark as Done
+    </button>
+    <button on:click={onMute}>
+      <Icon icon="minus-with-circle" /> Mute
+    </button>
     <select
       class="dropdown later-select"
       bind:value={selectedIndex}

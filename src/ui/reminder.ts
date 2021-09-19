@@ -118,6 +118,10 @@ class NotificationModal extends Modal {
           this.onOpenFile();
           this.close();
         },
+        onMute: () => {
+          this.canceled = true;
+          this.close();
+        },
       },
     });
   }
