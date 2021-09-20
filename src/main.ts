@@ -218,7 +218,7 @@ export default class ReminderPlugin extends Plugin {
         this.periodicTask().finally(() => {
           intervalTaskRunning = false;
         });
-      }, 5000)
+      }, SETTINGS.reminderCheckIntervalSec.value * 1000)
     );
   }
 

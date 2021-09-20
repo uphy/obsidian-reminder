@@ -21,6 +21,7 @@ class Settings {
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
   editDetectionSec: SettingModel<number, number>;
+  reminderCheckIntervalSec: SettingModel<number, number>;
 
   constructor() {
     const reminderFormatSettings = new ReminderFormatSettings(this.settings);
@@ -123,6 +124,12 @@ class Settings {
       .desc("The minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable.")
       .number(10)
       .build(new RawSerde());
+    this.reminderCheckIntervalSec = this.settings.newSettingBuilder()
+      .key("reminderCheckIntervalSec")
+      .name("Reminder check interval")
+      .desc("Interval(in seconds) to periodically check whether or not you should be notified of reminders.  You will need to restart Obsidian for this setting to take effect.")
+      .number(5)
+      .build(new RawSerde());
 
     this.settings
       .newGroup("Notification Settings")
@@ -159,7 +166,8 @@ class Settings {
     this.settings
       .newGroup("Advanced")
       .addSettings(
-        this.editDetectionSec
+        this.editDetectionSec,
+        this.reminderCheckIntervalSec
       );
 
     const config = new ReminderFormatConfig();

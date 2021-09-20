@@ -126,3 +126,11 @@ The value of this setting is the minimum amount of time (in seconds) after a key
 - Type: `number`
 - Value: The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable.  If this value is set to 0, the reminder will be displayed even if the file is being edited.
 - Default: `10`
+
+## Reminder check interval
+
+Interval(in seconds) to periodically check whether or not you should be notified of reminders.  
+You will need to restart Obsidian for this setting to take effect.
+
+- Type: `number`
+- Default: `5`
