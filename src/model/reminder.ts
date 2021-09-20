@@ -191,7 +191,7 @@ export function groupReminders(
     result.push(new GroupedReminder(previousGroup, currentReminders));
   }
   if (overdueReminders.length > 0) {
-    const overdueGroup: Group = new Group("Overdue", (time) => time.format("HH:mm"));
+    const overdueGroup: Group = new Group("Overdue", (time) => time.format("HH:mm", reminderTime));
     overdueGroup.isOverdue = true;
     result.splice(0, 0, new GroupedReminder(overdueGroup, overdueReminders));
     console.log(overdueGroup);

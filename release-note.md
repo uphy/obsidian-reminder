@@ -3,6 +3,8 @@
 
 ## 👍 Improvements
 
+- Added the ability to change detailed settings for reminder notification conditions. (Settings > Advanced)
+
 - [ ] Non-strict date time format #8
 - [ ] Remind me later with time info #11
 - [ ] Document
@@ -16,6 +18,5 @@
 
 ## 🐛 Bug fix
 
-- Custom emoji not work #10
+- Fix an issue where the time of overdue reminders would be displayed as `0:00`
 - カレンダー見切れる問題
-- Overdueのreminder時間が00:00になる？
