@@ -20,6 +20,7 @@ class Settings {
   primaryFormat: SettingModel<string, ReminderFormatType>;
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
+  editDetectionSec: SettingModel<number, number>;
 
   constructor() {
     const reminderFormatSettings = new ReminderFormatSettings(this.settings);
@@ -116,6 +117,13 @@ class Settings {
       })
       .build(new RawSerde());
 
+    this.editDetectionSec = this.settings.newSettingBuilder()
+      .key("editDetectionSec")
+      .name("Edit Detection Time")
+      .desc("The minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable.")
+      .number(10)
+      .build(new RawSerde());
+
     this.settings
       .newGroup("Notification Settings")
       .addSettings(
@@ -147,6 +155,11 @@ class Settings {
       .newGroup("Reminder Format - Kanban Plugin")
       .addSettings(
         reminderFormatSettings.enableKanbanPluginReminderFormat,
+      );
+    this.settings
+      .newGroup("Advanced")
+      .addSettings(
+        this.editDetectionSec
       );
 
     const config = new ReminderFormatConfig();

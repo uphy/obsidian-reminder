@@ -1,5 +1,6 @@
 import { RemindersController } from "controller";
 import { PluginDataIO } from "data";
+import type { ReadOnlyReference } from "model/ref";
 import { Reminder, Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER } from "model/time";
 import {
@@ -22,7 +23,7 @@ export default class ReminderPlugin extends Plugin {
   private viewProxy: ReminderListItemViewProxy;
   private reminders: Reminders;
   private remindersController: RemindersController;
-  private editDetector = new EditDetector();
+  private editDetector: EditDetector;
   private reminderModal: ReminderModal;
   private autoComplete: AutoComplete;
 
@@ -38,6 +39,7 @@ export default class ReminderPlugin extends Plugin {
     this.pluginDataIO = new PluginDataIO(this, this.reminders);
     this.reminders.reminderTime = SETTINGS.reminderTime;
     DATE_TIME_FORMATTER.setTimeFormat(SETTINGS.dateFormat, SETTINGS.dateTimeFormat);
+    this.editDetector = new EditDetector(SETTINGS.editDetectionSec);
     this.viewProxy = new ReminderListItemViewProxy(app.workspace, this.reminders, SETTINGS.reminderTime,
       // On select a reminder in the list
       (reminder) => {
@@ -301,16 +303,21 @@ export default class ReminderPlugin extends Plugin {
 class EditDetector {
   private lastModified?: Date;
 
+  constructor(private editDetectionSec: ReadOnlyReference<number>) { }
+
   fileChanged() {
     this.lastModified = new Date();
   }
 
   isEditing(): boolean {
+    if (this.editDetectionSec.value <= 0) {
+      return false;
+    }
     if (this.lastModified == null) {
       return false;
     }
     const elapsedSec =
       (new Date().getTime() - this.lastModified.getTime()) / 1000;
-    return elapsedSec < 10;
+    return elapsedSec < this.editDetectionSec.value;
   }
 }

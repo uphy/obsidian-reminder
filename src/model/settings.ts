@@ -151,6 +151,10 @@ export class SettingModelBuilder {
         return new TextSettingModelBuilder(this.context, true, initValue);
     }
 
+    number(initValue: number) {
+        return new NumberSettingModelBuilder(this.context, initValue);
+    }
+
     toggle(initValue: boolean) {
         return new ToggleSettingModelBuilder(this.context, initValue);
     }
@@ -233,6 +237,47 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
                     initText(text);
                 })
             }
+        });
+    }
+}
+
+class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number>{
+
+    private _placeHolder?: string;
+
+    constructor(context: SettingContext, initValue: number) {
+        super(context, initValue);
+    }
+
+    placeHolder(placeHolder: string) {
+        this._placeHolder = placeHolder;
+        return this;
+    }
+
+    build<E>(serde: Serde<number, E>): SettingModel<number, E> {
+        return this.buildSettingModel(serde, ({ setting, rawValue, context }) => {
+            const initText = (text: AbstractTextComponent<any>) => {
+                text
+                    .setPlaceholder(this._placeHolder ?? "")
+                    .setValue(rawValue.value.toString())
+                    .onChange(async (value) => {
+                        try {
+                            const n = parseInt(value);
+                            rawValue.value = n;
+                            context.setValidationError(null);
+                            this.onValueChange();
+                        } catch (e) {
+                            if (e instanceof Error) {
+                                context.setValidationError(e.message);
+                            } else if (typeof e === "string") {
+                                context.setValidationError(e);
+                            }
+                        }
+                    })
+            }
+            setting.addText((textarea) => {
+                initText(textarea);
+            })
         });
     }
 }

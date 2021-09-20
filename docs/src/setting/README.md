@@ -117,3 +117,12 @@ Enable support for [Kanban Plugin](https://github.com/mgmeyers/obsidian-kanban)
 - Values:
     - ON: Enable Kanban plugin format
     - OFF: Disable Kanban plugin format (default)
+
+## Edit Detection Time
+
+In order not to interfere with normal Markdown editing, the Reminder Plugin will not show reminders while the user is editing a file.
+The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable.
+
+- Type: `number`
+- Value: The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable.  If this value is set to 0, the reminder will be displayed even if the file is being edited.
+- Default: `10`
