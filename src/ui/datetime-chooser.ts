@@ -24,6 +24,8 @@ export class DateTimeChooserView {
 
     constructor(private editor: CodeMirror.Editor, reminders: Reminders) {
         this.view = document.createElement("div");
+        this.view.addClass("date-time-chooser-popup");
+        this.view.style.position = "fixed";
         this.dateTimeChooser = new DateTimeChooser({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             target: this.view,
@@ -46,10 +48,14 @@ export class DateTimeChooserView {
         });
 
         const cursor = this.editor.getCursor();
-        this.editor.addWidget({
-            ch: cursor.ch,
-            line: cursor.line
-        }, this.view, true);
+        const coords = this.editor.charCoords(cursor);
+
+        const parent = document.body;
+        const parentRect = parent.getBoundingClientRect();
+        this.view.style.top = `${coords.top - parentRect.top + this.editor.defaultTextHeight()}px`;
+        this.view.style.left = `${coords.left - parentRect.left}px`;
+
+        parent.appendChild(this.view);
         this.editor.addKeyMap(this.keyMaps);
         return new Promise<DateTime>((resolve, reject) => {
             this.resultResolve = resolve;
