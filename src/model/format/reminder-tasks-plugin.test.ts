@@ -79,7 +79,15 @@ describe('TasksPluginReminderLine', (): void => {
             now: "2021-09-15 09:10",
             customEmoji: true,
             inputMarkdown: `- [ ] Task ⏰ 2021-09-13 09:00`,
-            expectedMarkdown: `- [x] Task ⏰ 2021-09-13 09:00 ✅ 2021-09-15`
+            expectedMarkdown: undefined
+        });
+    });
+    test('modify() - custom emoji - reminder emoji only', async () => {
+        await testModify({
+            now: "2021-09-15 09:10",
+            customEmoji: true,
+            inputMarkdown: `- [ ] Task ⏰ 2021-09-13 09:00 📅 2021-09-13`,
+            expectedMarkdown: `- [x] Task ⏰ 2021-09-13 09:00 📅 2021-09-13 ✅ 2021-09-15`
         });
     });
 });
@@ -93,7 +101,7 @@ async function testModify({
     now: string,
     customEmoji: boolean,
     inputMarkdown: string,
-    expectedMarkdown: string
+    expectedMarkdown: string | undefined
 }) {
     const doc = new MarkdownDocument("file", inputMarkdown);
     const sut = new TasksPluginFormat();
@@ -103,6 +111,9 @@ async function testModify({
     sut.setConfig(config);
 
     const reminders = sut.parse(doc);
+    if (reminders.length === 0 && expectedMarkdown === undefined) {
+        return;
+    }
     await sut.modify(doc, reminders[0]!, { checked: true })
     expect(doc.toMarkdown()).toBe(expectedMarkdown);
 }

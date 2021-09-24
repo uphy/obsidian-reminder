@@ -136,7 +136,6 @@ export class RemindersController {
     const content = new Content(file.path, await this.vault.read(file));
 
     const reminder = content.getReminders(false).find(r => r.rowNumber === lineNumber);
-    console.log(reminder);
     if (reminder) {
       await content.updateReminder(reminder, {
         checked: !reminder.done

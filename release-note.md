@@ -1,3 +1,13 @@
+## ✨ New features
+
+
+## 👍 Improvements
+
+- [ ] Non-strict date time format #8
+- [ ] Remind me later with time info #11
+- [ ] Tooltip on reminder list view
+
 ## 🐛 Bug fix
 
-- Pop-up of calendar date picker goes underneath other panes, should be above #24
+- Fix format issue of tasks plugin with ⏰ emoji
+    - If the task doesn't have due date(📅), it shouldn't be recognized as reminder

@@ -142,8 +142,12 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
 
     public static readonly instance = new TasksPluginFormat();
 
-    parseReminder(todo: Todo): TasksPluginReminderModel {
-        return TasksPluginReminderModel.parse(todo.body, this.useCustomEmoji());
+    parseReminder(todo: Todo): TasksPluginReminderModel | null {
+        const parsed = TasksPluginReminderModel.parse(todo.body, this.useCustomEmoji());
+        if (this.useCustomEmoji() && parsed.getDueDate() == null) {
+            return null;
+        }
+        return parsed;
     }
 
     private useCustomEmoji() {
@@ -223,6 +227,9 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
     newReminder(title: string, time: DateTime): TasksPluginReminderModel {
         const parsed = TasksPluginReminderModel.parse(title, this.useCustomEmoji());
         parsed.setTime(time);
+        if (this.useCustomEmoji() && parsed.getDueDate() == null) {
+            parsed.setDueDate(time);
+        }
         parsed.setTitle(title);
         return parsed;
     }
