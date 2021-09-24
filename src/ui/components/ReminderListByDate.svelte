@@ -20,6 +20,9 @@
       {#each reminders as reminder}
         <div
           class="reminder-list-item"
+          aria-label={`[${reminder.time.toString()}] ${
+            reminder.title
+          } - ${reminder.getFileName()}`}
           on:click={() => {
             onOpenReminder(reminder);
           }}

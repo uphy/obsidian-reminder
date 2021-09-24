@@ -3,9 +3,10 @@
 
 ## 👍 Improvements
 
+- Tooltip on reminder list view
+
 - [ ] Non-strict date time format #8
 - [ ] Remind me later with time info #11
-- [ ] Tooltip on reminder list view
 
 ## 🐛 Bug fix
 
