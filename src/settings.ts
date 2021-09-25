@@ -16,6 +16,7 @@ class Settings {
   laters: SettingModel<string, Array<Later>>;
   dateFormat: SettingModel<string, string>;
   dateTimeFormat: SettingModel<string, string>;
+  strictDateFormat: SettingModel<boolean, boolean>;
   autoCompleteTrigger: SettingModel<string, string>;
   primaryFormat: SettingModel<string, ReminderFormatType>;
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
@@ -60,6 +61,14 @@ class Settings {
       .onAnyValueChanged(context => {
         context.setEnabled(reminderFormatSettings.enableReminderPluginReminderFormat.value);
       })
+      .build(new RawSerde());
+
+    this.strictDateFormat = this.settings.newSettingBuilder()
+      .key("strictDateFormat")
+      .name("Strict Date format")
+      .desc("Strictly parse the date and time")
+      .tag(TAG_RESCAN)
+      .toggle(false)
       .build(new RawSerde());
 
     this.dateTimeFormat = this.settings.newSettingBuilder()
@@ -150,6 +159,7 @@ class Settings {
         reminderFormatSettings.enableReminderPluginReminderFormat,
         this.dateFormat,
         this.dateTimeFormat,
+        this.strictDateFormat,
         this.linkDatesToDailyNotes
       );
     this.settings

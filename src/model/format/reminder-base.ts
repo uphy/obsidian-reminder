@@ -23,6 +23,7 @@ export class ReminderFormatParameterKey<T> {
     static readonly now = new ReminderFormatParameterKey<DateTime>("now", DateTime.now());
     static readonly useCustomEmojiForTasksPlugin = new ReminderFormatParameterKey<boolean>("useCustomEmojiForTasksPlugin", false);
     static readonly linkDatesToDailyNotes = new ReminderFormatParameterKey<boolean>("linkDatesToDailyNotes", false);
+    static readonly strictDateFormat = new ReminderFormatParameterKey<boolean>("strictDateFormat", false);
     constructor(public readonly key: string, public readonly defaultValue: T) {
     }
 }
@@ -186,6 +187,10 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
     abstract parseReminder(todo: Todo): E | null;
 
     abstract newReminder(title: string, time: DateTime): E;
+
+    protected isStrictDateFormat() {
+        return this.config.getParameter(ReminderFormatParameterKey.strictDateFormat);
+    }
 
 }
 

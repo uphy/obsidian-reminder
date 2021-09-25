@@ -38,7 +38,7 @@ export default class ReminderPlugin extends Plugin {
     });
     this.pluginDataIO = new PluginDataIO(this, this.reminders);
     this.reminders.reminderTime = SETTINGS.reminderTime;
-    DATE_TIME_FORMATTER.setTimeFormat(SETTINGS.dateFormat, SETTINGS.dateTimeFormat);
+    DATE_TIME_FORMATTER.setTimeFormat(SETTINGS.dateFormat, SETTINGS.dateTimeFormat, SETTINGS.strictDateFormat);
     this.editDetector = new EditDetector(SETTINGS.editDetectionSec);
     this.viewProxy = new ReminderListItemViewProxy(app.workspace, this.reminders, SETTINGS.reminderTime,
       // On select a reminder in the list

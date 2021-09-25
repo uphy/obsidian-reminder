@@ -250,18 +250,31 @@ class DateTimeFormatter {
 
   private dateFormat: ReadOnlyReference<string> = new ConstantReference("YYYY-MM-DD");
   private dateTimeFormat: ReadOnlyReference<string> = new ConstantReference("YYYY-MM-DD HH:mm");
+  private strict: ReadOnlyReference<boolean> = new ConstantReference(false);
 
-  setTimeFormat(dateFormat: ReadOnlyReference<string>, dateTimeFormat: ReadOnlyReference<string>) {
+  setTimeFormat(dateFormat: ReadOnlyReference<string>, dateTimeFormat: ReadOnlyReference<string>, strict: ReadOnlyReference<boolean>) {
     this.dateFormat = dateFormat;
     this.dateTimeFormat = dateTimeFormat;
+    this.strict = strict;
   }
 
   parse(text: string): DateTime | null {
-    const dateTime = moment(text, this.dateTimeFormat.value, true);
+    const parsed = this.doParse(text, true);
+    if (parsed != null) {
+      return parsed;
+    }
+    if (this.strict.value) {
+      return null;
+    }
+    return this.doParse(text, false);
+  }
+
+  private doParse(text: string, strict: boolean): DateTime | null {
+    const dateTime = moment(text, this.dateTimeFormat.value, strict);
     if (dateTime.isValid()) {
       return new DateTime(dateTime, true);
     }
-    const date = moment(text, this.dateFormat.value, true);
+    const date = moment(text, this.dateFormat.value, strict);
     if (date.isValid()) {
       return new DateTime(date, false);
     }

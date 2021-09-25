@@ -98,7 +98,7 @@ export class KanbanDateTimeFormat {
         return `${datePart} ${this.setting.timeTrigger}{${time.format(this.setting.timeFormat)}}`
     }
 
-    split(text: string): KanbanSplitResult {
+    split(text: string, strictDateFormat?: boolean): KanbanSplitResult {
         const originalText = text;
         let title: string;
         let date: string;
@@ -120,10 +120,11 @@ export class KanbanDateTimeFormat {
         title = text.trim();
 
         let parsedTime: DateTime;
+        const strict = strictDateFormat ?? true;
         if (time) {
-            parsedTime = new DateTime(moment(`${date} ${time}`, `${this.setting.dateFormat} ${this.setting.timeFormat}`, true), true)
+            parsedTime = new DateTime(moment(`${date} ${time}`, `${this.setting.dateFormat} ${this.setting.timeFormat}`, strict), true)
         } else {
-            parsedTime = new DateTime(moment(date, this.setting.dateFormat, true), false)
+            parsedTime = new DateTime(moment(date, this.setting.dateFormat, strict), false)
         }
         if (parsedTime.isValid()) {
             return { title, time: parsedTime };
@@ -135,8 +136,8 @@ export class KanbanDateTimeFormat {
 
 export class KanbanReminderModel implements ReminderModel {
 
-    static parse(line: string): KanbanReminderModel | null {
-        const splitted = KanbanDateTimeFormat.instance.split(line);
+    static parse(line: string, strictDateFormat?: boolean): KanbanReminderModel | null {
+        const splitted = KanbanDateTimeFormat.instance.split(line, strictDateFormat);
         if (splitted.time == null) {
             return null;
         }
@@ -163,7 +164,7 @@ export class KanbanReminderModel implements ReminderModel {
         this.time = time;
     }
 
-    setRawTime(rawTime: string): boolean {
+    setRawTime(): boolean {
         return false;
     }
 
@@ -178,7 +179,7 @@ export class KanbanReminderFormat extends TodoBasedReminderFormat<KanbanReminder
     public static readonly instance = new KanbanReminderFormat();
 
     parseReminder(todo: Todo): KanbanReminderModel | null {
-        return KanbanReminderModel.parse(todo.body);
+        return KanbanReminderModel.parse(todo.body, this.isStrictDateFormat());
     }
 
     newReminder(title: string, time: DateTime): KanbanReminderModel {
