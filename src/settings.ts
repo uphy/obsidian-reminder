@@ -1,4 +1,3 @@
-import assert from "assert";
 import { changeReminderFormat, kanbanPluginReminderFormat, ReminderFormatType, ReminderFormatTypes, reminderPluginReminderFormat, setReminderFormatConfig, tasksPluginReminderFormat } from "model/format";
 import { ReminderFormatConfig, ReminderFormatParameterKey } from "model/format/reminder-base";
 import { LatersSerde, RawSerde, ReminderFormatTypeSerde, SettingModel, SettingTabModel, TimeSerde } from "model/settings";
@@ -106,13 +105,11 @@ class Settings {
       })
       .build(new RawSerde());
 
-    assert(ReminderFormatTypes[0]);
-
     const primaryFormatBuilder = this.settings.newSettingBuilder()
       .key("primaryReminderFormat")
       .name("Primary reminder format")
       .desc("Reminder format for generated reminder by calendar popup")
-      .dropdown(ReminderFormatTypes[0].name);
+      .dropdown(ReminderFormatTypes[0]!.name);
     ReminderFormatTypes.forEach(f => primaryFormatBuilder.addOption(`${f.description} - ${f.example}`, f.name));
     this.primaryFormat = primaryFormatBuilder.build(new ReminderFormatTypeSerde());
 

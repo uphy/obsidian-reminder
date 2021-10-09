@@ -1,4 +1,3 @@
-import assert from "assert";
 import type { MarkdownDocument, Todo } from "model/format/markdown";
 import { DateTime, DATE_TIME_FORMATTER } from "model/time";
 import moment, { Moment } from "moment";
@@ -166,8 +165,7 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
                 const recurrence = parsed.getRecurrence();
                 if (recurrence !== null) {
 
-                    const nextReminderTodo = todo.clone();
-                    assert(nextReminderTodo != null);
+                    const nextReminderTodo = todo.clone()!;
                     const nextReminder = parsed.clone();
                     const dueDate = parsed.getDueDate();
                     if (dueDate == null) {

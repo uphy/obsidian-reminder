@@ -1,4 +1,3 @@
-import assert from "assert";
 import { ReadOnlyReference, Reference } from "model/ref";
 import { Later, parseLaters, Time } from "model/time";
 import { AbstractTextComponent, Setting } from "obsidian";
@@ -473,9 +472,8 @@ export class LatersSerde implements Serde<string, Array<Later>>{
 export class ReminderFormatTypeSerde implements Serde<string, ReminderFormatType>{
 
     unmarshal(rawValue: string): ReminderFormatType {
-        const format = ReminderFormatTypes.find(format => format.name === rawValue);
+        const format = ReminderFormatTypes.find(format => format.name === rawValue)!;
         // TODO return undefined when it is not found
-        assert(format !== undefined);
         return format;
     }
     marshal(value: ReminderFormatType): string {

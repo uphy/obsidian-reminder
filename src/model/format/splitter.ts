@@ -1,5 +1,3 @@
-import assert from "assert";
-
 export type Token = {
     symbol: string,
     text: string
@@ -60,8 +58,7 @@ export class Tokens {
             }
 
             if (this.tokens.length > 0) {
-                const lastToken = this.tokens[this.tokens.length - 1];
-                assert(lastToken != null);
+                const lastToken = this.tokens[this.tokens.length - 1]!;
                 if (!this.isTokenEndsWithSpace(lastToken)) {
                     // last token doesn't end with space.  Append space to last token.
                     lastToken.text += ' ';
