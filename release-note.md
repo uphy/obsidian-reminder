@@ -1,6 +1,3 @@
-## ✨ New features
-
-
 ## 👍 Improvements
 
 - Tooltip on reminder list view
@@ -12,3 +9,4 @@
 
 - Fix format issue of tasks plugin with ⏰ emoji
     - If the task doesn't have due date(📅), it shouldn't be recognized as reminder
+- Not work on mobile devices
