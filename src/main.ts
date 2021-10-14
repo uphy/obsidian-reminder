@@ -9,6 +9,7 @@ import {
   PluginManifest,
   WorkspaceLeaf
 } from "obsidian";
+import { monkeyPatchConsole } from "obsidian-debug-mobile";
 import { ReminderSettingTab, SETTINGS } from "settings";
 import { AutoComplete } from "ui/autocomplete";
 import { DateTimeChooserView } from "ui/datetime-chooser";
@@ -60,6 +61,9 @@ export default class ReminderPlugin extends Plugin {
 
   override async onload() {
     await this.pluginDataIO.load();
+    if (this.pluginDataIO.debug.value) {
+      monkeyPatchConsole(this);
+    }
     this.setupUI();
     this.setupCommands();
     this.watchVault();
