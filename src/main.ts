@@ -56,6 +56,10 @@ export default class ReminderPlugin extends Plugin {
     }
 
     override async onload() {
+        await this.pluginDataIO.load();
+        if (this.pluginDataIO.debug.value) {
+            monkeyPatchConsole(this);
+        }
         this.setupUI();
         this.setupCommands();
         this.app.workspace.onLayoutReady(async () => {
