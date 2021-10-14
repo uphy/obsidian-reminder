@@ -3,10 +3,12 @@
     import type { Reminders } from "model/reminder";
     import { DateTime } from "model/time";
     import moment from "moment";
+    import type { Component } from "obsidian";
     import CalendarView from "./Calendar.svelte";
     import ReminderListByDate from "./ReminderListByDate.svelte";
 
     export let calendar: Calendar = new Calendar();
+    export let component: Component;
     export let selectedDate = moment();
     export let reminders: Reminders;
 
@@ -40,6 +42,7 @@
     <div class="reminder-list-container">
         <ReminderListByDate
             reminders={reminders.byDate(new DateTime(selectedDate, false))}
+            {component}
         />
     </div>
 </div>

@@ -36,6 +36,7 @@ class ReminderListItemView extends ItemView {
       props: {
         groups: this.remindersForView(),
         onOpenReminder: this.onOpenReminder,
+        component: this,
       },
     });
   }

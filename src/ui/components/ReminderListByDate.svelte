@@ -1,15 +1,13 @@
 <script lang="typescript">
-  import MarkdownIt from "markdown-it";
   import type { DateTime } from "model/time";
+  import type { Component } from "obsidian";
   import type { Reminder } from "../../model/reminder";
-  const md = new MarkdownIt();
+  import Markdown from "./Markdown.svelte";
 
   export let reminders: Array<Reminder>;
+  export let component: Component;
   export let onOpenReminder: (reminder: Reminder) => void = () => {};
   export let timeToString = (time: DateTime) => time.format("HH:MM");
-  function renderMarkdown(markdown: string): string {
-    return md.renderInline(markdown);
-  }
 </script>
 
 <div class="reminder-group">
@@ -31,7 +29,11 @@
             {timeToString(reminder.time)}
           </span>
           <span class="reminder-title">
-            {@html renderMarkdown(reminder.title)}
+            <Markdown
+              markdown={reminder.title}
+              sourcePath={reminder.file}
+              {component}
+            />
           </span>
           <span class="reminder-file">
             - {reminder.getFileName()}

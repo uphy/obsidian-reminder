@@ -34,7 +34,6 @@
   },
   "dependencies": {
     "electron": "^13.1.8",
-    "markdown-it": "^12.2.0",
     "rrule": "^2.6.8",
     "svelte": "^3.42.1"
   },
