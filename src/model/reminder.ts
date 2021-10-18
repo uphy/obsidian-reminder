@@ -71,6 +71,31 @@ export class Reminders {
         return this.reminders.filter((reminder) => reminder.time.toYYYYMMDD() === date.toYYYYMMDD());
     }
 
+    public find({
+        file,
+        title,
+        time,
+        lineNumber,
+    }: {
+        file: string;
+        title: string;
+        time?: DateTime;
+        lineNumber?: number;
+    }) {
+        // TODO
+        return this.reminders
+            .filter((reminder) => {
+                if (reminder.file !== file) {
+                    return false;
+                }
+                if (reminder.title !== title) {
+                    return false;
+                }
+                return true;
+            })
+            .first();
+    }
+
     public removeReminder(reminder: Reminder) {
         console.debug('Remove reminder: %o', reminder);
         this.reminders.remove(reminder);
@@ -228,8 +253,6 @@ export function groupReminders(sortedReminders: Array<Reminder>, reminderTime: T
         const overdueGroup: Group = new Group('Overdue', (time) => time.format('HH:mm', reminderTime));
         overdueGroup.isOverdue = true;
         result.splice(0, 0, new GroupedReminder(overdueGroup, overdueReminders));
-        console.log(overdueGroup);
-        console.log(result);
     }
     return result;
 }
