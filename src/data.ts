@@ -4,20 +4,63 @@ import { Reminder, Reminders } from 'model/reminder';
 import { DateTime } from 'model/time';
 import type { Plugin_2 } from 'obsidian';
 import { SETTINGS, TAG_RESCAN } from 'settings';
+import type { ReminderSynchronizerManager, ReminderSynchronizer } from 'sync';
 
 interface ReminderData {
     title: string;
     time: string;
     rowNumber: number;
 }
+export abstract class PluginDataHolder {
+    public changed = false;
+    abstract load(root: any): void;
+    abstract save(root: any): void;
+}
 
+type OnChangeFunction<T> = (value: T) => {};
+
+export abstract class AbstractPluginDataHolder<T> extends PluginDataHolder {
+    protected data: T;
+    private onChangeFunctions: Array<OnChangeFunction<T>> = [];
+    constructor(private name: string, initData: T) {
+        super();
+        this.data = initData;
+    }
+    load(root: any): void {
+        const d = root[this.name];
+        if (d != null) {
+            this.data = root[this.name] as T;
+        }
+    }
+    save(root: any): void {
+        root[this.name] = this.data;
+    }
+    onChange(f: OnChangeFunction<T>) {
+        this.onChangeFunctions.push(f);
+    }
+    protected notifyChanged() {
+        this.changed = true;
+        this.onChangeFunctions.forEach((f) => {
+            f(this.data);
+        });
+    }
+}
 export class PluginDataIO {
     private restoring = true;
     changed: boolean = false;
+
+    // migrate to plugin data
     public scanned: Reference<boolean> = new Reference(false);
     public debug: Reference<boolean> = new Reference(false);
 
-    constructor(private plugin: Plugin_2, private reminders: Reminders) {
+    private dataList: Array<PluginDataHolder> = [];
+    private data: any;
+
+    constructor(
+        private plugin: Plugin_2,
+        private reminders: Reminders,
+        private reminderSynchronizerManager: ReminderSynchronizerManager,
+    ) {
         SETTINGS.forEach((setting) => {
             setting.rawValue.onChanged(() => {
                 if (this.restoring) {
@@ -29,6 +72,21 @@ export class PluginDataIO {
                 this.changed = true;
             });
         });
+    }
+
+    register(holder: PluginDataHolder) {
+        this.dataList.push(holder);
+        if (this.data != null) {
+            holder.load(this.data);
+        }
+    }
+
+    registerSynchronizer<T extends ReminderSynchronizer>() {
+        return this.reminderSynchronizerManager.register<T>();
+    }
+
+    anySynchronizersReady() {
+        return this.reminderSynchronizerManager.anySynchronizersReady();
     }
 
     async load() {
@@ -48,6 +106,9 @@ export class PluginDataIO {
             setting.load(loadedSettings);
         });
         this.migrateSettings();
+        for (const d of this.dataList) {
+            d.load(data);
+        }
 
         if (data.reminders) {
             Object.keys(data.reminders).forEach((filePath) => {
@@ -63,6 +124,7 @@ export class PluginDataIO {
                 );
             });
         }
+        this.data = data;
         this.changed = false;
         if (this.restoring) {
             this.restoring = false;
@@ -76,9 +138,33 @@ export class PluginDataIO {
         }
     }
 
+    async synchronizeReminders(force?: boolean) {
+        this.reminderSynchronizerManager.synchronizeReminders(
+            this.reminders,
+            SETTINGS.reminderTime.value,
+            force ?? false,
+        );
+    }
+
+    isChanged(): boolean {
+        if (this.changed) {
+            return true;
+        }
+        for (const d of this.dataList) {
+            if (d.changed) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     async save(force: boolean = false) {
-        if (!force && !this.changed) {
+        const changed = this.isChanged();
+        if (!force && !changed) {
             return;
+        }
+        if (changed) {
+            this.reminderSynchronizerManager.invalidate();
         }
         console.debug('Save reminder plugin data: force=%s, changed=%s', force, this.changed);
         const remindersData: any = {};
@@ -93,12 +179,16 @@ export class PluginDataIO {
         SETTINGS.forEach((setting) => {
             setting.store(settings);
         });
-        await this.plugin.saveData({
+        const data = {
             scanned: this.scanned.value,
             reminders: remindersData,
             debug: this.debug.value,
             settings,
-        });
+        };
+        for (const d of this.dataList) {
+            d.save(data);
+        }
+        await this.plugin.saveData(data);
         this.changed = false;
     }
 }

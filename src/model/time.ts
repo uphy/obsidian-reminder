@@ -37,10 +37,14 @@ export class DateTime {
     }
 
     public add(amount: number, unit: Unit, defaultTime?: Time): DateTime {
-        return new DateTime(this.fixedTime(defaultTime).clone().add(amount, unit), this._hasTimePart);
+        if (defaultTime == null) {
+            return new DateTime(this.fixedTime().clone().add(amount, unit), this._hasTimePart);
+        } else {
+            return new DateTime(this.fixedTime(defaultTime).clone().add(amount, unit), true);
+        }
     }
 
-    private fixedTime(defaultTime?: Time): moment.Moment {
+    public fixedTime(defaultTime?: Time): moment.Moment {
         if (this._hasTimePart) {
             return this.time;
         }
@@ -68,11 +72,11 @@ export class DateTime {
         return new DateTime(clone, withTimePart);
     }
 
-    public toString(): string {
-        if (this._hasTimePart) {
-            return this.format('YYYY-MM-DD HH:mm');
+    public toString(defaultTime?: Time): string {
+        if (this._hasTimePart || defaultTime != null) {
+            return this.format('YYYY-MM-DD HH:mm', defaultTime);
         } else {
-            return this.format('YYYY-MM-DD');
+            return this.format('YYYY-MM-DD', defaultTime);
         }
     }
 

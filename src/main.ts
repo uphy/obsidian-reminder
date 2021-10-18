@@ -1,11 +1,15 @@
 import { RemindersController } from 'controller';
 import { PluginDataIO } from 'data';
+import { FeatureManager } from 'features/feature';
+import { GoogleApiFeature } from 'features/google-api/feature';
+import { GoogleTasksFeature } from 'features/google-tasks/feature';
 import type { ReadOnlyReference } from 'model/ref';
 import { Reminder, Reminders } from 'model/reminder';
 import { DATE_TIME_FORMATTER } from 'model/time';
-import { App, Platform, Plugin, PluginManifest, WorkspaceLeaf } from 'obsidian';
+import { App, ObsidianProtocolData, Platform, Plugin, PluginManifest, WorkspaceLeaf } from 'obsidian';
 import { monkeyPatchConsole } from 'obsidian-hack/obsidian-debug-mobile';
 import { ReminderSettingTab, SETTINGS } from 'settings';
+import { ReminderEditor, ReminderSynchronizerManager } from 'sync';
 import { AutoComplete } from 'ui/autocomplete';
 import { DateTimeChooserView } from 'ui/datetime-chooser';
 import { openDateTimeFormatChooser } from 'ui/datetime-format-modal';
@@ -18,14 +22,19 @@ import { VIEW_TYPE_REMINDER_LIST } from './constants';
 export default class ReminderPlugin extends Plugin {
     pluginDataIO: PluginDataIO;
     private viewProxy: ReminderListItemViewProxy;
-    private reminders: Reminders;
-    private remindersController: RemindersController;
+    reminders: Reminders;
+    remindersController: RemindersController;
     private editDetector: EditDetector;
-    private reminderModal: ReminderModal;
+    reminderModal: ReminderModal;
     private autoComplete: AutoComplete;
+    private features: FeatureManager = new FeatureManager(this);
 
     constructor(app: App, manifest: PluginManifest) {
         super(app, manifest);
+        const googleApiFeature = new GoogleApiFeature();
+        this.features.register(googleApiFeature);
+        this.features.register(new GoogleTasksFeature(googleApiFeature));
+
         this.reminders = new Reminders(() => {
             // on changed
             if (this.viewProxy) {
@@ -33,7 +42,17 @@ export default class ReminderPlugin extends Plugin {
             }
             this.pluginDataIO.changed = true;
         });
-        this.pluginDataIO = new PluginDataIO(this, this.reminders);
+        {
+            const plugin = this;
+            const reminderSynchronizerManager = new ReminderSynchronizerManager(
+                new (class implements ReminderEditor {
+                    markAsDone(reminder: Reminder): Promise<void> {
+                        return plugin.remindersController.updateReminder(reminder, true);
+                    }
+                })(),
+            );
+            this.pluginDataIO = new PluginDataIO(this, this.reminders, reminderSynchronizerManager);
+        }
         this.reminders.reminderTime = SETTINGS.reminderTime;
         DATE_TIME_FORMATTER.setTimeFormat(SETTINGS.dateFormat, SETTINGS.dateTimeFormat, SETTINGS.strictDateFormat);
         this.editDetector = new EditDetector(SETTINGS.editDetectionSec);
@@ -56,8 +75,12 @@ export default class ReminderPlugin extends Plugin {
     }
 
     override async onload() {
+        await this.pluginDataIO.load();
+        await this.features.init();
         this.setupUI();
         this.setupCommands();
+        this.features.load();
+
         this.app.workspace.onLayoutReady(async () => {
             await this.pluginDataIO.load();
             if (this.pluginDataIO.debug.value) {
@@ -104,6 +127,17 @@ export default class ReminderPlugin extends Plugin {
         // layout is ready, and will otherwise be enqueued.
         this.app.workspace.onLayoutReady(() => {
             this.viewProxy.openView();
+        });
+
+        this.registerObsidianProtocolHandler('show-reminder', (params: ObsidianProtocolData) => {
+            const file = params['file']!;
+            const title = params['title']!;
+            const found = this.reminders.find({ file, title });
+            if (found == null) {
+                console.error('reminder not found: %o', params);
+                return;
+            }
+            this.showReminder(found);
         });
     }
 
@@ -222,7 +256,7 @@ export default class ReminderPlugin extends Plugin {
         this.registerInterval(
             window.setInterval(() => {
                 if (intervalTaskRunning) {
-                    console.log('Skip reminder interval task because task is already running.');
+                    console.info('Skip reminder interval task because task is already running.');
                     return;
                 }
                 intervalTaskRunning = true;
@@ -230,6 +264,28 @@ export default class ReminderPlugin extends Plugin {
                     intervalTaskRunning = false;
                 });
             }, SETTINGS.reminderCheckIntervalSec.value * 1000),
+        );
+
+        let syncRunning = false;
+        let lastForceSync = new Date().getTime();
+        this.registerInterval(
+            window.setInterval(() => {
+                if (syncRunning) {
+                    console.info('Skig reminder sync because the task is already running.');
+                    return;
+                }
+                syncRunning = true;
+                let force = false;
+                const time = new Date().getTime();
+                if ((time - lastForceSync) / 1000 > 60 * 60 * 1000) {
+                    // force sync once an hour
+                    force = true;
+                    lastForceSync = time;
+                }
+                this.pluginDataIO.synchronizeReminders(force).finally(() => {
+                    syncRunning = false;
+                });
+            }, 10 * 1000),
         );
     }
 
@@ -317,6 +373,7 @@ export default class ReminderPlugin extends Plugin {
     }
 
     override onunload(): void {
+        this.features.unload();
         this.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).forEach((leaf) => leaf.detach());
     }
 

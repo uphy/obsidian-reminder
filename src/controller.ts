@@ -8,7 +8,7 @@ export class RemindersController {
     constructor(private vault: Vault, private viewProxy: ReminderListItemViewProxy, private reminders: Reminders) {}
 
     async openReminder(reminder: Reminder, leaf: WorkspaceLeaf) {
-        console.log('Open reminder: ', reminder);
+        console.info('Open reminder: ', reminder);
         const file = this.vault.getAbstractFileByPath(reminder.file);
         if (!(file instanceof TFile)) {
             console.error("Cannot open file because it isn't a TFile: %o", file);
@@ -137,7 +137,6 @@ export class RemindersController {
             });
         } else {
             const todo = content.getTodos().find((t) => t.lineIndex === lineNumber);
-            console.log(todo);
             if (!todo) {
                 return;
             }
