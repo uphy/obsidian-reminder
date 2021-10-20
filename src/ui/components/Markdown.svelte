@@ -1,12 +1,13 @@
 <script lang="typescript">
     import { Component, MarkdownRenderer } from "obsidian";
-    import { onMount } from "svelte";
+    import { afterUpdate } from "svelte";
     export let component: Component;
     export let sourcePath: string;
     export let markdown: string;
     let span: HTMLElement;
 
-    onMount(() => {
+    afterUpdate(() => {
+        span.empty();
         MarkdownRenderer.renderMarkdown(markdown, span, sourcePath, component);
         span.childNodes.forEach((n) => {
             if (n instanceof HTMLElement) {
@@ -16,4 +17,6 @@
     });
 </script>
 
-<span class="reminder-markdown" bind:this={span} />
+<span>
+    <span class="reminder-markdown" bind:this={span} />
+</span>
