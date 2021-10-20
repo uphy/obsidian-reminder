@@ -12,12 +12,16 @@ interface ReminderData {
 
 export class PluginDataIO {
 
+  private restoring = true;
   changed: boolean = false;
   public scanned: Reference<boolean> = new Reference(false);
 
   constructor(private plugin: Plugin_2, private reminders: Reminders) {
     SETTINGS.forEach(setting => {
       setting.rawValue.onChanged(() => {
+        if (this.restoring) {
+          return;
+        }
         if (setting.hasTag(TAG_RESCAN)) {
           this.scanned.value = false;
         }
@@ -62,6 +66,9 @@ export class PluginDataIO {
       });
     }
     this.changed = false;
+    if (this.restoring) {
+      this.restoring = false;
+    }
   }
 
   async save(force: boolean = false) {
