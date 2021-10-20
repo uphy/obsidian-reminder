@@ -18,6 +18,13 @@ export class Reminder {
     return this.file + this.title + this.time.toString();
   }
 
+  equals(reminder: Reminder) {
+    return this.rowNumber === reminder.rowNumber
+      && this.title === reminder.title
+      && this.time.equals(reminder.time)
+      && this.file === reminder.file;
+  }
+
   public getFileName(): string {
     const p = this.file.split(/[\/\\]/);
     return p[p.length - 1]!.replace(/^(.*?)(\..+)?$/, "$1");
@@ -76,13 +83,18 @@ export class Reminders {
   public removeFile(filePath: string) {
     if (this.fileToReminders.delete(filePath)) {
       this.sortReminders();
+      return true;
     }
+    return false;
   }
 
-  public replaceFile(filePath: string, reminders: Array<Reminder>) {
+  public replaceFile(filePath: string, reminders: Array<Reminder>): boolean {
     // migrate notificationVisible property
     const oldReminders = this.fileToReminders.get(filePath);
     if (oldReminders) {
+      if (this.equals(oldReminders, reminders)) {
+        return false;
+      }
       const reminderToNotificationVisible = new Map<string, boolean>();
       for (const reminder of oldReminders) {
         reminderToNotificationVisible.set(reminder.key(), reminder.muteNotification);
@@ -98,6 +110,32 @@ export class Reminders {
     // update
     this.fileToReminders.set(filePath, reminders);
     this.sortReminders();
+    return true;
+  }
+
+  private equals(r1: Array<Reminder>, r2: Array<Reminder>) {
+    if (r1.length !== r2.length) {
+      return false;
+    }
+    this.sort(r1);
+    this.sort(r2);
+    for (const i in r1) {
+      const reminder1 = r1[i];
+      const reminder2 = r2[i];
+      if (reminder1 == null && reminder2 != null) {
+        return false;
+      }
+      if (reminder2 == null && reminder1 != null) {
+        return false;
+      }
+      if (reminder1 == null && reminder2 == null) {
+        continue;
+      }
+      if (!reminder1!.equals(reminder2!)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private sortReminders() {
@@ -107,14 +145,18 @@ export class Reminders {
       reminders.push(...r);
     }
 
+    this.sort(reminders);
+    this.reminders = reminders;
+    this.onChange();
+  }
+
+  private sort(reminders: Array<Reminder>) {
     reminders.sort((a, b) => {
       const d =
         a.time.getTimeInMillis(this.reminderTime?.value) -
         b.time.getTimeInMillis(this.reminderTime?.value);
       return d > 0 ? 1 : d < 0 ? -1 : 0;
     });
-    this.reminders = reminders;
-    this.onChange();
   }
 }
 

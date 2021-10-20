@@ -54,22 +54,27 @@ export class RemindersController {
     );
     if (!(file instanceof TFile)) {
       console.debug("Cannot read file other than TFile: file=%o", file);
-      return;
+      return false;
     }
     if (!this.isMarkdownFile(file)) {
       console.debug("Not a markdown file: file=%o", file);
-      return;
+      return false;
     }
     const content = new Content(file.path, await this.vault.cachedRead(file));
     const reminders = content.getReminders();
     if (reminders.length > 0) {
-      this.reminders.replaceFile(file.path, reminders);
+      if (!this.reminders.replaceFile(file.path, reminders)) {
+        return false;
+      }
     } else {
-      this.reminders.removeFile(file.path);
+      if (!this.reminders.removeFile(file.path)) {
+        return false;
+      }
     }
     if (reloadUI) {
       this.reloadUI();
     }
+    return true;
   }
 
   async convertDateTimeFormat(dateFormat: string, dateTimeFormat: string): Promise<number> {

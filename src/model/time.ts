@@ -83,6 +83,11 @@ export class DateTime {
       return this.format("YYYY-MM-DD");
     }
   }
+
+  public equals(time: DateTime) {
+    return this._hasTimePart === time._hasTimePart
+      && this.time.isSame(time.time);
+  }
 }
 
 export class Time {
