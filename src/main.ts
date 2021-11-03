@@ -5,11 +5,12 @@ import { Reminder, Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER } from "model/time";
 import {
   App,
+  Platform,
   Plugin,
   PluginManifest,
   WorkspaceLeaf
 } from "obsidian";
-import { monkeyPatchConsole } from "obsidian-debug-mobile";
+import { monkeyPatchConsole } from "obsidian-hack/obsidian-debug-mobile";
 import { ReminderSettingTab, SETTINGS } from "settings";
 import { AutoComplete } from "ui/autocomplete";
 import { DateTimeChooserView } from "ui/datetime-chooser";
@@ -82,20 +83,26 @@ export default class ReminderPlugin extends Plugin {
     this.registerDomEvent(document, "keydown", (evt: KeyboardEvent) => {
       this.editDetector.fileChanged();
     });
-    this.registerCodeMirror((cm: CodeMirror.Editor) => {
-      const dateTimeChooser = new DateTimeChooserView(cm, this.reminders);
-      cm.on(
-        "change",
-        (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
-          if (!this.autoComplete.isTrigger(cmEditor, changeObj)) {
-            dateTimeChooser.cancel();
+    if (Platform.isDesktopApp) {
+      this.registerCodeMirror((cm: CodeMirror.Editor) => {
+        const dateTimeChooser = new DateTimeChooserView(cm, this.reminders);
+        cm.on(
+          "change",
+          (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
+            if (!this.autoComplete.isTrigger(cmEditor, changeObj)) {
+              dateTimeChooser.cancel();
+              return;
+            }
+            dateTimeChooser.show()
+              .then(value => {
+                this.autoComplete.insert(cmEditor, value);
+              })
+              .catch(() => { /* do nothing on cancel */ });
             return;
           }
-          this.autoComplete.show(cmEditor, dateTimeChooser);
-          return;
-        }
-      );
-    });
+        );
+      });
+    }
 
     // Open reminder list view
     if (this.app.workspace.layoutReady) {
@@ -152,7 +159,8 @@ export default class ReminderPlugin extends Plugin {
 
     this.addCommand({
       id: "show-date-chooser",
-      name: "Show date chooser popup",
+      name: "Show calendar popup",
+      icon: "calendar-with-checkmark",
       hotkeys: [
         {
           modifiers: ["Meta", "Shift"],
@@ -163,14 +171,8 @@ export default class ReminderPlugin extends Plugin {
         if (checking) {
           return true;
         }
-        const cm: CodeMirror.Editor = (editor as any).cm;
-        if (cm == null) {
-          console.error("Cannot get codemirror editor.")
-          return;
-        }
 
-        const v = new DateTimeChooserView(cm, this.reminders);
-        this.autoComplete.show(cm, v, true);
+        this.autoComplete.show(this.app, editor, this.reminders);
       },
     });
     this.addCommand({

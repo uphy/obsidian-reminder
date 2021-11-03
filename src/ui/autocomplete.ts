@@ -1,6 +1,20 @@
 import type { ReadOnlyReference } from "model/ref";
+import type { Reminders } from "model/reminder";
+import type { DateTime } from "model/time";
+import { App, Editor, EditorPosition, Platform } from "obsidian";
 import { SETTINGS } from "settings";
-import type { DateTimeChooserView } from "./datetime-chooser";
+import { showDateTimeChooserModal } from "./date-chooser-mobile";
+import { DateTimeChooserView } from "./datetime-chooser";
+
+export interface AutoCompletableEditor {
+
+    getCursor(): EditorPosition
+
+    getLine(line: number): string
+
+    replaceRange(replacement: string, from: EditorPosition, to?: EditorPosition, origin?: string): void;
+
+}
 
 export class AutoComplete {
 
@@ -24,34 +38,51 @@ export class AutoComplete {
         return false;
     }
 
-    show(cmEditor: CodeMirror.Editor, dateTimeChooserView: DateTimeChooserView, triggerFromCommand: boolean = false): void {
-        dateTimeChooserView.show()
-            .then(value => {
-                const pos = cmEditor.getCursor();
-                let line = cmEditor.getLine(pos.line);
-                const endPos = {
-                    line: pos.line,
-                    ch: line.length
-                };
+    show(app: App, editor: Editor, reminders: Reminders): void {
+        let result: Promise<DateTime>;
+        if (Platform.isDesktopApp) {
+            const cm: CodeMirror.Editor = (editor as any).cm;
+            if (cm == null) {
+                console.error("Cannot get codemirror editor.")
+                return;
+            }
+            const v = new DateTimeChooserView(cm, reminders);
+            result = v.show();
+        } else {
+            result = showDateTimeChooserModal(app, reminders);
+        }
 
-                // remove trigger string
-                if (!triggerFromCommand) {
-                    line = line.substring(0, pos.ch - this.trigger.value.length);
-                }
-                // append reminder to the line
-                const format = SETTINGS.primaryFormat.value.format;
-                try {
-                    const appended = format.appendReminder(line, value);
-                    if (appended == null) {
-                        console.error("Cannot append reminder time to the line: line=%s, date=%s", line, value);
-                        return;
-                    }
-                    cmEditor.replaceRange(appended, { line: pos.line, ch: 0 }, endPos);
-                } catch (ex) {
-                    console.error(ex);
-                }
+        result
+            .then(value => {
+                this.insert(editor, value, true);
             })
             .catch(() => { /* do nothing on cancel */ });
+    }
+
+    insert(editor: AutoCompletableEditor, value: DateTime, triggerFromCommand: boolean = false): void {
+        const pos = editor.getCursor();
+        let line = editor.getLine(pos.line);
+        const endPos = {
+            line: pos.line,
+            ch: line.length
+        };
+
+        // remove trigger string
+        if (!triggerFromCommand) {
+            line = line.substring(0, pos.ch - this.trigger.value.length);
+        }
+        // append reminder to the line
+        const format = SETTINGS.primaryFormat.value.format;
+        try {
+            const appended = format.appendReminder(line, value);
+            if (appended == null) {
+                console.error("Cannot append reminder time to the line: line=%s, date=%s", line, value);
+                return;
+            }
+            editor.replaceRange(appended, { line: pos.line, ch: 0 }, endPos);
+        } catch (ex) {
+            console.error(ex);
+        }
     }
 
 }

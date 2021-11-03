@@ -31,7 +31,15 @@ See following settings.
 
 ## Reminder date input support
 
-To make it easy to set reminder times, this plugin provides calendar popup.
+To make it easy to set reminder times, this plugin provides calendar popup.  
+By clicking on the calendar, the date will be entered into the markdown file.
+
+::: tip
+You can change the format by [primary reminder format](/setting/#primary-reminder-format) setting.
+:::
+
+There are multiple ways to display the calendar popup.
+### Key input trigger (Desktop only)
 
 When you input `(@` in TODO list item, you will see calendar popup.  
 
@@ -48,9 +56,18 @@ In this popup, you can select date with keyboard.
 - <kbd>Enter</kbd>: Select date
 - <kbd>Esc</kbd>: Cancel input support
 
-When you select date, the selected date will be entered into the file.
+### Command trigger
 
-You can change the format by [primary reminder format](/setting/#primary-reminder-format) setting.
+Open the command palette and search `Show calendar popup`.
+It will open the calendar popup.
+
+::: tip
+For mobile users, it would be useful to add a button to the toolbar at the bottom of the markdown editor to show the calendar popup.
+
+1. `Options` > `Mobile`
+2. `Configure`
+3. Select the command named `Show calendar popup`
+:::
 
 ## Toggle checklist status
 
