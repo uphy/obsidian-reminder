@@ -50,4 +50,4 @@ The reminder will be muted if you do the following:
 
 Muted reminder will not be notified again until
 - you restart Obsidian app
-- you click muted reminder in [reminder list view](guide/list-reminders.md)
+- you click muted reminder in [reminder list view](/guide/list-reminders.html)

@@ -74,7 +74,7 @@ For mobile users, it would be useful to add a button to the toolbar at the botto
 This plugin provides 2 ways to toggle checklist status.
 
 ::: tip
-If you are using [Tasks Plugin format](/guide/interop-tasks), this action do the following additionally:
+If you are using [Tasks Plugin format](/guide/interop-tasks.html), this action do the following additionally:
 - Insert done date (`✅ YYYY-MM-DD`)
 - Create next recurring task (if you use `🔁 XXX`)
 :::
@@ -86,7 +86,7 @@ You can change it from `Obsidian > Settings > Hotkeys > Reminder: Toggle checkli
 
 **From reminder notification**
 
-You can `Mark as Done` from [reminder notification](/guide/notification).
+You can `Mark as Done` from [reminder notification](/guide/notification.html).
 
 ## Link dates to daily notes
 
