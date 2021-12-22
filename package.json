@@ -22,7 +22,7 @@
     "cross-env": "^7.0.3",
     "jest": "^27.0.6",
     "moment": "^2.29.1",
-    "obsidian": "^0.12.0",
+    "obsidian": "^0.13.11",
     "rollup": "^2.32.1",
     "rollup-plugin-svelte": "^7.1.0",
     "svelte-check": "^2.2.4",
