@@ -41,13 +41,18 @@ export class AutoComplete {
     show(app: App, editor: Editor, reminders: Reminders): void {
         let result: Promise<DateTime>;
         if (Platform.isDesktopApp) {
-            const cm: CodeMirror.Editor = (editor as any).cm;
-            if (cm == null) {
-                console.error("Cannot get codemirror editor.")
-                return;
+            try {
+                const cm: CodeMirror.Editor = (editor as any).cm;
+                if (cm == null) {
+                    console.error("Cannot get codemirror editor.")
+                    return;
+                }
+                const v = new DateTimeChooserView(cm, reminders);
+                result = v.show();
+            } catch (e) {
+                // Temporary workaround for Live preview mode
+                result = showDateTimeChooserModal(app, reminders);
             }
-            const v = new DateTimeChooserView(cm, reminders);
-            result = v.show();
         } else {
             result = showDateTimeChooserModal(app, reminders);
         }

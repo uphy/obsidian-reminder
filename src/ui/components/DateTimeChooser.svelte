@@ -50,7 +50,6 @@
 <style>
     .dtchooser {
         background-color: var(--background-primary-alt);
-        position: absolute;
         z-index: 2147483647;
     }
     .dtchooser-divider {
