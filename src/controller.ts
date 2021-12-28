@@ -27,6 +27,7 @@ export class RemindersController {
     if (!(leaf.view instanceof MarkdownView)) {
       return;
     }
+    const line = leaf.view.editor.getLine(reminder.rowNumber);
     leaf.view.editor.setSelection(
       {
         line: reminder.rowNumber,
@@ -34,8 +35,7 @@ export class RemindersController {
       },
       {
         line: reminder.rowNumber,
-        // End of the line
-        ch: 1000,
+        ch: line.length,
       }
     );
   }
