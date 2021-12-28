@@ -38,7 +38,7 @@ export class AutoComplete {
         return false;
     }
 
-    show(app: App, editor: Editor, reminders: Reminders): void {
+    show(app: App, editor: AutoCompletableEditor, reminders: Reminders): void {
         let result: Promise<DateTime>;
         if (Platform.isDesktopApp) {
             try {

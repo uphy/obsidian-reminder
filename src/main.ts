@@ -15,6 +15,7 @@ import { ReminderSettingTab, SETTINGS } from "settings";
 import { AutoComplete } from "ui/autocomplete";
 import { DateTimeChooserView } from "ui/datetime-chooser";
 import { openDateTimeFormatChooser } from "ui/datetime-format-modal";
+import { buildCodeMirrorPlugin } from "ui/editor-extension";
 import { ReminderModal } from "ui/reminder";
 import { ReminderListItemViewProxy } from "ui/reminder-list";
 import { OkCancel, showOkCancelDialog } from "ui/util";
@@ -84,6 +85,7 @@ export default class ReminderPlugin extends Plugin {
       this.editDetector.fileChanged();
     });
     if (Platform.isDesktopApp) {
+      this.registerEditorExtension(buildCodeMirrorPlugin(this.app, this.reminders));
       this.registerCodeMirror((cm: CodeMirror.Editor) => {
         const dateTimeChooser = new DateTimeChooserView(cm, this.reminders);
         cm.on(
