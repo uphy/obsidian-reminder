@@ -3,7 +3,7 @@ import type { Reminders } from "model/reminder";
 import type { DateTime } from "model/time";
 import { App, Editor, EditorPosition, Platform } from "obsidian";
 import { SETTINGS } from "settings";
-import { showDateTimeChooserModal } from "./date-chooser-mobile";
+import { showDateTimeChooserModal } from "./date-chooser-modal";
 import { DateTimeChooserView } from "./datetime-chooser";
 
 export interface AutoCompletableEditor {

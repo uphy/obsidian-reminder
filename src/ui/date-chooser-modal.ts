@@ -1,6 +1,6 @@
-import type { Reminder, Reminders } from "model/reminder";
+import type { Reminders } from "model/reminder";
 import type { DateTime } from "model/time";
-import { App, KeymapEventHandler, Modal, Modifier, Platform, Scope } from "obsidian";
+import { App, KeymapEventHandler, Modal, Modifier, Platform } from "obsidian";
 import DateTimeChooser from "./components/DateTimeChooser.svelte";
 
 class DateTimeChooserModal extends Modal {

@@ -1,5 +1,4 @@
-## 👍 Improvements
+## ✨ Features
 
-- Render markdown text in built-in reminder notification as html
-- Calendar popup is now available also in mobile devices
-- Reduce unnecessary I/O about storing reminder data
+- Workaround for Obsidian's Live Preview Mode (#42, #45)
+    - Calendar popup is available also in Live Preview Mode
