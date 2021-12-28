@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VERSION=$1
-MINIMUM_OBSIDIAN_VERSION=0.12.12
+MINIMUM_OBSIDIAN_VERSION=0.13.14
 
 if [ -z "$1" ]; then
     echo Specify a version
