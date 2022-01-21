@@ -33,7 +33,7 @@ export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
                                     return;
                                 }
 
-                                const updateTextTransaction = update.state.update({
+                                const updateTextTransaction = update.view.state.update({
                                     changes: { from: line.from, to: line.to, insert: appended },
                                     // Move the cursor to the last of date string to make it easy to input time part.
                                     selection: EditorSelection.cursor(line.from + appended.length - 1),
