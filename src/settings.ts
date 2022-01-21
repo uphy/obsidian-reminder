@@ -127,7 +127,7 @@ class Settings {
     this.removeTagsForTasksPlugin = this.settings.newSettingBuilder()
       .key("removeTagsForTasksPlugin")
       .name("Remove tags from reminder title")
-      .desc("If checked, reminder title is removed from reminder list view and notification.")
+      .desc("If checked, tags(#xxx) are removed from the reminder list view and notification.")
       .tag(TAG_RESCAN)
       .toggle(false)
       .onAnyValueChanged(context => {
