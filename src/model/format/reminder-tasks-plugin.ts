@@ -5,6 +5,9 @@ import { RRule } from "rrule";
 import { ReminderEdit, ReminderFormatParameterKey, ReminderModel, TodoBasedReminderFormat } from "./reminder-base";
 import { splitBySymbol, Symbol, Tokens } from "./splitter";
 
+function removeTags(text: string): string {
+    return text.replace(/#\w+/g, "");
+}
 export class TasksPluginReminderModel implements ReminderModel {
 
     private static readonly dateFormat = "YYYY-MM-DD";
@@ -19,21 +22,27 @@ export class TasksPluginReminderModel implements ReminderModel {
         TasksPluginReminderModel.symbolReminder,
     ];
 
-    public static parse(line: string, useCustomEmoji?: boolean, strictDateFormat?: boolean): TasksPluginReminderModel {
+    public static parse(line: string, useCustomEmoji?: boolean, removeTags?: boolean, strictDateFormat?: boolean): TasksPluginReminderModel {
         return new TasksPluginReminderModel(
             useCustomEmoji ?? false,
+            removeTags ?? false,
             strictDateFormat ?? true,
             new Tokens(splitBySymbol(line, this.allSymbols)));
     }
 
     private constructor(
         private useCustomEmoji: boolean,
+        private removeTags: boolean,
         private strictDateFormat: boolean,
         private tokens: Tokens) {
     }
 
     getTitle(): string | null {
-        return this.tokens.getTokenText("", true);
+        let title = this.tokens.getTokenText("", true);
+        if (title != null && this.removeTags) {
+            title = removeTags(title);
+        }
+        return title;
     }
     getTime(): DateTime | null {
         return this.getDate(this.getReminderSymbol());
@@ -79,7 +88,7 @@ export class TasksPluginReminderModel implements ReminderModel {
     }
 
     clone(): TasksPluginReminderModel {
-        return TasksPluginReminderModel.parse(this.toMarkdown(), this.useCustomEmoji, this.strictDateFormat);
+        return TasksPluginReminderModel.parse(this.toMarkdown(), this.useCustomEmoji, this.removeTags, this.strictDateFormat);
     }
 
     private getDate(symbol: Symbol): DateTime | null {
@@ -145,11 +154,15 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
     public static readonly instance = new TasksPluginFormat();
 
     parseReminder(todo: Todo): TasksPluginReminderModel | null {
-        const parsed = TasksPluginReminderModel.parse(todo.body, this.useCustomEmoji(), this.isStrictDateFormat());
+        const parsed = TasksPluginReminderModel.parse(todo.body, this.useCustomEmoji(), this.removeTagsEnabled(), this.isStrictDateFormat());
         if (this.useCustomEmoji() && parsed.getDueDate() == null) {
             return null;
         }
         return parsed;
+    }
+
+    private removeTagsEnabled() {
+        return this.config.getParameter(ReminderFormatParameterKey.removeTagsForTasksPlugin);
     }
 
     private useCustomEmoji() {
@@ -226,7 +239,7 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
     }
 
     newReminder(title: string, time: DateTime): TasksPluginReminderModel {
-        const parsed = TasksPluginReminderModel.parse(title, this.useCustomEmoji(), this.isStrictDateFormat());
+        const parsed = TasksPluginReminderModel.parse(title, this.useCustomEmoji(), this.removeTagsEnabled(), this.isStrictDateFormat());
         parsed.setTime(time);
         if (this.useCustomEmoji() && parsed.getDueDate() == null) {
             parsed.setDueDate(time);

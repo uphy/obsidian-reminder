@@ -19,6 +19,7 @@ class Settings {
   autoCompleteTrigger: SettingModel<string, string>;
   primaryFormat: SettingModel<string, ReminderFormatType>;
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
+  removeTagsForTasksPlugin: SettingModel<boolean, boolean>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
   editDetectionSec: SettingModel<number, number>;
   reminderCheckIntervalSec: SettingModel<number, number>;
@@ -123,6 +124,16 @@ class Settings {
         context.setEnabled(reminderFormatSettings.enableTasksPluginReminderFormat.value);
       })
       .build(new RawSerde());
+    this.removeTagsForTasksPlugin = this.settings.newSettingBuilder()
+      .key("removeTagsForTasksPlugin")
+      .name("Remove tags from reminder title")
+      .desc("If checked, reminder title is removed from reminder list view and notification.")
+      .tag(TAG_RESCAN)
+      .toggle(false)
+      .onAnyValueChanged(context => {
+        context.setEnabled(reminderFormatSettings.enableTasksPluginReminderFormat.value);
+      })
+      .build(new RawSerde());
 
     this.editDetectionSec = this.settings.newSettingBuilder()
       .key("editDetectionSec")
@@ -163,7 +174,8 @@ class Settings {
       .newGroup("Reminder Format - Tasks Plugin")
       .addSettings(
         reminderFormatSettings.enableTasksPluginReminderFormat,
-        this.useCustomEmojiForTasksPlugin
+        this.useCustomEmojiForTasksPlugin,
+        this.removeTagsForTasksPlugin
       );
     this.settings
       .newGroup("Reminder Format - Kanban Plugin")
@@ -181,6 +193,7 @@ class Settings {
     config.setParameterFunc(ReminderFormatParameterKey.now, () => DateTime.now());
     config.setParameter(ReminderFormatParameterKey.useCustomEmojiForTasksPlugin, this.useCustomEmojiForTasksPlugin);
     config.setParameter(ReminderFormatParameterKey.linkDatesToDailyNotes, this.linkDatesToDailyNotes);
+    config.setParameter(ReminderFormatParameterKey.removeTagsForTasksPlugin, this.removeTagsForTasksPlugin);
     setReminderFormatConfig(config);
   }
 

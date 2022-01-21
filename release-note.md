@@ -1,3 +1,3 @@
-## 🐛 Bug fix
+## ✨ Features
 
-- Calendar popup not worked with some other plugins (workaround)
+- (Tasks Plugin Integration) Remove tags(#xxx) from reminder title (#53)
