@@ -127,7 +127,7 @@ export class Time {
 }
 
 export type later = () => DateTime;
-type Unit = "seconds" | "minutes" | "hours" | "days";
+type Unit = "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years";
 
 function add(amount: number, unit: Unit): later {
   return () => {
@@ -141,6 +141,22 @@ export function inMinutes(minutes: number): later {
 
 export function inHours(hours: number): later {
   return add(hours, "hours");
+}
+
+export function inDays(days: number): later {
+  return add(days, "days");
+}
+
+export function inWeeks(weeks: number): later {
+  return add(weeks, "weeks");
+}
+
+export function inMonths(months: number): later {
+  return add(months, "months");
+}
+
+export function inYears(years: number): later {
+  return add(years, "years");
 }
 
 export function nextWeekday(weekday: number): later {
@@ -194,7 +210,7 @@ export function parseLater(later: string): Later {
     if (tokens.length !== 3) {
       throw `Unsupported format.  Should be 'In N (minutes|hours)'`;
     }
-    const n = parseInt(tokens[1]!);
+    const n = tokens[1] === "a" || tokens[1] === "an" ? 1 : parseInt(tokens[1]!);
     switch (tokens[2]) {
       case "minute":
       case "minutes":
@@ -207,6 +223,30 @@ export function parseLater(later: string): Later {
         {
           const unit = n == 1 ? "hour" : "hours";
           return new Later(`In ${n} ${unit}`, inHours(n));
+        }
+      case "day":
+      case "days":
+        {
+          const unit = n == 1 ? "day" : "days";
+          return new Later(`In ${n} ${unit}`, inDays(n));
+        }
+      case "week":
+      case "weeks":
+        {
+          const unit = n == 1 ? "week" : "weeks";
+          return new Later(`In ${n} ${unit}`, inWeeks(n));
+        }
+      case "month":
+      case "months":
+        {
+          const unit = n == 1 ? "month" : "months";
+          return new Later(`In ${n} ${unit}`, inMonths(n));
+        }
+      case "year":
+      case "years":
+        {
+          const unit = n == 1 ? "year" : "years";
+          return new Later(`In ${n} ${unit}`, inYears(n));
         }
     }
   } else if (later.startsWith("next")) {
