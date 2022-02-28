@@ -1,3 +1,3 @@
 ## ✨ Features
 
-- (Tasks Plugin Integration) Remove tags(#xxx) from reminder title (#53)
+- Support days/weeks/months/years in remind me later. (#62)
