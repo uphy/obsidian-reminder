@@ -40,10 +40,11 @@ export class RemindersController {
     );
   }
 
-  async removeFile(path: string) {
+  async removeFile(path: string): Promise<boolean> {
     console.debug("Remove file: path=%s", path);
-    this.reminders.removeFile(path);
+    const result = this.reminders.removeFile(path);
     this.reloadUI();
+    return result;
   }
 
   async reloadFile(file: TAbstractFile, reloadUI: boolean = false) {
