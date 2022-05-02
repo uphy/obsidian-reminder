@@ -10,7 +10,7 @@ export async function showOkCancelDialog(title: string, message: string): Promis
     if (!electron) {
         return OkCancel.CANCEL;
     }
-    const selected: Electron.MessageBoxReturnValue = await electron.remote.dialog.showMessageBox({
+    const selected: Electron.MessageBoxReturnValue = await (electron as any).remote.dialog.showMessageBox({
         "type": "question",
         "title": "Obsidian Reminder",
         "message": title,
