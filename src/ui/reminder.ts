@@ -22,7 +22,7 @@ export class ReminderModal {
       this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onMute, onOpenFile);
     } else {
       // Show system notification
-      const Notification = electron.remote.Notification;
+      const Notification = (electron as any).remote.Notification;
       const n = new Notification({
         title: "Obsidian Reminder",
         body: reminder.title,
@@ -37,7 +37,7 @@ export class ReminderModal {
       // Only for macOS
       {
         const laters = SETTINGS.laters.value;
-        n.on("action", (_, index) => {
+        n.on("action", (_: any, index: any) => {
           if (index === 0) {
             onDone();
             return;
