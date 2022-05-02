@@ -6,7 +6,7 @@ describe('MarkdownDocument', (): void => {
         
 - [ ] Task1 
 - [ ] Task2
-  - [x] Task2-1
+  * [x] Task2-1
   - [ ]   Task2-2`;
 
     const doc = new MarkdownDocument("file", md);
@@ -15,7 +15,7 @@ describe('MarkdownDocument', (): void => {
       .toStrictEqual([
         new Todo(2, '- [', " ", '] ', 'Task1 '),
         new Todo(3, '- [', " ", '] ', 'Task2'),
-        new Todo(4, '  - [', "x", '] ', 'Task2-1'),
+        new Todo(4, '  * [', "x", '] ', 'Task2-1'),
         new Todo(5, '  - [', " ", ']   ', 'Task2-2')
       ]);
 
@@ -25,7 +25,7 @@ describe('MarkdownDocument', (): void => {
         
 - [x] New Task1 
 - [ ] Task2
-  - [x] Task2-1
+  * [x] Task2-1
   - [ ]   Task2-2`);
 
     const todoToInsert = todos[1]!.clone();
@@ -36,7 +36,7 @@ describe('MarkdownDocument', (): void => {
 - [ ] Inserted Task
 - [x] New Task1 
 - [ ] Task2
-  - [x] Task2-1
+  * [x] Task2-1
   - [ ]   Task2-2`);
   });
 })
