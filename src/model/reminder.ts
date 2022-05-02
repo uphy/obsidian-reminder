@@ -6,6 +6,15 @@ export class Reminder {
   // To avoid duplicate notification, set this flag true before notification and set false on notification done.
   public muteNotification: boolean = false;
 
+  /* Given that `muteNotification` above is playing double duty, we need a flag
+   * that lets us serialize reminder display to prevent overload problems on
+   * mobile.
+   *
+   * It should be set to `true` before the reminder is displayed, and then set
+   * to false once the reminder is dealt with.
+   */
+  public beingDisplayed: boolean = false;
+
   constructor(
     public file: string,
     public title: string,

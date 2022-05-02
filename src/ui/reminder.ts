@@ -97,6 +97,10 @@ class NotificationModal extends Modal {
   }
 
   override onOpen() {
+    // When the modal is opened we mark the reminder as being displayed. This
+    // lets us introspect the reminder's display state from elsewhere.
+    this.reminder.beingDisplayed = true;
+
     let { contentEl } = this;
     new ReminderView({
       target: contentEl,
@@ -128,6 +132,9 @@ class NotificationModal extends Modal {
   }
 
   override onClose() {
+    // Unset the reminder from being displayed. This lets other parts of the
+    // plugin continue.
+    this.reminder.beingDisplayed = false;
     let { contentEl } = this;
     contentEl.empty();
     if (this.canceled) {

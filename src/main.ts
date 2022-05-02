@@ -62,14 +62,16 @@ export default class ReminderPlugin extends Plugin {
   }
 
   override async onload() {
-    await this.pluginDataIO.load();
-    if (this.pluginDataIO.debug.value) {
-      monkeyPatchConsole(this);
-    }
     this.setupUI();
     this.setupCommands();
-    this.watchVault();
-    this.startPeriodicTask();
+    this.app.workspace.onLayoutReady(async () => {
+      await this.pluginDataIO.load();
+      if (this.pluginDataIO.debug.value) {
+        monkeyPatchConsole(this);
+      }
+      this.watchVault();
+      this.startPeriodicTask();
+    })
   }
 
   private setupUI() {
@@ -106,14 +108,11 @@ export default class ReminderPlugin extends Plugin {
       });
     }
 
-    // Open reminder list view
-    if (this.app.workspace.layoutReady) {
+    // Open reminder list view. This callback will fire immediately if the
+    // layout is ready, and will otherwise be enqueued.
+    this.app.workspace.onLayoutReady(() => {
       this.viewProxy.openView();
-    } else {
-      (this.app.workspace as any).on("layout-ready", () => {
-        this.viewProxy.openView();
-      });
-    }
+    });
   }
 
   private setupCommands() {
@@ -203,9 +202,13 @@ export default class ReminderPlugin extends Plugin {
       this.app.vault.on("delete", (file) => {
         this.remindersController.removeFile(file.path);
       }),
-      this.app.vault.on("rename", (file, oldPath) => {
-        this.remindersController.removeFile(oldPath);
-        this.remindersController.reloadFile(file);
+      this.app.vault.on("rename", async (file, oldPath) => {
+        // We only reload the file if it CAN be deleted, otherwise this can
+        // cause crashes.
+        if (await this.remindersController.removeFile(oldPath)) {
+          // We need to do the reload synchronously so as to avoid racing.
+          await this.remindersController.reloadFile(file);
+        }
       }),
     ].forEach(eventRef => {
       this.registerEvent(eventRef);
@@ -213,7 +216,13 @@ export default class ReminderPlugin extends Plugin {
   }
 
   private startPeriodicTask() {
-    let intervalTaskRunning = false;
+    let intervalTaskRunning = true;
+    // Force the view to refresh as soon as possible.
+    this.periodicTask().finally(() => {
+      intervalTaskRunning = false;
+    });
+
+    // Set up the recurring check for reminders.
     this.registerInterval(
       window.setInterval(() => {
         if (intervalTaskRunning) {
@@ -248,12 +257,36 @@ export default class ReminderPlugin extends Plugin {
     const expired = this.reminders.getExpiredReminders(
       SETTINGS.reminderTime.value
     );
-    expired.forEach((reminder) => {
-      if (reminder.muteNotification) {
-        return;
+
+    let previousReminder: Reminder | undefined = undefined;
+    for (let reminder of expired) {
+      if (this.app.workspace.layoutReady) {
+        if (reminder.muteNotification) {
+          // We don't want to set `previousReminder` in this case as the current
+          // reminder won't be shown.
+          continue;
+        }
+        if (previousReminder) {
+          while(previousReminder.beingDisplayed) {
+            // Displaying too many reminders at once can cause crashes on
+            // mobile. We use `beingDisplayed` to wait for the current modal to
+            // be dismissed before displaying the next.
+            await this.sleep(100);
+          }
+        }
+        this.showReminder(reminder);
+        previousReminder = reminder;
       }
-      this.showReminder(reminder);
-    });
+    }
+  }
+
+  /* An asynchronous sleep function. To use it you must `await` as it hands
+   * off control to other portions of the JS control loop whilst waiting.
+   *
+   * @param milliseconds - The number of milliseconds to wait before resuming.
+   */
+  private async sleep(milliseconds: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
   }
 
   private showReminder(reminder: Reminder) {
