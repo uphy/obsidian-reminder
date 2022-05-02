@@ -74,8 +74,7 @@ You can change option which will be shown when you click `Remind Me Later` butto
 
 - Type: `string`
 - Format: Line-separated following options
-    - In N minutes
-    - In N hours
+    - In N minutes/hours/days/weeks/months/years
     - Next Sunday/Monday/Tuesday/Wednesday/Thursday/Friday/Saturday/day/week/month/year
     - Tomorrow
 
