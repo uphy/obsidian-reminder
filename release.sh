@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VERSION=$1
-MINIMUM_OBSIDIAN_VERSION=0.13.14
+MINIMUM_OBSIDIAN_VERSION=0.14.6
 
 if [ -z "$1" ]; then
     echo Specify a version
@@ -20,12 +20,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-npm run build
-if [ $? -ne 0 ]; then
-    echo "build error"
-    exit 1
-fi
-
 sed -i '' -e 's/"version": .*/"version": "'$VERSION'",/' package.json
 sed -i '' -e 's/"version": .*/"version": "'$VERSION'",/' manifest.json
 
@@ -36,7 +30,5 @@ mv $VERSIONS_FILE_TEMP versions.json
 git add .
 git commit -m "Release v$VERSION"
 git tag $VERSION
-git push
-git push --tags
 
-gh release create "$VERSION" --notes-file release-note.md main.js styles.css manifest.json
+echo Please push tag with 'git push && git push --tags'
