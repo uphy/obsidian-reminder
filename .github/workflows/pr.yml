@@ -4,7 +4,7 @@ on:
   - pull_request
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -22,7 +22,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Build pages
+      - name: Test
         run: |
           npm ci
           npm run test
