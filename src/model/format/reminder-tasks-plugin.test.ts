@@ -90,6 +90,24 @@ describe('TasksPluginReminderLine', (): void => {
             expectedMarkdown: `- [x] Task ⏰ 2021-09-13 09:00 📅 2021-09-13 ✅ 2021-09-15`
         });
     });
+    test('modify() - default - every month', async () => {
+        await testModify({
+            now: "2021-09-13",
+            customEmoji: false,
+            inputMarkdown: `- [ ] Task 🔁 every month on the 5th 📅 2021-09-12`,
+            expectedMarkdown: `- [ ] Task 🔁 every month on the 5th 📅 2021-10-05
+- [x] Task 🔁 every month on the 5th 📅 2021-09-12 ✅ 2021-09-13`
+        });
+    });
+    test('modify() - default - every month with time', async () => {
+        await testModify({
+            now: "2021-09-13 09:10",
+            customEmoji: true,
+            inputMarkdown: `- [ ] Task ⏰ 2021-09-05 11:00 🔁 every month on the 5th 📅 2021-09-12`,
+            expectedMarkdown: `- [ ] Task ⏰ 2021-10-05 11:00 🔁 every month on the 5th 📅 2021-10-05
+- [x] Task ⏰ 2021-09-05 11:00 🔁 every month on the 5th 📅 2021-09-12 ✅ 2021-09-13`
+        });
+    });
 });
 
 async function testModify({
