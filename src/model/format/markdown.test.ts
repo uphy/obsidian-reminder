@@ -8,7 +8,8 @@ describe('MarkdownDocument', (): void => {
 - [ ] Task2
   * [x] Task2-1
   - [ ]   Task2-2
-> - [ ] Task in call out`;
+> - [ ] Task in call out
+>> - [ ] Task in nested call out`;
 
     const doc = new MarkdownDocument("file", md);
     const todos = doc.getTodos();
@@ -18,7 +19,8 @@ describe('MarkdownDocument', (): void => {
         new Todo(3, '- [', " ", '] ', 'Task2'),
         new Todo(4, '  * [', "x", '] ', 'Task2-1'),
         new Todo(5, '  - [', " ", ']   ', 'Task2-2'),
-        new Todo(6, '> - [', " ", '] ', 'Task in call out')
+        new Todo(6, '> - [', " ", '] ', 'Task in call out'),
+        new Todo(7, '>> - [', " ", '] ', 'Task in nested call out')
       ]);
 
     todos[0]!.body = "New Task1 ";
@@ -29,7 +31,8 @@ describe('MarkdownDocument', (): void => {
 - [ ] Task2
   * [x] Task2-1
   - [ ]   Task2-2
-> - [ ] Task in call out`);
+> - [ ] Task in call out
+>> - [ ] Task in nested call out`);
 
     const todoToInsert = todos[1]!.clone();
     todoToInsert!.body = 'Inserted Task';
@@ -41,6 +44,7 @@ describe('MarkdownDocument', (): void => {
 - [ ] Task2
   * [x] Task2-1
   - [ ]   Task2-2
-> - [ ] Task in call out`);
+> - [ ] Task in call out
+>> - [ ] Task in nested call out`);
   });
 })
