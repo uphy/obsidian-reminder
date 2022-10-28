@@ -117,7 +117,7 @@ class Settings {
     this.useCustomEmojiForTasksPlugin = this.settings.newSettingBuilder()
       .key("useCustomEmojiForTasksPlugin")
       .name("Distinguish between reminder date and due date")
-      .desc("Use custom emoji ⏰ instead of 📅 and distinguish between reminder date/time and Tasks Plugin's due date.")
+      .desc("Use custom emoji ⏳ instead of 📅 and distinguish between reminder date/time and Tasks Plugin's due date.")
       .tag(TAG_RESCAN)
       .toggle(false)
       .onAnyValueChanged(context => {

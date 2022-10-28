@@ -14,7 +14,7 @@ export class TasksPluginReminderModel implements ReminderModel {
     private static readonly symbolDueDate = Symbol.ofChars([..."📅📆🗓"]);
     private static readonly symbolDoneDate = Symbol.ofChar("✅");
     private static readonly symbolRecurrence = Symbol.ofChar("🔁");
-    private static readonly symbolReminder = Symbol.ofChar("⏰");
+    private static readonly symbolReminder = Symbol.ofChar("⏳");
     private static readonly allSymbols = [
         TasksPluginReminderModel.symbolDueDate,
         TasksPluginReminderModel.symbolDoneDate,
