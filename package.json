@@ -43,6 +43,9 @@
     "rrule": "^2.6.8",
     "svelte": "^3.42.1"
   },
+  "overrides": {
+    "@electron/get": "2.0.2"
+  },
   "jest": {
     "moduleFileExtensions": [
       "js",
