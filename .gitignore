@@ -11,7 +11,7 @@ main.js
 
 # obsidian
 data.json
-/deploy.sh
+/deploy-targets.txt
 
 # misc.
 *.log
