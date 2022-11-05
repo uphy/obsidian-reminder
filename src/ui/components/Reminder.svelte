@@ -67,6 +67,8 @@
 
   .reminder-actions {
     margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
   }
 
   .reminder-file {

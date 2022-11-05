@@ -22,6 +22,7 @@ class DateTimeChooserModal extends Modal {
         if (Platform.isDesktop) {
             this.modalEl.style.minWidth = "0px";
             this.modalEl.style.minHeight = "0px";
+            this.modalEl.style.width = "auto";
             targetElement = this.contentEl;
         } else {
             targetElement = this.containerEl;
