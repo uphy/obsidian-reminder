@@ -8,6 +8,7 @@ node_modules
 # build
 main.js
 *.js.map
+styles.css
 
 # obsidian
 data.json
