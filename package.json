@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
+    "lint": "eslint ./src --fix && eslint ./tests --fix && tsc --noEmit --pretty && svelte-check",
     "test": "jest"
   },
   "keywords": [],
@@ -27,6 +28,10 @@
     "electron": "^21.2.0",
     "esbuild": "^0.15.13",
     "esbuild-svelte": "^0.7.1",
+    "eslint": "^8.26.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-prettier": "^4.2.1",
     "jest": "^27.0.6",
     "moment": "^2.29.1",
     "obsidian": "^0.16.3",
