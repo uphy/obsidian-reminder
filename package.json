@@ -12,17 +12,12 @@
   "author": "uphy",
   "license": "MIT",
   "devDependencies": {
-    "@codemirror/commands": "^0.19.0",
-    "@codemirror/fold": "0.19.0",
-    "@codemirror/history": "^0.19.0",
-    "@codemirror/language": "^0.19.0",
-    "@codemirror/matchbrackets": "^0.19.0",
-    "@codemirror/panel": "^0.19.0",
-    "@codemirror/rangeset": "^0.19.0",
-    "@codemirror/search": "^0.19.0",
-    "@codemirror/state": "^0.19.0",
+    "@codemirror/commands": "^6.1.2",
+    "@codemirror/language": "^6.3.0",
+    "@codemirror/search": "^6.2.2",
+    "@codemirror/state": "^6.1.2",
     "@codemirror/stream-parser": "https://github.com/lishid/stream-parser",
-    "@codemirror/view": "^0.19.0",
+    "@codemirror/view": "^6.4.0",
     "@rollup/plugin-commonjs": "^18.0.0",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^11.2.1",
@@ -31,10 +26,10 @@
     "@types/jest": "^27.0.1",
     "@types/node": "^14.14.37",
     "cross-env": "^7.0.3",
-    "electron": "^18.0.4",
+    "electron": "^21.2.0",
     "jest": "^27.0.6",
     "moment": "^2.29.1",
-    "obsidian": "^0.13.11",
+    "obsidian": "^0.16.3",
     "rollup": "^2.32.1",
     "rollup-plugin-svelte": "^7.1.0",
     "svelte-check": "^2.2.4",
@@ -47,6 +42,9 @@
   "dependencies": {
     "rrule": "^2.6.8",
     "svelte": "^3.42.1"
+  },
+  "overrides": {
+    "@electron/get": "2.0.2"
   },
   "jest": {
     "moduleFileExtensions": [
