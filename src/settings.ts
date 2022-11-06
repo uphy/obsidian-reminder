@@ -17,7 +17,7 @@ import {
     TimeSerde,
 } from 'model/settings';
 import { DateTime, Later, Time } from 'model/time';
-import { App, PluginSettingTab, Plugin_2 } from 'obsidian';
+import { App, Platform, PluginSettingTab, Plugin_2 } from 'obsidian';
 
 export const TAG_RESCAN = 're-scan';
 
@@ -37,6 +37,9 @@ class Settings {
     linkDatesToDailyNotes: SettingModel<boolean, boolean>;
     editDetectionSec: SettingModel<number, number>;
     reminderCheckIntervalSec: SettingModel<number, number>;
+    googleApiClientId: SettingModel<string, string>;
+    googleApiClientSecret: SettingModel<string, string>;
+    googleApiRefreshToken: SettingModel<string, string>;
 
     constructor() {
         const reminderFormatSettings = new ReminderFormatSettings(this.settings);
@@ -162,6 +165,36 @@ class Settings {
             })
             .build(new RawSerde());
 
+        this.googleApiClientId = this.settings
+            .newSettingBuilder()
+            .key('googleApiClientId')
+            .name('Client ID')
+            .desc('Google API OAuth2 Client ID')
+            .text('')
+            .placeHolder('')
+            .build(new RawSerde());
+        this.googleApiClientSecret = this.settings
+            .newSettingBuilder()
+            .key('googleApiClientSecret')
+            .name('Client Secret')
+            .desc('Google API OAuth2 Client Secret')
+            .text('')
+            .placeHolder('')
+            .build(new RawSerde());
+        this.googleApiRefreshToken = this.settings
+            .newSettingBuilder()
+            .key('googleApiRefreshToken')
+            .name('Refresh token')
+            .desc("This value is automatically set by 'Connect to Google Calendar' command")
+            .text('')
+            .placeHolder('')
+            .onAnyValueChanged((context) => {
+                if (Platform.isMobile) {
+                    context.setEnabled(false);
+                }
+            })
+            .build(new RawSerde());
+
         this.editDetectionSec = this.settings
             .newSettingBuilder()
             .key('editDetectionSec')
@@ -204,6 +237,9 @@ class Settings {
         this.settings
             .newGroup('Reminder Format - Kanban Plugin')
             .addSettings(reminderFormatSettings.enableKanbanPluginReminderFormat);
+        this.settings
+            .newGroup('Google Calendar Integration')
+            .addSettings(this.googleApiClientId, this.googleApiClientSecret, this.googleApiRefreshToken);
         this.settings.newGroup('Advanced').addSettings(this.editDetectionSec, this.reminderCheckIntervalSec);
 
         const config = new ReminderFormatConfig();

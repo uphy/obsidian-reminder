@@ -57,6 +57,8 @@ export default class ReminderPlugin extends Plugin {
         this.reminderModal = new ReminderModal(this.app, SETTINGS.useSystemNotification, SETTINGS.laters);
         this.autoComplete = new AutoComplete(SETTINGS.autoCompleteTrigger);
         this.googleCalendar = new GoogleCalendarClient(
+            SETTINGS.googleApiClientId,
+            SETTINGS.googleApiClientSecret,
             this.pluginDataIO.googleApiRefreshToken,
             this.pluginDataIO.googleCalendarId,
         );

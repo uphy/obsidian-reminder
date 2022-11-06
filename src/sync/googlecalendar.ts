@@ -1,4 +1,4 @@
-import type { Reference } from 'model/ref';
+import type { ReadOnlyReference, Reference } from 'model/ref';
 import type { Reminder } from 'model/reminder';
 import { DateTime, Time } from 'model/time';
 import moment from 'moment';
@@ -6,8 +6,6 @@ import { RequestParam, request } from 'obsidian';
 import { ReminderChange, ReminderChangeType, ReminderSynchronizer, SnapshotReminder } from './sync';
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
-const GOOGLE_API_CLIENT_ID = 'xxx';
-const GOOGLE_API_CLIENT_SECRET = 'xxx';
 const GOOGLE_API_REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob';
 const extendedSharedProperty = {
     reminderEventMark: {
@@ -50,7 +48,12 @@ export type GenerateAuthorizationCodeFunc = (url: string) => Promise<string>;
 export class GoogleCalendarClient extends ReminderSynchronizer {
     private accessToken?: string;
 
-    constructor(private refreshToken: Reference<any>, private calendarId: Reference<string | undefined>) {
+    constructor(
+        private clientId: ReadOnlyReference<string>,
+        private clientSecret: ReadOnlyReference<string>,
+        private refreshToken: Reference<any>,
+        private calendarId: Reference<string | undefined>,
+    ) {
         super();
     }
 
@@ -74,7 +77,7 @@ export class GoogleCalendarClient extends ReminderSynchronizer {
 
     generateAuthUrl(): string {
         const scopes = window.encodeURIComponent(SCOPES.join(' '));
-        return `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${GOOGLE_API_CLIENT_ID}&redirect_uri=${GOOGLE_API_REDIRECT_URI}&scope=${scopes}&access_type=offline`;
+        return `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${this.clientId.value}&redirect_uri=${GOOGLE_API_REDIRECT_URI}&scope=${scopes}&access_type=offline`;
     }
 
     private async httpRequest(requestParam: RequestParam): Promise<any> {
@@ -102,8 +105,8 @@ export class GoogleCalendarClient extends ReminderSynchronizer {
             },
             body: JSON.stringify({
                 code,
-                client_id: GOOGLE_API_CLIENT_ID,
-                client_secret: GOOGLE_API_CLIENT_SECRET,
+                client_id: this.clientId.value,
+                client_secret: this.clientSecret.value,
                 redirect_uri: GOOGLE_API_REDIRECT_URI,
                 grant_type: 'authorization_code',
                 access_type: 'offline',
@@ -128,8 +131,8 @@ export class GoogleCalendarClient extends ReminderSynchronizer {
             },
             body: JSON.stringify({
                 refresh_token: refreshToken,
-                client_id: GOOGLE_API_CLIENT_ID,
-                client_secret: GOOGLE_API_CLIENT_SECRET,
+                client_id: this.clientId.value,
+                client_secret: this.clientSecret.value,
                 grant_type: 'refresh_token',
                 access_type: 'offline',
             }),
