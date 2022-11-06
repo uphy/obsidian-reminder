@@ -249,10 +249,20 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
             dtStart = today;
         }
 
-        rruleOptions.dtstart = dtStart.toDate();
+        // clone dtStart because dtStart will be modified by utc() call.
+        const base = dtStart.clone();
 
+        // process rrule
+        rruleOptions.dtstart = dtStart
+            .utc(true)
+            .toDate();
         const rrule = new RRule(rruleOptions);
-        return rrule.after(dtStart.toDate(), false);
+        const rdate = rrule.after(dtStart.toDate(), false);
+        
+        // apply rrule to `base`
+        const diff = rdate.getTime() - rruleOptions.dtstart.getTime()
+        base.add(diff, "millisecond");
+        return base.toDate();
     }
 
     newReminder(title: string, time: DateTime, insertAt?: number): TasksPluginReminderModel {
