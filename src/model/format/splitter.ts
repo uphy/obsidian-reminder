@@ -41,7 +41,8 @@ export class Tokens {
         text: string,
         keepSpace = false,
         create = false,
-        separateSymbolAndText = false): Token | null {
+        separateSymbolAndText = false,
+        insertAt?: number): Token | null {
         let token = this.getToken(symbol);
         if (token === null) {
             if (!create) {
@@ -64,7 +65,34 @@ export class Tokens {
                     lastToken.text += ' ';
                 }
             }
-            this.tokens.push(token);
+            if (insertAt == null) {
+                this.tokens.push(token);
+            } else {
+                let index = 0
+                let insertTokenIndex = -1;
+                let tokenIndex = 0;
+                for (const t of this.tokens) {
+                    // first token is the title of the reminder.
+                    // we shouldn't insert before the title.
+                    const end = index + t.symbol.length + t.text.length;
+                    if (tokenIndex > 0) {
+                        if (end > insertAt){
+                            insertTokenIndex = tokenIndex;
+                            break;                        
+                        }
+                    }
+                    index = end;
+                    tokenIndex++;
+                }
+                if (insertTokenIndex == -1) {
+                    this.tokens.push(token);
+                } else {
+                    this.tokens.splice(insertTokenIndex, 0, token)
+                    if (insertTokenIndex < this.tokens.length - 1) {
+                        token.text = token.text + ' ';
+                    }
+                }
+            }            
             return token;
         }
 
@@ -121,6 +149,21 @@ export class Tokens {
 
     forEachTokens(consumer: (token: Token) => void) {
         this.tokens.forEach(consumer);
+    }
+
+    public rangeOfSymbol(symbol: Symbol): {start: number, end: number} | undefined {
+        let index = 0
+        for (const token of this.tokens){
+            const end = index + token.symbol.length + token.text.length;
+            if (symbol.isSymbol(token.symbol)) {
+                return {
+                    start: index,
+                    end: end
+                };
+            }
+            index = end;
+        }
+        return;
     }
 
     public join(): string {

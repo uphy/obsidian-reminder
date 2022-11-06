@@ -9,14 +9,24 @@ export type ReminderEdit = {
     rawTime?: string,
     checked?: boolean
 }
+export type ReminderInsertion = {
+    insertedLine: string,
+    caretPosition: number,
+}
 
 export interface ReminderModel {
     getTitle(): string | null;
     getTime(): DateTime | null;
-    setTime(time: DateTime): void;
+    /** insertAt is a optional argument representing string index for indicating where to insert the time. */
+    setTime(time: DateTime, insertAt?: number): void;
     /** return false when this reminder doesn't support raw time. */
     setRawTime(rawTime: string): boolean;
     toMarkdown(): string;
+    /** 
+     * get the string index at the end of time part. 
+     * this is used for decision of caret position after inserting reminder.
+     */
+    getEndOfTimeTextIndex(): number;
 }
 
 export class ReminderFormatParameterKey<T> {
@@ -89,8 +99,9 @@ export interface ReminderFormat {
      * 
      * @param line line in editor
      * @param time time to append
+     * @param insertAt position at `line` to insert reminder. (this is available only when the format supports insertion)
      */
-    appendReminder(line: string, time: DateTime): string | null;
+    appendReminder(line: string, time: DateTime, insertAt?: number): ReminderInsertion | null;
 }
 
 export abstract class TodoBasedReminderFormat<E extends ReminderModel> implements ReminderFormat {
@@ -169,25 +180,33 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
         return true;
     }
 
-    appendReminder(line: string, time: DateTime): string | null {
+    appendReminder(line: string, time: DateTime, insertAt?: number): ReminderInsertion | null {
         const todo = Todo.parse(0, line);
         if (todo == null) {
             return null;
         }
         let parsed = this.parseReminder(todo);
+        const todoHeaderLength = todo.getHeaderLength();
         if (parsed != null) {
-            parsed.setTime(time);
+            parsed.setTime(time, insertAt);
         } else {
-            parsed = this.newReminder(todo.body, time);
+            if (insertAt != null) {
+                // insert at position of TODO body part
+                insertAt -= todoHeaderLength;
+            }
+            parsed = this.newReminder(todo.body, time, insertAt);
             parsed.setTime(time);
         }
         todo.body = parsed.toMarkdown();
-        return todo.toMarkdown();
+        return {
+            insertedLine: todo.toMarkdown(),
+            caretPosition: todoHeaderLength + parsed.getEndOfTimeTextIndex(),
+        };
     }
 
     abstract parseReminder(todo: Todo): E | null;
 
-    abstract newReminder(title: string, time: DateTime): E;
+    abstract newReminder(title: string, time: DateTime, insertAt?: number): E;
 
     protected isStrictDateFormat() {
         return this.config.getParameter(ReminderFormatParameterKey.strictDateFormat);
@@ -239,7 +258,7 @@ export class CompositeReminderFormat implements ReminderFormat {
         this.formats.forEach(f => f.setConfig(this.config!));
     }
 
-    appendReminder(line: string, time: DateTime): string | null {
+    appendReminder(line: string, time: DateTime): ReminderInsertion | null {
         if (this.formats[0] == null) {
             return null;
         }

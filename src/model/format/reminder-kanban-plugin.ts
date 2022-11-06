@@ -168,6 +168,10 @@ export class KanbanReminderModel implements ReminderModel {
         return false;
     }
 
+    getEndOfTimeTextIndex(): number {
+        return this.toMarkdown().length;
+    }
+
     toMarkdown(): string {
         return `${this.title.trim()} ${KanbanDateTimeFormat.instance.format(this.time)}`;
     }

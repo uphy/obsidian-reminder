@@ -43,6 +43,10 @@ export class Todo {
         this.check = checked ? 'x' : ' ';
     }
 
+    public getHeaderLength() {
+        return this.prefix.length + this.check.length + this.suffix.length;
+    }
+
     public clone() {
         return Todo.parse(this.lineIndex, this.toMarkdown());
     }

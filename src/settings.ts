@@ -227,7 +227,7 @@ class ReminderFormatSettings {
       .tag(TAG_RESCAN)
       .toggle(format.defaultEnabled)
       .onAnyValueChanged(context => {
-        context.setInfo(`Example: ${format.format.appendReminder("- [ ] Task 1", DateTime.now())}`);
+        context.setInfo(`Example: ${format.format.appendReminder("- [ ] Task 1", DateTime.now())?.insertedLine}`);
       })
       .build(new RawSerde());
 

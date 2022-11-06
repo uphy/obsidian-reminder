@@ -79,7 +79,7 @@ export class AutoComplete {
         // append reminder to the line
         const format = SETTINGS.primaryFormat.value.format;
         try {
-            const appended = format.appendReminder(line, value);
+            const appended = format.appendReminder(line, value)?.insertedLine;
             if (appended == null) {
                 console.error("Cannot append reminder time to the line: line=%s, date=%s", line, value);
                 return;

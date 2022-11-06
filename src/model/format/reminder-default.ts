@@ -47,6 +47,9 @@ class DefaultReminderModel implements ReminderModel {
         this.time = rawTime;
         return true;
     }
+    getEndOfTimeTextIndex(): number {
+        return this.toMarkdown().length - this.title2.length;
+    }
     toMarkdown(): string {
         let result = `${this.title1}(@${this.time})${this.title2}`;
         if (!this.linkDatesToDailyNotes) {
@@ -71,8 +74,17 @@ export class DefaultReminderFormat extends TodoBasedReminderFormat<DefaultRemind
         return DefaultReminderModel.parse(todo.body, this.linkDatesToDailyNotes());
     }
 
-    newReminder(title: string, time: DateTime): DefaultReminderModel {
-        return new DefaultReminderModel(this.linkDatesToDailyNotes(), title, time.toString(), "");
+    newReminder(title: string, time: DateTime, insertAt?: number): DefaultReminderModel {
+        let title1: string;
+        let title2: string;
+        if (insertAt != null){
+            title1 = title.substring(0, insertAt);
+            title2 = title.substring(insertAt);
+        } else {
+            title1 = title;
+            title2 = "";
+        }
+        return new DefaultReminderModel(this.linkDatesToDailyNotes(), title1, time.toString(), title2);
     }
 
     private linkDatesToDailyNotes() {
