@@ -15,11 +15,15 @@ export class TasksPluginReminderModel implements ReminderModel {
     private static readonly symbolDoneDate = Symbol.ofChar("✅");
     private static readonly symbolRecurrence = Symbol.ofChar("🔁");
     private static readonly symbolReminder = Symbol.ofChar("⏰");
+    private static readonly symbolScheduled = Symbol.ofChar("⏳");
+    private static readonly symbolStart = Symbol.ofChar("🛫");
     private static readonly allSymbols = [
         TasksPluginReminderModel.symbolDueDate,
         TasksPluginReminderModel.symbolDoneDate,
         TasksPluginReminderModel.symbolRecurrence,
         TasksPluginReminderModel.symbolReminder,
+        TasksPluginReminderModel.symbolStart,
+        TasksPluginReminderModel.symbolScheduled,
     ];
 
     public static parse(line: string, useCustomEmoji?: boolean, removeTags?: boolean, strictDateFormat?: boolean): TasksPluginReminderModel {

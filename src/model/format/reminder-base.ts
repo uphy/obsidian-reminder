@@ -187,13 +187,13 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
         }
         let parsed = this.parseReminder(todo);
         const todoHeaderLength = todo.getHeaderLength();
+        if (insertAt != null) {
+            // insert at position of TODO body part
+            insertAt -= todoHeaderLength;
+        }
         if (parsed != null) {
             parsed.setTime(time, insertAt);
         } else {
-            if (insertAt != null) {
-                // insert at position of TODO body part
-                insertAt -= todoHeaderLength;
-            }
             parsed = this.newReminder(todo.body, time, insertAt);
             parsed.setTime(time);
         }
