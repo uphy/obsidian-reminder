@@ -2,6 +2,9 @@ import { ReadOnlyReference, Reference } from 'model/ref';
 import { Later, Time, parseLaters } from 'model/time';
 import { AbstractTextComponent, Setting } from 'obsidian';
 import { ReminderFormatType, ReminderFormatTypes } from './format';
+import { TasksPluginReminderModel } from './format/reminder-tasks-plugin';
+import { TasksPluginSymbols } from './format/reminder-tasks-plugin-symbols';
+import type { Symbol } from './format/splitter';
 
 class SettingRegistry {
     private settingContexts: Array<SettingContext> = [];
@@ -27,6 +30,7 @@ class SettingContext {
     public name?: string;
     public desc?: string;
     public tags: Array<string> = [];
+    public deprecated: boolean = false;
     public settingModel?: SettingModel<any, any>;
     anyValueChanged?: AnyValueChanged;
 
@@ -91,7 +95,9 @@ class SettingContext {
     }
 
     setEnabled(enable: boolean) {
-        this.setting!.setDisabled(!enable);
+        if (!this.deprecated) {
+            this.setting!.setDisabled(!enable);
+        }
     }
 
     findContextByKey(key: string) {
@@ -132,6 +138,11 @@ export class SettingModelBuilder {
 
     tag(tag: string) {
         this.context.tags.push(tag);
+        return this;
+    }
+
+    deprecated(deprecated: boolean) {
+        this.context.deprecated = deprecated;
         return this;
     }
 
@@ -326,6 +337,8 @@ export interface SettingModel<R, E> extends ReadOnlyReference<E> {
     store(settings: any): void;
 
     hasTag(tag: string): boolean;
+
+    get deprecated(): boolean;
 }
 
 type SettingInitilizer<R> = ({
@@ -370,6 +383,10 @@ class SettingModelImpl<R, E> implements SettingModel<R, E> {
 
     get key() {
         return this.context.key!;
+    }
+
+    get deprecated(): boolean {
+        return this.context.deprecated;
     }
 
     load(settings: any): void {
@@ -419,7 +436,9 @@ export class SettingTabModel {
         this.groups.forEach((group) => {
             el.createEl('h3', { text: group.name });
             group.settings.forEach((settings) => {
-                settings.createSetting(el);
+                if (!settings.deprecated) {
+                    settings.createSetting(el);
+                }
             });
         });
         this.registry.forEach((context) => context.update());
@@ -469,5 +488,14 @@ export class ReminderFormatTypeSerde implements Serde<string, ReminderFormatType
     }
     marshal(value: ReminderFormatType): string {
         return value.name;
+    }
+}
+
+export class TasksPluginEmojiTypeSerde implements Serde<string, Symbol> {
+    unmarshal(rawValue: string): Symbol {
+        return TasksPluginSymbols.getSymbolByPrimaryEmoji(rawValue)!;
+    }
+    marshal(value: Symbol): string {
+        return value.primary;
     }
 }

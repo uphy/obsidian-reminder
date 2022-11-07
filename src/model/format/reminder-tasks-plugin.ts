@@ -3,6 +3,7 @@ import { DATE_TIME_FORMATTER, DateTime } from 'model/time';
 import moment, { Moment } from 'moment';
 import { RRule } from 'rrule';
 import { ReminderEdit, ReminderFormatParameterKey, ReminderModel, TodoBasedReminderFormat } from './reminder-base';
+import { TasksPluginSymbols } from './reminder-tasks-plugin-symbols';
 import { Symbol, Tokens, splitBySymbol } from './splitter';
 
 function removeTags(text: string): string {
@@ -10,37 +11,23 @@ function removeTags(text: string): string {
 }
 export class TasksPluginReminderModel implements ReminderModel {
     private static readonly dateFormat = 'YYYY-MM-DD';
-    private static readonly symbolDueDate = Symbol.ofChars([...'📅📆🗓']);
-    private static readonly symbolDoneDate = Symbol.ofChar('✅');
-    private static readonly symbolRecurrence = Symbol.ofChar('🔁');
-    private static readonly symbolReminder = Symbol.ofChar('⏰');
-    private static readonly symbolScheduled = Symbol.ofChar('⏳');
-    private static readonly symbolStart = Symbol.ofChar('🛫');
-    private static readonly allSymbols = [
-        TasksPluginReminderModel.symbolDueDate,
-        TasksPluginReminderModel.symbolDoneDate,
-        TasksPluginReminderModel.symbolRecurrence,
-        TasksPluginReminderModel.symbolReminder,
-        TasksPluginReminderModel.symbolStart,
-        TasksPluginReminderModel.symbolScheduled,
-    ];
 
     public static parse(
         line: string,
-        useCustomEmoji?: boolean,
+        reminderSymbol: Symbol,
         removeTags?: boolean,
         strictDateFormat?: boolean,
     ): TasksPluginReminderModel {
         return new TasksPluginReminderModel(
-            useCustomEmoji ?? false,
+            reminderSymbol,
             removeTags ?? false,
             strictDateFormat ?? true,
-            new Tokens(splitBySymbol(line, this.allSymbols)),
+            new Tokens(splitBySymbol(line, TasksPluginSymbols.allSymbols)),
         );
     }
 
     private constructor(
-        private useCustomEmoji: boolean,
+        private reminderSymbol: Symbol,
         private removeTags: boolean,
         private strictDateFormat: boolean,
         private tokens: Tokens,
@@ -54,40 +41,28 @@ export class TasksPluginReminderModel implements ReminderModel {
         return title;
     }
     getTime(): DateTime | null {
-        return this.getDate(this.getReminderSymbol());
+        return this.getDate(this.reminderSymbol);
     }
     setTime(time: DateTime, insertAt?: number): void {
-        if (this.useCustomEmoji) {
-            this.setDate(this.getReminderSymbol(), time, 1);
+        if (this.reminderSymbol == TasksPluginSymbols.reminder) {
+            this.setDate(this.reminderSymbol, time, 1);
         } else {
-            this.setDate(this.getReminderSymbol(), time, insertAt);
+            this.setDate(this.reminderSymbol, time, insertAt);
         }
     }
     getDueDate(): DateTime | null {
-        return this.getDate(TasksPluginReminderModel.symbolDueDate);
+        return this.getDate(TasksPluginSymbols.dueDate);
     }
     setDueDate(time: DateTime): void {
-        this.setDate(TasksPluginReminderModel.symbolDueDate, time);
+        this.setDate(TasksPluginSymbols.dueDate, time);
     }
     setRawTime(rawTime: string): boolean {
-        this.setDate(this.getReminderSymbol(), rawTime);
+        this.setDate(this.reminderSymbol, rawTime);
         return true;
     }
-    private getReminderSymbol(): Symbol {
-        if (this.useCustomEmoji) {
-            return TasksPluginReminderModel.symbolReminder;
-        } else {
-            return TasksPluginReminderModel.symbolDueDate;
-        }
-    }
-
     getEndOfTimeTextIndex(): number {
         // get the end of the string index of due date or reminder date
-        let timeSymbol = TasksPluginReminderModel.symbolDueDate;
-        if (this.useCustomEmoji) {
-            timeSymbol = TasksPluginReminderModel.symbolReminder;
-        }
-        const token = this.tokens.rangeOfSymbol(timeSymbol);
+        const token = this.tokens.rangeOfSymbol(this.reminderSymbol);
         if (token != null) {
             return token.end;
         }
@@ -103,21 +78,21 @@ export class TasksPluginReminderModel implements ReminderModel {
     }
 
     getDoneDate(): DateTime | null {
-        return this.getDate(TasksPluginReminderModel.symbolDoneDate);
+        return this.getDate(TasksPluginSymbols.doneDate);
     }
 
     setDoneDate(time: DateTime | string | undefined) {
-        this.setDate(TasksPluginReminderModel.symbolDoneDate, time);
+        this.setDate(TasksPluginSymbols.doneDate, time);
     }
 
     getRecurrence() {
-        return this.tokens.getTokenText(TasksPluginReminderModel.symbolRecurrence, true);
+        return this.tokens.getTokenText(TasksPluginSymbols.recurrence, true);
     }
 
     clone(): TasksPluginReminderModel {
         return TasksPluginReminderModel.parse(
             this.toMarkdown(),
-            this.useCustomEmoji,
+            this.reminderSymbol,
             this.removeTags,
             this.strictDateFormat,
         );
@@ -128,7 +103,7 @@ export class TasksPluginReminderModel implements ReminderModel {
         if (dateText === null) {
             return null;
         }
-        if (symbol === TasksPluginReminderModel.symbolReminder) {
+        if (symbol === TasksPluginSymbols.reminder) {
             return DATE_TIME_FORMATTER.parse(dateText);
         } else {
             const date = moment(dateText, TasksPluginReminderModel.dateFormat, this.strictDateFormat);
@@ -146,7 +121,7 @@ export class TasksPluginReminderModel implements ReminderModel {
         }
         let timeStr: string;
         if (time instanceof DateTime) {
-            if (symbol === TasksPluginReminderModel.symbolReminder) {
+            if (symbol === TasksPluginSymbols.reminder) {
                 timeStr = DATE_TIME_FORMATTER.toString(time);
             } else {
                 timeStr = time.format(TasksPluginReminderModel.dateFormat);
@@ -186,7 +161,7 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
     parseReminder(todo: Todo): TasksPluginReminderModel | null {
         const parsed = TasksPluginReminderModel.parse(
             todo.body,
-            this.useCustomEmoji(),
+            this.reminderEmojiSymbol(),
             this.removeTagsEnabled(),
             this.isStrictDateFormat(),
         );
@@ -202,6 +177,10 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
 
     private useCustomEmoji() {
         return this.config.getParameter(ReminderFormatParameterKey.useCustomEmojiForTasksPlugin);
+    }
+
+    private reminderEmojiSymbol() {
+        return this.config.getParameter(ReminderFormatParameterKey.tasksPluginEmoji);
     }
 
     override modifyReminder(
@@ -288,7 +267,7 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
     newReminder(title: string, time: DateTime, insertAt?: number): TasksPluginReminderModel {
         const parsed = TasksPluginReminderModel.parse(
             title,
-            this.useCustomEmoji(),
+            this.reminderEmojiSymbol(),
             this.removeTagsEnabled(),
             this.isStrictDateFormat(),
         );

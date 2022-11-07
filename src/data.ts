@@ -1,3 +1,4 @@
+import { TasksPluginSymbols } from 'model/format/reminder-tasks-plugin-symbols';
 import { Reference } from 'model/ref';
 import { Reminder, Reminders } from 'model/reminder';
 import { DateTime } from 'model/time';
@@ -46,6 +47,7 @@ export class PluginDataIO {
         SETTINGS.forEach((setting) => {
             setting.load(loadedSettings);
         });
+        this.migrateSettings();
 
         if (data.reminders) {
             Object.keys(data.reminders).forEach((filePath) => {
@@ -64,6 +66,13 @@ export class PluginDataIO {
         this.changed = false;
         if (this.restoring) {
             this.restoring = false;
+        }
+    }
+
+    private migrateSettings() {
+        if (SETTINGS.useCustomEmojiForTasksPlugin.value) {
+            SETTINGS.tasksPluginEmoji.rawValue.value = TasksPluginSymbols.reminder.primary;
+            SETTINGS.useCustomEmojiForTasksPlugin.rawValue.value = false;
         }
     }
 

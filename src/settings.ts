@@ -8,16 +8,19 @@ import {
     tasksPluginReminderFormat,
 } from 'model/format';
 import { ReminderFormatConfig, ReminderFormatParameterKey } from 'model/format/reminder-base';
+import { TasksPluginSymbols } from 'model/format/reminder-tasks-plugin-symbols';
 import {
     LatersSerde,
     RawSerde,
     ReminderFormatTypeSerde,
     SettingModel,
     SettingTabModel,
+    TasksPluginEmojiTypeSerde,
     TimeSerde,
 } from 'model/settings';
 import { DateTime, Later, Time } from 'model/time';
 import { App, PluginSettingTab, Plugin_2 } from 'obsidian';
+import type { Symbol } from './model/format/splitter';
 
 export const TAG_RESCAN = 're-scan';
 
@@ -32,7 +35,9 @@ class Settings {
     strictDateFormat: SettingModel<boolean, boolean>;
     autoCompleteTrigger: SettingModel<string, string>;
     primaryFormat: SettingModel<string, ReminderFormatType>;
+    /** @deprecated */
     useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
+    tasksPluginEmoji: SettingModel<string, Symbol>;
     removeTagsForTasksPlugin: SettingModel<boolean, boolean>;
     linkDatesToDailyNotes: SettingModel<boolean, boolean>;
     editDetectionSec: SettingModel<number, number>;
@@ -145,6 +150,7 @@ class Settings {
                 "Use custom emoji ⏰ instead of 📅 and distinguish between reminder date/time and Tasks Plugin's due date.",
             )
             .tag(TAG_RESCAN)
+            .deprecated(true)
             .toggle(false)
             .onAnyValueChanged((context) => {
                 context.setEnabled(reminderFormatSettings.enableTasksPluginReminderFormat.value);
@@ -161,6 +167,20 @@ class Settings {
                 context.setEnabled(reminderFormatSettings.enableTasksPluginReminderFormat.value);
             })
             .build(new RawSerde());
+        const tasksPluginEmojiBuilder = this.settings
+            .newSettingBuilder()
+            .key('tasksPluginEmoji')
+            .name('Tasks Plugin Reminder Emoji')
+            .desc('Which emoji to use as reminder')
+            .tag(TAG_RESCAN)
+            .dropdown(TasksPluginSymbols.dueDate.primary)
+            .onAnyValueChanged((context) => {
+                context.setEnabled(reminderFormatSettings.enableTasksPluginReminderFormat.value);
+            })
+            .addOption('📅 Due', TasksPluginSymbols.dueDate.primary)
+            .addOption('⏳ Scheduled', TasksPluginSymbols.scheduled.primary)
+            .addOption('⏰ Reminder (use different emoji from Tasks plugin)', TasksPluginSymbols.reminder.primary);
+        this.tasksPluginEmoji = tasksPluginEmojiBuilder.build(new TasksPluginEmojiTypeSerde());
 
         this.editDetectionSec = this.settings
             .newSettingBuilder()
@@ -199,6 +219,7 @@ class Settings {
             .addSettings(
                 reminderFormatSettings.enableTasksPluginReminderFormat,
                 this.useCustomEmojiForTasksPlugin,
+                this.tasksPluginEmoji,
                 this.removeTagsForTasksPlugin,
             );
         this.settings
@@ -211,6 +232,7 @@ class Settings {
         config.setParameter(ReminderFormatParameterKey.useCustomEmojiForTasksPlugin, this.useCustomEmojiForTasksPlugin);
         config.setParameter(ReminderFormatParameterKey.linkDatesToDailyNotes, this.linkDatesToDailyNotes);
         config.setParameter(ReminderFormatParameterKey.removeTagsForTasksPlugin, this.removeTagsForTasksPlugin);
+        config.setParameter(ReminderFormatParameterKey.tasksPluginEmoji, this.tasksPluginEmoji);
         setReminderFormatConfig(config);
     }
 
