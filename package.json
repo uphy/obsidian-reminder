@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
-    "lint": "eslint ./src --fix && eslint ./tests --fix && tsc --noEmit --pretty && svelte-check",
+    "lint": "eslint ./src --fix && tsc --noEmit --pretty && svelte-check",
     "test": "jest"
   },
   "keywords": [],

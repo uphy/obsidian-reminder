@@ -1,14 +1,15 @@
-import moment from "moment";
+import moment from 'moment';
 
 export class Day {
-    constructor(public date: moment.Moment) {
-    }
+    constructor(public date: moment.Moment) {}
 
     public isToday(date: moment.Moment) {
         if (this.date === undefined) {
             return false;
         }
-        return this.date.date() === date.date() && this.date.month() === date.month() && this.date.year() === date.year();
+        return (
+            this.date.date() === date.date() && this.date.month() === date.month() && this.date.year() === date.year()
+        );
     }
 
     public isHoliday() {
@@ -22,7 +23,7 @@ export class Week {
         const current = weekStart.clone();
         for (let i: number = 0; i < 7; i++) {
             this.days.push(new Day(current.clone()));
-            current.add(1, "day");
+            current.add(1, 'day');
         }
     }
 }
@@ -30,13 +31,13 @@ export class Week {
 export class Month {
     public weeks: Array<Week> = [];
     constructor(public monthStart: moment.Moment) {
-        let current = monthStart.clone().add(-monthStart.weekday(), "day");
+        const current = monthStart.clone().add(-monthStart.weekday(), 'day');
         for (let i: number = 0; i < 6; i++) {
             if (i > 0 && !this.isThisMonth(current)) {
                 break;
             }
             this.weeks.push(new Week(current.clone()));
-            current.add(1, "week");
+            current.add(1, 'week');
         }
     }
 
@@ -46,7 +47,6 @@ export class Month {
 }
 
 export class Calendar {
-
     private _current: Month;
     public today: moment.Moment;
 
@@ -58,38 +58,38 @@ export class Calendar {
         }
 
         if (monthStart) {
-            this._current = new Month(monthStart.clone().set("date", 1));
+            this._current = new Month(monthStart.clone().set('date', 1));
         } else {
-            this._current = new Month(this.today.clone().set("date", 1));
+            this._current = new Month(this.today.clone().set('date', 1));
         }
     }
 
     public nextMonth() {
-        return new Calendar(this.today, this._current.monthStart.clone().add(1, "month"));
+        return new Calendar(this.today, this._current.monthStart.clone().add(1, 'month'));
     }
 
     public previousMonth() {
-        return new Calendar(this.today, this._current.monthStart.clone().add(-1, "month"));
+        return new Calendar(this.today, this._current.monthStart.clone().add(-1, 'month'));
     }
 
     public calendarString() {
-        let str = `${this._current.monthStart.format("YYYY, MMM")}\nSun Mon Tue Wed Thu Fri Sat\n`;
+        let str = `${this._current.monthStart.format('YYYY, MMM')}\nSun Mon Tue Wed Thu Fri Sat\n`;
         this._current.weeks.forEach((week, weekIndex) => {
-            let line = " ";
+            let line = ' ';
             week.days.forEach((slot, slotIndex) => {
                 let s;
                 if (slot.date) {
                     if (this._current.isThisMonth(slot.date)) {
-                        s = slot.date.format("DD");
+                        s = slot.date.format('DD');
                     } else {
-                        s = "  ";
+                        s = '  ';
                     }
                 } else {
-                    s = "  ";
+                    s = '  ';
                 }
-                line = line + s + "  ";
+                line = line + s + '  ';
             });
-            str = str + line + "\n";
+            str = str + line + '\n';
         });
         return str;
     }
