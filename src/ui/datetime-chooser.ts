@@ -1,8 +1,8 @@
-import { Calendar } from "model/calendar";
-import type { Reminders } from "model/reminder";
-import type { DateTime } from "model/time";
-import moment from "moment";
-import DateTimeChooser from "./components/DateTimeChooser.svelte";
+import { Calendar } from 'model/calendar';
+import type { Reminders } from 'model/reminder';
+import type { DateTime } from 'model/time';
+import moment from 'moment';
+import DateTimeChooser from './components/DateTimeChooser.svelte';
 
 export class DateTimeChooserView {
     private view: HTMLElement;
@@ -10,22 +10,22 @@ export class DateTimeChooserView {
     private resultResolve?: (result: DateTime) => void;
     private resultReject?: () => void;
     private keyMaps = {
-        'Ctrl-P': () => this.dateTimeChooser["moveUp"](),
-        'Ctrl-N': () => this.dateTimeChooser["moveDown"](),
-        'Ctrl-B': () => this.dateTimeChooser["moveLeft"](),
-        'Ctrl-F': () => this.dateTimeChooser["moveRight"](),
-        'Enter': () => this.select(),
-        Up: () => this.dateTimeChooser["moveUp"](),
-        Down: () => this.dateTimeChooser["moveDown"](),
-        Right: () => this.dateTimeChooser["moveRight"](),
-        Left: () => this.dateTimeChooser["moveLeft"](),
+        'Ctrl-P': () => this.dateTimeChooser['moveUp'](),
+        'Ctrl-N': () => this.dateTimeChooser['moveDown'](),
+        'Ctrl-B': () => this.dateTimeChooser['moveLeft'](),
+        'Ctrl-F': () => this.dateTimeChooser['moveRight'](),
+        Enter: () => this.select(),
+        Up: () => this.dateTimeChooser['moveUp'](),
+        Down: () => this.dateTimeChooser['moveDown'](),
+        Right: () => this.dateTimeChooser['moveRight'](),
+        Left: () => this.dateTimeChooser['moveLeft'](),
         Esc: () => this.cancel(),
-    }
+    };
 
     constructor(private editor: CodeMirror.Editor, reminders: Reminders) {
-        this.view = document.createElement("div");
-        this.view.addClass("date-time-chooser-popup");
-        this.view.style.position = "fixed";
+        this.view = document.createElement('div');
+        this.view.addClass('date-time-chooser-popup');
+        this.view.style.position = 'fixed';
         this.dateTimeChooser = new DateTimeChooser({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             target: this.view,
@@ -35,7 +35,7 @@ export class DateTimeChooserView {
                     this.hide();
                 },
                 reminders,
-                undefined
+                undefined,
             },
         });
     }
@@ -45,7 +45,7 @@ export class DateTimeChooserView {
         this.hide();
         this.dateTimeChooser.$set({
             selectedDate: moment(),
-            calendar: new Calendar()
+            calendar: new Calendar(),
         });
 
         const cursor = this.editor.getCursor();
@@ -65,7 +65,7 @@ export class DateTimeChooserView {
     }
 
     private select() {
-        this.setResult(this.dateTimeChooser["selection"]())
+        this.setResult(this.dateTimeChooser['selection']());
         this.hide();
     }
 

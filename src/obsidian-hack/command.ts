@@ -1,8 +1,8 @@
-import { App, Command, Editor, MarkdownView, TFile, WorkspaceLeaf } from "obsidian";
-import { findLeafByFile } from "./leaf";
+import { App, Command, Editor, MarkdownView, TFile, WorkspaceLeaf } from 'obsidian';
+import { findLeafByFile } from './leaf';
 
 class AbstractCommand {
-    constructor(protected command: Command) { }
+    constructor(protected command: Command) {}
 
     protected tryCheckCallback() {
         if (!this.command.checkCallback) {
@@ -10,7 +10,7 @@ class AbstractCommand {
         }
         const checkResult = this.command.checkCallback(true);
         if (checkResult !== undefined && !checkResult) {
-            console.info("The command is not available by checking: %o", this.command);
+            console.info('The command is not available by checking: %o', this.command);
             return true;
         }
         this.command.checkCallback(false);
@@ -31,7 +31,7 @@ class AbstractCommand {
         }
         const checkResult = this.command.editorCheckCallback(true, editor, view);
         if (checkResult !== undefined && !checkResult) {
-            console.info("The editor command is not available by checking: %o", this.command);
+            console.info('The editor command is not available by checking: %o', this.command);
             return true;
         }
         this.command.editorCheckCallback(false, editor, view);
@@ -47,7 +47,6 @@ class AbstractCommand {
 }
 
 class RunnableCommand extends AbstractCommand {
-
     run() {
         if (this.tryCheckCallback()) {
             return;
@@ -57,7 +56,6 @@ class RunnableCommand extends AbstractCommand {
         }
         console.warn("Expected command callback doens't exist: %o", this.command);
     }
-
 }
 
 class RunnableEditorCommand extends AbstractCommand {
@@ -78,12 +76,11 @@ class RunnableEditorCommand extends AbstractCommand {
     runInLeaf(leaf: WorkspaceLeaf) {
         if (!(leaf.view instanceof MarkdownView)) {
             console.warn(leaf.view);
-            throw `invalid state.  should be markdown view`;
+            throw 'invalid state.  should be markdown view';
         }
         const markdownView = leaf.view;
         this.run(markdownView.editor, markdownView);
     }
-
 
     run(editor: Editor, view: MarkdownView) {
         if (this.tryEditorCheckCallback(editor, view)) {

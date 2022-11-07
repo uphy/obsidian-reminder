@@ -1,9 +1,8 @@
-import { App, MarkdownView, TFile, WorkspaceLeaf } from "obsidian";
-
+import { App, MarkdownView, TFile, WorkspaceLeaf } from 'obsidian';
 
 export async function findLeafByFile(app: App, file: TFile, open = false): Promise<WorkspaceLeaf | null> {
     let found: WorkspaceLeaf | null = null;
-    app.workspace.iterateAllLeaves(leaf => {
+    app.workspace.iterateAllLeaves((leaf) => {
         if (leaf.view instanceof MarkdownView) {
             if (leaf.view.file.path === file.path) {
                 found = leaf;
@@ -26,7 +25,7 @@ export async function getMarkdownViewFor(app: App, file: TFile): Promise<Markdow
         return null;
     }
     if (!(leaf.view instanceof MarkdownView)) {
-        throw "unexpected view";
+        throw 'unexpected view';
     }
     return leaf.view as MarkdownView;
 }
