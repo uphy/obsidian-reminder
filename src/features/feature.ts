@@ -12,6 +12,7 @@ export type PluginInterface = {
 
 export type Plugin = Plugin_2 & PluginInterface;
 export enum FeatureId {
+    MobileDebug,
     GoogleApi,
     GoogleTasks,
 }
