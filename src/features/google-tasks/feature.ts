@@ -1,5 +1,5 @@
 import { AbstractPluginDataHolder, PluginDataHolder } from 'data';
-import { Feature, FeatureId, Plugin } from 'features/feature';
+import { Feature, Plugin } from 'features/feature';
 import type { GoogleApiFeature, GoogleApiListener } from 'features/google-api/feature';
 import { Notice } from 'obsidian';
 import { GoogleTasksApi } from './client';
@@ -35,10 +35,6 @@ export class GoogleTasksFeature extends Feature {
     constructor(private googleApiFeature: GoogleApiFeature) {
         super();
         this.googleTasksApi = new GoogleTasksApi(googleApiFeature.googleAuthClient);
-    }
-
-    get featureId(): FeatureId {
-        return FeatureId.GoogleTasks;
     }
 
     private startSynchronizer() {

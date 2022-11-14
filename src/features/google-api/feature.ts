@@ -1,7 +1,7 @@
 import { AbstractPluginDataHolder, PluginDataHolder } from 'data';
 import { Notice } from 'obsidian';
 import { GoogleAuthClient } from './client';
-import { Feature, FeatureId, Plugin } from '../feature';
+import { Feature, Plugin } from '../feature';
 
 type GoogleApiData = {
     refreshToken: string;
@@ -33,10 +33,6 @@ export class GoogleApiFeature extends Feature {
     googleApiData = new GoogleApiDataHolder();
     googleAuthClient = new GoogleAuthClient();
     listeners: Array<GoogleApiListener> = [];
-
-    get featureId(): FeatureId {
-        return FeatureId.GoogleApi;
-    }
 
     /**
      * Add connection listener.

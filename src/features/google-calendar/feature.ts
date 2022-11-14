@@ -1,7 +1,3 @@
-import { Feature, FeatureId } from '../feature';
+import { Feature } from '../feature';
 
-export class GoogleCalendarFeature extends Feature {
-    get featureId(): FeatureId {
-        throw new Error('Method not implemented.');
-    }
-}
+export class GoogleCalendarFeature extends Feature {}

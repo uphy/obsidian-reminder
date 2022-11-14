@@ -11,14 +11,8 @@ export type PluginInterface = {
 };
 
 export type Plugin = Plugin_2 & PluginInterface;
-export enum FeatureId {
-    MobileDebug,
-    GoogleApi,
-    GoogleTasks,
-}
-export abstract class Feature {
-    abstract get featureId(): FeatureId;
 
+export abstract class Feature {
     /**
      * Called when all features are registered into the manager only once.
      */
@@ -40,70 +34,12 @@ export abstract class Feature {
      */
     onunload(plugin: Plugin): void {}
 }
-
-type FeatureState = {
-    enable: boolean;
-};
-
-type FeaturesState = { [featureId: string]: FeatureState };
-
-class FeatureWrapper extends Feature {
-    private _loaded: boolean = false;
-    private _enable: boolean = true;
-    constructor(private feature: Feature) {
-        super();
-    }
-
-    get featureId() {
-        return this.feature.featureId;
-    }
-
-    getState(): FeatureState {
-        return {
-            enable: this._enable,
-        };
-    }
-
-    setState(state: FeatureState) {
-        this._enable = state.enable;
-    }
-
-    override init(plugin: Plugin): Promise<void> {
-        return this.feature.init(plugin);
-    }
-
-    override async onload(plugin: Plugin): Promise<void> {
-        if (this._enable && !this._loaded) {
-            await this.feature.onload(plugin);
-            this._loaded = true;
-        }
-    }
-
-    override onunload(plugin: Plugin): void {
-        if (this._loaded) {
-            this.feature.onunload(plugin);
-            this._loaded = false;
-        }
-    }
-
-    async enable(plugin: Plugin): Promise<void> {
-        this._enable = true;
-        await this.onload(plugin);
-    }
-
-    disable(plugin: Plugin) {
-        this.onunload(plugin);
-        this._enable = false;
-    }
-}
-
 export class FeatureManager {
-    private features: Array<FeatureWrapper> = [];
-    private state: Reference<FeaturesState> = new Reference({});
+    private features: Array<Feature> = [];
     constructor(private plugin: Plugin) {}
 
     public register(feature: Feature) {
-        this.features.push(new FeatureWrapper(feature));
+        this.features.push(feature);
     }
 
     public async init() {
@@ -127,22 +63,5 @@ export class FeatureManager {
     public async reload(): Promise<void> {
         this.unload();
         return this.load();
-    }
-
-    public async enable(featureId: FeatureId): Promise<void> {
-        this.getFeature(featureId).enable(this.plugin);
-    }
-
-    public disable(featureId: FeatureId) {
-        this.getFeature(featureId).disable(this.plugin);
-    }
-
-    private getFeature(featureId: FeatureId): FeatureWrapper {
-        for (const feature of this.features) {
-            if (feature.featureId === featureId) {
-                return feature;
-            }
-        }
-        throw 'feature not found';
     }
 }
