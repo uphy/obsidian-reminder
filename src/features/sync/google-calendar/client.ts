@@ -1,4 +1,4 @@
-import type { GoogleAuthClient } from 'features/google-api/client';
+import type { GoogleAuthClient } from 'features/sync/google-api/client';
 
 export type GoogleCalendarEventForInsert = {
     start: {

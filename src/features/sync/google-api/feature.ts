@@ -1,7 +1,7 @@
 import { AbstractPluginDataHolder, PluginDataHolder } from 'data';
 import { Notice } from 'obsidian';
 import { GoogleAuthClient } from './client';
-import { Feature, Plugin } from '../feature';
+import { Feature, Plugin } from '../../feature';
 
 type GoogleApiData = {
     refreshToken: string;

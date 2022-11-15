@@ -1,8 +1,8 @@
 import { RemindersController } from 'controller';
 import { PluginDataIO } from 'data';
 import { FeatureManager } from 'features/feature';
-import { GoogleApiFeature } from 'features/google-api/feature';
-import { GoogleTasksFeature } from 'features/google-tasks/feature';
+import { GoogleApiFeature } from 'features/sync/google-api/feature';
+import { GoogleTasksFeature } from 'features/sync/google-tasks/feature';
 import { MobileDebugFeature } from 'features/mobile-debug/feature';
 import type { ReadOnlyReference } from 'model/ref';
 import { Reminder, Reminders } from 'model/reminder';
@@ -19,6 +19,7 @@ import { ReminderModal } from 'ui/reminder';
 import { ReminderListItemViewProxy } from 'ui/reminder-list';
 import { OkCancel, showOkCancelDialog } from 'ui/util';
 import { VIEW_TYPE_REMINDER_LIST } from './constants';
+import { SyncBaseFeature } from 'features/sync/sync-base/feature';
 
 export default class ReminderPlugin extends Plugin {
     pluginDataIO: PluginDataIO;
@@ -34,6 +35,7 @@ export default class ReminderPlugin extends Plugin {
         super(app, manifest);
 
         this.features.register(new MobileDebugFeature());
+        this.features.register(new SyncBaseFeature());
         const googleApiFeature = new GoogleApiFeature();
         this.features.register(googleApiFeature);
         this.features.register(new GoogleTasksFeature(googleApiFeature));
