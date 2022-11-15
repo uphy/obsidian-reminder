@@ -21,7 +21,8 @@ type TokenResponse = {
 export class GoogleAuthClient {
     private static readonly BASE = 'https://obsidian-reminder-server.vercel.app/api/auth/google';
     public static readonly SCOPE_TASKS = 'https://www.googleapis.com/auth/tasks';
-    public static readonly SCOPE_CALENDAR = 'https://www.googleapis.com/auth/calendar.events';
+    public static readonly SCOPE_CALENDAR_EVENTS = 'https://www.googleapis.com/auth/calendar.events';
+    public static readonly SCOPE_CALENDAR = 'https://www.googleapis.com/auth/calendar';
     private token?: AuthToken;
 
     public generateAuthURL(...scopes: Array<string>): string {

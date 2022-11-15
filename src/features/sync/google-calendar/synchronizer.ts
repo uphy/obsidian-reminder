@@ -1,8 +1,7 @@
-import type { Reference } from 'model/ref';
 import type { Reminder } from 'model/reminder';
 import { DateTime, Time } from 'model/time';
 import moment from 'moment';
-import { ReminderChange, ReminderChangeType, ReminderSynchronizer, SnapshotReminder } from 'sync';
+import { ReminderSynchronizer, SnapshotReminder } from 'sync';
 import type { GoogleCalendarClient, GoogleCalendarEventForInsert } from './client';
 
 const extendedSharedProperty = {
@@ -14,8 +13,12 @@ const extendedSharedProperty = {
 };
 
 export class GoogleCalendarSynchronizer extends ReminderSynchronizer {
-    constructor(private client: GoogleCalendarClient, private calendarId: Reference<string | undefined>) {
+    constructor(private client: GoogleCalendarClient, private calendarId: string) {
         super();
+    }
+
+    get name(): string {
+        return 'GoogleCalendar';
     }
 
     setupReady(): boolean {
@@ -23,11 +26,10 @@ export class GoogleCalendarSynchronizer extends ReminderSynchronizer {
     }
 
     async snapshot(): Promise<SnapshotReminder[]> {
-        console.debug('Get all google calendar events');
         const snapshot: Array<SnapshotReminder> = [];
         let nextPageToken: string | undefined;
         do {
-            const resp = await this.client.listEvents(this.calendarId.value!, 100, nextPageToken);
+            const resp = await this.client.listEvents(this.calendarId, 100, nextPageToken);
             const events = resp.items;
             if (events == null) {
                 throw new Error('Cannot get events: ' + resp);
@@ -46,13 +48,13 @@ export class GoogleCalendarSynchronizer extends ReminderSynchronizer {
                             event.extendedProperties == null ||
                             event.extendedProperties.shared == null
                         ) {
-                            console.info('Ignoring non-managed event. : %o', event);
+                            console.debug('Ignoring non-managed event. : %o', event);
                             return null;
                         }
                         const reminderId: string | undefined =
                             event.extendedProperties.shared[extendedSharedProperty.reminderIdKey];
                         if (reminderId == null) {
-                            console.info('Ignoring non-managed event. : %o', event);
+                            console.debug('Ignoring non-managed event. : %o', event);
                             return null;
                         }
                         let dateTime: DateTime;
@@ -83,8 +85,7 @@ export class GoogleCalendarSynchronizer extends ReminderSynchronizer {
         if (id == null) {
             throw new Error(`event id == null: id=${id}, reminder=${reminder}, defaultTime=${defaultTime}`);
         }
-        console.debug('Add event to google calendar: id=%s, reminder=%o, defaultTime=%s', id, reminder, defaultTime);
-        const resp = await this.client.insertEvent(this.calendarId.value!, this.requestBody(id, reminder, defaultTime));
+        const resp = await this.client.insertEvent(this.calendarId, this.requestBody(id, reminder, defaultTime));
         return resp.id;
     }
 
@@ -95,23 +96,8 @@ export class GoogleCalendarSynchronizer extends ReminderSynchronizer {
 
         return {
             summary: reminder.title,
-            description: `<h1>Reminder</h1>
-
-<h2>Info</h2>
-<ul>
-<li>File: ${reminder.file}</li>
-<li>Title: ${reminder.title}</li>
-</ul>
-<h2>Actions</h2>
-<ul>
-<li><a href="obsidian://show-reminder?file=${window.encodeURIComponent(
-                reminder.file,
-            )}&title=${window.encodeURIComponent(reminder.title)}">Open the reminder</a></li>
-</ul>
-obsidian://show-reminder?file=${window.encodeURIComponent(reminder.file)}&title=${window.encodeURIComponent(
-                reminder.title,
-            )}
-`,
+            description: `File: ${reminder.file}
+Title: ${reminder.title}`,
             extendedProperties: {
                 shared: {
                     [extendedSharedProperty.reminderEventMark.key]: extendedSharedProperty.reminderEventMark.value,
@@ -133,11 +119,6 @@ obsidian://show-reminder?file=${window.encodeURIComponent(reminder.file)}&title=
     }
 
     override async remove(id: string) {
-        console.debug('Remove event from google calendar: id=%s', id);
-        await this.client.deleteEvent(this.calendarId.value!, id);
-    }
-
-    disconnect() {
-        this.calendarId.value = undefined;
+        await this.client.deleteEvent(this.calendarId, id);
     }
 }

@@ -21,7 +21,7 @@ class GoogleTaskNote {
         if (file == null || id == null) {
             return null;
         }
-        return new GoogleTaskNote(file, id);
+        return new GoogleTaskNote(file, id, time);
     }
     constructor(public file: string, public id: string, public time?: string) {}
     toString(): string {
@@ -36,6 +36,9 @@ class GoogleTaskNote {
 export class GoogleTasksSynchronizer extends ReminderSynchronizer {
     constructor(private client: GoogleTasksApi, private taskListId: string) {
         super();
+    }
+    get name(): string {
+        return 'GoogleTasks';
     }
     setupReady(): boolean {
         return this.client.isReady();

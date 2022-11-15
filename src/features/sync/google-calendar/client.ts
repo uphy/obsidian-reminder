@@ -1,5 +1,49 @@
 import type { GoogleAuthClient } from 'features/sync/google-api/client';
 
+export type GoogleCalendar = {
+    kind: 'calendar#calendarListEntry';
+    etag: string;
+    id: string;
+    summary: string;
+    description: string;
+    location: string;
+    timeZone: string;
+    summaryOverride: string;
+    colorId: string;
+    backgroundColor: string;
+    foregroundColor: string;
+    hidden: boolean;
+    selected: boolean;
+    accessRole: string;
+    defaultReminders: [
+        {
+            method: string;
+            minutes: number;
+        },
+    ];
+    notificationSettings: {
+        notifications: [
+            {
+                type: string;
+                method: string;
+            },
+        ];
+    };
+    primary: boolean;
+    deleted: boolean;
+    conferenceProperties: {
+        allowedConferenceSolutionTypes: [string];
+    };
+};
+
+type GoogleCalendarResponse = {
+    kind: string;
+    etag: string;
+    nextPageToken: string;
+    nextSyncToken: string;
+    items: Array<GoogleCalendar>;
+};
+
 export type GoogleCalendarEventForInsert = {
     start: {
         date?: string;
@@ -29,7 +73,7 @@ export type GoogleCalendarEventForInsert = {
     };
 };
 
-type GoogleCalendarEvent = {
+export type GoogleCalendarEvent = {
     id: string;
     summary: string;
     description: string;
@@ -73,18 +117,27 @@ export type GenerateAuthorizationCodeFunc = (url: string) => Promise<string>;
 
 export class GoogleCalendarClient {
     private static readonly BASE = 'https://www.googleapis.com/calendar/v3/calendars';
+    private static readonly CALENDAR_LIST_BASE = 'https://www.googleapis.com/calendar/v3/users/me/calendarList';
     constructor(private client: GoogleAuthClient) {}
 
     isReady() {
         return this.client.isReady();
     }
 
+    async listCalendars(): Promise<Array<GoogleCalendar>> {
+        return this.client
+            .get(`${GoogleCalendarClient.CALENDAR_LIST_BASE}`)
+            .then((resp) => (resp as GoogleCalendarResponse).items);
+    }
+
+    async insertCalendar(title: string): Promise<GoogleCalendar> {
+        return this.client.post(GoogleCalendarClient.BASE, {
+            summary: title,
+        });
+    }
+
     async insertEvent(calendarId: string, event: GoogleCalendarEventForInsert): Promise<GoogleCalendarEvent> {
-        const resp = await this.client.post(
-            `${GoogleCalendarClient.BASE}/${calendarId}/events/`,
-            JSON.stringify(event),
-        );
-        return resp.id;
+        return await this.client.post(`${GoogleCalendarClient.BASE}/${calendarId}/events/`, event);
     }
 
     async deleteEvent(calendarId: string, eventId: string): Promise<void> {

@@ -42,6 +42,7 @@ export abstract class ReminderSynchronizer {
         editor: ReminderEditor,
         force: boolean,
     ): Promise<void> {
+        console.debug('Synchronize reminders: synchronizer=%s, force=%s', this.name, force);
         const snapshot = await this.snapshot(force);
         const diff = this.diff(snapshot, reminders, defaultTime, editor);
         await this.applyChanges(diff, defaultTime);
@@ -57,6 +58,15 @@ export abstract class ReminderSynchronizer {
 
         const idToCurrentReminders: Map<string, SnapshotReminder> = new Map();
         currentReminders.forEach((currentReminder) => {
+            if (idToCurrentReminders.has(currentReminder.id)) {
+                // delete duplicate
+                diff.push({
+                    id: currentReminder.id,
+                    eventId: currentReminder.eventId,
+                    changeType: ReminderChangeType.REMOVE,
+                    status: currentReminder.status,
+                });
+            }
             idToCurrentReminders.set(currentReminder.id, currentReminder);
         });
 
@@ -122,9 +132,21 @@ export abstract class ReminderSynchronizer {
         for (const change of changes) {
             switch (change.changeType) {
                 case ReminderChangeType.ADD:
+                    console.debug(
+                        'Add reminder to external service: synchronizer=%s, id=%s, reminder=%o, defaultTime=%s',
+                        this.name,
+                        change.id,
+                        change.reminder!,
+                        defaultTime,
+                    );
                     change.eventId = await this.add(change.id, change.reminder!, defaultTime);
                     break;
                 case ReminderChangeType.REMOVE:
+                    console.debug(
+                        'Remove reminder from external service: synchronizer=%s, externalId=%s',
+                        this.name,
+                        change.eventId!,
+                    );
                     await this.remove(change.eventId!);
                     break;
             }
@@ -146,4 +168,6 @@ export abstract class ReminderSynchronizer {
      * @param externalId external service's id
      */
     abstract remove(externalId: string): Promise<void>;
+
+    abstract get name(): string;
 }

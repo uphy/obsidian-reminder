@@ -98,7 +98,6 @@ export class GoogleTasksApi {
     }
 
     public async createTask(taskListId: string, task: GoogleTask): Promise<GoogleTask> {
-        task.due = '2022-11-15T10:00:00.000Z';
         return this.client.post(`${GoogleTasksApi.BASE}/lists/${taskListId}/tasks`, task);
     }
 

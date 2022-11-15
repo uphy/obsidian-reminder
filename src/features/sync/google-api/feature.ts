@@ -62,6 +62,7 @@ export class GoogleApiFeature extends Feature {
                 const authUrl = this.googleAuthClient.generateAuthURL(
                     GoogleAuthClient.SCOPE_TASKS,
                     GoogleAuthClient.SCOPE_CALENDAR,
+                    GoogleAuthClient.SCOPE_CALENDAR_EVENTS,
                 );
                 window.open(authUrl);
             },
@@ -71,6 +72,7 @@ export class GoogleApiFeature extends Feature {
             (async () => {
                 const token = await this.googleAuthClient.generateToken(code);
                 this.googleApiData.refreshToken = token.refreshToken;
+                new Notice('Successfully logged in to Google');
             })().catch((e) => {
                 new Notice(e);
             });

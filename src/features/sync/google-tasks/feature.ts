@@ -31,18 +31,17 @@ export class GoogleTasksFeature extends AbstractGoogleFeature<
 
     constructor(googleApiFeature: GoogleApiFeature) {
         super(googleApiFeature, new GoogleTasksDataHolder(), {
-            synchronizeCommand: {
-                id: 'synchronize-google-tasklist',
-                name: 'Synchronize with Google Tasks',
-            },
-            selectTaskList: {
-                listName: 'tasklist',
-            },
+            serviceId: 'google-tasks',
+            serviceName: 'Google Tasks',
+            listName: 'task list',
         });
         this.googleTasksApi = new GoogleTasksApi(googleApiFeature.googleAuthClient);
     }
 
-    createSynchronizer(data: GoogleTasksDataHolder): GoogleTasksSynchronizer {
+    createSynchronizer(data: GoogleTasksDataHolder): GoogleTasksSynchronizer | null {
+        if (data.taskListId.length === 0) {
+            return null;
+        }
         return new GoogleTasksSynchronizer(this.googleTasksApi, data.taskListId);
     }
     resetList(data: GoogleTasksDataHolder): void {

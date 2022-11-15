@@ -1,44 +1,61 @@
-import { App, Modal } from 'obsidian';
+import { App, Modal, Setting } from 'obsidian';
 
 export class InputModal extends Modal {
-    private text: string = '';
+    private result: string = '';
 
-    constructor(app: App, private onSubmit: (text: string) => void, private onCancel: () => void) {
+    constructor(
+        app: App,
+        private message: string,
+        private name: string,
+        private onSubmit: (text: string) => void,
+        private onCancel: () => void,
+    ) {
         super(app);
     }
 
     override onOpen() {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.onkeydown = (e) => {
-            if (e.code === 'Enter') {
-                this.text = input.value;
-                this.close();
-            }
-        };
-        this.contentEl.appendChild(input);
+        const { contentEl } = this;
+
+        contentEl.createEl('h1', { text: this.message });
+
+        new Setting(contentEl).setName(this.name).addText((text) =>
+            text.onChange((value) => {
+                this.result = value;
+            }),
+        );
+
+        new Setting(contentEl).addButton((btn) =>
+            btn
+                .setButtonText('Submit')
+                .setCta()
+                .onClick(() => {
+                    this.close();
+                }),
+        );
     }
 
     override onClose() {
         const { contentEl } = this;
         contentEl.empty();
-        if (this.text.length > 0) {
-            this.onSubmit(this.text);
+        if (this.result.length > 0) {
+            this.onSubmit(this.result);
         } else {
             this.onCancel();
         }
     }
 }
 
-export async function showInputDialog(): Promise<string> {
-    return new Promise((resolve, reject) => {
+export async function showInputDialog(message: string, name: string): Promise<string | null> {
+    return new Promise((resolve) => {
         const modal = new InputModal(
             app,
+            message,
+            name,
             (text) => {
                 resolve(text);
             },
             () => {
-                reject();
+                resolve(null);
             },
         );
         modal.open();

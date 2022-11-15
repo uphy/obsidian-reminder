@@ -20,6 +20,7 @@ import { ReminderListItemViewProxy } from 'ui/reminder-list';
 import { OkCancel, showOkCancelDialog } from 'ui/util';
 import { VIEW_TYPE_REMINDER_LIST } from './constants';
 import { SyncBaseFeature } from 'features/sync/sync-base/feature';
+import { GoogleCalendarFeature } from 'features/sync/google-calendar/feature';
 
 export default class ReminderPlugin extends Plugin {
     pluginDataIO: PluginDataIO;
@@ -39,6 +40,7 @@ export default class ReminderPlugin extends Plugin {
         const googleApiFeature = new GoogleApiFeature();
         this.features.register(googleApiFeature);
         this.features.register(new GoogleTasksFeature(googleApiFeature));
+        this.features.register(new GoogleCalendarFeature(googleApiFeature));
 
         this.reminders = new Reminders(() => {
             // on changed

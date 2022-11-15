@@ -23,9 +23,10 @@ class SnapshotCache {
 
     add(r: SnapshotReminder) {
         this.cache.push(r);
-        if (r.eventId != null) {
-            this.eventIdToReminder.set(r.eventId, r);
+        if (r.eventId == null) {
+            throw new Error(`external id is null: ${r}`);
         }
+        this.eventIdToReminder.set(r.eventId, r);
     }
 
     remove(eventId: string) {
@@ -46,6 +47,10 @@ export class CachingReminderSynchronizer extends ReminderSynchronizer {
 
     constructor(private reminderSynchronizer: ReminderSynchronizer, private ttlMillis: number) {
         super();
+    }
+
+    unwrap(): ReminderSynchronizer {
+        return this.reminderSynchronizer;
     }
 
     setupReady(): boolean {
@@ -116,5 +121,8 @@ export class CachingReminderSynchronizer extends ReminderSynchronizer {
     }
     remove(externalId: string): Promise<void> {
         throw new Error('do not come here');
+    }
+    get name(): string {
+        return this.reminderSynchronizer.name;
     }
 }

@@ -17,6 +17,9 @@ export class ReminderSynchronizerRegistration<T extends ReminderSynchronizer> {
             this.synchronizer = null;
         }
     }
+    get running(): boolean {
+        return this.synchronizer != null;
+    }
 }
 
 export class ReminderSynchronizerManager {
@@ -30,7 +33,7 @@ export class ReminderSynchronizerManager {
     }
 
     addSynchronizer(s: ReminderSynchronizer) {
-        this.synchronizers.push(new CachingReminderSynchronizer(s, /* 1 hour */ 60 * 60 * 1000));
+        this.synchronizers.push(s);
     }
 
     removeSynchronizer(s: ReminderSynchronizer) {
