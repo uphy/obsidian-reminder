@@ -62,7 +62,7 @@ export class ReminderSynchronizerManager {
                 try {
                     await s.synchronizeReminders(reminders, defaultTime, this.editor, force);
                 } catch (ex) {
-                    console.error('Synchronization error: synchronizer=%s', s, ex);
+                    console.error('Synchronization error: synchronizer=%s', s.name, ex);
                 }
             }),
         );

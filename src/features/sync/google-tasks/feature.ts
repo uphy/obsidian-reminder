@@ -3,6 +3,7 @@ import type { GoogleApiFeature } from 'features/sync/google-api/feature';
 import { GoogleTaskList, GoogleTasksApi } from './client';
 import { GoogleTasksSynchronizer } from './synchronizer';
 import { AbstractGoogleFeature } from 'features/sync/sync-base/google';
+import { GoogleAuthClient } from '../google-api/client';
 
 type GoogleTasksData = {
     taskListId: string;
@@ -44,11 +45,19 @@ export class GoogleTasksFeature extends AbstractGoogleFeature<
         }
         return new GoogleTasksSynchronizer(this.googleTasksApi, data.taskListId);
     }
+
+    get scopes(): string[] {
+        return [GoogleAuthClient.SCOPE_TASKS];
+    }
+
     resetList(data: GoogleTasksDataHolder): void {
         data.taskListId = '';
     }
     setList(data: GoogleTasksDataHolder, id: string): void {
         data.taskListId = id;
+    }
+    getList(data: GoogleTasksDataHolder): string {
+        return data.taskListId;
     }
     fetchList(): Promise<GoogleTaskList[]> {
         return this.googleTasksApi.fetchTaskList().then((resp) => resp.items);

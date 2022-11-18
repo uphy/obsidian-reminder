@@ -25,8 +25,9 @@ class GoogleApiDataHolder extends AbstractPluginDataHolder<GoogleApiData> {
 }
 
 export interface GoogleApiListener {
-    onConnect(): void;
-    onDisconnect(): void;
+    onConnect(): Promise<void>;
+    onDisconnect(): Promise<void>;
+    onAuthCallback(state: string, scopes: Array<string>): Promise<void>;
 }
 
 export class GoogleApiFeature extends Feature {
@@ -42,51 +43,52 @@ export class GoogleApiFeature extends Feature {
         this.listeners.push(l);
     }
 
-    private notifyOnConnect() {
-        this.listeners.forEach((l) => l.onConnect());
+    private async notifyOnConnect() {
+        for (const listener of this.listeners) {
+            await listener.onConnect();
+        }
     }
-    private notifyOnDisconnect() {
-        this.listeners.forEach((l) => l.onDisconnect());
+    private async notifyOnDisconnect() {
+        for (const listener of this.listeners) {
+            await listener.onDisconnect();
+        }
+    }
+    private async notifyOnAuthCallback(state: string, scopes: Array<string>) {
+        for (const listener of this.listeners) {
+            await listener.onAuthCallback(state, scopes);
+        }
+    }
+
+    public openAuthUrl(state: string, ...scopes: Array<string>) {
+        const authUrl = this.googleAuthClient.generateAuthURL(state, ...scopes);
+        window.open(authUrl);
     }
 
     override async init(plugin: Plugin): Promise<void> {
         plugin.pluginDataIO.register(this.googleApiData);
 
-        plugin.addCommand({
-            id: 'connect-to-google',
-            name: 'Connect to Google',
-            checkCallback: (checking: boolean): boolean | void => {
-                if (checking) {
-                    return !this.googleAuthClient.isReady();
-                }
-                const authUrl = this.googleAuthClient.generateAuthURL(
-                    GoogleAuthClient.SCOPE_TASKS,
-                    GoogleAuthClient.SCOPE_CALENDAR,
-                    GoogleAuthClient.SCOPE_CALENDAR_EVENTS,
-                );
-                window.open(authUrl);
-            },
-        });
         plugin.registerObsidianProtocolHandler('reminder-google-auth-callback', (req) => {
             const code = req['code'] as string;
+            const state = req['state'] as string;
             (async () => {
                 const token = await this.googleAuthClient.generateToken(code);
                 this.googleApiData.refreshToken = token.refreshToken;
+                await this.notifyOnAuthCallback(state, this.googleAuthClient.scopes);
                 new Notice('Successfully logged in to Google');
             })().catch((e) => {
                 new Notice(e);
             });
         });
         plugin.addCommand({
-            id: 'disconnect-from-google',
-            name: 'Disconnect from Google',
+            id: 'stop-google-synchronization',
+            name: 'Stop all Google synchronization',
             checkCallback: (checking: boolean): boolean | void => {
                 if (checking) {
                     return this.googleAuthClient.isReady();
                 }
                 this.googleApiData.refreshToken = '';
                 this.googleAuthClient.reset();
-                this.notifyOnDisconnect();
+                this.notifyOnDisconnect().catch((e) => new Notice(e));
             },
         });
     }
@@ -94,7 +96,7 @@ export class GoogleApiFeature extends Feature {
     override async onload(plugin: Plugin): Promise<void> {
         if (this.googleApiData.refreshToken.length > 0) {
             await this.googleAuthClient.refreshAccessToken(this.googleApiData.refreshToken);
-            this.notifyOnConnect();
+            await this.notifyOnConnect();
         }
     }
 }

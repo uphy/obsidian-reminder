@@ -58,9 +58,9 @@ export class GoogleTasksApi {
     }
 
     public async fetchTaskList(): Promise<GoogleTaskListsResponse> {
-        return this.client
-            .get(`${GoogleTasksApi.BASE}/users/@me/lists`)
-            .then((resp) => resp as GoogleTaskListsResponse);
+        return this.client.get(`${GoogleTasksApi.BASE}/users/@me/lists`).then((resp) => {
+            return resp as GoogleTaskListsResponse;
+        });
     }
 
     public async createTaskList(title: string): Promise<GoogleTaskList> {

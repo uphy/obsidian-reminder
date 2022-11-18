@@ -30,6 +30,7 @@ export abstract class AbstractGoogleFeature<
     protected startSynchronizer() {
         const s = this.createSynchronizer(this.data);
         if (s != null) {
+            console.debug('Start synchronizer: feature=%s', this.featureName);
             this.reminderSynchronizerRegistration?.start(
                 new CachingReminderSynchronizer(s, /* 1 hour */ 60 * 60 * 1000),
             );
@@ -37,6 +38,7 @@ export abstract class AbstractGoogleFeature<
     }
 
     protected stopSynchronizer() {
+        console.debug('Stop synchronizer: feature=%s', this.featureName);
         this.reminderSynchronizerRegistration?.stop();
     }
 
@@ -46,12 +48,22 @@ export abstract class AbstractGoogleFeature<
             const feature = this;
             this.googleApiFeature.addListener(
                 new (class implements GoogleApiListener {
-                    onConnect(): void {
+                    async onConnect(): Promise<void> {
                         feature.startSynchronizer();
                     }
-                    onDisconnect(): void {
+                    async onDisconnect(): Promise<void> {
                         feature.resetList(feature.data);
                         feature.stopSynchronizer();
+                    }
+                    async onAuthCallback(state: string, scopes: string[]): Promise<void> {
+                        if (state !== feature.featureName) {
+                            return;
+                        }
+                        if (!feature.isScopesReady()) {
+                            new Notice('Insufficient scopes');
+                            return;
+                        }
+                        feature.selectOrCreateList(plugin);
                     }
                 })(),
             );
@@ -59,48 +71,32 @@ export abstract class AbstractGoogleFeature<
 
         plugin.pluginDataIO.register(this.data);
         plugin.addCommand({
-            id: `synchronize-${this.options.serviceId}-select`,
-            name: `Start ${this.options.serviceName} synchronization - Select an existing ${this.options.listName} to synchronize`,
+            id: `synchronize-${this.options.serviceId}`,
+            name: `Start ${this.options.serviceName} synchronization`,
             checkCallback: (checking: boolean): boolean | void => {
+                const scopesReady = this.isScopesReady();
                 if (checking) {
-                    return this.googleApiFeature.googleAuthClient.isReady();
-                }
-                this.selectTasklist()
-                    .then((id) => {
-                        if (id == null) {
-                            new Notice(`Canceled to select ${this.options.listName}.`);
-                            return;
-                        }
-                        this.setList(this.data, id);
-                        this.startSynchronizer();
-                        plugin.pluginDataIO.synchronizeReminders(true);
-                    })
-                    .catch((e) => {
-                        new Notice(e);
-                    });
-            },
-        });
-        plugin.addCommand({
-            id: `synchronize-${this.options.serviceId}-create`,
-            name: `Start ${this.options.serviceName} synchronization - Create a ${this.options.serviceName} to synchronize`,
-            checkCallback: (checking: boolean): boolean | void => {
-                if (checking) {
-                    return this.googleApiFeature.googleAuthClient.isReady();
+                    return true;
                 }
 
-                this.createTasklist()
-                    .then((id) => {
-                        if (id == null) {
-                            new Notice(`Canceled to create ${this.options.listName}.`);
-                            return;
-                        }
-                        this.setList(this.data, id);
-                        this.startSynchronizer();
-                        plugin.pluginDataIO.synchronizeReminders(true);
-                    })
-                    .catch((e) => {
-                        new Notice(e);
-                    });
+                console.debug('Synchronize with %s', this.options.serviceName);
+                if (!scopesReady) {
+                    console.debug(
+                        'Scopes are insufficient, opening auth url: feature=%s, requestedScopes=%o, currentScopes=%o',
+                        this.featureName,
+                        this.scopes,
+                        this.googleApiFeature.googleAuthClient.scopes,
+                    );
+                    const requestingScopes = [...this.scopes];
+                    for (const scope of this.googleApiFeature.googleAuthClient.scopes) {
+                        requestingScopes.push(scope);
+                    }
+                    this.googleApiFeature.openAuthUrl(this.featureName, ...requestingScopes);
+                    return;
+                }
+
+                console.debug('Select or create list');
+                this.selectOrCreateList(plugin);
             },
         });
         plugin.addCommand({
@@ -111,22 +107,41 @@ export abstract class AbstractGoogleFeature<
                     return this.reminderSynchronizerRegistration?.running;
                 }
 
+                console.debug('Stop synchronization: feature=%s', this.featureName);
                 this.stopSynchronizer();
                 this.resetList(this.data);
             },
         });
     }
 
-    private async selectTasklist(): Promise<string | null> {
+    private selectOrCreateList(plugin: Plugin) {
+        this.selectOrCreateListAsync(plugin).catch((e) => {
+            new Notice(e);
+        });
+    }
+
+    private async selectOrCreateListAsync(plugin: Plugin): Promise<void> {
         const taskLists = await this.fetchList();
         const selected = await showSelectModal(taskLists, {
             itemToString: (item) => this.getListName(item),
-            placeHolder: `Select a ${this.options.listName} to be synchronized with reminders.`,
+            placeHolder: `Select a ${this.options.listName} to be synchronized with reminders.  Cancel to create a new ${this.options.listName}`,
         });
-        if (selected == null) {
-            return null;
+
+        let id: string | null;
+        if (selected != null) {
+            id = this.getListId(selected);
+        } else {
+            id = await this.createTasklist();
         }
-        return this.getListId(selected);
+
+        if (id == null) {
+            new Notice(`Canceled to select ${this.options.listName}.`);
+            return;
+        }
+
+        this.setList(this.data, id);
+        this.startSynchronizer();
+        plugin.pluginDataIO.synchronizeReminders(true);
     }
 
     private async createTasklist(): Promise<string | null> {
@@ -137,11 +152,27 @@ export abstract class AbstractGoogleFeature<
         return await this.createList(name);
     }
 
+    private isScopesReady() {
+        const currentScopes = this.googleApiFeature.googleAuthClient.scopes;
+        for (const scope of this.scopes) {
+            if (!currentScopes.contains(scope)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private get featureName() {
+        return this.constructor.name;
+    }
+
     abstract createSynchronizer(data: D): S | null;
 
     abstract resetList(data: D): void;
 
     abstract setList(data: D, id: string): void;
+
+    abstract getList(data: D): string;
 
     abstract fetchList(): Promise<Array<L>>;
 
@@ -150,4 +181,6 @@ export abstract class AbstractGoogleFeature<
     abstract getListId(list: L): string;
 
     abstract createList(name: string): Promise<string>;
+
+    abstract get scopes(): Array<string>;
 }

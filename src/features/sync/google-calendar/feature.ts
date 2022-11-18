@@ -1,4 +1,5 @@
 import { AbstractPluginDataHolder } from 'data';
+import { GoogleAuthClient } from '../google-api/client';
 import type { GoogleApiFeature } from '../google-api/feature';
 import { AbstractGoogleFeature } from '../sync-base/google';
 import { GoogleCalendar, GoogleCalendarClient, GoogleCalendarEvent } from './client';
@@ -38,11 +39,20 @@ export class GoogleCalendarFeature extends AbstractGoogleFeature<
         });
         this.googleCalendarClient = new GoogleCalendarClient(googleApiFeature.googleAuthClient);
     }
+
     createSynchronizer(data: GoogleCalendarDataHolder): GoogleCalendarSynchronizer | null {
         if (data.calendarId.length === 0) {
             return null;
         }
         return new GoogleCalendarSynchronizer(this.googleCalendarClient, data.calendarId);
+    }
+
+    get scopes(): string[] {
+        return [GoogleAuthClient.SCOPE_CALENDAR, GoogleAuthClient.SCOPE_CALENDAR_EVENTS];
+    }
+
+    getList(data: GoogleCalendarDataHolder): string {
+        return data.calendarId;
     }
     resetList(data: GoogleCalendarDataHolder): void {
         data.calendarId = '';
