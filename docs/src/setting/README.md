@@ -98,14 +98,15 @@ Enable support for [Tasks Plugin](https://github.com/schemar/obsidian-tasks)
     - ON: Enable Tasks plugin format
     - OFF: Disable Tasks plugin format (default)
 
-## Distinguish between reminder date and due date
+## Tasks Plugin Reminder Emoji
 
-Use custom emoji ⏰ instead of 📅 and distinguish between reminder date/time and Tasks Plugin's due date.
+Which emoji to use as reminder
 
-- Type: `boolean`
+- Type: `select`
 - Values:
-    - ON: Reminder is set using ⏰
-    - OFF: Reminder is set using 📅 (default)
+    - [`📅 Due`](https://obsidian-tasks-group.github.io/obsidian-tasks/getting-started/dates/#-due)
+    - [`⏳ Scheduled`](https://obsidian-tasks-group.github.io/obsidian-tasks/getting-started/dates/#-scheduled)
+    - `⏰ Reminder (use different emoji from Tasks plugin)`
 
 ## Remove tags from reminder title
 

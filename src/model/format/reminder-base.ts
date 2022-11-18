@@ -3,6 +3,8 @@ import type { ReadOnlyReference } from 'model/ref';
 import { Reminder } from 'model/reminder';
 import { DateTime } from 'model/time';
 import { Todo } from './markdown';
+import { TasksPluginSymbols } from './reminder-tasks-plugin-symbols';
+import type { Symbol } from './splitter';
 
 export type ReminderEdit = {
     time?: DateTime;
@@ -34,6 +36,10 @@ export class ReminderFormatParameterKey<T> {
     static readonly useCustomEmojiForTasksPlugin = new ReminderFormatParameterKey<boolean>(
         'useCustomEmojiForTasksPlugin',
         false,
+    );
+    static readonly tasksPluginEmoji = new ReminderFormatParameterKey<Symbol>(
+        'tasksPluginEmoji',
+        TasksPluginSymbols.reminder,
     );
     static readonly removeTagsForTasksPlugin = new ReminderFormatParameterKey<boolean>(
         'removeTagsForTasksPlugin',
