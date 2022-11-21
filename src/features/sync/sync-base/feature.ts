@@ -21,4 +21,28 @@ export class SyncBaseFeature extends Feature {
             },
         });
     }
+
+    override async onload(plugin: Plugin): Promise<void> {
+        let syncRunning = false;
+        let lastForceSync = new Date().getTime();
+        plugin.registerInterval(
+            window.setInterval(() => {
+                if (syncRunning) {
+                    console.info('Skig reminder sync because the task is already running.');
+                    return;
+                }
+                syncRunning = true;
+                let force = false;
+                const time = new Date().getTime();
+                if ((time - lastForceSync) / 1000 > 60 * 60 * 1000) {
+                    // force sync once an hour
+                    force = true;
+                    lastForceSync = time;
+                }
+                plugin.pluginDataIO.synchronizeReminders(force).finally(() => {
+                    syncRunning = false;
+                });
+            }, 10 * 1000),
+        );
+    }
 }

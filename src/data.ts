@@ -4,7 +4,7 @@ import { Reminder, Reminders } from 'model/reminder';
 import { DateTime } from 'model/time';
 import type { Plugin_2 } from 'obsidian';
 import { SETTINGS, TAG_RESCAN } from 'settings';
-import type { ReminderSynchronizerManager, ReminderSynchronizer } from 'sync';
+import type { ReminderSynchronizer, ReminderSynchronizerManager } from 'sync';
 
 interface ReminderData {
     title: string;

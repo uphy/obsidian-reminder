@@ -1,7 +1,7 @@
 import type { Reminders } from 'model/reminder';
 import type { Time } from 'model/time';
-import type { ReminderSynchronizer, ReminderEditor } from '.';
 import { CachingReminderSynchronizer } from './cache';
+import type { ReminderEditor, ReminderSynchronizer } from '.';
 
 export class ReminderSynchronizerRegistration<T extends ReminderSynchronizer> {
     private synchronizer: T | null = null;

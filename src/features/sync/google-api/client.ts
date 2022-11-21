@@ -1,4 +1,4 @@
-import { requestUrl, RequestUrlParam } from 'obsidian';
+import { RequestUrlParam, requestUrl } from 'obsidian';
 
 export class AuthToken {
     constructor(private _refreshToken: string, private _accessToken: string) {}

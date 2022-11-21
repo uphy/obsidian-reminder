@@ -2,7 +2,6 @@ import { RemindersController } from 'controller';
 import { PluginDataIO } from 'data';
 import { FeatureManager } from 'features/feature';
 import { GoogleApiFeature } from 'features/sync/google-api/feature';
-import { GoogleTasksFeature } from 'features/sync/google-tasks/feature';
 import { MobileDebugFeature } from 'features/mobile-debug/feature';
 import type { ReadOnlyReference } from 'model/ref';
 import { Reminder, Reminders } from 'model/reminder';
@@ -18,9 +17,10 @@ import { buildCodeMirrorPlugin } from 'ui/editor-extension';
 import { ReminderModal } from 'ui/reminder';
 import { ReminderListItemViewProxy } from 'ui/reminder-list';
 import { OkCancel, showOkCancelDialog } from 'ui/util';
-import { VIEW_TYPE_REMINDER_LIST } from './constants';
 import { SyncBaseFeature } from 'features/sync/sync-base/feature';
 import { GoogleCalendarFeature } from 'features/sync/google-calendar/feature';
+import { GoogleTasksFeature } from 'features/sync/google-tasks/feature';
+import { VIEW_TYPE_REMINDER_LIST } from './constants';
 
 export default class ReminderPlugin extends Plugin {
     pluginDataIO: PluginDataIO;
@@ -271,28 +271,6 @@ export default class ReminderPlugin extends Plugin {
                     intervalTaskRunning = false;
                 });
             }, SETTINGS.reminderCheckIntervalSec.value * 1000),
-        );
-
-        let syncRunning = false;
-        let lastForceSync = new Date().getTime();
-        this.registerInterval(
-            window.setInterval(() => {
-                if (syncRunning) {
-                    console.info('Skig reminder sync because the task is already running.');
-                    return;
-                }
-                syncRunning = true;
-                let force = false;
-                const time = new Date().getTime();
-                if ((time - lastForceSync) / 1000 > 60 * 60 * 1000) {
-                    // force sync once an hour
-                    force = true;
-                    lastForceSync = time;
-                }
-                this.pluginDataIO.synchronizeReminders(force).finally(() => {
-                    syncRunning = false;
-                });
-            }, 10 * 1000),
         );
     }
 

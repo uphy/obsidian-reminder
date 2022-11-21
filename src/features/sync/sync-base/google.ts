@@ -136,7 +136,7 @@ export abstract class AbstractGoogleFeature<
 
         let id: string | null;
         switch (selectOrCreate) {
-            case 'create':
+            case 'create': {
                 const name = await showInputDialog(
                     `Create new ${this.options.listName}`,
                     `${this.options.listName} name`,
@@ -147,7 +147,8 @@ export abstract class AbstractGoogleFeature<
                     id = null;
                 }
                 break;
-            case 'select':
+            }
+            case 'select': {
                 const taskLists = await this.fetchList();
                 const selected = await showSelectModal<L>(taskLists, {
                     itemToString: (item) => this.getListName(item),
@@ -159,6 +160,7 @@ export abstract class AbstractGoogleFeature<
                     id = null;
                 }
                 break;
+            }
             default:
                 id = null;
                 break;

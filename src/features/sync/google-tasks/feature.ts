@@ -1,9 +1,9 @@
 import { AbstractPluginDataHolder } from 'data';
 import type { GoogleApiFeature } from 'features/sync/google-api/feature';
-import { GoogleTaskList, GoogleTasksApi } from './client';
-import { GoogleTasksSynchronizer } from './synchronizer';
 import { AbstractGoogleFeature } from 'features/sync/sync-base/google';
 import { GoogleAuthClient } from '../google-api/client';
+import { GoogleTaskList, GoogleTasksApi } from './client';
+import { GoogleTasksSynchronizer } from './synchronizer';
 
 type GoogleTasksData = {
     taskListId: string;
