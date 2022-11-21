@@ -121,35 +121,57 @@ export abstract class AbstractGoogleFeature<
     }
 
     private async selectOrCreateListAsync(plugin: Plugin): Promise<void> {
-        const taskLists = await this.fetchList();
-        const selected = await showSelectModal(taskLists, {
-            itemToString: (item) => this.getListName(item),
-            placeHolder: `Select a ${this.options.listName} to be synchronized with reminders.  Cancel to create a new ${this.options.listName}`,
+        const selectOrCreate = await showSelectModal<'create' | 'select'>(['create', 'select'], {
+            itemToString: (item: string) => {
+                switch (item) {
+                    case 'create':
+                        return `Create a new ${this.options.listName} (Recommended)`;
+                    case 'select':
+                        return `Select an existing ${this.options.listName}`;
+                }
+                return '';
+            },
+            placeholder: `Select a method to choose the synchronization target ${this.options.listName}`,
         });
 
         let id: string | null;
-        if (selected != null) {
-            id = this.getListId(selected);
-        } else {
-            id = await this.createTasklist();
+        switch (selectOrCreate) {
+            case 'create':
+                const name = await showInputDialog(
+                    `Create new ${this.options.listName}`,
+                    `${this.options.listName} name`,
+                );
+                if (name != null) {
+                    id = await this.createList(name);
+                } else {
+                    id = null;
+                }
+                break;
+            case 'select':
+                const taskLists = await this.fetchList();
+                const selected = await showSelectModal<L>(taskLists, {
+                    itemToString: (item) => this.getListName(item),
+                    placeholder: `Select a ${this.options.listName} to be synchronized with reminders.  Cancel to create a new ${this.options.listName}`,
+                });
+                if (selected != null) {
+                    id = this.getListId(selected);
+                } else {
+                    id = null;
+                }
+                break;
+            default:
+                id = null;
+                break;
         }
 
         if (id == null) {
-            new Notice(`Canceled to select ${this.options.listName}.`);
+            new Notice(`Canceled synchronization of ${this.options.listName}.`);
             return;
         }
 
         this.setList(this.data, id);
         this.startSynchronizer();
         plugin.pluginDataIO.synchronizeReminders(true);
-    }
-
-    private async createTasklist(): Promise<string | null> {
-        const name = await showInputDialog(`Create new ${this.options.listName}`, `${this.options.listName} name`);
-        if (name == null) {
-            return null;
-        }
-        return await this.createList(name);
     }
 
     private isScopesReady() {

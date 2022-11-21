@@ -1,7 +1,7 @@
 import { App, SuggestModal } from 'obsidian';
 
 type SelectModalOptions<T> = {
-    placeHolder?: string;
+    placeholder?: string;
     itemToString?: (item: T) => string;
 };
 
@@ -11,7 +11,7 @@ export function showSelectModal<T>(items: Array<T>, options?: SelectModalOptions
             app,
             items,
             options?.itemToString ?? ((v: T) => v as any),
-            options?.placeHolder ?? 'Select an item',
+            options?.placeholder ?? 'Select an item',
             (selected) => {
                 resolve(selected);
             },
