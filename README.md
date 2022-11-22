@@ -1,12 +1,12 @@
 ## Obsidian Reminder Plugin
 
-[Reminder plugin](https://uphy.github.io/obsidian-reminder/) for Obsidian. This plugin adds feature to manage markdown TODOs with reminder.
+[Reminder plugin](https://obsidian-reminder.cf/) for Obsidian. This plugin adds feature to manage markdown TODOs with reminder.
 
 ### Features
 
 #### Set Reminders
 
-You can [set reminders](https://uphy.github.io/obsidian-reminder/guide/set-reminders.html) for TODO list items with the following format.
+You can [set reminders](https://obsidian-reminder.cf/guide/set-reminders.html) for TODO list items with the following format.
 
 ```markdown
 - [ ] This is a sample task with reminder (@2021-08-14)
@@ -18,7 +18,7 @@ You can [set reminders](https://uphy.github.io/obsidian-reminder/guide/set-remin
 
 #### List Reminders
 
-You can [view the list of reminders](https://uphy.github.io/obsidian-reminder/guide/list-reminders.html) contained in all files.
+You can [view the list of reminders](https://obsidian-reminder.cf/guide/list-reminders.html) contained in all files.
 
 <img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/reminder-list.png" width="600" />
 
@@ -26,7 +26,7 @@ If you click the reminder list item, the source markdown file will be appeared.
 
 #### Reminder Notification
 
-Reminder will be [notified](https://uphy.github.io/obsidian-reminder/guide/notification.html) on Obsidian when the time comes.
+Reminder will be [notified](https://obsidian-reminder.cf/guide/notification.html) on Obsidian when the time comes.
 
 <img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/reminder-notification1.png" width="600" />
 
@@ -40,12 +40,12 @@ Alternatively, you can postpone the reminder by selecting `Remind Me Later`.
 
 In addition to original format `@YYYY-MM-DD`, this plugin also supports following plugin formats.
 
-- [Obsidian Tasks](https://uphy.github.io/obsidian-reminder/guide/interop-tasks.html) (e.g. `📅 2021-05-02`)
-- [Kanban](https://uphy.github.io/obsidian-reminder/guide/interop-kanban.html) (e.g. `@{YYYY-MM-DD}`)
+- [Obsidian Tasks](https://obsidian-reminder.cf/guide/interop-tasks.html) (e.g. `📅 2021-05-02`)
+- [Kanban](https://obsidian-reminder.cf/guide/interop-kanban.html) (e.g. `@{YYYY-MM-DD}`)
 
 ### Guide
 
-https://uphy.github.io/obsidian-reminder/
+https://obsidian-reminder.cf/
 
 ### FAQ
 
