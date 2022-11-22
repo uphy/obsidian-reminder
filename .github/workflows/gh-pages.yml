@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: "18"
 
       - name: Cache dependencies
         uses: actions/cache@v2
@@ -29,8 +29,8 @@ jobs:
       - name: Build pages
         working-directory: ./docs
         run: |
-            npm ci
-            npm run build
+          npm ci
+          npm run build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
