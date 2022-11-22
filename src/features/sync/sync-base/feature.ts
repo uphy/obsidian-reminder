@@ -39,9 +39,14 @@ export class SyncBaseFeature extends Feature {
                     force = true;
                     lastForceSync = time;
                 }
-                plugin.pluginDataIO.synchronizeReminders(force).finally(() => {
-                    syncRunning = false;
-                });
+                plugin.pluginDataIO
+                    .synchronizeReminders(force)
+                    .catch((ex) => {
+                        new Notice('Failed to synchronize reminders: ' + ex);
+                    })
+                    .finally(() => {
+                        syncRunning = false;
+                    });
             }, 10 * 1000),
         );
     }
