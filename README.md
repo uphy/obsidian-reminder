@@ -51,3 +51,7 @@ https://obsidian-reminder.cf/
 
 - Notification in mobile (Android/iOS)
   - System notification in mobile device is not available because Obsidian doesn't provide the feature.
+
+### Support
+
+<a href="https://www.buymeacoffee.com/uphy" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
