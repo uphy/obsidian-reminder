@@ -6,6 +6,7 @@
   export let groups: Array<GroupedReminder>;
   export let component: Component;
   export let onOpenReminder: (reminder: Reminder) => void;
+  export let generateLink: (reminder: Reminder) => string;
 </script>
 
 <main>
@@ -19,6 +20,7 @@
         {component}
         {onOpenReminder}
         timeToString={(time) => group.timeToString(time)}
+        {generateLink}
       />
     {/each}
   </div>
