@@ -37,6 +37,17 @@ class ReminderListItemView extends ItemView {
         groups: this.remindersForView(),
         onOpenReminder: this.onOpenReminder,
         component: this,
+        generateLink: (reminder: Reminder): string => {
+          const aFile = this.app.vault.getAbstractFileByPath(reminder.file);
+          const destinationFile = this.app.workspace.getActiveFile();
+          let linkMd: string;
+          if (!(aFile instanceof TFile) || destinationFile == null) {
+            linkMd = `[[${reminder.getFileName()}]]`;
+          } else {
+            linkMd = this.app.fileManager.generateMarkdownLink(aFile, destinationFile.path);
+          }
+          return `${linkMd} - ${reminder.title}`;
+        },
       },
     });
   }

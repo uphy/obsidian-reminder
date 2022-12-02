@@ -8,6 +8,7 @@
   export let component: Component;
   export let onOpenReminder: (reminder: Reminder) => void = () => {};
   export let timeToString = (time: DateTime) => time.format("HH:MM");
+  export let generateLink: (reminder: Reminder) => string;
 </script>
 
 <div class="reminder-group">
@@ -20,7 +21,11 @@
           class="reminder-list-item"
           aria-label={`[${reminder.time.toString()}] ${
             reminder.title
-          } - ${reminder.getFileName()}`}
+          } - ${reminder.getFileName()}`},
+          draggable="true"
+          on:dragstart={(e)=>{            
+            e.dataTransfer?.setData("text/plain", generateLink(reminder));
+          }}
           on:click={() => {
             onOpenReminder(reminder);
           }}
