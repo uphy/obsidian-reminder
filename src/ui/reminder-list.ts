@@ -1,6 +1,6 @@
 import type { ReadOnlyReference } from "model/ref";
 import type { Time } from "model/time";
-import { ItemView, View, Workspace, WorkspaceLeaf } from "obsidian";
+import { ItemView, TFile, View, Workspace, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_REMINDER_LIST } from "../constants";
 import { groupReminders, Reminder, Reminders } from "../model/reminder";
 import ReminderListView from "./components/ReminderList.svelte";
@@ -46,7 +46,7 @@ class ReminderListItemView extends ItemView {
           } else {
             linkMd = this.app.fileManager.generateMarkdownLink(aFile, destinationFile.path);
           }
-          return `${linkMd} - ${reminder.title}`;
+          return `${reminder.title} - ${linkMd}`;
         },
       },
     });
