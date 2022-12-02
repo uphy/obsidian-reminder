@@ -45,6 +45,10 @@ module.exports = {
         link: '/setting/'
       },
       {
+        text: 'Privacy Policy',
+        link: '/privacy-policy.html'
+      },
+      {
         text: 'GitHub',
         link: 'https://github.com/uphy/obsidian-reminder'
       }
