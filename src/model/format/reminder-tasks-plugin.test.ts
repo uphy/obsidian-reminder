@@ -107,6 +107,15 @@ describe('TasksPluginReminderLine', (): void => {
             expectedMarkdown: `- [ ] Task ⏰ 2021-10-05 11:00 🔁 every month on the 5th 📅 2021-10-05
 - [x] Task ⏰ 2021-09-05 11:00 🔁 every month on the 5th 📅 2021-09-12 ✅ 2021-09-13`
         });
+});
+    test('modify() - customemoji - time - every month with time', async () => {
+        await testModify({
+            now: "2021-09-13 09:10",
+            customEmoji: true,
+            inputMarkdown: `- [ ] Task ⌚ 11:00 🔁 every month on the 5th 📅 2021-09-12`,
+            expectedMarkdown: `- [ ] Task ⌚ 11:00 🔁 every month on the 5th 📅 2021-10-05
+- [x] Task ⌚ 11:00 🔁 every month on the 5th 📅 2021-09-12 ✅ 2021-09-13`
+        });
     });
 });
 
