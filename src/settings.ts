@@ -23,6 +23,7 @@ class Settings {
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
   editDetectionSec: SettingModel<number, number>;
   reminderCheckIntervalSec: SettingModel<number, number>;
+  deleteReminderOnComplete: SettingModel<boolean, boolean>;
 
   constructor() {
     const reminderFormatSettings = new ReminderFormatSettings(this.settings);
@@ -147,6 +148,12 @@ class Settings {
       .desc("Interval(in seconds) to periodically check whether or not you should be notified of reminders.  You will need to restart Obsidian for this setting to take effect.")
       .number(5)
       .build(new RawSerde());
+    this.deleteReminderOnComplete = this.settings.newSettingBuilder()
+      .key("deleteReminderOnComplete")
+      .name("Delete reminder when done")
+      .desc("Upon completing a task, delete the line that the reminder was on.")
+      .toggle(false)
+      .build(new RawSerde());
 
     this.settings
       .newGroup("Notification Settings")
@@ -186,7 +193,8 @@ class Settings {
       .newGroup("Advanced")
       .addSettings(
         this.editDetectionSec,
-        this.reminderCheckIntervalSec
+        this.reminderCheckIntervalSec,
+        this.deleteReminderOnComplete,
       );
 
     const config = new ReminderFormatConfig();

@@ -3,7 +3,8 @@ import type { Reminder } from "model/reminder";
 import type { Todo } from "./format/markdown";
 
 export type ReminderTodoEdit = ReminderEdit & {
-  checked?: boolean
+  checked?: boolean,
+  shouldDelete?: boolean,
 }
 
 export class Content {
