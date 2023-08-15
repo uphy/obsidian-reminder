@@ -24,6 +24,7 @@ class Settings {
   editDetectionSec: SettingModel<number, number>;
   reminderCheckIntervalSec: SettingModel<number, number>;
   deleteReminderOnComplete: SettingModel<boolean, boolean>;
+  deleteReminderToken: SettingModel<string, string>;
 
   constructor() {
     const reminderFormatSettings = new ReminderFormatSettings(this.settings);
@@ -151,8 +152,15 @@ class Settings {
     this.deleteReminderOnComplete = this.settings.newSettingBuilder()
       .key("deleteReminderOnComplete")
       .name("Delete reminder when done")
-      .desc("Upon completing a task, delete the line that the reminder was on.")
+      .desc("Upon completing a task, delete the line that the reminder was on if it contains a specific symbol.")
       .toggle(false)
+      .build(new RawSerde());
+    this.deleteReminderToken = this.settings.newSettingBuilder()
+      .key("deleteReminderToken")
+      .name("Delete reminder token")
+      .desc("Symbol or keyword to indicate that a reminder should be deleted when the task is completed (defaults to #delete).")
+      .text("#delete")
+      .placeHolder("#delete")
       .build(new RawSerde());
 
     this.settings
@@ -195,6 +203,7 @@ class Settings {
         this.editDetectionSec,
         this.reminderCheckIntervalSec,
         this.deleteReminderOnComplete,
+        this.deleteReminderToken
       );
 
     const config = new ReminderFormatConfig();
