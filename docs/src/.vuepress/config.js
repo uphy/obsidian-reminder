@@ -10,7 +10,7 @@ module.exports = {
    */
   description: description,
 
-  base: '/',
+  base: '/obsidian-reminder/',
 
   /**
    * Extra tags to be injected to the page HTML `<head>`
@@ -102,7 +102,7 @@ module.exports = {
     [
       "sitemap",
       {
-        hostname: 'https://obsidian-reminder.cf/',
+        hostname: 'https://uphy.github.io/obsidian-reminder/',
         changefreq: "weekly"
       }
     ]
