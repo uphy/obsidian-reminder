@@ -9,7 +9,7 @@ export class Todo {
     // check: 'x'
     // suffix: '] '
     // body: hello
-    private static readonly regexp = /^(?<prefix>((> ?)*)?\s*[\-\*][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
+    private static readonly regexp = /^(?<prefix>((> ?)*)?\s*[-*][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
 
     static parse(lineIndex: number, line: string): Todo | null {
         const match = Todo.regexp.exec(line);
