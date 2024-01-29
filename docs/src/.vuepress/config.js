@@ -93,7 +93,7 @@ module.exports = {
     [
       "sitemap",
       {
-        hostname: 'https://obsidian-reminder.cf/',
+        hostname: 'https://uphy.github.io/obsidian-reminder/',
         changefreq: "weekly"
       }
     ]
