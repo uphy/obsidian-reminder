@@ -10,7 +10,7 @@ module.exports = {
    */
   description: description,
 
-  base: '/obsidian-reminder/',
+  base: '/',
 
   /**
    * Extra tags to be injected to the page HTML `<head>`
@@ -20,7 +20,8 @@ module.exports = {
   head: [
     ['meta', { name: 'theme-color', content: '#3eaf7c' }],
     ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
-    ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' }]
+    ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' }],
+    ['meta', { name: 'google-site-verification', content: 'x-FMnla97z654niFxL3xjrvLhoCJU0eaFJyIKk5Z-ZM' }]
   ],
 
   /**
@@ -42,6 +43,10 @@ module.exports = {
       {
         text: 'Setting',
         link: '/setting/'
+      },
+      {
+        text: 'Privacy Policy',
+        link: '/privacy-policy.html'
       },
       {
         text: 'GitHub',
@@ -94,5 +99,12 @@ module.exports = {
   plugins: [
     '@vuepress/plugin-back-to-top',
     '@vuepress/plugin-medium-zoom',
+    [
+      "sitemap",
+      {
+        hostname: 'https://obsidian-reminder.cf/',
+        changefreq: "weekly"
+      }
+    ]
   ]
 }

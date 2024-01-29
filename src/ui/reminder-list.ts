@@ -1,6 +1,6 @@
 import type { ReadOnlyReference } from 'model/ref';
 import type { Time } from 'model/time';
-import { ItemView, View, Workspace, WorkspaceLeaf } from 'obsidian';
+import { ItemView, TFile, View, Workspace, WorkspaceLeaf } from 'obsidian';
 import { VIEW_TYPE_REMINDER_LIST } from '../constants';
 import { Reminder, Reminders, groupReminders } from '../model/reminder';
 import ReminderListView from './components/ReminderList.svelte';
@@ -37,6 +37,17 @@ class ReminderListItemView extends ItemView {
                 groups: this.remindersForView(),
                 onOpenReminder: this.onOpenReminder,
                 component: this,
+                generateLink: (reminder: Reminder): string => {
+                    const aFile = this.app.vault.getAbstractFileByPath(reminder.file);
+                    const destinationFile = this.app.workspace.getActiveFile();
+                    let linkMd: string;
+                    if (!(aFile instanceof TFile) || destinationFile == null) {
+                        linkMd = `[[${reminder.getFileName()}]]`;
+                    } else {
+                        linkMd = this.app.fileManager.generateMarkdownLink(aFile, destinationFile.path);
+                    }
+                    return `${reminder.title} - ${linkMd}`;
+                },
             },
         });
     }
