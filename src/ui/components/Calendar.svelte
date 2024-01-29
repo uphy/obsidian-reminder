@@ -16,6 +16,9 @@
         selectedDate.add(1, "month");
         calendar = calendar.nextMonth();
     }
+
+    // TODO ハードコードしているヘッダをmodel側に移動
+    // TODO propsにweekStartを追加
 </script>
 
 <div class="reminder-calendar">

@@ -12,6 +12,7 @@
     export let selectedDate = moment();
     export let reminders: Reminders;
 
+    // TODO 引数にweekStartを追加
     function selectDate(date: moment.Moment) {
         // clone() for re-render forcibly
         selectedDate = date.clone();

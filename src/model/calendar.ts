@@ -19,7 +19,7 @@ export class Day {
 export class Week {
     public days: Array<Day> = [];
     constructor(private weekStart: moment.Moment) {
-        const current = weekStart.clone();
+        const current = this.weekStart.clone();
         for (let i: number = 0; i < 7; i++) {
             this.days.push(new Day(current.clone()));
             current.add(1, "day");
@@ -30,6 +30,8 @@ export class Week {
 export class Month {
     public weeks: Array<Week> = [];
     constructor(public monthStart: moment.Moment) {
+        // TODO 月曜日始まりのオプションを曜日(weekday)で指定できるように
+        // 設定の持ち方はchatgptに聞いてみよう。日、月だけなのか、ほかにもあるのか。
         let current = monthStart.clone().add(-monthStart.weekday(), "day");
         for (let i: number = 0; i < 6; i++) {
             if (i > 0 && !this.isThisMonth(current)) {
