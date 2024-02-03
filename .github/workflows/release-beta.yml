@@ -1,0 +1,74 @@
+name: Release beta version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The beta version of the plugin e.g. 1.0.0-beta.1"
+        required: true
+
+env:
+  PLUGIN_NAME: obsidian-reminder
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: master
+      - uses: actions/checkout@v2
+        with:
+          ref: develop
+      - name: Update the versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${{ github.event.inputs.version }}
+          echo "RELEASE_VERSION=$version" >> $GITHUB_ENV
+          
+          # update manifest version
+          sed -i "s/\"version\": \".*\"/\"version\": \"$version\"/" manifest-beta.json
+          
+          # commit and push the changes
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add manifest-beta.json
+          git commit -m "Update the version to $version"
+          git push origin develop
+          git tag $version
+          git push --tags
+
+          # cherry pick the manifest change to master
+          git checkout -b release-beta-$version origin/master
+          git cherry-pick $version
+          git push origin release-beta-$version
+          gh pr create -B master -t "Release $version" -b ""
+
+          # go back to develop
+          git checkout develop
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: "16.x" # You might need to adjust this value to your own version
+      - name: Build
+        id: build
+        run: |
+          npm ci
+          npm run build
+          mkdir ${{ env.PLUGIN_NAME }}
+          cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
+          zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: ${{ env.RELEASE_VERSION }}
+          draft: false
+          prerelease: false
+          files: |
+            ${{ env.PLUGIN_NAME }}.zip
+            main.js
+            manifest.json
+            styles.css
