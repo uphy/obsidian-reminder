@@ -1,0 +1,48 @@
+name: Publish docs - beta
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: "18"
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
+      - name: Patch URL for Netlify deploy
+        run: |
+          sed -i "s/base: .*/base: '\/',/g" docs/src/.vuepress/config.js 
+          sed -i 's/https:\/\/.*/https:\/\/obsidian-reminder.netlify.app\/sitemap.xml/' docs/src/.vuepress/public/robots.txt
+
+      - name: Build pages
+        working-directory: ./docs
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v1.2
+        with:
+          publish-dir: './docs/src/.vuepress/dist'
+          production-branch: develop
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          fails-without-credentials: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
