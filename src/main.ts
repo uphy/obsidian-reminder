@@ -324,6 +324,10 @@ export default class ReminderPlugin extends Plugin {
 
     private showReminder(reminder: Reminder) {
         reminder.muteNotification = true;
+        if (SETTINGS.disableNotification.value) {
+            this.viewProxy.reload(true);
+            return;
+        }
         this.reminderModal.show(
             reminder,
             (time) => {

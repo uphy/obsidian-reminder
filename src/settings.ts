@@ -29,6 +29,7 @@ class Settings {
 
     reminderTime: SettingModel<string, Time>;
     useSystemNotification: SettingModel<boolean, boolean>;
+    disableNotification: SettingModel<boolean, boolean>;
     laters: SettingModel<string, Array<Later>>;
     dateFormat: SettingModel<string, string>;
     dateTimeFormat: SettingModel<string, string>;
@@ -61,6 +62,17 @@ class Settings {
             .key('useSystemNotification')
             .name('Use system notification')
             .desc('Use system notification for reminder notifications')
+            .toggle(false)
+            .onAnyValueChanged((context) => {
+                context.setEnabled(!this.disableNotification.value);
+            })
+            .build(new RawSerde());
+
+        this.disableNotification = this.settings
+            .newSettingBuilder()
+            .key('disableNotification')
+            .name('Disable notification')
+            .desc('Disable notification modal for reminder notifications')
             .toggle(false)
             .build(new RawSerde());
 
@@ -203,7 +215,7 @@ class Settings {
 
         this.settings
             .newGroup('Notification Settings')
-            .addSettings(this.reminderTime, this.laters, this.useSystemNotification);
+            .addSettings(this.reminderTime, this.laters, this.disableNotification, this.useSystemNotification);
         this.settings.newGroup('Editor').addSettings(this.autoCompleteTrigger, this.primaryFormat);
         this.settings
             .newGroup('Reminder Format - Reminder Plugin')
