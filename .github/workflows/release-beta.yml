@@ -36,9 +36,9 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add manifest-beta.json
           git commit -m "Update the version to $version"
-          git push origin develop
+          git push -f origin develop
           git tag $version
-          git push --tags
+          git push -f --tags
 
           # cherry pick the manifest change to master
           git checkout -b release-beta-$version origin/master
