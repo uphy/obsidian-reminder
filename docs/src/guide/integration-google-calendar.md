@@ -1,7 +1,11 @@
 # Google Calendar Integration
 
-## How to synchronize
+## How to Sync
 
-In the command pallete, run `Start Google Calendar synchronization`. This opens Google authentication page on your browser. After you logged in to the Google, follow the guide and click the `Open Obsidian` button.
+To synchronize with Google Calendar, follow these steps:
 
-When you click the button, Obsidian opens and you will get the notice saying `Successfully logged in to Google`.  After that, select or create a calendar list to be synchronized.
+1. Open the command palette and execute `Start Google Calendar synchronization`. This action will prompt your default web browser to open the Google authentication page.
+2. Sign in to your Google account if prompted. Follow the on-screen instructions and grant the necessary permissions.
+3. Once authenticated, click the `Open Obsidian` button.
+4. Upon clicking the button, Obsidian will open, and you'll receive a notification confirming that you have successfully logged in to Google.
+5. After logging in, choose an existing calendar or create a new one that you wish to synchronize with Obsidian.

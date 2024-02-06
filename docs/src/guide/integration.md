@@ -1,44 +1,37 @@
 # Service Integration
 
-Obsidian Reminder Plugin supports to synchronize the reminders to external services.
+The Obsidian Reminder Plugin supports synchronizing reminders to external services.
 
 ## Single-directional Synchronization
 
-The synchronization is single-directional; Obsidian Reminder Plugin to external services.
-For example, when you insert/modify/remove the reminders in your markdown file, the changes will
-be applied to the external services. In contrast, even if you insert/modify/remove the tasks in the
-external services, the changes will not be applied to your markdown files.
+The synchronization is single-directional: from Obsidian Reminder Plugin to external services. For instance, when you insert, modify, or remove reminders in your markdown files, the changes will be applied to the external services. However, if you insert, modify, or remove tasks in the external services, these changes will not be reflected in your markdown files.
 
 ::: tip
-Exceptionally, Google Tasks integration has check status synchronization.  See [Google Tasks](/guide/integration-google-tasks) for more details.
+An exception to this rule is the Google Tasks integration, which supports check status synchronization. Refer to [Google Tasks](/guide/integration-google-tasks) for more details.
 :::
 
 ## Limitations
 
-For performance and memory efficiency, Obsidian Reminder Plugin removes external services' tasks
-when you mark as done the reminders in markdown files. The behavior seems a bit strange but this reduces the memory usage, network usage(getting all tasks from external services), synchronization computing cost.
+For performance and memory efficiency reasons, Obsidian Reminder Plugin removes tasks from external services when you mark reminders as done in markdown files. Although this behavior may seem counterintuitive, it helps reduce memory usage, network usage (by avoiding fetching all tasks from external services), and synchronization computing costs.
 
-Also, Obsidian Reminder Plugin caches the external task list.
-Obsidian Reminder Plugin checks differences between the internal reminder list and external service's task list periodically. To reduce external service's API call, Obsidian Reminder Plugin caches the external task list on memory.
-This may cause a synchronization failure when you modify external services task list manually. To avoid this problem, I recommend you to create a task list of the external service only for Obsidian Reminder Plugin and you shouldn't modify it manually.
+Additionally, Obsidian Reminder Plugin caches the external task list. It periodically checks for differences between the internal reminder list and the external service's task list. To minimize the number of API calls to external services, Obsidian Reminder Plugin caches the external task list in memory. However, manually modifying the external services' task list may cause synchronization failures. To prevent this issue, it's recommended to create a dedicated task list for Obsidian Reminder Plugin within the external service and avoid manual modifications.
 
-## Common commands
+## Common Commands
 
-Some common commands which can be ran via command pallete.
+Here are some common commands that can be executed via the command palette:
 
-### Forcibly synchronize reminders to external services
+### Forcibly Synchronize Reminders to External Services
 
-Fetch all tasks from external services and completely synchronize the reminders without using cache.
-This is convenient when something is wrong with the external services synchronization status.
+This command fetches all tasks from external services and completely synchronizes the reminders without using cache. It's useful when there are issues with the synchronization status of external services.
 
-### Stop all Google synchronization
+### Stop All Google Synchronization
 
-You can remove all authentication tokens and selected task list information by this command.
+This command removes all authentication tokens and selected task list information associated with Google synchronization.
 
-## Usecases
+## Use Cases
 
-- Getting notification even when you are not using Obsidian
-- Checking your reminders with your familiar (and Obsidian Reminder Plugin supported) tools.
+- Receive notifications even when not using Obsidian.
+- Manage reminders using familiar tools supported by Obsidian Reminder Plugin.
 
 ## Supported Services
 

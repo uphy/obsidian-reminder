@@ -1,18 +1,18 @@
 # Google Tasks Integration
 
-## How to synchronize
+## How to Sync
 
-In the command pallete, run `Start Google Tasks synchronization`. This opens Google authentication page on your browser. After you logged in to the Google, follow the guide and click the `Open Obsidian` button.
+To synchronize with Google Tasks, follow these steps:
 
-When you click the button, Obsidian opens and you will get the notice saying `Successfully logged in to Google`.  After that, select or create a task list to be synchronized.
+1. Open the command palette and execute `Start Google Tasks synchronization`. This action will open the Google authentication page in your default web browser.
+2. Sign in to your Google account if prompted. Follow the on-screen instructions and grant the necessary permissions.
+3. After logging in, click the `Open Obsidian` button. Obsidian will open, and you'll receive a notification confirming that you have successfully logged in to Google.
+4. Once logged in, select an existing task list or create a new one that you wish to synchronize with Obsidian.
 
 ::: warning
-Reminder time will not be applied to the Google Tasks' task.
-This is [Google's API limiration](https://issuetracker.google.com/issues/128979662).
+Reminder times set in Obsidian will not be applied to Google Tasks due to a [limitation in Google's API](https://issuetracker.google.com/issues/128979662).
 :::
 
-## Mark as done reminder by Google Tasks
+## Marking Tasks as Done in Google Tasks
 
-When you mark as done in Google Tasks, corresponding reminder will also be marked as done automatically.
-But this is not real-time. When you forcibly synchronize, the change will be applied.
-You can do this with [command](/guide/integration.html#forcibly-synchronize-reminders-to-external-services) or periodically(once an hour).
+When you mark a task as done in Google Tasks, the corresponding reminder will also be marked as done automatically. However, this is not in real-time. The changes will be applied when you forcibly synchronize. You can do this using the [command](/guide/integration.html#forcibly-synchronize-reminders-to-external-services) or by setting up periodic synchronization (e.g., once an hour).

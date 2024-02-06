@@ -5,7 +5,7 @@ export class SyncBaseFeature extends Feature {
     override async init(plugin: Plugin): Promise<void> {
         plugin.addCommand({
             id: 'synchronize-reminders-force',
-            name: 'Forcibly synchronize reminders to external services',
+            name: 'Force synchronization of reminders to external services',
             checkCallback: (checking: boolean): boolean | void => {
                 if (checking) {
                     return plugin.pluginDataIO.anySynchronizersReady();
@@ -28,7 +28,7 @@ export class SyncBaseFeature extends Feature {
         plugin.registerInterval(
             window.setInterval(() => {
                 if (syncRunning) {
-                    console.info('Skig reminder sync because the task is already running.');
+                    console.info('Skipping reminder synchronization because the task is already running.');
                     return;
                 }
                 syncRunning = true;

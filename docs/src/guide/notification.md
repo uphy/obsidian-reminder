@@ -39,11 +39,10 @@ Instead of built-in notification, a system notification is also available by [se
 
 Also, if you are using macOS, you can mark it as done or postpone the reminder with the notification options.
 
-## External service's notification
+## External Service Notifications
 
-You can integrate reminders with external services.
-This is useful for getting notification on mobile devices.
-See [Service Integration page](/guide/integration).
+You have the option to integrate reminders with external services, allowing you to receive notifications on mobile devices and other platforms. For more information, refer to the [Service Integration page](/guide/integration).
+
 ## Mute notification
 
 The reminder will be muted if you do the following:
