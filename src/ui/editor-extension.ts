@@ -1,9 +1,9 @@
-import { EditorSelection } from "@codemirror/state";
-import { ViewPlugin, ViewUpdate } from "@codemirror/view";
-import type { Reminders } from "model/reminder";
-import type { App } from "obsidian";
-import { SETTINGS } from "settings";
-import { showDateTimeChooserModal } from "./date-chooser-modal";
+import { EditorSelection } from '@codemirror/state';
+import { ViewPlugin, ViewUpdate } from '@codemirror/view';
+import type { Reminders } from 'model/reminder';
+import type { App } from 'obsidian';
+import { SETTINGS } from 'settings';
+import { showDateTimeChooserModal } from './date-chooser-modal';
 
 export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
     return ViewPlugin.fromClass(
@@ -20,7 +20,7 @@ export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
                     }
                     const trigger = SETTINGS.autoCompleteTrigger.value;
                     if (trigger === text) {
-                        showDateTimeChooserModal(app, reminders).then(value => {
+                        showDateTimeChooserModal(app, reminders).then((value) => {
                             const format = SETTINGS.primaryFormat.value.format;
                             try {
                                 const line = doc.lineAt(toB);
@@ -28,17 +28,26 @@ export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
                                 // remove trigger character from the line
                                 const triggerStart = line.text.lastIndexOf(trigger);
                                 let triggerEnd = triggerStart + trigger.length;
-                                if (trigger.startsWith("(") && line.text.charAt(triggerEnd) === ")") {
+                                if (trigger.startsWith('(') && line.text.charAt(triggerEnd) === ')') {
                                     // Obsidian complement `)` when user input `(`.
                                     // To remove the end of the brace, adjust the trigger end index.
                                     triggerEnd++;
                                 }
-                                const triggerExcludedLine = line.text.substring(0, triggerStart) + line.text.substring(triggerEnd);
+                                const triggerExcludedLine =
+                                    line.text.substring(0, triggerStart) + line.text.substring(triggerEnd);
 
                                 // insert/update a reminder of the line
-                                const reminderInsertion = format.appendReminder(triggerExcludedLine, value, triggerStart);
+                                const reminderInsertion = format.appendReminder(
+                                    triggerExcludedLine,
+                                    value,
+                                    triggerStart,
+                                );
                                 if (reminderInsertion == null) {
-                                    console.error("Cannot append reminder time to the line: line=%s, date=%s", line.text, value);
+                                    console.error(
+                                        'Cannot append reminder time to the line: line=%s, date=%s',
+                                        line.text,
+                                        value,
+                                    );
                                     return;
                                 }
 
@@ -56,6 +65,6 @@ export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
                     }
                 });
             }
-        }
+        },
     );
 }

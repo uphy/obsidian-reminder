@@ -1,7 +1,10 @@
-import { ReadOnlyReference, Reference } from "model/ref";
-import { Later, parseLaters, Time } from "model/time";
-import { AbstractTextComponent, Setting } from "obsidian";
-import { ReminderFormatType, ReminderFormatTypes } from "./format";
+import { ReadOnlyReference, Reference } from 'model/ref';
+import { Later, Time, parseLaters } from 'model/time';
+import { AbstractTextComponent, Setting } from 'obsidian';
+import { ReminderFormatType, ReminderFormatTypes } from './format';
+import { TasksPluginReminderModel } from './format/reminder-tasks-plugin';
+import { TasksPluginSymbols } from './format/reminder-tasks-plugin-symbols';
+import type { Symbol } from './format/splitter';
 
 class SettingRegistry {
     private settingContexts: Array<SettingContext> = [];
@@ -11,7 +14,7 @@ class SettingRegistry {
     }
 
     findByKey(key: string): SettingContext | undefined {
-        return this.settingContexts.find(c => c.key === key);
+        return this.settingContexts.find((c) => c.key === key);
     }
 
     forEach(consumer: (context: SettingContext) => void): void {
@@ -20,7 +23,6 @@ class SettingRegistry {
 }
 
 class SettingContext {
-
     private validationEl?: HTMLElement;
     private infoEl?: HTMLElement;
     private _setting?: Setting;
@@ -28,22 +30,23 @@ class SettingContext {
     public name?: string;
     public desc?: string;
     public tags: Array<string> = [];
+    public deprecated: boolean = false;
     public settingModel?: SettingModel<any, any>;
     anyValueChanged?: AnyValueChanged;
 
-    constructor(private _settingRegistry: SettingRegistry) { }
+    constructor(private _settingRegistry: SettingRegistry) {}
 
     init(settingModel: SettingModel<any, any>, setting: Setting, containerEl: HTMLElement) {
         this.settingModel = settingModel;
         this._setting = setting;
 
-        this.validationEl = containerEl.createDiv("validation", el => {
+        this.validationEl = containerEl.createDiv('validation', (el) => {
             el.style.color = 'var(--text-error)';
             el.style.marginBottom = '1rem';
             el.style.fontSize = '14px';
             el.style.display = 'none';
         });
-        this.infoEl = containerEl.createDiv("info", el => {
+        this.infoEl = containerEl.createDiv('info', (el) => {
             el.style.color = 'var(--text-faint)';
             el.style.marginBottom = '1rem';
             el.style.fontSize = '14px';
@@ -61,19 +64,19 @@ class SettingContext {
 
     private setText(el: HTMLElement, text: string | null) {
         if (!el) {
-            console.error("element not created");
+            console.error('element not created');
             return;
         }
         if (text === null) {
-            el.style.display = "none";
+            el.style.display = 'none';
         } else {
-            el.style.display = "block";
+            el.style.display = 'block';
             el.innerHTML = text;
         }
     }
 
     get setting() {
-        return this._setting
+        return this._setting;
     }
 
     get registry() {
@@ -81,7 +84,7 @@ class SettingContext {
     }
 
     hasTag(tag: string): boolean {
-        return this.tags.filter(t => t === tag).length > 0;
+        return this.tags.filter((t) => t === tag).length > 0;
     }
 
     update() {
@@ -92,7 +95,9 @@ class SettingContext {
     }
 
     setEnabled(enable: boolean) {
-        this.setting!.setDisabled(!enable);
+        if (!this.deprecated) {
+            this.setting!.setDisabled(!enable);
+        }
     }
 
     findContextByKey(key: string) {
@@ -109,7 +114,6 @@ class SettingContext {
 }
 
 export class SettingModelBuilder {
-
     context: SettingContext;
 
     constructor(public registry: SettingRegistry) {
@@ -134,6 +138,11 @@ export class SettingModelBuilder {
 
     tag(tag: string) {
         this.context.tags.push(tag);
+        return this;
+    }
+
+    deprecated(deprecated: boolean) {
+        this.context.deprecated = deprecated;
         return this;
     }
 
@@ -164,15 +173,14 @@ export class SettingModelBuilder {
 }
 
 interface Serde<R, E> {
-    unmarshal(rawValue: R): E
-    marshal(value: E): R
+    unmarshal(rawValue: R): E;
+    marshal(value: E): R;
 }
 
 type AnyValueChanged = (context: SettingContext) => void;
 
 abstract class AbstractSettingModelBuilder<R> {
-
-    constructor(protected context: SettingContext, protected initValue: R) { };
+    constructor(protected context: SettingContext, protected initValue: R) {}
 
     onAnyValueChanged(anyValueChanged: AnyValueChanged) {
         this.context.anyValueChanged = anyValueChanged;
@@ -182,7 +190,7 @@ abstract class AbstractSettingModelBuilder<R> {
     abstract build<E>(serde: Serde<R, E>): SettingModel<R, E>;
 
     protected onValueChange() {
-        this.context.registry.forEach(c => {
+        this.context.registry.forEach((c) => {
             c.update();
         });
     }
@@ -190,11 +198,9 @@ abstract class AbstractSettingModelBuilder<R> {
     protected buildSettingModel<E>(serde: Serde<R, E>, initializer: SettingInitilizer<R>) {
         return new SettingModelImpl(this.context, serde, this.initValue, initializer);
     }
-
 }
 
-class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
-
+class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
     private _placeHolder?: string;
 
     constructor(context: SettingContext, private longText: boolean, initValue: string) {
@@ -209,8 +215,7 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
     build<E>(serde: Serde<string, E>): SettingModel<string, E> {
         return this.buildSettingModel(serde, ({ setting, rawValue, context }) => {
             const initText = (text: AbstractTextComponent<any>) => {
-                text
-                    .setPlaceholder(this._placeHolder ?? "")
+                text.setPlaceholder(this._placeHolder ?? '')
                     .setValue(rawValue.value)
                     .onChange(async (value) => {
                         try {
@@ -221,27 +226,26 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string>{
                         } catch (e) {
                             if (e instanceof Error) {
                                 context.setValidationError(e.message);
-                            } else if (typeof e === "string") {
+                            } else if (typeof e === 'string') {
                                 context.setValidationError(e);
                             }
                         }
-                    })
-            }
+                    });
+            };
             if (this.longText) {
                 setting.addTextArea((textarea) => {
                     initText(textarea);
-                })
+                });
             } else {
                 setting.addText((text) => {
                     initText(text);
-                })
+                });
             }
         });
     }
 }
 
-class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number>{
-
+class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number> {
     private _placeHolder?: string;
 
     constructor(context: SettingContext, initValue: number) {
@@ -256,8 +260,7 @@ class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number>{
     build<E>(serde: Serde<number, E>): SettingModel<number, E> {
         return this.buildSettingModel(serde, ({ setting, rawValue, context }) => {
             const initText = (text: AbstractTextComponent<any>) => {
-                text
-                    .setPlaceholder(this._placeHolder ?? "")
+                text.setPlaceholder(this._placeHolder ?? '')
                     .setValue(rawValue.value.toString())
                     .onChange(async (value) => {
                         try {
@@ -268,42 +271,37 @@ class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number>{
                         } catch (e) {
                             if (e instanceof Error) {
                                 context.setValidationError(e.message);
-                            } else if (typeof e === "string") {
+                            } else if (typeof e === 'string') {
                                 context.setValidationError(e);
                             }
                         }
-                    })
-            }
+                    });
+            };
             setting.addText((textarea) => {
                 initText(textarea);
-            })
+            });
         });
     }
 }
 
-class ToggleSettingModelBuilder extends AbstractSettingModelBuilder<boolean>{
-
+class ToggleSettingModelBuilder extends AbstractSettingModelBuilder<boolean> {
     build<E>(serde: Serde<boolean, E>): SettingModel<boolean, E> {
         return new SettingModelImpl(this.context, serde, this.initValue, ({ setting, rawValue }) => {
             setting.addToggle((toggle) =>
-                toggle
-                    .setValue(rawValue.value)
-                    .onChange(async (value) => {
-                        rawValue.value = value;
-                        this.onValueChange();
-                    })
+                toggle.setValue(rawValue.value).onChange(async (value) => {
+                    rawValue.value = value;
+                    this.onValueChange();
+                }),
             );
-        })
+        });
     }
-
 }
 
 class DropdownOption {
-    constructor(public label: string, public value: string) { }
+    constructor(public label: string, public value: string) {}
 }
 
-class DropdownSettingModelBuilder<E> extends AbstractSettingModelBuilder<string>{
-
+class DropdownSettingModelBuilder<E> extends AbstractSettingModelBuilder<string> {
     private options: Array<DropdownOption> = [];
 
     addOption(label: string, value: string) {
@@ -313,8 +311,8 @@ class DropdownSettingModelBuilder<E> extends AbstractSettingModelBuilder<string>
 
     build<E>(serde: Serde<string, E>): SettingModel<string, E> {
         return new SettingModelImpl(this.context, serde, this.initValue, ({ setting, rawValue }) => {
-            setting.addDropdown(d => {
-                this.options.forEach(option => {
+            setting.addDropdown((d) => {
+                this.options.forEach((option) => {
                     d.addOption(option.value, option.label);
                 });
                 d.setValue(rawValue.value);
@@ -322,14 +320,12 @@ class DropdownSettingModelBuilder<E> extends AbstractSettingModelBuilder<string>
                     rawValue.value = value;
                     this.onValueChange();
                 });
-            })
-        })
+            });
+        });
     }
-
 }
 
 export interface SettingModel<R, E> extends ReadOnlyReference<E> {
-
     rawValue: Reference<R>;
 
     readonly key: string;
@@ -342,30 +338,41 @@ export interface SettingModel<R, E> extends ReadOnlyReference<E> {
 
     hasTag(tag: string): boolean;
 
+    get deprecated(): boolean;
 }
 
-type SettingInitilizer<R> = ({ setting, rawValue, context }: { setting: Setting, rawValue: Reference<R>, context: SettingContext }) => void;
+type SettingInitilizer<R> = ({
+    setting,
+    rawValue,
+    context,
+}: {
+    setting: Setting;
+    rawValue: Reference<R>;
+    context: SettingContext;
+}) => void;
 
-class SettingModelImpl<R, E> implements SettingModel<R, E>{
-
+class SettingModelImpl<R, E> implements SettingModel<R, E> {
     rawValue: Reference<R>;
 
-    constructor(private context: SettingContext, private serde: Serde<R, E>, initRawValue: R, private settingInitializer: SettingInitilizer<R>) {
+    constructor(
+        private context: SettingContext,
+        private serde: Serde<R, E>,
+        initRawValue: R,
+        private settingInitializer: SettingInitilizer<R>,
+    ) {
         this.rawValue = new Reference(initRawValue);
         if (context.key == null) {
-            throw new Error("key is required.");
+            throw new Error('key is required.');
         }
     }
 
     createSetting(containerEl: HTMLElement): Setting {
-        const setting = new Setting(containerEl)
-            .setName(this.context.name ?? "")
-            .setDesc(this.context.desc ?? "");
+        const setting = new Setting(containerEl).setName(this.context.name ?? '').setDesc(this.context.desc ?? '');
         this.context.init(this, setting, containerEl);
         this.settingInitializer({
             setting,
             rawValue: this.rawValue,
-            context: this.context
+            context: this.context,
         });
         return setting;
     }
@@ -376,6 +383,10 @@ class SettingModelImpl<R, E> implements SettingModel<R, E>{
 
     get key() {
         return this.context.key!;
+    }
+
+    get deprecated(): boolean {
+        return this.context.deprecated;
     }
 
     load(settings: any): void {
@@ -399,8 +410,7 @@ class SettingModelImpl<R, E> implements SettingModel<R, E>{
 
 export class SettingGroup {
     public settings: Array<SettingModel<any, any>> = [];
-    constructor(public name: string) {
-    }
+    constructor(public name: string) {}
 
     addSettings(...settingModels: Array<SettingModel<any, any>>) {
         this.settings.push(...settingModels);
@@ -408,7 +418,6 @@ export class SettingGroup {
 }
 
 export class SettingTabModel {
-
     private groups: Array<SettingGroup> = [];
     private registry: SettingRegistry = new SettingRegistry();
 
@@ -424,25 +433,27 @@ export class SettingTabModel {
 
     displayOn(el: HTMLElement) {
         el.empty();
-        this.groups.forEach(group => {
+        this.groups.forEach((group) => {
             el.createEl('h3', { text: group.name });
-            group.settings.forEach(settings => {
-                settings.createSetting(el);
+            group.settings.forEach((settings) => {
+                if (!settings.deprecated) {
+                    settings.createSetting(el);
+                }
             });
         });
-        this.registry.forEach(context => context.update());
+        this.registry.forEach((context) => context.update());
     }
 
     public forEach(consumer: (setting: SettingModel<any, any>) => void) {
-        this.groups.forEach(group => {
-            group.settings.forEach(setting => {
+        this.groups.forEach((group) => {
+            group.settings.forEach((setting) => {
                 consumer(setting);
-            })
-        })
+            });
+        });
     }
 }
 
-export class TimeSerde implements Serde<string, Time>{
+export class TimeSerde implements Serde<string, Time> {
     unmarshal(rawValue: string): Time {
         return Time.parse(rawValue);
     }
@@ -451,7 +462,7 @@ export class TimeSerde implements Serde<string, Time>{
     }
 }
 
-export class RawSerde<R> implements Serde<R, R>{
+export class RawSerde<R> implements Serde<R, R> {
     unmarshal(rawValue: R): R {
         return rawValue;
     }
@@ -460,24 +471,31 @@ export class RawSerde<R> implements Serde<R, R>{
     }
 }
 
-export class LatersSerde implements Serde<string, Array<Later>>{
+export class LatersSerde implements Serde<string, Array<Later>> {
     unmarshal(rawValue: string): Later[] {
         return parseLaters(rawValue);
     }
     marshal(value: Later[]): string {
-        return value.map(v => v.label).join("\n");
+        return value.map((v) => v.label).join('\n');
     }
 }
 
-export class ReminderFormatTypeSerde implements Serde<string, ReminderFormatType>{
-
+export class ReminderFormatTypeSerde implements Serde<string, ReminderFormatType> {
     unmarshal(rawValue: string): ReminderFormatType {
-        const format = ReminderFormatTypes.find(format => format.name === rawValue)!;
+        const format = ReminderFormatTypes.find((format) => format.name === rawValue)!;
         // TODO return undefined when it is not found
         return format;
     }
     marshal(value: ReminderFormatType): string {
         return value.name;
     }
+}
 
+export class TasksPluginEmojiTypeSerde implements Serde<string, Symbol> {
+    unmarshal(rawValue: string): Symbol {
+        return TasksPluginSymbols.getSymbolByPrimaryEmoji(rawValue)!;
+    }
+    marshal(value: Symbol): string {
+        return value.primary;
+    }
 }

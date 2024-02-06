@@ -1,6 +1,6 @@
 /**
  * Represents TODO items in Markdown.
- * 
+ *
  * This class shouldn't break original line.
  */
 export class Todo {
@@ -9,7 +9,7 @@ export class Todo {
     // check: 'x'
     // suffix: '] '
     // body: hello
-    private static readonly regexp = /^(?<prefix>((> ?)*)?\s*[\-\*][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
+    private static readonly regexp = /^(?<prefix>((> ?)*)?\s*[-*][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
 
     static parse(lineIndex: number, line: string): Todo | null {
         const match = Todo.regexp.exec(line);
@@ -19,7 +19,8 @@ export class Todo {
                 match.groups!['prefix']!,
                 match.groups!['check']!,
                 match.groups!['suffix']!,
-                match.groups!['body']!);
+                match.groups!['body']!,
+            );
         }
         return null;
     }
@@ -29,7 +30,8 @@ export class Todo {
         private prefix: string,
         public check: string,
         private suffix: string,
-        public body: string) { }
+        public body: string,
+    ) {}
 
     public toMarkdown(): string {
         return `${this.prefix}${this.check}${this.suffix}${this.body}`;
@@ -53,12 +55,11 @@ export class Todo {
 }
 
 export type TodoEdit = {
-    checked?: boolean,
-    body?: string,
-}
+    checked?: boolean;
+    body?: string;
+};
 
 export class MarkdownDocument {
-
     private lines: Array<string> = [];
     private todos: Array<Todo> = [];
 
@@ -67,7 +68,7 @@ export class MarkdownDocument {
     }
 
     private parse(content: string) {
-        this.lines = content.split("\n");
+        this.lines = content.split('\n');
         this.todos = [];
         this.lines.forEach((line, lineIndex) => {
             const todo = Todo.parse(lineIndex, line);
@@ -102,7 +103,7 @@ export class MarkdownDocument {
     }
 
     public getTodo(lineIndex: number): Todo | null {
-        const found = this.todos.find(todo => todo.lineIndex === lineIndex);
+        const found = this.todos.find((todo) => todo.lineIndex === lineIndex);
         if (found == null) {
             return null;
         }
@@ -111,7 +112,7 @@ export class MarkdownDocument {
 
     private applyChanges() {
         // apply changes of TODO items to lines
-        this.todos.forEach(todo => {
+        this.todos.forEach((todo) => {
             this.lines[todo.lineIndex] = todo.toMarkdown();
         });
     }

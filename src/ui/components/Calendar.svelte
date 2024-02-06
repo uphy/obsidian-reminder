@@ -1,7 +1,7 @@
 <script lang="typescript">
-    import { Calendar } from "model/calendar";
-    import { DateTime } from "model/time";
-    import moment from "moment";
+    import { Calendar } from 'model/calendar';
+    import { DateTime } from 'model/time';
+    import moment from 'moment';
 
     export let calendar: Calendar = new Calendar();
     export let selectedDate: moment.Moment = moment();
@@ -9,11 +9,11 @@
         console.log(date);
     };
     function previousMonth() {
-        selectedDate.add(-1, "month");
+        selectedDate.add(-1, 'month');
         calendar = calendar.previousMonth();
     }
     function nextMonth() {
-        selectedDate.add(1, "month");
+        selectedDate.add(1, 'month');
         calendar = calendar.nextMonth();
     }
 </script>
@@ -21,8 +21,8 @@
 <div class="reminder-calendar">
     <div class="year-month">
         <span class="month-nav" on:click={() => previousMonth()}>&lt;</span>
-        <span class="month">{calendar.current.monthStart.format("MMM")}</span>
-        <span class="year">{calendar.current.monthStart.format("YYYY")}</span>
+        <span class="month">{calendar.current.monthStart.format('MMM')}</span>
+        <span class="year">{calendar.current.monthStart.format('YYYY')}</span>
         <span class="month-nav" on:click={() => nextMonth()}>&gt;</span>
     </div>
     <table>
@@ -44,15 +44,12 @@
                         <td
                             class="calendar-date"
                             class:is-selected={day.isToday(selectedDate)}
-                            class:other-month={!calendar.current.isThisMonth(
-                                day.date
-                            )}
+                            class:other-month={!calendar.current.isThisMonth(day.date)}
                             class:is-holiday={day.isHoliday()}
                             class:is-past={day.date.isBefore(calendar.today)}
-                            on:click={() =>
-                                onClick(new DateTime(day.date, false))}
+                            on:click={() => onClick(new DateTime(day.date, false))}
                         >
-                            {day.date.format("D")}
+                            {day.date.format('D')}
                         </td>
                     {/each}
                 </tr>

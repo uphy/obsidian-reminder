@@ -1,18 +1,20 @@
-import type { MarkdownDocument } from "model/format/markdown";
-import type { ReadOnlyReference } from "model/ref";
-import { Reminder } from "model/reminder";
-import { DateTime } from "model/time";
-import { Todo } from "./markdown";
+import type { MarkdownDocument } from 'model/format/markdown';
+import type { ReadOnlyReference } from 'model/ref';
+import { Reminder } from 'model/reminder';
+import { DateTime } from 'model/time';
+import { Todo } from './markdown';
+import { TasksPluginSymbols } from './reminder-tasks-plugin-symbols';
+import type { Symbol } from './splitter';
 
 export type ReminderEdit = {
-    time?: DateTime,
-    rawTime?: string,
-    checked?: boolean
-}
+    time?: DateTime;
+    rawTime?: string;
+    checked?: boolean;
+};
 export type ReminderInsertion = {
-    insertedLine: string,
-    caretPosition: number,
-}
+    insertedLine: string;
+    caretPosition: number;
+};
 
 export interface ReminderModel {
     getTitle(): string | null;
@@ -22,32 +24,41 @@ export interface ReminderModel {
     /** return false when this reminder doesn't support raw time. */
     setRawTime(rawTime: string): boolean;
     toMarkdown(): string;
-    /** 
-     * get the string index at the end of time part. 
+    /**
+     * get the string index at the end of time part.
      * this is used for decision of caret position after inserting reminder.
      */
     getEndOfTimeTextIndex(): number;
 }
 
 export class ReminderFormatParameterKey<T> {
-    static readonly now = new ReminderFormatParameterKey<DateTime>("now", DateTime.now());
-    static readonly useCustomEmojiForTasksPlugin = new ReminderFormatParameterKey<boolean>("useCustomEmojiForTasksPlugin", false);
-    static readonly removeTagsForTasksPlugin = new ReminderFormatParameterKey<boolean>("removeTagsForTasksPlugin", false);
-    static readonly linkDatesToDailyNotes = new ReminderFormatParameterKey<boolean>("linkDatesToDailyNotes", false);
-    static readonly strictDateFormat = new ReminderFormatParameterKey<boolean>("strictDateFormat", false);
-    constructor(public readonly key: string, public readonly defaultValue: T) {
-    }
+    static readonly now = new ReminderFormatParameterKey<DateTime>('now', DateTime.now());
+    static readonly useCustomEmojiForTasksPlugin = new ReminderFormatParameterKey<boolean>(
+        'useCustomEmojiForTasksPlugin',
+        false,
+    );
+    static readonly tasksPluginEmoji = new ReminderFormatParameterKey<Symbol>(
+        'tasksPluginEmoji',
+        TasksPluginSymbols.reminder,
+    );
+    static readonly removeTagsForTasksPlugin = new ReminderFormatParameterKey<boolean>(
+        'removeTagsForTasksPlugin',
+        false,
+    );
+    static readonly linkDatesToDailyNotes = new ReminderFormatParameterKey<boolean>('linkDatesToDailyNotes', false);
+    static readonly strictDateFormat = new ReminderFormatParameterKey<boolean>('strictDateFormat', false);
+    constructor(public readonly key: string, public readonly defaultValue: T) {}
 }
 
 type ReminderFormatParameterSource<T> = () => T;
 
 export class ReminderFormatConfig {
     private parameters: Map<string, ReminderFormatParameterSource<any>> = new Map();
-    constructor() { }
+    constructor() {}
 
     /**
      * Set parameter for this format.
-     * 
+     *
      * @param key parameter key
      */
     setParameter<T>(key: ReminderFormatParameterKey<T>, value: ReadOnlyReference<T>): void {
@@ -56,7 +67,7 @@ export class ReminderFormatConfig {
 
     /**
      * Set parameter for this format.
-     * 
+     *
      * @param key parameter key
      */
     setParameterFunc<T>(key: ReminderFormatParameterKey<T>, f: ReminderFormatParameterSource<T>): void {
@@ -68,25 +79,23 @@ export class ReminderFormatConfig {
     }
 
     getParameter<T>(key: ReminderFormatParameterKey<T>): T {
-        const value = this.parameters.get(key.key)
+        const value = this.parameters.get(key.key);
         if (value == null) {
             return key.defaultValue;
         }
         return value();
     }
-
 }
 
 export interface ReminderFormat {
-
     setConfig(config: ReminderFormatConfig): void;
     /**
      * Parse given line if possible.
      */
-    parse(doc: MarkdownDocument): Array<Reminder> | null
+    parse(doc: MarkdownDocument): Array<Reminder> | null;
     /**
      * Modify the given line if possible.
-     * 
+     *
      * @param doc Update target document.  In case of tasks plugin, we update Obsidian's file via tasks plugin command instead of this document.
      * @param reminder Reminder to edit.
      * @param edit defines how to edit
@@ -96,7 +105,7 @@ export interface ReminderFormat {
 
     /**
      * Append a reminder information to the given line.
-     * 
+     *
      * @param line line in editor
      * @param time time to append
      * @param insertAt position at `line` to insert reminder. (this is available only when the format supports insertion)
@@ -105,7 +114,6 @@ export interface ReminderFormat {
 }
 
 export abstract class TodoBasedReminderFormat<E extends ReminderModel> implements ReminderFormat {
-
     protected config: ReminderFormatConfig = new ReminderFormatConfig();
 
     setConfig(config: ReminderFormatConfig): void {
@@ -113,8 +121,9 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
     }
 
     parse(doc: MarkdownDocument): Reminder[] {
-        return doc.getTodos()
-            .map(todo => {
+        return doc
+            .getTodos()
+            .map((todo) => {
                 const parsed = this.parseValidReminder(todo);
                 if (parsed == null) {
                     return null;
@@ -135,7 +144,7 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
     async modify(doc: MarkdownDocument, reminder: Reminder, edit: ReminderEdit): Promise<boolean> {
         const todo = doc.getTodo(reminder.rowNumber);
         if (todo === null) {
-            console.warn("Not a todo: reminder=%o", reminder);
+            console.warn('Not a todo: reminder=%o', reminder);
             return false;
         }
         const parsed = this.parseValidReminder(todo);
@@ -211,11 +220,9 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
     protected isStrictDateFormat() {
         return this.config.getParameter(ReminderFormatParameterKey.strictDateFormat);
     }
-
 }
 
 export class CompositeReminderFormat implements ReminderFormat {
-
     private config?: ReminderFormatConfig;
     private formats: Array<ReminderFormat> = [];
 
@@ -225,7 +232,7 @@ export class CompositeReminderFormat implements ReminderFormat {
     }
 
     parse(doc: MarkdownDocument): Reminder[] {
-        const reminders: Array<Reminder> = []
+        const reminders: Array<Reminder> = [];
         for (const format of this.formats) {
             const parsed = format.parse(doc);
             if (parsed == null) {
@@ -255,7 +262,7 @@ export class CompositeReminderFormat implements ReminderFormat {
         if (this.config == null) {
             return;
         }
-        this.formats.forEach(f => f.setConfig(this.config!));
+        this.formats.forEach((f) => f.setConfig(this.config!));
     }
 
     appendReminder(line: string, time: DateTime): ReminderInsertion | null {
@@ -264,5 +271,4 @@ export class CompositeReminderFormat implements ReminderFormat {
         }
         return this.formats[0].appendReminder(line, time);
     }
-
 }

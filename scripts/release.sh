@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cd $(cd $(dirname $0)/..; pwd)
+
 VERSION=$1
 MINIMUM_OBSIDIAN_VERSION=1.0.3
 

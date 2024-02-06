@@ -9,6 +9,7 @@ Reminders defined in your all of the markdown files are listed like below:
 ::: tip
 - By default, reminder list view is displayed in the right pane of Obsidian app. You can move it by DnD.
 - If you can't find the view, run `Show reminders` from Obsidian's command palette
+- You can see reminder list in external services with [Service Integration](/guide/integration) feature.
 :::
 
 If you click the reminder, the file in which you defined the reminder will be opened.

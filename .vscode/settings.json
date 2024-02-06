@@ -1,4 +1,3 @@
 {
-    "java.saveActions.organizeImports": true,
-    "editor.formatOnSave": false
+    "editor.formatOnSave": true
 }

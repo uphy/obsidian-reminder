@@ -1,37 +1,36 @@
-import { DateTime } from "model/time";
-import moment from "moment";
-import type { Todo } from "./markdown";
-import { ReminderModel, TodoBasedReminderFormat } from "./reminder-base";
-import { escapeRegExpChars } from "./util";
+import { DateTime } from 'model/time';
+import moment from 'moment';
+import type { Todo } from './markdown';
+import { ReminderModel, TodoBasedReminderFormat } from './reminder-base';
+import { escapeRegExpChars } from './util';
 
 type KanbanSettingType = {
-    dateTrigger: string,
-    dateFormat: string,
-    timeTrigger: string,
-    timeFormat: string,
-    linkDateToDailyNote: boolean
-}
+    dateTrigger: string;
+    dateFormat: string;
+    timeTrigger: string;
+    timeFormat: string;
+    linkDateToDailyNote: boolean;
+};
 
 const kanbanSetting = new (class KanbanSetting {
-
     get dateTrigger() {
-        return this.get("date-trigger", "@");
+        return this.get('date-trigger', '@');
     }
 
     get dateFormat() {
-        return this.get("date-format", "YYYY-MM-DD");
+        return this.get('date-format', 'YYYY-MM-DD');
     }
 
     get timeTrigger() {
-        return this.get("time-trigger", "@@");
+        return this.get('time-trigger', '@@');
     }
 
     get timeFormat() {
-        return this.get("time-format", "HH:mm");
+        return this.get('time-format', 'HH:mm');
     }
 
     get linkDateToDailyNote() {
-        return this.get("link-date-to-daily-note", false);
+        return this.get('link-date-to-daily-note', false);
     }
 
     private get<E>(key: string, defaultValue: E): E {
@@ -42,7 +41,7 @@ const kanbanSetting = new (class KanbanSetting {
         if (!plugins) {
             return defaultValue;
         }
-        const plugin = plugins["obsidian-kanban"];
+        const plugin = plugins['obsidian-kanban'];
         if (!plugin) {
             return defaultValue;
         }
@@ -56,15 +55,14 @@ const kanbanSetting = new (class KanbanSetting {
         }
         return value;
     }
-});
+})();
 
 type KanbanSplitResult = {
-    title: string,
-    time?: DateTime
-}
+    title: string;
+    time?: DateTime;
+};
 
 export class KanbanDateTimeFormat {
-
     static instance: KanbanDateTimeFormat = new KanbanDateTimeFormat(kanbanSetting);
 
     private dateRegExp: RegExp;
@@ -95,47 +93,47 @@ export class KanbanDateTimeFormat {
             return datePart;
         }
 
-        return `${datePart} ${this.setting.timeTrigger}{${time.format(this.setting.timeFormat)}}`
+        return `${datePart} ${this.setting.timeTrigger}{${time.format(this.setting.timeFormat)}}`;
     }
 
     split(text: string, strictDateFormat?: boolean): KanbanSplitResult {
         const originalText = text;
-        let title: string;
         let date: string;
         let time: string | undefined;
 
         const dateMatch = this.dateRegExp.exec(text);
         if (dateMatch) {
-            date = dateMatch.groups!["date"]!;
-            text = text.replace(this.dateRegExp, "");
+            date = dateMatch.groups!['date']!;
+            text = text.replace(this.dateRegExp, '');
         } else {
             return { title: originalText };
         }
 
         const timeMatch = this.timeRegExp.exec(text);
         if (timeMatch) {
-            time = timeMatch.groups!["time"]!;
-            text = text.replace(this.timeRegExp, "");
+            time = timeMatch.groups!['time']!;
+            text = text.replace(this.timeRegExp, '');
         }
-        title = text.trim();
+        const title = text.trim();
 
         let parsedTime: DateTime;
         const strict = strictDateFormat ?? true;
         if (time) {
-            parsedTime = new DateTime(moment(`${date} ${time}`, `${this.setting.dateFormat} ${this.setting.timeFormat}`, strict), true)
+            parsedTime = new DateTime(
+                moment(`${date} ${time}`, `${this.setting.dateFormat} ${this.setting.timeFormat}`, strict),
+                true,
+            );
         } else {
-            parsedTime = new DateTime(moment(date, this.setting.dateFormat, strict), false)
+            parsedTime = new DateTime(moment(date, this.setting.dateFormat, strict), false);
         }
         if (parsedTime.isValid()) {
             return { title, time: parsedTime };
         }
         return { title: originalText };
     }
-
 }
 
 export class KanbanReminderModel implements ReminderModel {
-
     static parse(line: string, strictDateFormat?: boolean): KanbanReminderModel | null {
         const splitted = KanbanDateTimeFormat.instance.split(line, strictDateFormat);
         if (splitted.time == null) {
@@ -144,10 +142,7 @@ export class KanbanReminderModel implements ReminderModel {
         return new KanbanReminderModel(splitted.title, splitted.time);
     }
 
-    constructor(
-        public title: string,
-        public time: DateTime,
-    ) { }
+    constructor(public title: string, public time: DateTime) {}
 
     getTitle(): string {
         return this.title.trim();
@@ -175,11 +170,9 @@ export class KanbanReminderModel implements ReminderModel {
     toMarkdown(): string {
         return `${this.title.trim()} ${KanbanDateTimeFormat.instance.format(this.time)}`;
     }
-
 }
 
 export class KanbanReminderFormat extends TodoBasedReminderFormat<KanbanReminderModel> {
-
     public static readonly instance = new KanbanReminderFormat();
 
     parseReminder(todo: Todo): KanbanReminderModel | null {
@@ -192,4 +185,3 @@ export class KanbanReminderFormat extends TodoBasedReminderFormat<KanbanReminder
         return parsed;
     }
 }
-

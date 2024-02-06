@@ -79,6 +79,15 @@ module.exports = {
             'interop-kanban',
             'interop-nldates'
           ]
+        },
+        {
+          title: 'Service Integration',
+          collapsable: false,
+          children: [
+            'integration',
+            'integration-google-tasks',
+            'integration-google-calendar'
+          ]
         }
       ]
     }

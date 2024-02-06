@@ -21,6 +21,7 @@ When you [toggle checklist status](/guide/set-reminders.html#toggle-checklist-st
 
 ::: warning Note
 - You cannot change this time format for interoperability with Tasks Plugin
+- If you want to set reminder based on [scheduled(⏳) date](https://obsidian-tasks-group.github.io/obsidian-tasks/getting-started/dates/#-scheduled) instead of due date, select `⏳ Scheduled` of [Tasks Plugin Reminder Emoji](/setting/#tasks-plugin-reminder-emoji)
 - If you want to specify the reminder time separately from the due date in the Tasks Plugin, you can use [reminder emoji](#distinguish-due-date-and-reminder-date).
 :::
 
@@ -38,7 +39,7 @@ When you [toggle checklist status](/guide/set-reminders.html#toggle-checklist-st
 
 ## Distinguish due date and reminder date
 
-If you want to specify the reminder time separately from the due date in the Tasks Plugin, enable this [setting](/setting/#distinguish-between-reminder-date-and-due-date).
+If you want to specify the reminder time separately from the due date in the Tasks Plugin, select `⏰ Reminder Date` of [Tasks Plugin Reminder Emoji](/setting/#tasks-plugin-reminder-emoji).
 
 When you enable this option, the following task's reminder date will be 2021-09-16 (Not 2021-09-17).
 

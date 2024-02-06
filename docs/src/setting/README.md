@@ -78,6 +78,15 @@ You can change option which will be shown when you click `Remind Me Later` butto
     - Next Sunday/Monday/Tuesday/Wednesday/Thursday/Friday/Saturday/day/week/month/year
     - Tomorrow
 
+## Disable notification
+
+If you set this option to `ON`, the reminder will not show notification modal.
+
+- Type: `boolean`
+- Values:
+    - ON: Disable notification
+    - OFF: Enable notification (default)
+
 ## Use system notification
 
 Use system notification instead of builtin notification.
@@ -98,14 +107,15 @@ Enable support for [Tasks Plugin](https://github.com/schemar/obsidian-tasks)
     - ON: Enable Tasks plugin format
     - OFF: Disable Tasks plugin format (default)
 
-## Distinguish between reminder date and due date
+## Tasks Plugin Reminder Emoji
 
-Use custom emoji ⏰ instead of 📅 and distinguish between reminder date/time and Tasks Plugin's due date.
+Which emoji to use as reminder
 
-- Type: `boolean`
+- Type: `select`
 - Values:
-    - ON: Reminder is set using ⏰
-    - OFF: Reminder is set using 📅 (default)
+    - [`📅 Due`](https://obsidian-tasks-group.github.io/obsidian-tasks/getting-started/dates/#-due)
+    - [`⏳ Scheduled`](https://obsidian-tasks-group.github.io/obsidian-tasks/getting-started/dates/#-scheduled)
+    - `⏰ Reminder (use different emoji from Tasks plugin)`
 
 ## Remove tags from reminder title
 

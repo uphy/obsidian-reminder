@@ -31,6 +31,7 @@ osascript <<EOS
 EOS
 }
 
+cd $(cd $(dirname $0)/..; pwd)
 npm run build
 
 for target in $(cat deploy-targets.txt)
