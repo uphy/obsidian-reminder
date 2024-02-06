@@ -78,6 +78,15 @@ You can change option which will be shown when you click `Remind Me Later` butto
     - Next Sunday/Monday/Tuesday/Wednesday/Thursday/Friday/Saturday/day/week/month/year
     - Tomorrow
 
+## Disable notification
+
+If you set this option to `ON`, the reminder will not show notification modal.
+
+- Type: `boolean`
+- Values:
+    - ON: Disable notification
+    - OFF: Enable notification (default)
+
 ## Use system notification
 
 Use system notification instead of builtin notification.
