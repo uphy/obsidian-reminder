@@ -36,7 +36,7 @@ export class Todo {
     }
 
     public isChecked() {
-        return this.check === 'x';
+        return this.check === 'x' || this.check === '-';
     }
 
     public setChecked(checked: boolean) {
