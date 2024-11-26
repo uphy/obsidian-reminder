@@ -121,7 +121,13 @@ export class ReminderListItemViewProxy {
   private getViews() {
     return this.workspace
       .getLeavesOfType(VIEW_TYPE_REMINDER_LIST)
-      .map(leaf => leaf.view as ReminderListItemView);
+      .map((leaf) => {
+        if (leaf && leaf.view instanceof ReminderListItemView) {
+          return leaf.view as ReminderListItemView;
+        }
+        return null;
+      })
+      .filter((view) => view != null);
   }
 
   invalidate() {
