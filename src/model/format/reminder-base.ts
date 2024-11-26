@@ -7,7 +7,8 @@ import { Todo } from "./markdown";
 export type ReminderEdit = {
     time?: DateTime,
     rawTime?: string,
-    checked?: boolean
+    checked?: boolean,
+    shouldDelete?: boolean,
 }
 export type ReminderInsertion = {
     insertedLine: string,
@@ -140,6 +141,13 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
         }
         const parsed = this.parseValidReminder(todo);
         if (parsed === null) {
+            return false;
+        }
+
+        if (edit.shouldDelete) {
+            if (doc.removeTodo(reminder.rowNumber)) {
+              return true;
+            }
             return false;
         }
 
