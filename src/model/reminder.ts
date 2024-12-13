@@ -20,7 +20,7 @@ export class Reminder {
     public title: string,
     public time: DateTime,
     public rowNumber: number,
-    public done: boolean
+    public status: string,
   ) { }
 
   key() {

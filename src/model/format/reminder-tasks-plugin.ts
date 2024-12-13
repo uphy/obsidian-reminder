@@ -2,7 +2,7 @@ import type { MarkdownDocument, Todo } from "model/format/markdown";
 import { DateTime, DATE_TIME_FORMATTER } from "model/time";
 import moment, { Moment } from "moment";
 import { RRule } from "rrule";
-import { ReminderEdit, ReminderFormatParameterKey, ReminderModel, TodoBasedReminderFormat } from "./reminder-base";
+import { ReminderEdit, ReminderFormatParameterKey, ReminderModel, ReminderStatus, TodoBasedReminderFormat } from "./reminder-base";
 import { splitBySymbol, Symbol, Tokens } from "./splitter";
 
 function removeTags(text: string): string {
@@ -194,8 +194,8 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
         if (!super.modifyReminder(doc, todo, parsed, edit)) {
             return false;
         }
-        if (edit.checked !== undefined) {
-            if (edit.checked) {
+        if (edit.status !== undefined) {
+            if (edit.status == ReminderStatus.Done) {
                 const recurrence = parsed.getRecurrence();
                 if (recurrence !== null) {
 
@@ -227,7 +227,7 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
                         nextReminder.setTime(nextDueDate);
                     }
                     nextReminderTodo.body = nextReminder.toMarkdown();
-                    nextReminderTodo.setChecked(false);
+                    nextReminderTodo.setStatus(ReminderStatus.Todo);
                     doc.insertTodo(todo.lineIndex, nextReminderTodo);
                 }
                 parsed.setDoneDate(this.config.getParameter(ReminderFormatParameterKey.now));

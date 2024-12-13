@@ -63,7 +63,7 @@ export class PluginDataIO {
                 d.title,
                 DateTime.parse(d.time),
                 d.rowNumber,
-                false
+                " "
               )
           )
         );

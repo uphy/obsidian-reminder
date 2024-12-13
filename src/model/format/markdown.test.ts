@@ -1,4 +1,5 @@
 import { MarkdownDocument, Todo } from "./markdown";
+import { ReminderStatus } from "model/format/reminder-base";
 
 describe('MarkdownDocument', (): void => {
   test('getTodos()', (): void => {
@@ -28,7 +29,7 @@ describe('MarkdownDocument', (): void => {
       ]);
 
     todos[0]!.body = "New Task1 ";
-    todos[0]!.setChecked(true);
+    todos[0]!.setStatus(ReminderStatus.Done);
     expect(doc.toMarkdown()).toEqual(`# TODO
         
 - [x] New Task1 

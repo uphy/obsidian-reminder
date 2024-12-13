@@ -1,6 +1,6 @@
 import { DateTime } from "model/time";
 import moment from "moment";
-import { ReminderFormatParameterKey } from "./reminder-base";
+import { ReminderFormatParameterKey, ReminderStatus } from "./reminder-base";
 import { ReminderFormatTestUtil } from "./reminder-base.test";
 import { DefaultReminderFormat } from "./reminder-default";
 
@@ -46,7 +46,7 @@ describe('DefaultReminderFormat', (): void => {
         await util.testModify({
             inputMarkdown: "- [ ] Task1 (@2021-09-14)",
             edit: {
-                checked: true,
+                status: ReminderStatus.Done,
                 time: new DateTime(moment("2021-09-15 10:00"), true)
             },
             expectedMarkdown: "- [x] Task1 (@2021-09-15 10:00)",
@@ -59,7 +59,7 @@ describe('DefaultReminderFormat', (): void => {
         await util.testModify({
             inputMarkdown: "- [ ] Task1 (@[[2021-09-14]] 09:00)",
             edit: {
-                checked: true,
+                status: ReminderStatus.Done,
                 time: new DateTime(moment("2021-09-15 10:00"), true)
             },
             expectedMarkdown: "- [x] Task1 (@[[2021-09-15]] 10:00)",

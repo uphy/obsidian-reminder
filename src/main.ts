@@ -18,6 +18,7 @@ import { openDateTimeFormatChooser } from "ui/datetime-format-modal";
 import { buildCodeMirrorPlugin } from "ui/editor-extension";
 import { ReminderModal } from "ui/reminder";
 import { ReminderListItemViewProxy } from "ui/reminder-list";
+import { ReminderStatus } from "model/format/reminder-base";
 import { OkCancel, showOkCancelDialog } from "ui/util";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 
@@ -297,13 +298,13 @@ export default class ReminderPlugin extends Plugin {
         console.info("Remind me later: time=%o", time);
         reminder.time = time;
         reminder.muteNotification = false;
-        this.remindersController.updateReminder(reminder, false);
+        this.remindersController.updateReminder(reminder, ReminderStatus.Todo);
         this.pluginDataIO.save(true);
       },
       () => {
         console.info("done");
         reminder.muteNotification = false;
-        this.remindersController.updateReminder(reminder, true);
+        this.remindersController.updateReminder(reminder, ReminderStatus.Done);
         this.reminders.removeReminder(reminder);
         this.pluginDataIO.save(true);
       },

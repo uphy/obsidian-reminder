@@ -9,6 +9,7 @@ import { SETTINGS } from "settings";
 import { Content } from "model/content";
 import type { Reminders, Reminder } from "model/reminder";
 import type { ReminderListItemViewProxy } from "ui/reminder-list";
+import { ReminderStatus } from "model/format/reminder-base";
 
 export class RemindersController {
 
@@ -121,7 +122,7 @@ export class RemindersController {
     this.reloadUI();
   }
 
-  async updateReminder(reminder: Reminder, checked: boolean) {
+  async updateReminder(reminder: Reminder, status: ReminderStatus) {
     const file = this.vault.getAbstractFileByPath(reminder.file);
     if (!(file instanceof TFile)) {
       console.error("file is not instance of TFile: %o", file);
@@ -129,7 +130,7 @@ export class RemindersController {
     }
     const content = new Content(file.path, await this.vault.read(file));
     await content.updateReminder(reminder, {
-      checked,
+      status,
       time: reminder.time
     });
     await this.vault.modify(file, content.getContent());
@@ -144,7 +145,7 @@ export class RemindersController {
     const reminder = content.getReminders(false).find(r => r.rowNumber === lineNumber);
     if (reminder) {
       await content.updateReminder(reminder, {
-        checked: !reminder.done
+        status: reminder.status === ReminderStatus.Done ? ReminderStatus.Todo : ReminderStatus.Done
       });
     } else {
       const todo = content.getTodos().find(t => t.lineIndex === lineNumber);
@@ -152,7 +153,11 @@ export class RemindersController {
       if (!todo) {
         return;
       }
-      todo.setChecked(!todo.isChecked());
+      if (todo.getStatus() === ReminderStatus.Done) {
+        todo.setStatus(ReminderStatus.Todo);
+      } else {
+        todo.setStatus(ReminderStatus.Done);
+      }
     }
     await this.vault.modify(file, content.getContent());
   }
