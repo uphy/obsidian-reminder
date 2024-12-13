@@ -1,4 +1,4 @@
-import { changeReminderFormat, kanbanPluginReminderFormat, ReminderFormatType, ReminderFormatTypes, reminderPluginReminderFormat, setReminderFormatConfig, tasksPluginReminderFormat } from "model/format";
+import { changeReminderFormat, kanbanPluginReminderFormat, ReminderFormatType, ReminderFormatTypes, reminderPluginReminderFormat, setReminderFormatConfig, tasksPluginReminderFormat, dataviewPluginReminderFormat } from "model/format";
 import { ReminderFormatConfig, ReminderFormatParameterKey } from "model/format/reminder-base";
 import { LatersSerde, RawSerde, ReminderFormatTypeSerde, SettingModel, SettingTabModel, TimeSerde } from "model/settings";
 import { DateTime, Later, Time } from "model/time";
@@ -183,6 +183,11 @@ class Settings {
         reminderFormatSettings.enableKanbanPluginReminderFormat,
       );
     this.settings
+      .newGroup("Reminder Format - Dataview Plugin")
+      .addSettings(
+        reminderFormatSettings.enableDataviewPluginReminderFormat,
+      );
+    this.settings
       .newGroup("Advanced")
       .addSettings(
         this.editDetectionSec,
@@ -211,11 +216,13 @@ class ReminderFormatSettings {
   enableReminderPluginReminderFormat: SettingModel<boolean, boolean>;
   enableTasksPluginReminderFormat: SettingModel<boolean, boolean>;
   enableKanbanPluginReminderFormat: SettingModel<boolean, boolean>;
+  enableDataviewPluginReminderFormat: SettingModel<boolean, boolean>;
 
   constructor(private settings: SettingTabModel) {
     this.enableReminderPluginReminderFormat = this.createUseReminderFormatSetting(reminderPluginReminderFormat);
     this.enableTasksPluginReminderFormat = this.createUseReminderFormatSetting(tasksPluginReminderFormat);
     this.enableKanbanPluginReminderFormat = this.createUseReminderFormatSetting(kanbanPluginReminderFormat);
+    this.enableDataviewPluginReminderFormat = this.createUseReminderFormatSetting(dataviewPluginReminderFormat);
   }
 
   private createUseReminderFormatSetting(format: ReminderFormatType) {
