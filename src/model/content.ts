@@ -1,9 +1,10 @@
 import { MarkdownDocument, modifyReminder, parseReminder, ReminderEdit } from "model/format";
 import type { Reminder } from "model/reminder";
+import { ReminderStatus } from "./format/reminder-base";
 import type { Todo } from "./format/markdown";
 
 export type ReminderTodoEdit = ReminderEdit & {
-  checked?: boolean
+  status?: ReminderStatus;
 }
 
 export class Content {
@@ -16,9 +17,9 @@ export class Content {
   public getReminders(doneOnly: boolean = true): Array<Reminder> {
     const reminders = parseReminder(this.doc);
     if (!doneOnly) {
-      return reminders;
+      return reminders.filter(reminder => reminder.status != ReminderStatus.Done && reminder.status != ReminderStatus.Cancelled);
     }
-    return reminders.filter(reminder => !reminder.done);
+    return reminders.filter(reminder => reminder.status == ReminderStatus.Done);
   }
 
   public getTodos(): Array<Todo> {

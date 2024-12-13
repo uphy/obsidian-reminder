@@ -2,7 +2,7 @@ import { MarkdownDocument } from "model/format/markdown";
 import { TasksPluginFormat, TasksPluginReminderModel } from "model/format/reminder-tasks-plugin";
 import { DateTime } from "model/time";
 import moment from "moment";
-import { ReminderFormatConfig, ReminderFormatParameterKey } from "./reminder-base";
+import { ReminderFormatConfig, ReminderFormatParameterKey, ReminderStatus } from "./reminder-base";
 
 describe('TasksPluginReminderLine', (): void => {
     test('parse()', (): void => {
@@ -132,6 +132,6 @@ async function testModify({
     if (reminders.length === 0 && expectedMarkdown === undefined) {
         return;
     }
-    await sut.modify(doc, reminders[0]!, { checked: true })
+    await sut.modify(doc, reminders[0]!, { status: ReminderStatus.Done })
     expect(doc.toMarkdown()).toBe(expectedMarkdown);
 }

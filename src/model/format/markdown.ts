@@ -3,13 +3,15 @@
  * 
  * This class shouldn't break original line.
  */
+import type { ReminderStatus } from "./reminder-base";
+
 export class Todo {
     // e.g: '  - [x] hello'
     // prefix: '  - [ '
-    // check: 'x'
+    // status: 'x' or ' ' or '/' or '-'
     // suffix: '] '
     // body: hello
-    private static readonly regexp = /^(?<prefix>((> ?)*)?\s*[\-\*][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
+    private static readonly regexp = /^(?<prefix>((> ?)*)?\s*[\-\*][ ]+\[)(?<status>.)(?<suffix>\]\s+)(?<body>.*)$/;
 
     static parse(lineIndex: number, line: string): Todo | null {
         const match = Todo.regexp.exec(line);
@@ -17,7 +19,7 @@ export class Todo {
             return new Todo(
                 lineIndex,
                 match.groups!['prefix']!,
-                match.groups!['check']!,
+                match.groups!['status']!,
                 match.groups!['suffix']!,
                 match.groups!['body']!);
         }
@@ -27,24 +29,24 @@ export class Todo {
     constructor(
         public lineIndex: number,
         private prefix: string,
-        public check: string,
+        public status: string,
         private suffix: string,
         public body: string) { }
 
     public toMarkdown(): string {
-        return `${this.prefix}${this.check}${this.suffix}${this.body}`;
+        return `${this.prefix}${this.status}${this.suffix}${this.body}`;
     }
 
-    public isChecked() {
-        return this.check === 'x';
-    }
-
-    public setChecked(checked: boolean) {
-        this.check = checked ? 'x' : ' ';
+    public setStatus(status: ReminderStatus) {
+        this.status = <string> status;
     }
 
     public getHeaderLength() {
-        return this.prefix.length + this.check.length + this.suffix.length;
+        return this.prefix.length + this.status.length + this.suffix.length;
+    }
+
+    public getStatus() {
+        return <ReminderStatus> this.status;
     }
 
     public clone() {
@@ -53,7 +55,7 @@ export class Todo {
 }
 
 export type TodoEdit = {
-    checked?: boolean,
+    status?: string,
     body?: string,
 }
 

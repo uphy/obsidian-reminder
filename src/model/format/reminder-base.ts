@@ -7,11 +7,18 @@ import { Todo } from "./markdown";
 export type ReminderEdit = {
     time?: DateTime,
     rawTime?: string,
-    checked?: boolean
+    status?: ReminderStatus,
 }
 export type ReminderInsertion = {
     insertedLine: string,
     caretPosition: number,
+}
+
+export enum ReminderStatus {
+    Todo = " ",
+    Done = "x",
+    InProgress = "/",
+    Cancelled = "-",
 }
 
 export interface ReminderModel {
@@ -127,7 +134,7 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
                 if (time == null) {
                     return null;
                 }
-                return new Reminder(doc.file, title, time, todo.lineIndex, todo.isChecked());
+                return new Reminder(doc.file, title, time, todo.lineIndex, todo.getStatus());
             })
             .filter((reminder): reminder is Reminder => reminder != null);
     }
@@ -174,8 +181,8 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel> implement
         } else if (edit.time !== undefined) {
             parsed.setTime(edit.time);
         }
-        if (edit.checked !== undefined) {
-            todo.setChecked(edit.checked);
+        if (edit.status !== undefined) {
+            todo.setStatus(edit.status);
         }
         return true;
     }
