@@ -104,3 +104,11 @@ After that, the date part of the reminder will become the link.
 ::: tip
 You need to change existing reminder date manually.
 :::
+
+## Canceling a reminder
+
+You can create a TODO item that is not a reminder by formatting it as `- [-] xxx`.
+
+```markdown
+- [-] Task 1 (@2024-12-24)
+```
