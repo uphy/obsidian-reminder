@@ -10,6 +10,7 @@ export class Todo {
     // suffix: '] '
     // body: hello
     private static readonly regexp = /^(?<prefix>((> ?)*)?\s*[\-\*][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
+    private static readonly checkedStatuses = ['x', '-'];
 
     static parse(lineIndex: number, line: string): Todo | null {
         const match = Todo.regexp.exec(line);
@@ -36,7 +37,7 @@ export class Todo {
     }
 
     public isChecked() {
-        return this.check === 'x';
+        return Todo.checkedStatuses.some(status => status === this.check);
     }
 
     public setChecked(checked: boolean) {
