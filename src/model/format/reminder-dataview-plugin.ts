@@ -6,10 +6,7 @@ import { escapeRegExpChars } from "./util";
 
 type DataviewSettingType = {
     dateTrigger: string,
-    dateFormat: string,
-    timeTrigger: string,
-    timeFormat: string,
-    linkDateToDailyNote: boolean
+    dateFormat: string
 }
 
 const dataviewSetting = new (class DataviewSetting {
@@ -20,18 +17,6 @@ const dataviewSetting = new (class DataviewSetting {
 
     get dateFormat() {
         return this.get("date-format", "YYYY-MM-DD");
-    }
-
-    get timeTrigger() {
-        return this.get("time-trigger", "time:: ");
-    }
-
-    get timeFormat() {
-        return this.get("time-format", "HH:mm");
-    }
-
-    get linkDateToDailyNote() {
-        return this.get("link-date-to-daily-note", false);
     }
 
     private get<E>(key: string, defaultValue: E): E {
@@ -68,43 +53,19 @@ export class DataviewDateTimeFormat {
     static instance: DataviewDateTimeFormat = new DataviewDateTimeFormat(dataviewSetting);
 
     private dateRegExp: RegExp;
-    private timeRegExp: RegExp;
 
     constructor(private setting: DataviewSettingType) {
-        let dateRegExpStr: string;
-        if (setting.linkDateToDailyNote) {
-            dateRegExpStr = `\\[${escapeRegExpChars(this.setting.dateTrigger)}\\[\\[(?<date>.+?)\\]\\]\\]`;
-        } else {
-            dateRegExpStr = `\\[${escapeRegExpChars(this.setting.dateTrigger)}(?<date>.+?)\\]`;
-        }
- 
-        const timeRegExpStr = `\\[${escapeRegExpChars(this.setting.timeTrigger)}(?<time>.+?)\\]`;
-        this.dateRegExp = new RegExp(dateRegExpStr);
-        this.timeRegExp = new RegExp(timeRegExpStr);
+        this.dateRegExp = new RegExp(`\\[${escapeRegExpChars(this.setting.dateTrigger)}(?<date>.+?)\\]`);
     }
 
     format(time: DateTime): string {
-        // NOTE: The Dataview task format doesn't currently support times, but we'll parse them anyway.
-        let datePart: string;
-
-        if (this.setting.linkDateToDailyNote) {
-            datePart = `[${this.setting.dateTrigger}[[${time.format(this.setting.dateFormat)}]]]`;
-        } else {
-            datePart = `[${this.setting.dateTrigger}${time.format(this.setting.dateFormat)}]`;    
-        }
-
-        if (!time.hasTimePart) {
-            return datePart;
-        }
-
-        return `${datePart} [${this.setting.timeTrigger}${time.format(this.setting.timeFormat)}]`
+        return `[${this.setting.dateTrigger}${time.format(this.setting.dateFormat)}]`;
     }
 
     split(text: string, strictDateFormat?: boolean): DataviewSplitResult {
         const originalText = text;
         let title: string;
         let date: string;
-        let time: string | undefined;
 
         const dateMatch = this.dateRegExp.exec(text);
         if (dateMatch) {
@@ -113,21 +74,12 @@ export class DataviewDateTimeFormat {
         } else {
             return { title: originalText };
         }
-
-        const timeMatch = this.timeRegExp.exec(text);
-        if (timeMatch) {
-            time = timeMatch.groups!["time"]!;
-            text = text.replace(this.timeRegExp, "");
-        }
+        
         title = text.trim();
 
         let parsedTime: DateTime;
         const strict = strictDateFormat ?? true;
-        if (time) {
-            parsedTime = new DateTime(moment(`${date} ${time}`, `${this.setting.dateFormat} ${this.setting.timeFormat}`, strict), true)
-        } else {
-            parsedTime = new DateTime(moment(date, this.setting.dateFormat, strict), false)
-        }
+        parsedTime = new DateTime(moment(date, this.setting.dateFormat, strict), false)
         if (parsedTime.isValid()) {
             return { title, time: parsedTime };
         }
@@ -156,9 +108,6 @@ export class DataviewReminderModel implements ReminderModel {
     }
 
     getTime(): DateTime | null {
-        if (this.time) {
-            return this.time;
-        }
         return null;
     }
 
