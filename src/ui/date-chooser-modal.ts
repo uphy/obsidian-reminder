@@ -32,7 +32,7 @@ class DateTimeChooserModal extends Modal {
             target: targetElement,
             props: {
                 onSelect: (time: moment.Moment) => {
-                    this.select(new DateTime(time, false));
+                    this.select(new DateTime(time, true));
                 },
                 reminders: this.reminders,
                 component: undefined

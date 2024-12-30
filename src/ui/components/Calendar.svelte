@@ -9,8 +9,11 @@
 
     function onClick(clicked: moment.Moment){
         value = clicked;
+    }
+    function onDoubleClick(clicked: moment.Moment){
+        value = clicked;
         dispatchSelect();
-    };
+    }
     function previousMonth() {
         value = value.add(-1, "month");
     }
@@ -23,24 +26,28 @@
     function handleKeyDown(event: KeyboardEvent) {
         if (event.key === "ArrowLeft" || (event.ctrlKey && event.key === "B")) {
             value = value.add(-1, "day");
+            event.preventDefault();
         } else if (event.key === "ArrowRight" || (event.ctrlKey && event.key === "F")) {
             value = value.add(1, "day");
+            event.preventDefault();
         } else if (event.key === "ArrowUp" || (event.ctrlKey && event.key === "P")) {
             value = value.add(-7, "day");
         } else if (event.key === "ArrowDown" || (event.ctrlKey && event.key === "N")) {
             value = value.add(7, "day");
+            event.preventDefault();
         } else if (event.key === "Enter") {
             dispatchSelect();
+            event.preventDefault();
         }
     }
 </script>
 <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
-<div class="reminder-calendar" tabindex="0" on:focus={()=>{dispatch("focus")}} on:blur={()=>{dispatch("blur")}} on:keydown|preventDefault={handleKeyDown}>
+<div class="reminder-calendar" tabindex="0" on:focus={()=>{dispatch("focus")}} on:blur={()=>{dispatch("blur")}} on:keydown={handleKeyDown}>
     <div class="year-month">
-        <button class="month-nav" on:click={() => previousMonth()}>&lt;</button>
+        <button tabindex="-1" class="month-nav" on:click={() => previousMonth()}>&lt;</button>
         <span class="month">{calendar.current.monthStart.format("MMM")}</span>
         <span class="year">{calendar.current.monthStart.format("YYYY")}</span>
-        <button class="month-nav" on:click={() => nextMonth()}>&gt;</button>
+        <button tabindex="-1" class="month-nav" on:click={() => nextMonth()}>&gt;</button>
     </div>
     <table>
         <thead>
@@ -60,6 +67,7 @@
                     {#each week.days as day}
                         <td>
                             <button 
+                                tabindex="-1"
                                 class="calendar-date"
                                 class:is-selected={day.isToday(value)}
                                 class:other-month={!calendar.current.isThisMonth(
@@ -67,7 +75,8 @@
                                 )}
                                 class:is-holiday={day.isHoliday()}
                                 class:is-past={day.date.isBefore(calendar.today)}
-                                on:click={() => onClick(day.date)}>
+                                on:click={() => onClick(day.date)}
+                                on:dblclick={() => onDoubleClick(day.date)}>
                                 {day.date.format("D")}
                             </button>
                         </td>
@@ -87,7 +96,12 @@
         box-shadow: var(--input-shadow)
     }
     .reminder-calendar {
+        display: inline-block;
         padding: 0.5rem;
+    }
+    .reminder-calendar:focus {
+        border-radius: var(--input-radius);
+        box-shadow: 0 0 0px 1px var(--background-modifier-border-focus);
     }
     .reminder-calendar .year-month {
         font-size: 1rem;
