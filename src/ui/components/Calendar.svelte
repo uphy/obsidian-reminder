@@ -5,7 +5,7 @@
 
     export let value: moment.Moment = moment();
     const dispatch = createEventDispatcher();
-    $: calendar = new Calendar(moment(), value);
+    $: calendar = new Calendar(moment().startOf("day"), value.startOf("day"));
 
     function onClick(clicked: moment.Moment){
         value = clicked;
