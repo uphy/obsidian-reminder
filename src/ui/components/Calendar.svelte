@@ -37,10 +37,10 @@
 <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
 <div class="reminder-calendar" tabindex="0" on:focus={()=>{dispatch("focus")}} on:blur={()=>{dispatch("blur")}} on:keydown|preventDefault={handleKeyDown}>
     <div class="year-month">
-        <span class="month-nav" on:click={() => previousMonth()}>&lt;</span>
+        <button class="month-nav" on:click={() => previousMonth()}>&lt;</button>
         <span class="month">{calendar.current.monthStart.format("MMM")}</span>
         <span class="year">{calendar.current.monthStart.format("YYYY")}</span>
-        <span class="month-nav" on:click={() => nextMonth()}>&gt;</span>
+        <button class="month-nav" on:click={() => nextMonth()}>&gt;</button>
     </div>
     <table>
         <thead>
@@ -55,20 +55,21 @@
             </tr>
         </thead>
         <tbody>
-            {#each calendar.current.weeks as week, i}
+            {#each calendar.current.weeks as week}
                 <tr>
-                    {#each week.days as day, i}
-                        <td
-                            class="calendar-date"
-                            class:is-selected={day.isToday(value)}
-                            class:other-month={!calendar.current.isThisMonth(
-                                day.date
-                            )}
-                            class:is-holiday={day.isHoliday()}
-                            class:is-past={day.date.isBefore(calendar.today)}
-                            on:click={() => onClick(day.date)}
-                        >
-                            {day.date.format("D")}
+                    {#each week.days as day}
+                        <td>
+                            <button 
+                                class="calendar-date"
+                                class:is-selected={day.isToday(value)}
+                                class:other-month={!calendar.current.isThisMonth(
+                                    day.date
+                                )}
+                                class:is-holiday={day.isHoliday()}
+                                class:is-past={day.date.isBefore(calendar.today)}
+                                on:click={() => onClick(day.date)}>
+                                {day.date.format("D")}
+                            </button>
                         </td>
                     {/each}
                 </tr>
@@ -78,6 +79,13 @@
 </div>
 
 <style>
+    button {
+        background-color: transparent;
+        box-shadow: none;
+    }
+    button:hover {
+        box-shadow: var(--input-shadow)
+    }
     .reminder-calendar {
         padding: 0.5rem;
     }
@@ -107,16 +115,22 @@
         min-width: 2rem;
         max-width: 2rem;
     }
+    .reminder-calendar .calendar-date > button{
+        padding: 0;
+        width: 100%;
+    }
     .reminder-calendar .calendar-date:hover {
         background-color: var(--background-secondary-alt);
+        border-radius: var(--input-radius);
     }
     .reminder-calendar .is-selected {
         background-color: var(--text-accent) !important;
         color: var(--text-normal) !important;
+        border-radius: var(--input-radius);
     }
     .reminder-calendar .other-month,
     .reminder-calendar .is-past,
     .reminder-calendar .is-holiday {
-        color: var(--text-faint);
+        color: var(--text-faint) !important;
     }
 </style>
