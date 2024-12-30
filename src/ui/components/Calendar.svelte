@@ -1,24 +1,41 @@
 <script lang="typescript">
     import { Calendar } from "model/calendar";
-    import { DateTime } from "model/time";
     import moment from "moment";
+    import { createEventDispatcher } from 'svelte';
 
-    export let calendar: Calendar = new Calendar();
-    export let selectedDate: moment.Moment = moment();
-    export let onClick: (time: DateTime) => void = (date) => {
-        console.log(date);
+    export let value: moment.Moment = moment();
+    const dispatch = createEventDispatcher();
+    $: calendar = new Calendar(moment(), value);
+
+    function onClick(clicked: moment.Moment){
+        value = clicked;
+        dispatchSelect();
     };
     function previousMonth() {
-        selectedDate.add(-1, "month");
-        calendar = calendar.previousMonth();
+        value = value.add(-1, "month");
     }
     function nextMonth() {
-        selectedDate.add(1, "month");
-        calendar = calendar.nextMonth();
+        value = value.add(1, "month");
+    }
+    function dispatchSelect() {
+        dispatch("select", value);
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+        if (event.key === "ArrowLeft" || (event.ctrlKey && event.key === "B")) {
+            value = value.add(-1, "day");
+        } else if (event.key === "ArrowRight" || (event.ctrlKey && event.key === "F")) {
+            value = value.add(1, "day");
+        } else if (event.key === "ArrowUp" || (event.ctrlKey && event.key === "P")) {
+            value = value.add(-7, "day");
+        } else if (event.key === "ArrowDown" || (event.ctrlKey && event.key === "N")) {
+            value = value.add(7, "day");
+        } else if (event.key === "Enter") {
+            dispatchSelect();
+        }
     }
 </script>
-
-<div class="reminder-calendar">
+<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+<div class="reminder-calendar" tabindex="0" on:focus={()=>{dispatch("focus")}} on:blur={()=>{dispatch("blur")}} on:keydown|preventDefault={handleKeyDown}>
     <div class="year-month">
         <span class="month-nav" on:click={() => previousMonth()}>&lt;</span>
         <span class="month">{calendar.current.monthStart.format("MMM")}</span>
@@ -43,14 +60,13 @@
                     {#each week.days as day, i}
                         <td
                             class="calendar-date"
-                            class:is-selected={day.isToday(selectedDate)}
+                            class:is-selected={day.isToday(value)}
                             class:other-month={!calendar.current.isThisMonth(
                                 day.date
                             )}
                             class:is-holiday={day.isHoliday()}
                             class:is-past={day.date.isBefore(calendar.today)}
-                            on:click={() =>
-                                onClick(new DateTime(day.date, false))}
+                            on:click={() => onClick(day.date)}
                         >
                             {day.date.format("D")}
                         </td>

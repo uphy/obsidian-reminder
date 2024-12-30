@@ -52,6 +52,8 @@ export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
                             } catch (ex) {
                                 console.error(ex);
                             }
+                        }).catch(() => {
+                            /* do nothing on cancel */
                         });
                     }
                 });

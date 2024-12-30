@@ -5,10 +5,10 @@
   import Markdown from "./Markdown.svelte";
 
   export let reminders: Array<Reminder>;
-  export let component: Component;
+  export let component: Component|undefined;
   export let onOpenReminder: (reminder: Reminder) => void = () => {};
   export let timeToString = (time: DateTime) => time.format("HH:MM");
-  export let generateLink: (reminder: Reminder) => string;
+  export let generateLink: ((reminder: Reminder) => string) = () => "";
 </script>
 
 <div class="reminder-group">
