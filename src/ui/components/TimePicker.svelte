@@ -66,14 +66,7 @@
 
 <style>
   .time-picker {
-    background-color: transparent;
-    display: inline-block;
-    color: var(--text-muted);
-    overflow-y: auto; /* スクロールバーを自動で表示 */
-  }
-  .time-picker option:checked {
-    background-color: var(--background-primary-alt);
-    color: var(--text-accent);
+    padding: 0 0.5rem;
   }
   select.time-picker:focus {
     box-shadow: 0 0 0px 1px var(--background-modifier-border-focus);

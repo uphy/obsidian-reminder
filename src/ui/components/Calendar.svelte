@@ -122,6 +122,7 @@
             {/each}
         </tbody>
     </table>
+    <slot name="footer" />
 </div>
 
 <style>

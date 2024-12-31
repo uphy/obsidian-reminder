@@ -25,19 +25,21 @@
 </script>
 
 <div class="dtchooser">
+    <CalendarView bind:value={date} on:select={()=>handleSelect()}>
+        <div slot="footer">
+            <hr class="dtchooser-divider" />
+            <ReminderListByDate
+                reminders={reminders.byDate(new DateTime(date, false))}
+                {component}
+            />
+        </div>
+    </CalendarView>
     <div class="dtchooser-wrapper">
-        <CalendarView bind:value={date} on:select={()=>handleSelect()} />
         <div class="dtchooser-time-picker">
-            <span>⏰</span>
+            <span>Time: </span>
             <TimePicker bind:value={time} step={15} on:select={()=>{handleSelect()}} />
         </div>
-    </div>
-    <hr class="dtchooser-divider" />
-    <div class="reminder-list-container">
-        <ReminderListByDate
-            reminders={reminders.byDate(new DateTime(date, false))}
-            {component}
-        />
+        <button class="mod-cta" on:click={handleSelect}>OK</button>
     </div>
 </div>
 
@@ -51,22 +53,18 @@
     }
     .dtchooser-wrapper {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
     }
     .dtchooser-time-picker {
-        display: flex;
+        display: inline-flex;
         flex-direction: row;
-        justify-content: right;
         align-items: center;
-        padding-top: 0.5rem;
     }
     .dtchooser-time-picker span {
         color: var(--text-muted);
         margin-right: 0.5rem;
-    }
-    .reminder-list-container {
-        padding: 0.5rem;
-        max-width: 16rem;
     }
 </style>
