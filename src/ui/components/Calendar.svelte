@@ -2,6 +2,7 @@
     import { Calendar } from "model/calendar";
     import moment from "moment";
     import { createEventDispatcher } from 'svelte';
+    import { TimedInputHandler } from "./timed-input-handler";
 
     export let value: moment.Moment = moment();
     const dispatch = createEventDispatcher();
@@ -23,7 +24,43 @@
     function dispatchSelect() {
         dispatch("select", value);
     }
+    const timedInputHandler = new TimedInputHandler();
     function handleKeyDown(event: KeyboardEvent) {
+        if (event.key >= "0" && event.key <= "9") {
+            event.preventDefault();
+            let input = timedInputHandler.handle(event.key);
+            switch(input.length){
+                case 1:
+                    {
+                        const date = parseInt(input);
+                        if (date > 0) {
+                            value = value.set("date", date);
+                        }
+                        break;
+                    }
+                case 2:
+                    if (input.startsWith("0")) {
+                        input = input.slice(1);
+                    }
+                    value = value.set("date", parseInt(input));
+                    break;
+                case 4:
+                    let month = input.slice(0, 2);
+                    let date = input.slice(2, 4);
+                    if (month.startsWith("0")) {
+                        month = month.slice(1);
+                    }
+                    if (date.startsWith("0")) {
+                        date = date.slice(1);
+                    }
+                    value = value.set("month", parseInt(month) - 1);
+                    value = value.set("date", parseInt(date));
+                    break;
+            }
+            return;
+        }
+        timedInputHandler.clear();
+
         if (event.key === "ArrowLeft" || (event.ctrlKey && event.key === "B")) {
             value = value.add(-1, "day");
             event.preventDefault();
