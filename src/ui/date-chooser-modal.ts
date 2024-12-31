@@ -31,8 +31,8 @@ class DateTimeChooserModal extends Modal {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             target: targetElement,
             props: {
-                onSelect: (time: moment.Moment) => {
-                    this.select(new DateTime(time, true));
+                onSelect: (time: DateTime) => {
+                    this.select(time);
                 },
                 reminders: this.reminders,
                 component: undefined

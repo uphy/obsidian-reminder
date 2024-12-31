@@ -10,17 +10,22 @@
     export let component: Component|undefined;
     export let date = moment();
     export let reminders: Reminders;
-    export let onSelect: (time: moment.Moment) => void;    
+    export let onSelect: (time: DateTime) => void;    
     let time = "10:00";
+    let timeIsFocused = false;
 
     function handleSelect() {
         const [hour, minute] = time.split(":");
         const selection = date.clone();
-        selection.set({
-            hour: parseInt(hour!),
-            minute: parseInt(minute!),
-        });
-        onSelect(selection);
+        if (timeIsFocused) {
+            selection.set({
+                hour: parseInt(hour!),
+                minute: parseInt(minute!),
+            });
+            onSelect(new DateTime(selection, true))
+        } else {
+            onSelect(new DateTime(selection, false));
+        }
     }
 </script>
 
@@ -37,7 +42,7 @@
     <div class="dtchooser-wrapper">
         <div class="dtchooser-time-picker">
             <span>Time: </span>
-            <TimePicker bind:value={time} step={15} on:select={()=>{handleSelect()}} />
+            <TimePicker bind:value={time} step={15} on:select={()=>{handleSelect()}} on:focus={()=>{timeIsFocused = true}} />
         </div>
         <button class="mod-cta" on:click={handleSelect}>OK</button>
     </div>
