@@ -11,7 +11,7 @@
     export let date = moment();
     export let reminders: Reminders;
     export let onSelect: (time: DateTime) => void;    
-    let time = "10:00";
+    let time = reminders.reminderTime?.value.toString() ?? "10:00";
     let timeIsFocused = false;
 
     function handleSelect() {
