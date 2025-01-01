@@ -31,23 +31,36 @@ See following settings.
 
 ## Reminder date input support
 
-To make it easy to set reminder times, this plugin provides calendar popup.  
+To make it easy to set reminder times, this plugin provides calendar/time picker popup.  
 By clicking on the calendar, the date will be entered into the markdown file.
+Also, you can set reminder time with time picker.
 
 ::: tip
-You can change the format by [primary reminder format](/setting/#primary-reminder-format) setting.
+
+- You can change the format by [primary reminder format](/setting/#primary-reminder-format) setting.
+- Time step in time picker is set by [Reminder Time Step](/setting/#reminder-time-step) setting.
+
 :::
 
 There are multiple ways to display the calendar popup.
+
 ### Key input trigger (Desktop only)
 
-When you input `(@` in TODO list item, you will see calendar popup.  
+When you input `(@` in TODO list item, you will see calendar/time picker popup.  
 
 <img :src="$withBase('/images/reminder-input-support.png')" width="400px">
 
-This popup trigger `(@)` can be changed with [calendar popup trigger](/setting/#calendar-popup-trigger) setting.
+This popup trigger `(@` can be changed with [calendar popup trigger](/setting/#calendar-popup-trigger) setting.
 
-In this popup, you can select date with keyboard. 
+In this popup, you can select date and time by calendar and time picker dropdown.
+
+#### Keybindings
+
+You can use keyboard to select date and time.
+
+##### Calendar
+
+The default focus is on the calendar.
 
 - <kbd>Left</kbd>(or <kbd>Ctrl</kbd>+<kbd>B</kbd>): 1 day ago
 - <kbd>Right</kbd>(or <kbd>Ctrl</kbd>+<kbd>F</kbd>): 1 day later
@@ -55,6 +68,17 @@ In this popup, you can select date with keyboard.
 - <kbd>Down</kbd>(or <kbd>Ctrl</kbd>+<kbd>N</kbd>): 1 week later
 - <kbd>Enter</kbd>: Select date
 - <kbd>Esc</kbd>: Cancel input support
+- <kbd>(Number)</kbd>: Select date of the current month (1st ~ 9th)
+- <kbd>(Number)(Number)</kbd>: Select date of the current month (1th ~ 31st)
+- <kbd>(Number)(Number)(Number)(Number)</kbd>: Select date of the current year (e.g. 0115 -> January 15th)
+
+##### Time Picker
+
+You can move focus to time picker by <kbd>Tab</kbd> key.
+
+- <kbd>(Number)</kbd>: Select hour (00 ~ 09)
+- <kbd>(Number)(Number)</kbd>: Select hour (00 ~ 23)
+- <kbd>(Number)(Number)(Number)(Number)</kbd>: Select hour/minute (00:00 ~ 23:59)
 
 ### Command trigger
 
