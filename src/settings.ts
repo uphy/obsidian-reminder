@@ -11,6 +11,7 @@ class Settings {
   settings: SettingTabModel = new SettingTabModel();
 
   reminderTime: SettingModel<string, Time>;
+  reminderTimeStep: SettingModel<number, number>;
   useSystemNotification: SettingModel<boolean, boolean>;
   laters: SettingModel<string, Array<Later>>;
   dateFormat: SettingModel<string, string>;
@@ -35,6 +36,13 @@ class Settings {
       .text("09:00")
       .placeHolder("Time (hh:mm)")
       .build(new TimeSerde());
+
+    this.reminderTimeStep = this.settings.newSettingBuilder()
+      .key("reminderTimeStep")
+      .name("Reminder Time Step (minutes)")
+      .desc("Step of time for reminder time (minutes)")
+      .number(15)
+      .build(new RawSerde());
 
     this.useSystemNotification = this.settings.newSettingBuilder()
       .key("useSystemNotification")
@@ -152,6 +160,7 @@ class Settings {
       .newGroup("Notification Settings")
       .addSettings(
         this.reminderTime,
+        this.reminderTimeStep,
         this.laters,
         this.useSystemNotification
       );

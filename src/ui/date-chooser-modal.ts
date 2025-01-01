@@ -11,7 +11,8 @@ class DateTimeChooserModal extends Modal {
         app: App,
         private reminders: Reminders,
         private onSelect: (value: DateTime) => void,
-        private onCancel: () => void
+        private onCancel: () => void,
+        private timeStep: number
     ) {
         super(app);
     }
@@ -35,7 +36,8 @@ class DateTimeChooserModal extends Modal {
                     this.select(time);
                 },
                 reminders: this.reminders,
-                component: undefined
+                component: undefined,
+                timeStep: this.timeStep
             },
         });
     }
@@ -55,9 +57,9 @@ class DateTimeChooserModal extends Modal {
 
 }
 
-export function showDateTimeChooserModal(app: App, reminders: Reminders): Promise<DateTime> {
+export function showDateTimeChooserModal(app: App, reminders: Reminders, timeStep: number = 15): Promise<DateTime> {
     return new Promise((resolve, reject) => {
-        const modal = new DateTimeChooserModal(app, reminders, resolve, reject);
+        const modal = new DateTimeChooserModal(app, reminders, resolve, reject, timeStep);
         modal.open();
     });
 }

@@ -58,7 +58,7 @@ export default class ReminderPlugin extends Plugin {
       this.reminders
     );
     this.reminderModal = new ReminderModal(this.app, SETTINGS.useSystemNotification, SETTINGS.laters);
-    this.autoComplete = new AutoComplete(SETTINGS.autoCompleteTrigger);
+    this.autoComplete = new AutoComplete(SETTINGS.autoCompleteTrigger, SETTINGS.reminderTimeStep);
   }
 
   override async onload() {

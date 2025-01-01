@@ -18,7 +18,7 @@ export interface AutoCompletableEditor {
 
 export class AutoComplete {
 
-    constructor(private trigger: ReadOnlyReference<string>) { };
+    constructor(private trigger: ReadOnlyReference<string>, private timeStep: ReadOnlyReference<number>) { };
 
     isTrigger(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) {
         const trigger = this.trigger.value;
@@ -51,10 +51,11 @@ export class AutoComplete {
                 result = v.show();
             } catch (e) {
                 // Temporary workaround for Live preview mode
-                result = showDateTimeChooserModal(app, reminders);
+                console.error(e);
+                result = showDateTimeChooserModal(app, reminders, this.timeStep.value);
             }
         } else {
-            result = showDateTimeChooserModal(app, reminders);
+            result = showDateTimeChooserModal(app, reminders, this.timeStep.value);
         }
 
         result

@@ -10,7 +10,8 @@
     export let component: Component|undefined;
     export let date = moment();
     export let reminders: Reminders;
-    export let onSelect: (time: DateTime) => void;    
+    export let onSelect: (time: DateTime) => void;
+    export let timeStep = 15;
     let time = reminders.reminderTime?.value.toString() ?? "10:00";
     let timeIsFocused = false;
 
@@ -42,7 +43,7 @@
     <div class="dtchooser-wrapper">
         <div class="dtchooser-time-picker">
             <span>Time: </span>
-            <TimePicker bind:value={time} step={15} on:select={()=>{handleSelect()}} on:focus={()=>{timeIsFocused = true}} />
+            <TimePicker bind:value={time} step={timeStep} on:select={()=>{handleSelect()}} on:focus={()=>{timeIsFocused = true}} />
         </div>
         <button class="mod-cta" on:click={handleSelect}>OK</button>
     </div>
