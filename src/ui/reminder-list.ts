@@ -1,9 +1,9 @@
-import type { ReadOnlyReference } from "model/ref";
-import type { Time } from "model/time";
-import { ItemView, TFile, View, Workspace, WorkspaceLeaf } from "obsidian";
-import { VIEW_TYPE_REMINDER_LIST } from "../constants";
-import { groupReminders, Reminder, Reminders } from "../model/reminder";
-import ReminderListView from "./components/ReminderList.svelte";
+import type { ReadOnlyReference } from 'model/ref';
+import type { Time } from 'model/time';
+import { ItemView, TFile, View, Workspace, WorkspaceLeaf } from 'obsidian';
+import { VIEW_TYPE_REMINDER_LIST } from '../constants';
+import { Reminder, Reminders, groupReminders } from '../model/reminder';
+import ReminderListView from './components/ReminderList.svelte';
 
 class ReminderListItemView extends ItemView {
   private view?: ReminderListView;
@@ -12,7 +12,7 @@ class ReminderListItemView extends ItemView {
     leaf: WorkspaceLeaf,
     private reminders: Reminders,
     private reminderTime: ReadOnlyReference<Time>,
-    private onOpenReminder: (reminder: Reminder) => void
+    private onOpenReminder: (reminder: Reminder) => void,
   ) {
     super(leaf);
   }
@@ -22,11 +22,11 @@ class ReminderListItemView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Reminders";
+    return 'Reminders';
   }
 
   override getIcon(): string {
-    return "clock";
+    return 'clock';
   }
 
   override async onOpen(): Promise<void> {
@@ -82,16 +82,11 @@ export class ReminderListItemViewProxy {
     private workspace: Workspace,
     private reminders: Reminders,
     private reminderTime: ReadOnlyReference<Time>,
-    private onOpenReminder: (reminder: Reminder) => void
-  ) { }
+    private onOpenReminder: (reminder: Reminder) => void,
+  ) {}
 
   createView(leaf: WorkspaceLeaf): View {
-    return new ReminderListItemView(
-      leaf,
-      this.reminders,
-      this.reminderTime,
-      this.onOpenReminder
-    );
+    return new ReminderListItemView(leaf, this.reminders, this.reminderTime, this.onOpenReminder);
   }
 
   openView(): void {
@@ -109,11 +104,11 @@ export class ReminderListItemViewProxy {
     if (force || !this.valid) {
       const views = this.getViews();
       if (views.length > 0) {
-        views.forEach(view => view.reload());
+        views.forEach((view) => view.reload());
         this.valid = true;
       } else {
         this.valid = false;
-        console.debug("view is null.  Skipping reminder list view reload");
+        console.debug('view is null.  Skipping reminder list view reload');
       }
     }
   }
@@ -133,5 +128,4 @@ export class ReminderListItemViewProxy {
   invalidate() {
     this.valid = false;
   }
-
 }

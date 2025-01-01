@@ -1,22 +1,25 @@
-import type { ReadOnlyReference } from "model/ref";
-import type { DateTime } from "model/time";
-import { App, Modal } from "obsidian";
-import { SETTINGS } from "settings";
-import type { Reminder } from "../model/reminder";
-import type { Later } from "../model/time";
-import ReminderView from "./components/Reminder.svelte";
-const electron = require("electron");
+import type { ReadOnlyReference } from 'model/ref';
+import type { DateTime } from 'model/time';
+import { App, Modal } from 'obsidian';
+import { SETTINGS } from 'settings';
+import type { Reminder } from '../model/reminder';
+import type { Later } from '../model/time';
+import ReminderView from './components/Reminder.svelte';
+const electron = require('electron');
 
 export class ReminderModal {
-
-  constructor(private app: App, private useSystemNotification: ReadOnlyReference<boolean>, private laters: ReadOnlyReference<Array<Later>>) { }
+  constructor(
+    private app: App,
+    private useSystemNotification: ReadOnlyReference<boolean>,
+    private laters: ReadOnlyReference<Array<Later>>,
+  ) {}
 
   public show(
     reminder: Reminder,
     onRemindMeLater: (time: DateTime) => void,
     onDone: () => void,
     onMute: () => void,
-    onOpenFile: () => void
+    onOpenFile: () => void,
   ) {
     if (!this.isSystemNotification()) {
       this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onMute, onOpenFile);
@@ -24,20 +27,20 @@ export class ReminderModal {
       // Show system notification
       const Notification = (electron as any).remote.Notification;
       const n = new Notification({
-        title: "Obsidian Reminder",
+        title: 'Obsidian Reminder',
         body: reminder.title,
       });
-      n.on("click", () => {
+      n.on('click', () => {
         n.close();
         this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onMute, onOpenFile);
       });
-      n.on("close", () => {
+      n.on('close', () => {
         onMute();
       });
       // Only for macOS
       {
         const laters = SETTINGS.laters.value;
-        n.on("action", (_: any, index: any) => {
+        n.on('action', (_: any, index: any) => {
           if (index === 0) {
             onDone();
             return;
@@ -45,9 +48,9 @@ export class ReminderModal {
           const later = laters[index - 1]!;
           onRemindMeLater(later.later());
         });
-        const actions = [{ type: "button", text: "Mark as Done" }];
-        laters.forEach(later => {
-          actions.push({ type: "button", text: later.label })
+        const actions = [{ type: 'button', text: 'Mark as Done' }];
+        laters.forEach((later) => {
+          actions.push({ type: 'button', text: later.label });
         });
         n.actions = actions as any;
       }
@@ -61,7 +64,7 @@ export class ReminderModal {
     onRemindMeLater: (time: DateTime) => void,
     onDone: () => void,
     onCancel: () => void,
-    onOpenFile: () => void
+    onOpenFile: () => void,
   ) {
     new NotificationModal(this.app, this.laters.value, reminder, onRemindMeLater, onDone, onCancel, onOpenFile).open();
   }
@@ -76,12 +79,9 @@ export class ReminderModal {
   private isMobile() {
     return electron === undefined;
   }
-
-
 }
 
 class NotificationModal extends Modal {
-
   canceled: boolean = true;
 
   constructor(
@@ -91,7 +91,7 @@ class NotificationModal extends Modal {
     private onRemindMeLater: (time: DateTime) => void,
     private onDone: () => void,
     private onCancel: () => void,
-    private onOpenFile: () => void
+    private onOpenFile: () => void,
   ) {
     super(app);
   }
@@ -101,7 +101,7 @@ class NotificationModal extends Modal {
     // lets us introspect the reminder's display state from elsewhere.
     this.reminder.beingDisplayed = true;
 
-    let { contentEl } = this;
+    const { contentEl } = this;
     new ReminderView({
       target: contentEl,
       props: {
@@ -135,7 +135,7 @@ class NotificationModal extends Modal {
     // Unset the reminder from being displayed. This lets other parts of the
     // plugin continue.
     this.reminder.beingDisplayed = false;
-    let { contentEl } = this;
+    const { contentEl } = this;
     contentEl.empty();
     if (this.canceled) {
       this.onCancel();

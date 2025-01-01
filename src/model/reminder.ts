@@ -1,8 +1,7 @@
-import type { ReadOnlyReference } from "model/ref";
-import { DateTime, Time } from "model/time";
+import type { ReadOnlyReference } from 'model/ref';
+import { DateTime, Time } from 'model/time';
 
 export class Reminder {
-
   // To avoid duplicate notification, set this flag true before notification and set false on notification done.
   public muteNotification: boolean = false;
 
@@ -20,28 +19,30 @@ export class Reminder {
     public title: string,
     public time: DateTime,
     public rowNumber: number,
-    public done: boolean
-  ) { }
+    public done: boolean,
+  ) {}
 
   key() {
     return this.file + this.title + this.time.toString();
   }
 
   equals(reminder: Reminder) {
-    return this.rowNumber === reminder.rowNumber
-      && this.title === reminder.title
-      && this.time.equals(reminder.time)
-      && this.file === reminder.file;
+    return (
+      this.rowNumber === reminder.rowNumber &&
+      this.title === reminder.title &&
+      this.time.equals(reminder.time) &&
+      this.file === reminder.file
+    );
   }
 
   public getFileName(): string {
-    const p = this.file.split(/[\/\\]/);
-    return p[p.length - 1]!.replace(/^(.*?)(\..+)?$/, "$1");
+    const p = this.file.split(/[/\\]/);
+    return p[p.length - 1]!.replace(/^(.*?)(\..+)?$/, '$1');
   }
 
   static extractFileName(path: string) {
-    const p = path.split(/[\/\\]/);
-    return p[p.length - 1]!.replace(/^(.*?)(\..+)?$/, "$1");
+    const p = path.split(/[/\\]/);
+    return p[p.length - 1]!.replace(/^(.*?)(\..+)?$/, '$1');
   }
 }
 
@@ -50,7 +51,7 @@ export class Reminders {
   public reminders: Array<Reminder> = [];
   public reminderTime?: ReadOnlyReference<Time>;
 
-  constructor(private onChange: () => void) { }
+  constructor(private onChange: () => void) {}
 
   public getExpiredReminders(defaultTime: Time): Array<Reminder> {
     const now = new Date().getTime();
@@ -67,11 +68,11 @@ export class Reminders {
   }
 
   public byDate(date: DateTime) {
-    return this.reminders.filter(reminder => reminder.time.toYYYYMMDD() === date.toYYYYMMDD());
+    return this.reminders.filter((reminder) => reminder.time.toYYYYMMDD() === date.toYYYYMMDD());
   }
 
   public removeReminder(reminder: Reminder) {
-    console.debug("Remove reminder: %o", reminder);
+    console.debug('Remove reminder: %o', reminder);
     this.reminders.remove(reminder);
     const file = this.fileToReminders.get(reminder.file);
     if (file) {
@@ -161,61 +162,42 @@ export class Reminders {
 
   private sort(reminders: Array<Reminder>) {
     reminders.sort((a, b) => {
-      const d =
-        a.time.getTimeInMillis(this.reminderTime?.value) -
-        b.time.getTimeInMillis(this.reminderTime?.value);
+      const d = a.time.getTimeInMillis(this.reminderTime?.value) - b.time.getTimeInMillis(this.reminderTime?.value);
       return d > 0 ? 1 : d < 0 ? -1 : 0;
     });
   }
 }
 
 function generateGroup(time: DateTime, now: DateTime, reminderTime: Time) {
-  const days = DateTime.duration(now, time, "days", reminderTime);
+  const days = DateTime.duration(now, time, 'days', reminderTime);
   if (days > 30) {
-    return new Group(time.toYYYYMMMM(reminderTime), (time) =>
-      time.format("MM/DD", reminderTime)
-    );
+    return new Group(time.toYYYYMMMM(reminderTime), (time) => time.format('MM/DD', reminderTime));
   }
   if (days >= 7) {
-    return new Group("Over 1 week", (time) =>
-      time.format("MM/DD", reminderTime)
-    );
+    return new Group('Over 1 week', (time) => time.format('MM/DD', reminderTime));
   }
   if (time.toYYYYMMDD(reminderTime) === now.toYYYYMMDD(reminderTime)) {
-    const todaysGroup = new Group("Today", (time) =>
-      time.format("HH:mm", reminderTime)
-    );
+    const todaysGroup = new Group('Today', (time) => time.format('HH:mm', reminderTime));
     todaysGroup.isToday = true;
     return todaysGroup;
   }
-  if (
-    time.toYYYYMMDD(reminderTime) ===
-    now.add(1, "days", reminderTime).toYYYYMMDD()
-  ) {
-    return new Group("Tomorrow", (time) => time.format("HH:mm", reminderTime));
+  if (time.toYYYYMMDD(reminderTime) === now.add(1, 'days', reminderTime).toYYYYMMDD()) {
+    return new Group('Tomorrow', (time) => time.format('HH:mm', reminderTime));
   }
-  return new Group(time.format("M/DD (ddd)", reminderTime), (time) =>
-    time.format("HH:mm", reminderTime)
-  );
+  return new Group(time.format('M/DD (ddd)', reminderTime), (time) => time.format('HH:mm', reminderTime));
 }
 
 class Group {
   public isToday: boolean = false;
   public isOverdue: boolean = false;
-  constructor(
-    public name: string,
-    private timeToStringFunc: (time: DateTime) => string
-  ) { }
+  constructor(public name: string, private timeToStringFunc: (time: DateTime) => string) {}
 
   timeToString(time: DateTime): string {
     return this.timeToStringFunc(time);
   }
 }
 
-export function groupReminders(
-  sortedReminders: Array<Reminder>,
-  reminderTime: Time
-): Array<GroupedReminder> {
+export function groupReminders(sortedReminders: Array<Reminder>, reminderTime: Time): Array<GroupedReminder> {
   const now = DateTime.now();
   const result: Array<GroupedReminder> = [];
   let currentReminders: Array<Reminder> = [];
@@ -242,7 +224,7 @@ export function groupReminders(
     result.push(new GroupedReminder(previousGroup, currentReminders));
   }
   if (overdueReminders.length > 0) {
-    const overdueGroup: Group = new Group("Overdue", (time) => time.format("HH:mm", reminderTime));
+    const overdueGroup: Group = new Group('Overdue', (time) => time.format('HH:mm', reminderTime));
     overdueGroup.isOverdue = true;
     result.splice(0, 0, new GroupedReminder(overdueGroup, overdueReminders));
     console.log(overdueGroup);
@@ -252,7 +234,7 @@ export function groupReminders(
 }
 
 export class GroupedReminder {
-  constructor(private group: Group, public reminders: Array<Reminder>) { }
+  constructor(private group: Group, public reminders: Array<Reminder>) {}
 
   get name() {
     return this.group.name;

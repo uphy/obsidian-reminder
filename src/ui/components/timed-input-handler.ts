@@ -9,7 +9,7 @@ export class TimedInputHandler {
     }
     this.lastInput = now;
     this.digits.push(n);
-    return this.digits.join("");
+    return this.digits.join('');
   }
 
   clear() {
