@@ -4,7 +4,7 @@ export class TimedInputHandler {
 
   handle(n: string): string {
     const now = new Date().getTime();
-    if (now - this.lastInput > 500) {
+    if (now - this.lastInput > 1000) {
       this.clear();
     }
     this.lastInput = now;

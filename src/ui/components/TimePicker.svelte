@@ -38,6 +38,15 @@
       event.preventDefault();
       const input = timedInputHandler.handle(event.key);
       switch(input.length){
+        case 1: 
+          {
+            const hour = input.padStart(2, '0');
+            const candidates = options.filter(o => o.startsWith(hour));
+            if (candidates.length > 1) {
+              value = candidates[0];
+            }
+          }
+          break;
         case 2:
           const prefix = input + ":";
           const candidates = options.filter(o => o.startsWith(prefix));
