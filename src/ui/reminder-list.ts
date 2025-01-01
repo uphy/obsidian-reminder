@@ -104,7 +104,7 @@ export class ReminderListItemViewProxy {
     if (force || !this.valid) {
       const views = this.getViews();
       if (views.length > 0) {
-        views.forEach((view) => view.reload());
+        views.forEach((view) => view?.reload());
         this.valid = true;
       } else {
         this.valid = false;
