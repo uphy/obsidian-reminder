@@ -1,29 +1,90 @@
 <script lang="typescript">
     import { Calendar } from "model/calendar";
-    import { DateTime } from "model/time";
     import moment from "moment";
+    import { createEventDispatcher } from 'svelte';
+    import { TimedInputHandler } from "./timed-input-handler";
 
-    export let calendar: Calendar = new Calendar();
-    export let selectedDate: moment.Moment = moment();
-    export let onClick: (time: DateTime) => void = (date) => {
-        console.log(date);
-    };
+    export let value: moment.Moment = moment();
+    const dispatch = createEventDispatcher();
+    $: calendar = new Calendar(moment().startOf("day"), value.startOf("day"));
+
+    function onClick(clicked: moment.Moment){
+        value = clicked;
+    }
+    function onDoubleClick(clicked: moment.Moment){
+        value = clicked;
+        dispatchSelect();
+    }
     function previousMonth() {
-        selectedDate.add(-1, "month");
-        calendar = calendar.previousMonth();
+        value = value.add(-1, "month");
     }
     function nextMonth() {
-        selectedDate.add(1, "month");
-        calendar = calendar.nextMonth();
+        value = value.add(1, "month");
+    }
+    function dispatchSelect() {
+        dispatch("select", value);
+    }
+    const timedInputHandler = new TimedInputHandler();
+    function handleKeyDown(event: KeyboardEvent) {
+        if (event.key >= "0" && event.key <= "9") {
+            event.preventDefault();
+            let input = timedInputHandler.handle(event.key);
+            switch(input.length){
+                case 1:
+                    {
+                        const date = parseInt(input);
+                        if (date > 0) {
+                            value = value.set("date", date);
+                        }
+                        break;
+                    }
+                case 2:
+                    if (input.startsWith("0")) {
+                        input = input.slice(1);
+                    }
+                    value = value.set("date", parseInt(input));
+                    break;
+                case 4:
+                    let month = input.slice(0, 2);
+                    let date = input.slice(2, 4);
+                    if (month.startsWith("0")) {
+                        month = month.slice(1);
+                    }
+                    if (date.startsWith("0")) {
+                        date = date.slice(1);
+                    }
+                    value = value.set("month", parseInt(month) - 1);
+                    value = value.set("date", parseInt(date));
+                    break;
+            }
+            return;
+        }
+        timedInputHandler.clear();
+
+        if (event.key === "ArrowLeft" || (event.ctrlKey && event.key === "B")) {
+            value = value.add(-1, "day");
+            event.preventDefault();
+        } else if (event.key === "ArrowRight" || (event.ctrlKey && event.key === "F")) {
+            value = value.add(1, "day");
+            event.preventDefault();
+        } else if (event.key === "ArrowUp" || (event.ctrlKey && event.key === "P")) {
+            value = value.add(-7, "day");
+        } else if (event.key === "ArrowDown" || (event.ctrlKey && event.key === "N")) {
+            value = value.add(7, "day");
+            event.preventDefault();
+        } else if (event.key === "Enter") {
+            dispatchSelect();
+            event.preventDefault();
+        }
     }
 </script>
-
-<div class="reminder-calendar">
+<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+<div class="reminder-calendar" tabindex="0" on:focus={()=>{dispatch("focus")}} on:blur={()=>{dispatch("blur")}} on:keydown={handleKeyDown}>
     <div class="year-month">
-        <span class="month-nav" on:click={() => previousMonth()}>&lt;</span>
+        <button tabindex="-1" class="month-nav" on:click={() => previousMonth()}>&lt;</button>
         <span class="month">{calendar.current.monthStart.format("MMM")}</span>
         <span class="year">{calendar.current.monthStart.format("YYYY")}</span>
-        <span class="month-nav" on:click={() => nextMonth()}>&gt;</span>
+        <button tabindex="-1" class="month-nav" on:click={() => nextMonth()}>&gt;</button>
     </div>
     <table>
         <thead>
@@ -38,32 +99,47 @@
             </tr>
         </thead>
         <tbody>
-            {#each calendar.current.weeks as week, i}
+            {#each calendar.current.weeks as week}
                 <tr>
-                    {#each week.days as day, i}
-                        <td
-                            class="calendar-date"
-                            class:is-selected={day.isToday(selectedDate)}
-                            class:other-month={!calendar.current.isThisMonth(
-                                day.date
-                            )}
-                            class:is-holiday={day.isHoliday()}
-                            class:is-past={day.date.isBefore(calendar.today)}
-                            on:click={() =>
-                                onClick(new DateTime(day.date, false))}
-                        >
-                            {day.date.format("D")}
+                    {#each week.days as day}
+                        <td>
+                            <button 
+                                tabindex="-1"
+                                class="calendar-date"
+                                class:is-selected={day.isToday(value)}
+                                class:other-month={!calendar.current.isThisMonth(
+                                    day.date
+                                )}
+                                class:is-holiday={day.isHoliday()}
+                                class:is-past={day.date.isBefore(calendar.today)}
+                                on:click={() => onClick(day.date)}
+                                on:dblclick={() => onDoubleClick(day.date)}>
+                                {day.date.format("D")}
+                            </button>
                         </td>
                     {/each}
                 </tr>
             {/each}
         </tbody>
     </table>
+    <slot name="footer" />
 </div>
 
 <style>
+    button {
+        background-color: transparent;
+        box-shadow: none;
+    }
+    button:hover {
+        box-shadow: var(--input-shadow)
+    }
     .reminder-calendar {
+        display: inline-block;
         padding: 0.5rem;
+    }
+    .reminder-calendar:focus {
+        border-radius: var(--input-radius);
+        box-shadow: 0 0 0px 1px var(--background-modifier-border-focus);
     }
     .reminder-calendar .year-month {
         font-size: 1rem;
@@ -91,16 +167,22 @@
         min-width: 2rem;
         max-width: 2rem;
     }
+    .reminder-calendar .calendar-date > button{
+        padding: 0;
+        width: 100%;
+    }
     .reminder-calendar .calendar-date:hover {
         background-color: var(--background-secondary-alt);
+        border-radius: var(--input-radius);
     }
     .reminder-calendar .is-selected {
         background-color: var(--text-accent) !important;
         color: var(--text-normal) !important;
+        border-radius: var(--input-radius);
     }
     .reminder-calendar .other-month,
     .reminder-calendar .is-past,
     .reminder-calendar .is-holiday {
-        color: var(--text-faint);
+        color: var(--text-faint) !important;
     }
 </style>

@@ -19,8 +19,9 @@ export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
                         return;
                     }
                     const trigger = SETTINGS.autoCompleteTrigger.value;
+                    const timeStep = SETTINGS.reminderTimeStep.value;
                     if (trigger === text) {
-                        showDateTimeChooserModal(app, reminders).then(value => {
+                        showDateTimeChooserModal(app, reminders, timeStep).then(value => {
                             const format = SETTINGS.primaryFormat.value.format;
                             try {
                                 const line = doc.lineAt(toB);
@@ -52,6 +53,8 @@ export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
                             } catch (ex) {
                                 console.error(ex);
                             }
+                        }).catch(() => {
+                            /* do nothing on cancel */
                         });
                     }
                 });

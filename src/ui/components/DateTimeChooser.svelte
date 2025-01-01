@@ -1,49 +1,51 @@
 <script lang="typescript">
-    import { Calendar } from "model/calendar";
     import type { Reminders } from "model/reminder";
     import { DateTime } from "model/time";
     import moment from "moment";
     import type { Component } from "obsidian";
     import CalendarView from "./Calendar.svelte";
+    import TimePicker from "./TimePicker.svelte";
     import ReminderListByDate from "./ReminderListByDate.svelte";
 
-    export let calendar: Calendar = new Calendar();
-    export let component: Component;
-    export let selectedDate = moment();
+    export let component: Component|undefined;
+    export let date = moment();
     export let reminders: Reminders;
+    export let onSelect: (time: DateTime) => void;
+    export let timeStep = 15;
+    let time = reminders.reminderTime?.value.toString() ?? "10:00";
+    let timeIsFocused = false;
 
-    function selectDate(date: moment.Moment) {
-        // clone() for re-render forcibly
-        selectedDate = date.clone();
-        calendar = new Calendar(moment(), date);
+    function handleSelect() {
+        const [hour, minute] = time.split(":");
+        const selection = date.clone();
+        if (timeIsFocused) {
+            selection.set({
+                hour: parseInt(hour!),
+                minute: parseInt(minute!),
+            });
+            onSelect(new DateTime(selection, true))
+        } else {
+            onSelect(new DateTime(selection, false));
+        }
     }
-
-    export function moveUp() {
-        selectDate(selectedDate.add(-7, "day"));
-    }
-    export function moveDown() {
-        selectDate(selectedDate.add(7, "day"));
-    }
-    export function moveLeft() {
-        selectDate(selectedDate.add(-1, "day"));
-    }
-    export function moveRight() {
-        selectDate(selectedDate.add(1, "day"));
-    }
-    export function selection() {
-        return new DateTime(selectedDate, false);
-    }
-    export let onClick: (time: DateTime) => void;
 </script>
 
 <div class="dtchooser">
-    <CalendarView {onClick} {selectedDate} {calendar} />
-    <hr class="dtchooser-divider" />
-    <div class="reminder-list-container">
-        <ReminderListByDate
-            reminders={reminders.byDate(new DateTime(selectedDate, false))}
-            {component}
-        />
+    <CalendarView bind:value={date} on:select={()=>handleSelect()}>
+        <div slot="footer">
+            <hr class="dtchooser-divider" />
+            <ReminderListByDate
+                reminders={reminders.byDate(new DateTime(date, false))}
+                {component}
+            />
+        </div>
+    </CalendarView>
+    <div class="dtchooser-wrapper">
+        <div class="dtchooser-time-picker">
+            <span>Time: </span>
+            <TimePicker bind:value={time} step={timeStep} on:select={()=>{handleSelect()}} on:focus={()=>{timeIsFocused = true}} />
+        </div>
+        <button class="mod-cta" on:click={handleSelect}>OK</button>
     </div>
 </div>
 
@@ -55,8 +57,20 @@
     .dtchooser-divider {
         margin: 0.5rem;
     }
-    .reminder-list-container {
+    .dtchooser-wrapper {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
         padding: 0.5rem;
-        max-width: 16rem;
+    }
+    .dtchooser-time-picker {
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+    }
+    .dtchooser-time-picker span {
+        color: var(--text-muted);
+        margin-right: 0.5rem;
     }
 </style>
