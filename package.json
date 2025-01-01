@@ -72,5 +72,13 @@
       "**/*.test.ts"
     ],
     "preset": "ts-jest"
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "printWidth": 120,
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": true,
+    "bracketSpacing": true
   }
 }

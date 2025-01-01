@@ -28,17 +28,6 @@ module.exports = {
         quotes: ['error', 'single', { avoidEscape: true }],
         '@typescript-eslint/no-unused-vars': 0, // Configured in tsconfig instead.
         'no-unused-vars': 0, // Configured in tsconfig instead.
-        'prettier/prettier': [
-            'error',
-            {
-                trailingComma: 'all',
-                printWidth: 120,
-                tabWidth: 2,
-                useTabs: false,
-                singleQuote: true,
-                bracketSpacing: true,
-            },
-        ],
         semi: ['error', 'always'],
         'import/order': 'error',
         'sort-imports': [
