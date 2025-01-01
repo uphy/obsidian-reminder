@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "The version of the plugin e.g. 1.0.0"
+        description: 'The version of the plugin e.g. 1.0.0'
         required: true
 
 env:
@@ -23,10 +23,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: "18"
+          node-version: '18'
 
       - name: Cache dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -57,7 +57,7 @@ jobs:
         run: |
           version=${{ github.event.inputs.version }}
           echo "RELEASE_VERSION=$version" >> $GITHUB_ENV
-          
+
           # update manifest version
           sed -i "s/\"version\": \".*\"/\"version\": \"$version\"/" manifest.json
 
@@ -72,7 +72,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: "16.x" # You might need to adjust this value to your own version
+          node-version: '16.x' # You might need to adjust this value to your own version
       - name: Build
         id: build
         run: |
