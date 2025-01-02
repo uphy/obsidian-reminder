@@ -1,25 +1,19 @@
-import { RemindersController } from "controller";
-import { PluginDataIO } from "data";
-import type { ReadOnlyReference } from "model/ref";
-import { Reminder, Reminders } from "model/reminder";
-import { DATE_TIME_FORMATTER } from "model/time";
-import {
-  App,
-  Platform,
-  Plugin,
-  PluginManifest,
-  WorkspaceLeaf
-} from "obsidian";
-import { monkeyPatchConsole } from "obsidian-hack/obsidian-debug-mobile";
-import { ReminderSettingTab, SETTINGS } from "settings";
-import { AutoComplete } from "ui/autocomplete";
-import { DateTimeChooserView } from "ui/datetime-chooser";
-import { openDateTimeFormatChooser } from "ui/datetime-format-modal";
-import { buildCodeMirrorPlugin } from "ui/editor-extension";
-import { ReminderModal } from "ui/reminder";
-import { ReminderListItemViewProxy } from "ui/reminder-list";
-import { OkCancel, showOkCancelDialog } from "ui/util";
-import { VIEW_TYPE_REMINDER_LIST } from "./constants";
+import { RemindersController } from 'controller';
+import { PluginDataIO } from 'data';
+import type { ReadOnlyReference } from 'model/ref';
+import { Reminder, Reminders } from 'model/reminder';
+import { DATE_TIME_FORMATTER } from 'model/time';
+import { App, Platform, Plugin, PluginManifest, WorkspaceLeaf } from 'obsidian';
+import { monkeyPatchConsole } from 'obsidian-hack/obsidian-debug-mobile';
+import { ReminderSettingTab, SETTINGS } from 'settings';
+import { AutoComplete } from 'ui/autocomplete';
+import { DateTimeChooserView } from 'ui/datetime-chooser';
+import { openDateTimeFormatChooser } from 'ui/datetime-format-modal';
+import { buildCodeMirrorPlugin } from 'ui/editor-extension';
+import { ReminderModal } from 'ui/reminder';
+import { ReminderListItemViewProxy } from 'ui/reminder-list';
+import { OkCancel, showOkCancelDialog } from 'ui/util';
+import { VIEW_TYPE_REMINDER_LIST } from './constants';
 
 export default class ReminderPlugin extends Plugin {
   pluginDataIO: PluginDataIO;
@@ -43,7 +37,10 @@ export default class ReminderPlugin extends Plugin {
     this.reminders.reminderTime = SETTINGS.reminderTime;
     DATE_TIME_FORMATTER.setTimeFormat(SETTINGS.dateFormat, SETTINGS.dateTimeFormat, SETTINGS.strictDateFormat);
     this.editDetector = new EditDetector(SETTINGS.editDetectionSec);
-    this.viewProxy = new ReminderListItemViewProxy(app.workspace, this.reminders, SETTINGS.reminderTime,
+    this.viewProxy = new ReminderListItemViewProxy(
+      app.workspace,
+      this.reminders,
+      SETTINGS.reminderTime,
       // On select a reminder in the list
       (reminder) => {
         if (reminder.muteNotification) {
@@ -51,12 +48,9 @@ export default class ReminderPlugin extends Plugin {
           return;
         }
         this.openReminderFile(reminder);
-      });
-    this.remindersController = new RemindersController(
-      app.vault,
-      this.viewProxy,
-      this.reminders
+      },
     );
+    this.remindersController = new RemindersController(app.vault, this.viewProxy, this.reminders);
     this.reminderModal = new ReminderModal(this.app, SETTINGS.useSystemNotification, SETTINGS.laters);
     this.autoComplete = new AutoComplete(SETTINGS.autoCompleteTrigger, SETTINGS.reminderTimeStep);
   }
@@ -71,7 +65,7 @@ export default class ReminderPlugin extends Plugin {
       }
       this.watchVault();
       this.startPeriodicTask();
-    })
+    });
   }
 
   private setupUI() {
@@ -79,32 +73,30 @@ export default class ReminderPlugin extends Plugin {
     this.registerView(VIEW_TYPE_REMINDER_LIST, (leaf: WorkspaceLeaf) => {
       return this.viewProxy.createView(leaf);
     });
-    this.addSettingTab(
-      new ReminderSettingTab(this.app, this)
-    );
+    this.addSettingTab(new ReminderSettingTab(this.app, this));
 
-    this.registerDomEvent(document, "keydown", (evt: KeyboardEvent) => {
+    this.registerDomEvent(document, 'keydown', (evt: KeyboardEvent) => {
       this.editDetector.fileChanged();
     });
     if (Platform.isDesktopApp) {
       this.registerEditorExtension(buildCodeMirrorPlugin(this.app, this.reminders));
       this.registerCodeMirror((cm: CodeMirror.Editor) => {
         const dateTimeChooser = new DateTimeChooserView(cm, this.reminders);
-        cm.on(
-          "change",
-          (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
-            if (!this.autoComplete.isTrigger(cmEditor, changeObj)) {
-              dateTimeChooser.cancel();
-              return;
-            }
-            dateTimeChooser.show()
-              .then(value => {
-                this.autoComplete.insert(cmEditor, value);
-              })
-              .catch(() => { /* do nothing on cancel */ });
+        cm.on('change', (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
+          if (!this.autoComplete.isTrigger(cmEditor, changeObj)) {
+            dateTimeChooser.cancel();
             return;
           }
-        );
+          dateTimeChooser
+            .show()
+            .then((value) => {
+              this.autoComplete.insert(cmEditor, value);
+            })
+            .catch(() => {
+              /* do nothing on cancel */
+            });
+          return;
+        });
       });
     }
 
@@ -117,8 +109,8 @@ export default class ReminderPlugin extends Plugin {
 
   private setupCommands() {
     this.addCommand({
-      id: "scan-reminders",
-      name: "Scan reminders",
+      id: 'scan-reminders',
+      name: 'Scan reminders',
       checkCallback: (checking: boolean) => {
         if (checking) {
           return true;
@@ -129,8 +121,8 @@ export default class ReminderPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "show-reminders",
-      name: "Show reminders",
+      id: 'show-reminders',
+      name: 'Show reminders',
       checkCallback: (checking: boolean) => {
         if (!checking) {
           this.showReminderList();
@@ -140,17 +132,21 @@ export default class ReminderPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "convert-reminder-time-format",
-      name: "Convert reminder time format",
+      id: 'convert-reminder-time-format',
+      name: 'Convert reminder time format',
       checkCallback: (checking: boolean) => {
         if (!checking) {
-          showOkCancelDialog("Convert reminder time format", "This command rewrite reminder dates in all markdown files.  You should make a backup of your vault before you execute this.  May I continue to convert?").then((res) => {
+          showOkCancelDialog(
+            'Convert reminder time format',
+            'This command rewrite reminder dates in all markdown files.  You should make a backup of your vault before you execute this.  May I continue to convert?',
+          ).then((res) => {
             if (res !== OkCancel.OK) {
               return;
             }
             openDateTimeFormatChooser(this.app, (dateFormat, dateTimeFormat) => {
-              this.remindersController.convertDateTimeFormat(dateFormat, dateTimeFormat)
-                .catch(() => { /* ignore */ });
+              this.remindersController.convertDateTimeFormat(dateFormat, dateTimeFormat).catch(() => {
+                /* ignore */
+              });
             });
           });
         }
@@ -159,14 +155,14 @@ export default class ReminderPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "show-date-chooser",
-      name: "Show calendar popup",
-      icon: "calendar-with-checkmark",
+      id: 'show-date-chooser',
+      name: 'Show calendar popup',
+      icon: 'calendar-with-checkmark',
       hotkeys: [
         {
-          modifiers: ["Meta", "Shift"],
-          key: "2" // Shift + 2 = `@`
-        }
+          modifiers: ['Meta', 'Shift'],
+          key: '2', // Shift + 2 = `@`
+        },
       ],
       editorCheckCallback: (checking, editor): boolean | void => {
         if (checking) {
@@ -177,13 +173,13 @@ export default class ReminderPlugin extends Plugin {
       },
     });
     this.addCommand({
-      id: "toggle-checklist-status",
-      name: "Toggle checklist status",
+      id: 'toggle-checklist-status',
+      name: 'Toggle checklist status',
       hotkeys: [
         {
-          modifiers: ["Meta", "Shift"],
-          key: "Enter"
-        }
+          modifiers: ['Meta', 'Shift'],
+          key: 'Enter',
+        },
       ],
       editorCheckCallback: (checking, editor, view): boolean | void => {
         if (checking) {
@@ -196,13 +192,13 @@ export default class ReminderPlugin extends Plugin {
 
   private watchVault() {
     [
-      this.app.vault.on("modify", async (file) => {
+      this.app.vault.on('modify', async (file) => {
         this.remindersController.reloadFile(file, true);
       }),
-      this.app.vault.on("delete", (file) => {
+      this.app.vault.on('delete', (file) => {
         this.remindersController.removeFile(file.path);
       }),
-      this.app.vault.on("rename", async (file, oldPath) => {
+      this.app.vault.on('rename', async (file, oldPath) => {
         // We only reload the file if it CAN be deleted, otherwise this can
         // cause crashes.
         if (await this.remindersController.removeFile(oldPath)) {
@@ -210,9 +206,9 @@ export default class ReminderPlugin extends Plugin {
           await this.remindersController.reloadFile(file);
         }
       }),
-    ].forEach(eventRef => {
+    ].forEach((eventRef) => {
       this.registerEvent(eventRef);
-    })
+    });
   }
 
   private startPeriodicTask() {
@@ -226,16 +222,14 @@ export default class ReminderPlugin extends Plugin {
     this.registerInterval(
       window.setInterval(() => {
         if (intervalTaskRunning) {
-          console.log(
-            "Skip reminder interval task because task is already running."
-          );
+          console.log('Skip reminder interval task because task is already running.');
           return;
         }
         intervalTaskRunning = true;
         this.periodicTask().finally(() => {
           intervalTaskRunning = false;
         });
-      }, SETTINGS.reminderCheckIntervalSec.value * 1000)
+      }, SETTINGS.reminderCheckIntervalSec.value * 1000),
     );
   }
 
@@ -254,12 +248,10 @@ export default class ReminderPlugin extends Plugin {
     if (this.editDetector.isEditing()) {
       return;
     }
-    const expired = this.reminders.getExpiredReminders(
-      SETTINGS.reminderTime.value
-    );
+    const expired = this.reminders.getExpiredReminders(SETTINGS.reminderTime.value);
 
     let previousReminder: Reminder | undefined = undefined;
-    for (let reminder of expired) {
+    for (const reminder of expired) {
       if (this.app.workspace.layoutReady) {
         if (reminder.muteNotification) {
           // We don't want to set `previousReminder` in this case as the current
@@ -267,7 +259,7 @@ export default class ReminderPlugin extends Plugin {
           continue;
         }
         if (previousReminder) {
-          while(previousReminder.beingDisplayed) {
+          while (previousReminder.beingDisplayed) {
             // Displaying too many reminders at once can cause crashes on
             // mobile. We use `beingDisplayed` to wait for the current modal to
             // be dismissed before displaying the next.
@@ -286,7 +278,7 @@ export default class ReminderPlugin extends Plugin {
    * @param milliseconds - The number of milliseconds to wait before resuming.
    */
   private async sleep(milliseconds: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, milliseconds));
+    return new Promise((resolve) => setTimeout(resolve, milliseconds));
   }
 
   private showReminder(reminder: Reminder) {
@@ -294,28 +286,28 @@ export default class ReminderPlugin extends Plugin {
     this.reminderModal.show(
       reminder,
       (time) => {
-        console.info("Remind me later: time=%o", time);
+        console.info('Remind me later: time=%o', time);
         reminder.time = time;
         reminder.muteNotification = false;
         this.remindersController.updateReminder(reminder, false);
         this.pluginDataIO.save(true);
       },
       () => {
-        console.info("done");
+        console.info('done');
         reminder.muteNotification = false;
         this.remindersController.updateReminder(reminder, true);
         this.reminders.removeReminder(reminder);
         this.pluginDataIO.save(true);
       },
       () => {
-        console.info("Mute");
+        console.info('Mute');
         reminder.muteNotification = true;
         this.viewProxy.reload(true);
       },
       () => {
-        console.info("Open");
+        console.info('Open');
         this.openReminderFile(reminder);
-      }
+      },
     );
   }
 
@@ -325,9 +317,7 @@ export default class ReminderPlugin extends Plugin {
   }
 
   override onunload(): void {
-    this.app.workspace
-      .getLeavesOfType(VIEW_TYPE_REMINDER_LIST)
-      .forEach((leaf) => leaf.detach());
+    this.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).forEach((leaf) => leaf.detach());
   }
 
   showReminderList(): void {
@@ -338,13 +328,12 @@ export default class ReminderPlugin extends Plugin {
       type: VIEW_TYPE_REMINDER_LIST,
     });
   }
-
 }
 
 class EditDetector {
   private lastModified?: Date;
 
-  constructor(private editDetectionSec: ReadOnlyReference<number>) { }
+  constructor(private editDetectionSec: ReadOnlyReference<number>) {}
 
   fileChanged() {
     this.lastModified = new Date();
@@ -357,8 +346,7 @@ class EditDetector {
     if (this.lastModified == null) {
       return false;
     }
-    const elapsedSec =
-      (new Date().getTime() - this.lastModified.getTime()) / 1000;
+    const elapsedSec = (new Date().getTime() - this.lastModified.getTime()) / 1000;
     return elapsedSec < this.editDetectionSec.value;
   }
 }

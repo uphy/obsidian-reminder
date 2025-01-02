@@ -4,7 +4,6 @@
   export let value = "00:00";
   // step in minutes
   export let step = 15;
-  export let autofocus = false;
  
   const dispatch = createEventDispatcher();
 

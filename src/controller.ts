@@ -1,21 +1,14 @@
-import {
-  MarkdownView,
-  TAbstractFile,
-  TFile,
-  Vault,
-  WorkspaceLeaf,
-} from "obsidian";
-import { SETTINGS } from "settings";
-import { Content } from "model/content";
-import type { Reminders, Reminder } from "model/reminder";
-import type { ReminderListItemViewProxy } from "ui/reminder-list";
+import { MarkdownView, TAbstractFile, TFile, Vault, WorkspaceLeaf } from 'obsidian';
+import { SETTINGS } from 'settings';
+import { Content } from 'model/content';
+import type { Reminder, Reminders } from 'model/reminder';
+import type { ReminderListItemViewProxy } from 'ui/reminder-list';
 
 export class RemindersController {
-
-  constructor(private vault: Vault, private viewProxy: ReminderListItemViewProxy, private reminders: Reminders) { }
+  constructor(private vault: Vault, private viewProxy: ReminderListItemViewProxy, private reminders: Reminders) {}
 
   async openReminder(reminder: Reminder, leaf: WorkspaceLeaf) {
-    console.log("Open reminder: ", reminder);
+    console.log('Open reminder: ', reminder);
     const file = this.vault.getAbstractFileByPath(reminder.file);
     if (!(file instanceof TFile)) {
       console.error("Cannot open file because it isn't a TFile: %o", file);
@@ -36,29 +29,25 @@ export class RemindersController {
       {
         line: reminder.rowNumber,
         ch: line.length,
-      }
+      },
     );
   }
 
   async removeFile(path: string): Promise<boolean> {
-    console.debug("Remove file: path=%s", path);
+    console.debug('Remove file: path=%s', path);
     const result = this.reminders.removeFile(path);
     this.reloadUI();
     return result;
   }
 
   async reloadFile(file: TAbstractFile, reloadUI: boolean = false) {
-    console.debug(
-      "Reload file and collect reminders: file=%s, forceReloadUI=%s",
-      file.path,
-      reloadUI
-    );
+    console.debug('Reload file and collect reminders: file=%s, forceReloadUI=%s', file.path, reloadUI);
     if (!(file instanceof TFile)) {
-      console.debug("Cannot read file other than TFile: file=%o", file);
+      console.debug('Cannot read file other than TFile: file=%o', file);
       return false;
     }
     if (!this.isMarkdownFile(file)) {
-      console.debug("Not a markdown file: file=%o", file);
+      console.debug('Not a markdown file: file=%o', file);
       return false;
     }
     const content = new Content(file.path, await this.vault.cachedRead(file));
@@ -83,7 +72,7 @@ export class RemindersController {
     for (const file of this.vault.getMarkdownFiles()) {
       const content = new Content(file.path, await this.vault.read(file));
       let updatedInFile = 0;
-      await content.modifyReminderLines(reminder => {
+      await content.modifyReminderLines((reminder) => {
         let converted: string;
         if (reminder.time.hasTimePart) {
           converted = reminder.time.format(dateTimeFormat);
@@ -93,11 +82,11 @@ export class RemindersController {
         updated++;
         updatedInFile++;
         return {
-          rawTime: converted
+          rawTime: converted,
         };
-      })
+      });
       if (updatedInFile > 0) {
-        await this.vault.modify(file, content.getContent())
+        await this.vault.modify(file, content.getContent());
       }
     }
     SETTINGS.dateFormat.rawValue.value = dateFormat;
@@ -109,11 +98,11 @@ export class RemindersController {
   }
 
   private isMarkdownFile(file: TFile) {
-    return file.extension.toLowerCase() === "md";
+    return file.extension.toLowerCase() === 'md';
   }
 
   async reloadAllFiles() {
-    console.debug("Reload all files and collect reminders");
+    console.debug('Reload all files and collect reminders');
     this.reminders.clear();
     for (const file of this.vault.getMarkdownFiles()) {
       await this.reloadFile(file, false);
@@ -124,13 +113,13 @@ export class RemindersController {
   async updateReminder(reminder: Reminder, checked: boolean) {
     const file = this.vault.getAbstractFileByPath(reminder.file);
     if (!(file instanceof TFile)) {
-      console.error("file is not instance of TFile: %o", file);
+      console.error('file is not instance of TFile: %o', file);
       return;
     }
     const content = new Content(file.path, await this.vault.read(file));
     await content.updateReminder(reminder, {
       checked,
-      time: reminder.time
+      time: reminder.time,
     });
     await this.vault.modify(file, content.getContent());
   }
@@ -141,13 +130,13 @@ export class RemindersController {
     }
     const content = new Content(file.path, await this.vault.read(file));
 
-    const reminder = content.getReminders(false).find(r => r.rowNumber === lineNumber);
+    const reminder = content.getReminders(false).find((r) => r.rowNumber === lineNumber);
     if (reminder) {
       await content.updateReminder(reminder, {
-        checked: !reminder.done
+        checked: !reminder.done,
       });
     } else {
-      const todo = content.getTodos().find(t => t.lineIndex === lineNumber);
+      const todo = content.getTodos().find((t) => t.lineIndex === lineNumber);
       console.log(todo);
       if (!todo) {
         return;
@@ -158,9 +147,9 @@ export class RemindersController {
   }
 
   private reloadUI() {
-    console.debug("Reload reminder list view");
+    console.debug('Reload reminder list view');
     if (this.viewProxy === null) {
-      console.debug("reminder list is null.  Skipping UI reload.");
+      console.debug('reminder list is null.  Skipping UI reload.');
       return;
     }
     this.viewProxy.reload(true);

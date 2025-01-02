@@ -1,4 +1,5 @@
 {
-    "java.saveActions.organizeImports": true,
-    "editor.formatOnSave": false
+  "java.saveActions.organizeImports": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }
