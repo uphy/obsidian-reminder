@@ -110,6 +110,16 @@ export class MarkdownDocument {
         return found;
     }
 
+    public removeTodo(lineIndex: number): Todo | null {
+        const found = this.todos.find(todo => todo.lineIndex === lineIndex);
+        if (found == null) {
+            return null;
+        }
+        this.todos = this.todos.filter(todo => todo.lineIndex !== lineIndex);
+        this.lines.splice(lineIndex, 1);
+        return found;
+    }
+
     private applyChanges() {
         // apply changes of TODO items to lines
         this.todos.forEach(todo => {

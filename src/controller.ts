@@ -130,6 +130,9 @@ export class RemindersController {
     const content = new Content(file.path, await this.vault.read(file));
     await content.updateReminder(reminder, {
       checked,
+      shouldDelete: SETTINGS.deleteReminderOnComplete 
+        ? checked && reminder.title?.includes(SETTINGS.deleteReminderToken.value || "#delete")
+        : false,
       time: reminder.time
     });
     await this.vault.modify(file, content.getContent());
