@@ -1,17 +1,37 @@
-import { EditorSelection } from "@codemirror/state";
-import { ViewPlugin, ViewUpdate } from "@codemirror/view";
+import { EditorSelection, StateEffect, StateField } from "@codemirror/state";
+import { EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
 import type { Reminders } from "model/reminder";
 import type { App } from "obsidian";
 import { SETTINGS } from "settings";
 import { showDateTimeChooserModal } from "./date-chooser-modal";
+import { Panel, showPanel } from "@codemirror/view";
 
 export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
-    return ViewPlugin.fromClass(
+    const popupPos = StateEffect.define<number | undefined>();
+    // TODO popupのinline表示
+    // - ポップアップ表示位置(coords)を表すStateField作成 (?)
+    //   - EditorViewが必要だが、取得できなさそう。obsidian-apiのeditorViewStateを使えば取れそうだけど、codemirror的にいいのか
+    // - viewPlugin内からそれに基づいて座標を更新
+    // - panelは、使わなくて実現できそうなら削除
+    const viewPlugin = ViewPlugin.fromClass(
         class {
+            private dom: HTMLElement;
+            constructor(view: EditorView) {
+                this.dom = view.dom.appendChild(document.createElement("div"))
+                this.dom.style.cssText =
+                    "position: fixed;"
+                this.dom.textContent = "Test DOM";
+            }
             update(update: ViewUpdate) {
                 if (!update.docChanged) {
                     return;
                 }
+                this.dom.style.top = "100px";
+                this.dom.style.left = "100px";
+                update.state.update({
+                    effects: popupPos.of(0)
+                });
+                update.view.posAtCoords({ x: 0, y: 0 });
                 update.changes.iterChanges((_fromA, _toA, _fromB, toB, inserted) => {
                     const doc = update.state.doc;
                     const text = doc.sliceString(toB - 2, toB);
@@ -59,6 +79,36 @@ export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
                     }
                 });
             }
+            destroy() {
+                this.dom.remove();
+            }
         }
     );
+    function createPanel(view: EditorView, popupPos: number | undefined): Panel {
+        const dom = document.createElement("div")
+        dom.textContent = "F1: Toggle the help panel"
+        dom.className = "cm-help-panel"
+        return { dom }
+    }
+    const popupState = StateField.define<number | undefined>({
+        create: () => 0,
+        update(value, tr) {
+            for (const effect of tr.effects) {
+                if (effect.is(popupPos)) {
+                    value = effect.value;
+                }
+            }
+            return value;
+        },
+        provide: f => showPanel.from(f, popupPos => {
+            if (popupPos == null) {
+                return null;
+            }
+            return (view: EditorView): Panel => {
+                return createPanel(view, popupPos);
+            }
+        })
+    });
+
+    return [viewPlugin, popupState];
 }
