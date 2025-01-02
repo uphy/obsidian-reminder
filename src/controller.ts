@@ -1,5 +1,4 @@
 import { MarkdownView, TAbstractFile, TFile, Vault, WorkspaceLeaf } from 'obsidian';
-import { SETTINGS } from 'settings';
 import { Content } from 'model/content';
 import type { Reminder, Reminders } from 'model/reminder';
 import type { ReminderListItemViewProxy } from 'ui/reminder-list';
@@ -67,37 +66,7 @@ export class RemindersController {
     return true;
   }
 
-  async convertDateTimeFormat(dateFormat: string, dateTimeFormat: string): Promise<number> {
-    let updated = 0;
-    for (const file of this.vault.getMarkdownFiles()) {
-      const content = new Content(file.path, await this.vault.read(file));
-      let updatedInFile = 0;
-      await content.modifyReminderLines((reminder) => {
-        let converted: string;
-        if (reminder.time.hasTimePart) {
-          converted = reminder.time.format(dateTimeFormat);
-        } else {
-          converted = reminder.time.format(dateFormat);
-        }
-        updated++;
-        updatedInFile++;
-        return {
-          rawTime: converted,
-        };
-      });
-      if (updatedInFile > 0) {
-        await this.vault.modify(file, content.getContent());
-      }
-    }
-    SETTINGS.dateFormat.rawValue.value = dateFormat;
-    SETTINGS.dateTimeFormat.rawValue.value = dateTimeFormat;
-    if (updated > 0) {
-      await this.reloadAllFiles();
-    }
-    return updated;
-  }
-
-  private isMarkdownFile(file: TFile) {
+  isMarkdownFile(file: TFile) {
     return file.extension.toLowerCase() === 'md';
   }
 
@@ -121,28 +90,6 @@ export class RemindersController {
       checked,
       time: reminder.time,
     });
-    await this.vault.modify(file, content.getContent());
-  }
-
-  async toggleCheck(file: TFile, lineNumber: number) {
-    if (!this.isMarkdownFile(file)) {
-      return;
-    }
-    const content = new Content(file.path, await this.vault.read(file));
-
-    const reminder = content.getReminders(false).find((r) => r.rowNumber === lineNumber);
-    if (reminder) {
-      await content.updateReminder(reminder, {
-        checked: !reminder.done,
-      });
-    } else {
-      const todo = content.getTodos().find((t) => t.lineIndex === lineNumber);
-      console.log(todo);
-      if (!todo) {
-        return;
-      }
-      todo.setChecked(!todo.isChecked());
-    }
     await this.vault.modify(file, content.getContent());
   }
 
