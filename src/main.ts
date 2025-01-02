@@ -3,16 +3,15 @@ import { PluginDataIO } from 'data';
 import type { ReadOnlyReference } from 'model/ref';
 import { Reminder, Reminders } from 'model/reminder';
 import { DATE_TIME_FORMATTER } from 'model/time';
-import { App, Platform, Plugin, PluginManifest, WorkspaceLeaf } from 'obsidian';
+import { App, Platform, Plugin, PluginManifest, TFile, WorkspaceLeaf } from 'obsidian';
 import { monkeyPatchConsole } from 'obsidian-hack/obsidian-debug-mobile';
 import { ReminderSettingTab, SETTINGS } from 'settings';
 import { AutoComplete } from 'ui/autocomplete';
 import { DateTimeChooserView } from 'ui/datetime-chooser';
-import { openDateTimeFormatChooser } from 'ui/datetime-format-modal';
 import { buildCodeMirrorPlugin } from 'ui/editor-extension';
 import { ReminderModal } from 'ui/reminder';
 import { ReminderListItemViewProxy } from 'ui/reminder-list';
-import { OkCancel, showOkCancelDialog } from 'ui/util';
+import { registerCommands } from 'commands';
 import { VIEW_TYPE_REMINDER_LIST } from './constants';
 
 export default class ReminderPlugin extends Plugin {
@@ -57,7 +56,7 @@ export default class ReminderPlugin extends Plugin {
 
   override async onload() {
     this.setupUI();
-    this.setupCommands();
+    registerCommands(this, this.autoComplete, this.reminders);
     this.app.workspace.onLayoutReady(async () => {
       await this.pluginDataIO.load();
       if (this.pluginDataIO.debug.value) {
@@ -104,89 +103,6 @@ export default class ReminderPlugin extends Plugin {
     // layout is ready, and will otherwise be enqueued.
     this.app.workspace.onLayoutReady(() => {
       this.viewProxy.openView();
-    });
-  }
-
-  private setupCommands() {
-    this.addCommand({
-      id: 'scan-reminders',
-      name: 'Scan reminders',
-      checkCallback: (checking: boolean) => {
-        if (checking) {
-          return true;
-        }
-        this.remindersController.reloadAllFiles();
-        return true;
-      },
-    });
-
-    this.addCommand({
-      id: 'show-reminders',
-      name: 'Show reminders',
-      checkCallback: (checking: boolean) => {
-        if (!checking) {
-          this.showReminderList();
-        }
-        return true;
-      },
-    });
-
-    this.addCommand({
-      id: 'convert-reminder-time-format',
-      name: 'Convert reminder time format',
-      checkCallback: (checking: boolean) => {
-        if (!checking) {
-          showOkCancelDialog(
-            'Convert reminder time format',
-            'This command rewrite reminder dates in all markdown files.  You should make a backup of your vault before you execute this.  May I continue to convert?',
-          ).then((res) => {
-            if (res !== OkCancel.OK) {
-              return;
-            }
-            openDateTimeFormatChooser(this.app, (dateFormat, dateTimeFormat) => {
-              this.remindersController.convertDateTimeFormat(dateFormat, dateTimeFormat).catch(() => {
-                /* ignore */
-              });
-            });
-          });
-        }
-        return true;
-      },
-    });
-
-    this.addCommand({
-      id: 'show-date-chooser',
-      name: 'Show calendar popup',
-      icon: 'calendar-with-checkmark',
-      hotkeys: [
-        {
-          modifiers: ['Meta', 'Shift'],
-          key: '2', // Shift + 2 = `@`
-        },
-      ],
-      editorCheckCallback: (checking, editor): boolean | void => {
-        if (checking) {
-          return true;
-        }
-
-        this.autoComplete.show(this.app, editor, this.reminders);
-      },
-    });
-    this.addCommand({
-      id: 'toggle-checklist-status',
-      name: 'Toggle checklist status',
-      hotkeys: [
-        {
-          modifiers: ['Meta', 'Shift'],
-          key: 'Enter',
-        },
-      ],
-      editorCheckCallback: (checking, editor, view): boolean | void => {
-        if (checking) {
-          return true;
-        }
-        this.remindersController.toggleCheck(view.file, editor.getCursor().line);
-      },
     });
   }
 
@@ -237,7 +153,7 @@ export default class ReminderPlugin extends Plugin {
     this.viewProxy.reload(false);
 
     if (!this.pluginDataIO.scanned.value) {
-      this.remindersController.reloadAllFiles().then(() => {
+      this.reloadAllFiles().then(() => {
         this.pluginDataIO.scanned.value = true;
         this.pluginDataIO.save();
       });
@@ -327,6 +243,14 @@ export default class ReminderPlugin extends Plugin {
     this.app.workspace.getRightLeaf(false).setViewState({
       type: VIEW_TYPE_REMINDER_LIST,
     });
+  }
+
+  reloadAllFiles() {
+    return this.remindersController.reloadAllFiles();
+  }
+
+  isMarkdownFile(file: TFile) {
+    return this.remindersController.isMarkdownFile(file);
   }
 }
 
