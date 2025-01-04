@@ -3,7 +3,7 @@ import type { ReadOnlyReference } from 'model/ref';
 import type { DateTime } from 'model/time';
 import type { Reminder } from 'model/reminder';
 import { MarkdownView, Platform, TFile, WorkspaceLeaf } from 'obsidian';
-import { ReminderSettingTab, SETTINGS } from 'obsidian/settings';
+import { ReminderSettingTab, SETTINGS } from 'plugin/settings';
 import { VIEW_TYPE_REMINDER_LIST } from './constants';
 import type { ReminderListItemViewProxy } from './reminder-list';
 import { AutoCompletableEditor, AutoComplete } from './autocomplete';

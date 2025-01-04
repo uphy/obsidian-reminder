@@ -1,7 +1,7 @@
 import type { ReadOnlyReference } from 'model/ref';
 import type { DateTime } from 'model/time';
 import { App, Modal } from 'obsidian';
-import { SETTINGS } from 'obsidian/settings';
+import { SETTINGS } from 'plugin/settings';
 import ReminderView from 'ui/Reminder.svelte';
 import type { Reminder } from '../../model/reminder';
 import type { Later } from '../../model/time';

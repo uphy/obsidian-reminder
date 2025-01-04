@@ -1,6 +1,6 @@
-import { OkCancel, showOkCancelDialog } from 'obsidian/ui/util';
+import { OkCancel, showOkCancelDialog } from 'plugin/ui/util';
 import type ReminderPlugin from 'main';
-import { SETTINGS } from 'obsidian/settings';
+import { SETTINGS } from 'plugin/settings';
 import { Content } from 'model/content';
 import { openDateTimeFormatChooser } from '../ui/datetime-format-modal';
 

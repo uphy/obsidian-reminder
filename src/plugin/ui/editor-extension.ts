@@ -2,7 +2,7 @@ import { EditorSelection } from '@codemirror/state';
 import { ViewPlugin, ViewUpdate } from '@codemirror/view';
 import type { Reminders } from 'model/reminder';
 import type { App } from 'obsidian';
-import { SETTINGS } from 'obsidian/settings';
+import { SETTINGS } from 'plugin/settings';
 import { showDateTimeChooserModal } from './date-chooser-modal';
 
 export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {

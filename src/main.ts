@@ -1,13 +1,13 @@
-import { PluginDataIO } from 'obsidian/data';
+import { PluginDataIO } from 'plugin/data';
 import { Reminder, Reminders } from 'model/reminder';
 import { DATE_TIME_FORMATTER } from 'model/time';
 import { App, Plugin, PluginManifest } from 'obsidian';
-import { monkeyPatchConsole } from 'obsidian/obsidian-hack/obsidian-debug-mobile';
-import { SETTINGS } from 'obsidian/settings';
-import { ReminderListItemViewProxy } from 'obsidian/ui/reminder-list';
-import { registerCommands } from 'obsidian/commands';
-import { ReminderPluginUI } from 'obsidian/ui';
-import { ReminderPluginFileSystem } from 'obsidian/vault';
+import { monkeyPatchConsole } from 'plugin/obsidian-hack/obsidian-debug-mobile';
+import { SETTINGS } from 'plugin/settings';
+import { ReminderListItemViewProxy } from 'plugin/ui/reminder-list';
+import { registerCommands } from 'plugin/commands';
+import { ReminderPluginUI } from 'plugin/ui';
+import { ReminderPluginFileSystem } from 'plugin/vault';
 
 export default class ReminderPlugin extends Plugin {
   pluginDataIO: PluginDataIO;
