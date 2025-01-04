@@ -5,7 +5,7 @@ import { App, Plugin, PluginManifest } from 'obsidian';
 import { monkeyPatchConsole } from 'obsidian-hack/obsidian-debug-mobile';
 import { SETTINGS } from 'settings';
 import { ReminderListItemViewProxy } from 'ui/reminder-list';
-import { registerCommands } from 'commands';
+import { registerCommands } from 'plugin/commands';
 import { ReminderPluginUI } from 'plugin/ui';
 import { ReminderPluginFileSystem } from 'plugin/vault';
 
