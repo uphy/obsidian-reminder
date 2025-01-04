@@ -5,7 +5,7 @@ import type { Reminder } from 'model/reminder';
 import { MarkdownView, Platform, TFile, WorkspaceLeaf } from 'obsidian';
 import { ReminderSettingTab, SETTINGS } from 'plugin/settings';
 import { VIEW_TYPE_REMINDER_LIST } from './constants';
-import type { ReminderListItemViewProxy } from './reminder-list';
+import { ReminderListItemViewProxy } from './reminder-list';
 import { AutoCompletableEditor, AutoComplete } from './autocomplete';
 import { DateTimeChooserView } from './datetime-chooser';
 import { buildCodeMirrorPlugin } from './editor-extension';
@@ -15,8 +15,21 @@ export class ReminderPluginUI {
   private autoComplete: AutoComplete;
   private editDetector: EditDetector;
   private reminderModal: ReminderModal;
-
-  constructor(private plugin: ReminderPlugin, private viewProxy: ReminderListItemViewProxy) {
+  private viewProxy: ReminderListItemViewProxy;
+  constructor(private plugin: ReminderPlugin) {
+    this.viewProxy = new ReminderListItemViewProxy(
+      this.plugin.app.workspace,
+      this.plugin.reminders,
+      SETTINGS.reminderTime,
+      // On select a reminder in the list
+      (reminder) => {
+        if (reminder.muteNotification) {
+          this.showReminder(reminder);
+          return;
+        }
+        this.openReminderFile(reminder);
+      },
+    );
     this.autoComplete = new AutoComplete(SETTINGS.autoCompleteTrigger, SETTINGS.reminderTimeStep);
     this.editDetector = new EditDetector(SETTINGS.editDetectionSec);
     this.reminderModal = new ReminderModal(this.plugin.app, SETTINGS.useSystemNotification, SETTINGS.laters);
@@ -81,7 +94,7 @@ export class ReminderPluginUI {
     this.autoComplete.show(this.plugin.app, editor, this.plugin.reminders);
   }
 
-  showReminderModal(
+  private showReminderModal(
     reminder: Reminder,
     onRemindMeLater: (time: DateTime) => void,
     onDone: () => void,
@@ -104,7 +117,7 @@ export class ReminderPluginUI {
     this.plugin.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).forEach((leaf) => leaf.detach());
   }
 
-  async openReminderFile(reminder: Reminder) {
+  private async openReminderFile(reminder: Reminder) {
     const leaf = this.plugin.app.workspace.getLeaf(false);
 
     console.log('Open reminder: ', reminder);
@@ -128,6 +141,36 @@ export class ReminderPluginUI {
       {
         line: reminder.rowNumber,
         ch: line.length,
+      },
+    );
+  }
+
+  showReminder(reminder: Reminder) {
+    reminder.muteNotification = true;
+    this.showReminderModal(
+      reminder,
+      (time) => {
+        console.info('Remind me later: time=%o', time);
+        reminder.time = time;
+        reminder.muteNotification = false;
+        this.plugin.fileSystem.updateReminder(reminder, false);
+        this.plugin.pluginDataIO.save(true);
+      },
+      () => {
+        console.info('done');
+        reminder.muteNotification = false;
+        this.plugin.fileSystem.updateReminder(reminder, true);
+        this.plugin.reminders.removeReminder(reminder);
+        this.plugin.pluginDataIO.save(true);
+      },
+      () => {
+        console.info('Mute');
+        reminder.muteNotification = true;
+        this.reload(true);
+      },
+      () => {
+        console.info('Open');
+        this.openReminderFile(reminder);
       },
     );
   }

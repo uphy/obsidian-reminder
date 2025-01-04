@@ -4,13 +4,12 @@ import { DATE_TIME_FORMATTER } from 'model/time';
 import { App, Plugin, PluginManifest } from 'obsidian';
 import { monkeyPatchConsole } from 'plugin/obsidian-hack/obsidian-debug-mobile';
 import { SETTINGS } from 'plugin/settings';
-import { ReminderListItemViewProxy } from 'plugin/ui/reminder-list';
 import { registerCommands } from 'plugin/commands';
 import { ReminderPluginUI } from 'plugin/ui';
 import { ReminderPluginFileSystem } from 'plugin/vault';
 
 export default class ReminderPlugin extends Plugin {
-  pluginDataIO: PluginDataIO;
+  _pluginDataIO: PluginDataIO;
   private _ui: ReminderPluginUI;
   private _reminders: Reminders;
   private _fileSystem: ReminderPluginFileSystem;
@@ -24,24 +23,11 @@ export default class ReminderPlugin extends Plugin {
       }
       this.pluginDataIO.changed = true;
     });
-    this.pluginDataIO = new PluginDataIO(this, this.reminders);
+    this._pluginDataIO = new PluginDataIO(this, this.reminders);
     this.reminders.reminderTime = SETTINGS.reminderTime;
     DATE_TIME_FORMATTER.setTimeFormat(SETTINGS.dateFormat, SETTINGS.dateTimeFormat, SETTINGS.strictDateFormat);
-    const viewProxy = new ReminderListItemViewProxy(
-      app.workspace,
-      this.reminders,
-      SETTINGS.reminderTime,
-      // On select a reminder in the list
-      (reminder) => {
-        if (reminder.muteNotification) {
-          this.showReminder(reminder);
-          return;
-        }
-        this.ui.openReminderFile(reminder);
-      },
-    );
 
-    this._ui = new ReminderPluginUI(this, viewProxy);
+    this._ui = new ReminderPluginUI(this);
     this._fileSystem = new ReminderPluginFileSystem(app.vault, this.reminders, () => {
       this.ui.reload(true);
     });
@@ -115,7 +101,7 @@ export default class ReminderPlugin extends Plugin {
             await this.sleep(100);
           }
         }
-        this.showReminder(reminder);
+        this.ui.showReminder(reminder);
         previousReminder = reminder;
       }
     }
@@ -128,36 +114,6 @@ export default class ReminderPlugin extends Plugin {
    */
   private async sleep(milliseconds: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
-  }
-
-  private showReminder(reminder: Reminder) {
-    reminder.muteNotification = true;
-    this.ui.showReminderModal(
-      reminder,
-      (time) => {
-        console.info('Remind me later: time=%o', time);
-        reminder.time = time;
-        reminder.muteNotification = false;
-        this.fileSystem.updateReminder(reminder, false);
-        this.pluginDataIO.save(true);
-      },
-      () => {
-        console.info('done');
-        reminder.muteNotification = false;
-        this.fileSystem.updateReminder(reminder, true);
-        this.reminders.removeReminder(reminder);
-        this.pluginDataIO.save(true);
-      },
-      () => {
-        console.info('Mute');
-        reminder.muteNotification = true;
-        this.ui.reload(true);
-      },
-      () => {
-        console.info('Open');
-        this.ui.openReminderFile(reminder);
-      },
-    );
   }
 
   override onunload(): void {
@@ -174,5 +130,9 @@ export default class ReminderPlugin extends Plugin {
 
   get fileSystem() {
     return this._fileSystem;
+  }
+
+  get pluginDataIO() {
+    return this._pluginDataIO;
   }
 }
