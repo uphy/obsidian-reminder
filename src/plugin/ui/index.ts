@@ -5,6 +5,7 @@ import type { Reminder } from 'model/reminder';
 import { MarkdownView, Platform, TFile, WorkspaceLeaf } from 'obsidian';
 import { ReminderSettingTab, SETTINGS } from 'plugin/settings';
 import { registerCommands } from 'plugin/commands';
+import { monkeyPatchConsole } from 'plugin/obsidian-hack/obsidian-debug-mobile';
 import { VIEW_TYPE_REMINDER_LIST } from './constants';
 import { ReminderListItemViewProxy } from './reminder-list';
 import { AutoCompletableEditor, AutoComplete } from './autocomplete';
@@ -68,13 +69,17 @@ export class ReminderPluginUI {
       });
     }
 
+    registerCommands(this.plugin);
+  }
+
+  onLayoutReady() {
+    if (this.plugin.pluginDataIO.debug.value) {
+      monkeyPatchConsole(this.plugin);
+    }
+
     // Open reminder list view. This callback will fire immediately if the
     // layout is ready, and will otherwise be enqueued.
-    this.plugin.app.workspace.onLayoutReady(() => {
-      this.viewProxy.openView();
-    });
-
-    registerCommands(this.plugin);
+    this.viewProxy.openView();
   }
 
   onunload() {

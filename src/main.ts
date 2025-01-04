@@ -1,5 +1,4 @@
 import { NotificationWorker, PluginDataIO, ReminderPluginFileSystem, ReminderPluginUI, SETTINGS } from 'plugin';
-import { monkeyPatchConsole } from 'plugin/obsidian-hack/obsidian-debug-mobile';
 import { Reminders } from 'model/reminder';
 import { DATE_TIME_FORMATTER } from 'model/time';
 import { App, Plugin, PluginManifest } from 'obsidian';
@@ -34,9 +33,7 @@ export default class ReminderPlugin extends Plugin {
     this.ui.onload();
     this.app.workspace.onLayoutReady(async () => {
       await this.pluginDataIO.load();
-      if (this.pluginDataIO.debug.value) {
-        monkeyPatchConsole(this);
-      }
+      this.ui.onLayoutReady();
       this.fileSystem.onload(this);
       this._notificationWorker.startPeriodicTask();
     });
