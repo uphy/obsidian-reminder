@@ -4,6 +4,7 @@ import type { DateTime } from 'model/time';
 import type { Reminder } from 'model/reminder';
 import { MarkdownView, Platform, TFile, WorkspaceLeaf } from 'obsidian';
 import { ReminderSettingTab, SETTINGS } from 'plugin/settings';
+import { registerCommands } from 'plugin/commands';
 import { VIEW_TYPE_REMINDER_LIST } from './constants';
 import { ReminderListItemViewProxy } from './reminder-list';
 import { AutoCompletableEditor, AutoComplete } from './autocomplete';
@@ -72,6 +73,8 @@ export class ReminderPluginUI {
     this.plugin.app.workspace.onLayoutReady(() => {
       this.viewProxy.openView();
     });
+
+    registerCommands(this.plugin);
   }
 
   onunload() {

@@ -1,13 +1,8 @@
-import { PluginDataIO } from 'plugin/data';
-import { Reminder, Reminders } from 'model/reminder';
+import { NotificationWorker, PluginDataIO, ReminderPluginFileSystem, ReminderPluginUI, SETTINGS } from 'plugin';
+import { monkeyPatchConsole } from 'plugin/obsidian-hack/obsidian-debug-mobile';
+import { Reminders } from 'model/reminder';
 import { DATE_TIME_FORMATTER } from 'model/time';
 import { App, Plugin, PluginManifest } from 'obsidian';
-import { monkeyPatchConsole } from 'plugin/obsidian-hack/obsidian-debug-mobile';
-import { SETTINGS } from 'plugin/settings';
-import { registerCommands } from 'plugin/commands';
-import { ReminderPluginUI } from 'plugin/ui';
-import { ReminderPluginFileSystem } from 'plugin/filesystem';
-import { NotificationWorker } from 'plugin/notification-worker';
 
 export default class ReminderPlugin extends Plugin {
   _pluginDataIO: PluginDataIO;
@@ -37,7 +32,6 @@ export default class ReminderPlugin extends Plugin {
 
   override async onload() {
     this.ui.onload();
-    registerCommands(this);
     this.app.workspace.onLayoutReady(async () => {
       await this.pluginDataIO.load();
       if (this.pluginDataIO.debug.value) {
