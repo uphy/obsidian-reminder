@@ -1,19 +1,19 @@
-import { RemindersController } from 'controller';
 import { PluginDataIO } from 'plugin/data';
 import { Reminder, Reminders } from 'model/reminder';
 import { DATE_TIME_FORMATTER } from 'model/time';
-import { App, Plugin, PluginManifest, TFile } from 'obsidian';
+import { App, Plugin, PluginManifest } from 'obsidian';
 import { monkeyPatchConsole } from 'obsidian-hack/obsidian-debug-mobile';
 import { SETTINGS } from 'settings';
 import { ReminderListItemViewProxy } from 'ui/reminder-list';
 import { registerCommands } from 'commands';
 import { ReminderPluginUI } from 'plugin/ui';
+import { ReminderPluginFileSystem } from 'plugin/vault';
 
 export default class ReminderPlugin extends Plugin {
   pluginDataIO: PluginDataIO;
   private _ui: ReminderPluginUI;
   private _reminders: Reminders;
-  private remindersController: RemindersController;
+  private _fileSystem: ReminderPluginFileSystem;
 
   constructor(app: App, manifest: PluginManifest) {
     super(app, manifest);
@@ -42,7 +42,9 @@ export default class ReminderPlugin extends Plugin {
     );
 
     this._ui = new ReminderPluginUI(this, viewProxy);
-    this.remindersController = new RemindersController(app.vault, this.ui, this.reminders);
+    this._fileSystem = new ReminderPluginFileSystem(app.vault, this.reminders, () => {
+      this.ui.reload(true);
+    });
   }
 
   override async onload() {
@@ -53,29 +55,8 @@ export default class ReminderPlugin extends Plugin {
       if (this.pluginDataIO.debug.value) {
         monkeyPatchConsole(this);
       }
-      this.watchVault();
+      this.fileSystem.onload(this);
       this.startPeriodicTask();
-    });
-  }
-
-  private watchVault() {
-    [
-      this.app.vault.on('modify', async (file) => {
-        this.remindersController.reloadFile(file, true);
-      }),
-      this.app.vault.on('delete', (file) => {
-        this.remindersController.removeFile(file.path);
-      }),
-      this.app.vault.on('rename', async (file, oldPath) => {
-        // We only reload the file if it CAN be deleted, otherwise this can
-        // cause crashes.
-        if (await this.remindersController.removeFile(oldPath)) {
-          // We need to do the reload synchronously so as to avoid racing.
-          await this.remindersController.reloadFile(file);
-        }
-      }),
-    ].forEach((eventRef) => {
-      this.registerEvent(eventRef);
     });
   }
 
@@ -105,7 +86,7 @@ export default class ReminderPlugin extends Plugin {
     this.ui.reload(false);
 
     if (!this.pluginDataIO.scanned.value) {
-      this.reloadAllFiles().then(() => {
+      this.fileSystem.reloadRemindersInAllFiles().then(() => {
         this.pluginDataIO.scanned.value = true;
         this.pluginDataIO.save();
       });
@@ -157,13 +138,13 @@ export default class ReminderPlugin extends Plugin {
         console.info('Remind me later: time=%o', time);
         reminder.time = time;
         reminder.muteNotification = false;
-        this.remindersController.updateReminder(reminder, false);
+        this.fileSystem.updateReminder(reminder, false);
         this.pluginDataIO.save(true);
       },
       () => {
         console.info('done');
         reminder.muteNotification = false;
-        this.remindersController.updateReminder(reminder, true);
+        this.fileSystem.updateReminder(reminder, true);
         this.reminders.removeReminder(reminder);
         this.pluginDataIO.save(true);
       },
@@ -183,19 +164,15 @@ export default class ReminderPlugin extends Plugin {
     this.ui.onunload();
   }
 
-  reloadAllFiles() {
-    return this.remindersController.reloadAllFiles();
-  }
-
-  isMarkdownFile(file: TFile) {
-    return this.remindersController.isMarkdownFile(file);
-  }
-
   get reminders() {
     return this._reminders;
   }
 
   get ui() {
     return this._ui;
+  }
+
+  get fileSystem() {
+    return this._fileSystem;
   }
 }

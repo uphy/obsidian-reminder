@@ -34,7 +34,7 @@ async function convertDateTimeFormat(
   SETTINGS.dateFormat.rawValue.value = dateFormat;
   SETTINGS.dateTimeFormat.rawValue.value = dateTimeFormat;
   if (updated > 0) {
-    await plugin.reloadAllFiles();
+    await plugin.fileSystem.reloadRemindersInAllFiles();
   }
   return updated;
 }

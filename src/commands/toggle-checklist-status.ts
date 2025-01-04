@@ -3,7 +3,7 @@ import { Content } from 'model/content';
 import type { MarkdownView, TFile } from 'obsidian';
 
 async function toggleCheck(plugin: ReminderPlugin, file: TFile, lineNumber: number) {
-  if (!plugin.isMarkdownFile(file)) {
+  if (!plugin.fileSystem.isMarkdownFile(file)) {
     return;
   }
   const vault = plugin.app.vault;

@@ -4,6 +4,6 @@ export function scanReminders(checking: boolean, plugin: ReminderPlugin): boolea
   if (checking) {
     return true;
   }
-  plugin.reloadAllFiles();
+  plugin.fileSystem.reloadRemindersInAllFiles();
   return true;
 }

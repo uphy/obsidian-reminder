@@ -90,7 +90,7 @@ export class Reminders {
     this.onChange();
   }
 
-  public removeFile(filePath: string) {
+  public removeByFile(filePath: string) {
     if (this.fileToReminders.delete(filePath)) {
       this.sortReminders();
       return true;
