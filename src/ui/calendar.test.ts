@@ -1,4 +1,4 @@
-import { Calendar } from 'model/calendar';
+import { Calendar } from 'ui/calendar';
 import moment from 'moment';
 
 describe('Calendar', (): void => {
