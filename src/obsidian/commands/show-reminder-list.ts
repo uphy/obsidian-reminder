@@ -1,4 +1,4 @@
-import type { ReminderPluginUI } from 'plugin/ui';
+import type { ReminderPluginUI } from 'obsidian/ui';
 
 export function showReminderList(checking: boolean, ui: ReminderPluginUI) {
   if (!checking) {

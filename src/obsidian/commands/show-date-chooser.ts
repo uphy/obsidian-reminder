@@ -1,5 +1,5 @@
 import type { Editor } from 'obsidian';
-import type { ReminderPluginUI } from 'plugin/ui';
+import type { ReminderPluginUI } from 'obsidian/ui';
 
 export function showDateChooser(checking: boolean, editor: Editor, ui: ReminderPluginUI): boolean | void {
   if (checking) {
