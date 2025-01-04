@@ -33,6 +33,7 @@
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-unused-imports": "^4.1.4",
     "jest": "^27.0.6",
     "moment": "^2.29.1",
     "obsidian": "^0.16.3",

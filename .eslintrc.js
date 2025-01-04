@@ -22,7 +22,7 @@ module.exports = {
       modules: true,
     },
   },
-  plugins: ['@typescript-eslint', 'import'],
+  plugins: ['@typescript-eslint', 'import', 'unused-imports'],
   rules: {
     'linebreak-style': ['error', 'unix'],
     quotes: ['error', 'single', { avoidEscape: true }],
@@ -36,5 +36,6 @@ module.exports = {
         ignoreDeclarationSort: true,
       },
     ],
+    'unused-imports/no-unused-imports': 'error'
   },
 };
