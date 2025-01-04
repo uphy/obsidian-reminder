@@ -1,42 +1,33 @@
 import { RemindersController } from 'controller';
-import { PluginDataIO } from 'data';
-import type { ReadOnlyReference } from 'model/ref';
+import { PluginDataIO } from 'plugin/data';
 import { Reminder, Reminders } from 'model/reminder';
 import { DATE_TIME_FORMATTER } from 'model/time';
-import { App, Platform, Plugin, PluginManifest, TFile, WorkspaceLeaf } from 'obsidian';
+import { App, Plugin, PluginManifest, TFile } from 'obsidian';
 import { monkeyPatchConsole } from 'obsidian-hack/obsidian-debug-mobile';
-import { ReminderSettingTab, SETTINGS } from 'settings';
-import { AutoComplete } from 'ui/autocomplete';
-import { DateTimeChooserView } from 'ui/datetime-chooser';
-import { buildCodeMirrorPlugin } from 'ui/editor-extension';
-import { ReminderModal } from 'ui/reminder';
+import { SETTINGS } from 'settings';
 import { ReminderListItemViewProxy } from 'ui/reminder-list';
 import { registerCommands } from 'commands';
-import { VIEW_TYPE_REMINDER_LIST } from './constants';
+import { ReminderPluginUI } from 'plugin/ui';
 
 export default class ReminderPlugin extends Plugin {
   pluginDataIO: PluginDataIO;
-  private viewProxy: ReminderListItemViewProxy;
-  private reminders: Reminders;
+  private _ui: ReminderPluginUI;
+  private _reminders: Reminders;
   private remindersController: RemindersController;
-  private editDetector: EditDetector;
-  private reminderModal: ReminderModal;
-  private autoComplete: AutoComplete;
 
   constructor(app: App, manifest: PluginManifest) {
     super(app, manifest);
-    this.reminders = new Reminders(() => {
+    this._reminders = new Reminders(() => {
       // on changed
-      if (this.viewProxy) {
-        this.viewProxy.invalidate();
+      if (this.ui) {
+        this.ui.invalidate();
       }
       this.pluginDataIO.changed = true;
     });
     this.pluginDataIO = new PluginDataIO(this, this.reminders);
     this.reminders.reminderTime = SETTINGS.reminderTime;
     DATE_TIME_FORMATTER.setTimeFormat(SETTINGS.dateFormat, SETTINGS.dateTimeFormat, SETTINGS.strictDateFormat);
-    this.editDetector = new EditDetector(SETTINGS.editDetectionSec);
-    this.viewProxy = new ReminderListItemViewProxy(
+    const viewProxy = new ReminderListItemViewProxy(
       app.workspace,
       this.reminders,
       SETTINGS.reminderTime,
@@ -46,17 +37,17 @@ export default class ReminderPlugin extends Plugin {
           this.showReminder(reminder);
           return;
         }
-        this.openReminderFile(reminder);
+        this.ui.openReminderFile(reminder);
       },
     );
-    this.remindersController = new RemindersController(app.vault, this.viewProxy, this.reminders);
-    this.reminderModal = new ReminderModal(this.app, SETTINGS.useSystemNotification, SETTINGS.laters);
-    this.autoComplete = new AutoComplete(SETTINGS.autoCompleteTrigger, SETTINGS.reminderTimeStep);
+
+    this._ui = new ReminderPluginUI(this, viewProxy);
+    this.remindersController = new RemindersController(app.vault, this.ui, this.reminders);
   }
 
   override async onload() {
-    this.setupUI();
-    registerCommands(this, this.autoComplete, this.reminders);
+    this.ui.onload();
+    registerCommands(this);
     this.app.workspace.onLayoutReady(async () => {
       await this.pluginDataIO.load();
       if (this.pluginDataIO.debug.value) {
@@ -64,45 +55,6 @@ export default class ReminderPlugin extends Plugin {
       }
       this.watchVault();
       this.startPeriodicTask();
-    });
-  }
-
-  private setupUI() {
-    // Reminder List
-    this.registerView(VIEW_TYPE_REMINDER_LIST, (leaf: WorkspaceLeaf) => {
-      return this.viewProxy.createView(leaf);
-    });
-    this.addSettingTab(new ReminderSettingTab(this.app, this));
-
-    this.registerDomEvent(document, 'keydown', (evt: KeyboardEvent) => {
-      this.editDetector.fileChanged();
-    });
-    if (Platform.isDesktopApp) {
-      this.registerEditorExtension(buildCodeMirrorPlugin(this.app, this.reminders));
-      this.registerCodeMirror((cm: CodeMirror.Editor) => {
-        const dateTimeChooser = new DateTimeChooserView(cm, this.reminders);
-        cm.on('change', (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
-          if (!this.autoComplete.isTrigger(cmEditor, changeObj)) {
-            dateTimeChooser.cancel();
-            return;
-          }
-          dateTimeChooser
-            .show()
-            .then((value) => {
-              this.autoComplete.insert(cmEditor, value);
-            })
-            .catch(() => {
-              /* do nothing on cancel */
-            });
-          return;
-        });
-      });
-    }
-
-    // Open reminder list view. This callback will fire immediately if the
-    // layout is ready, and will otherwise be enqueued.
-    this.app.workspace.onLayoutReady(() => {
-      this.viewProxy.openView();
     });
   }
 
@@ -150,7 +102,7 @@ export default class ReminderPlugin extends Plugin {
   }
 
   private async periodicTask(): Promise<void> {
-    this.viewProxy.reload(false);
+    this.ui.reload(false);
 
     if (!this.pluginDataIO.scanned.value) {
       this.reloadAllFiles().then(() => {
@@ -161,7 +113,7 @@ export default class ReminderPlugin extends Plugin {
 
     this.pluginDataIO.save(false);
 
-    if (this.editDetector.isEditing()) {
+    if (this.ui.isEditing()) {
       return;
     }
     const expired = this.reminders.getExpiredReminders(SETTINGS.reminderTime.value);
@@ -199,7 +151,7 @@ export default class ReminderPlugin extends Plugin {
 
   private showReminder(reminder: Reminder) {
     reminder.muteNotification = true;
-    this.reminderModal.show(
+    this.ui.showReminderModal(
       reminder,
       (time) => {
         console.info('Remind me later: time=%o', time);
@@ -218,31 +170,17 @@ export default class ReminderPlugin extends Plugin {
       () => {
         console.info('Mute');
         reminder.muteNotification = true;
-        this.viewProxy.reload(true);
+        this.ui.reload(true);
       },
       () => {
         console.info('Open');
-        this.openReminderFile(reminder);
+        this.ui.openReminderFile(reminder);
       },
     );
   }
 
-  private async openReminderFile(reminder: Reminder) {
-    const leaf = this.app.workspace.getUnpinnedLeaf();
-    await this.remindersController.openReminder(reminder, leaf);
-  }
-
   override onunload(): void {
-    this.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).forEach((leaf) => leaf.detach());
-  }
-
-  showReminderList(): void {
-    if (this.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).length) {
-      return;
-    }
-    this.app.workspace.getRightLeaf(false).setViewState({
-      type: VIEW_TYPE_REMINDER_LIST,
-    });
+    this.ui.onunload();
   }
 
   reloadAllFiles() {
@@ -252,25 +190,12 @@ export default class ReminderPlugin extends Plugin {
   isMarkdownFile(file: TFile) {
     return this.remindersController.isMarkdownFile(file);
   }
-}
 
-class EditDetector {
-  private lastModified?: Date;
-
-  constructor(private editDetectionSec: ReadOnlyReference<number>) {}
-
-  fileChanged() {
-    this.lastModified = new Date();
+  get reminders() {
+    return this._reminders;
   }
 
-  isEditing(): boolean {
-    if (this.editDetectionSec.value <= 0) {
-      return false;
-    }
-    if (this.lastModified == null) {
-      return false;
-    }
-    const elapsedSec = (new Date().getTime() - this.lastModified.getTime()) / 1000;
-    return elapsedSec < this.editDetectionSec.value;
+  get ui() {
+    return this._ui;
   }
 }

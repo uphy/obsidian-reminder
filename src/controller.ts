@@ -1,36 +1,10 @@
 import { MarkdownView, TAbstractFile, TFile, Vault, WorkspaceLeaf } from 'obsidian';
 import { Content } from 'model/content';
 import type { Reminder, Reminders } from 'model/reminder';
-import type { ReminderListItemViewProxy } from 'ui/reminder-list';
+import type { ReminderPluginUI } from 'plugin/ui';
 
 export class RemindersController {
-  constructor(private vault: Vault, private viewProxy: ReminderListItemViewProxy, private reminders: Reminders) {}
-
-  async openReminder(reminder: Reminder, leaf: WorkspaceLeaf) {
-    console.log('Open reminder: ', reminder);
-    const file = this.vault.getAbstractFileByPath(reminder.file);
-    if (!(file instanceof TFile)) {
-      console.error("Cannot open file because it isn't a TFile: %o", file);
-      return;
-    }
-
-    // Open the reminder file and select the reminder
-    await leaf.openFile(file);
-    if (!(leaf.view instanceof MarkdownView)) {
-      return;
-    }
-    const line = leaf.view.editor.getLine(reminder.rowNumber);
-    leaf.view.editor.setSelection(
-      {
-        line: reminder.rowNumber,
-        ch: 0,
-      },
-      {
-        line: reminder.rowNumber,
-        ch: line.length,
-      },
-    );
-  }
+  constructor(private vault: Vault, private ui: ReminderPluginUI, private reminders: Reminders) {}
 
   async removeFile(path: string): Promise<boolean> {
     console.debug('Remove file: path=%s', path);
@@ -95,10 +69,6 @@ export class RemindersController {
 
   private reloadUI() {
     console.debug('Reload reminder list view');
-    if (this.viewProxy === null) {
-      console.debug('reminder list is null.  Skipping UI reload.');
-      return;
-    }
-    this.viewProxy.reload(true);
+    this.ui.reload(true);
   }
 }
