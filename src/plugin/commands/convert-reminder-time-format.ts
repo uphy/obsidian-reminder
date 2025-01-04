@@ -1,6 +1,5 @@
 import { OkCancel, showOkCancelDialog } from 'plugin/ui/util';
 import type ReminderPlugin from 'main';
-import { SETTINGS } from 'plugin/settings';
 import { Content } from 'model/content';
 import { openDateTimeFormatChooser } from '../ui/datetime-format-modal';
 
@@ -31,8 +30,8 @@ async function convertDateTimeFormat(
       await vault.modify(file, content.getContent());
     }
   }
-  SETTINGS.dateFormat.rawValue.value = dateFormat;
-  SETTINGS.dateTimeFormat.rawValue.value = dateTimeFormat;
+  plugin.settings.dateFormat.rawValue.value = dateFormat;
+  plugin.settings.dateTimeFormat.rawValue.value = dateTimeFormat;
   if (updated > 0) {
     await plugin.fileSystem.reloadRemindersInAllFiles();
   }

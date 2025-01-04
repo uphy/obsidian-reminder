@@ -1,6 +1,5 @@
 import type ReminderPlugin from 'main';
 import type { Reminder } from 'model/reminder';
-import { SETTINGS } from './settings';
 
 export class NotificationWorker {
   constructor(private plugin: ReminderPlugin) {}
@@ -23,7 +22,7 @@ export class NotificationWorker {
         this.periodicTask().finally(() => {
           intervalTaskRunning = false;
         });
-      }, SETTINGS.reminderCheckIntervalSec.value * 1000),
+      }, this.plugin.settings.reminderCheckIntervalSec.value * 1000),
     );
   }
 
@@ -42,7 +41,7 @@ export class NotificationWorker {
     if (this.plugin.ui.isEditing()) {
       return;
     }
-    const expired = this.plugin.reminders.getExpiredReminders(SETTINGS.reminderTime.value);
+    const expired = this.plugin.reminders.getExpiredReminders(this.plugin.settings.reminderTime.value);
 
     let previousReminder: Reminder | undefined = undefined;
     for (const reminder of expired) {

@@ -17,11 +17,10 @@ import {
   TimeSerde,
 } from 'model/settings';
 import { DateTime, Later, Time } from 'model/time';
-import { App, PluginSettingTab, Plugin_2 } from 'obsidian';
 
 export const TAG_RESCAN = 're-scan';
 
-class Settings {
+export class Settings {
   settings: SettingTabModel = new SettingTabModel();
 
   reminderTime: SettingModel<string, Time>;
@@ -267,19 +266,5 @@ class ReminderFormatSettings {
       .map((s) => this.settingKeyToFormatName.get(s.key))
       .filter((s): s is ReminderFormatType => s !== undefined);
     changeReminderFormat(selectedFormats);
-  }
-}
-
-export const SETTINGS = new Settings();
-
-export class ReminderSettingTab extends PluginSettingTab {
-  constructor(app: App, plugin: Plugin_2) {
-    super(app, plugin);
-  }
-
-  display(): void {
-    const { containerEl } = this;
-
-    SETTINGS.settings.displayOn(containerEl);
   }
 }

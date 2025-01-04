@@ -2,7 +2,7 @@ import type { ReadOnlyReference } from 'model/ref';
 import type { Reminders } from 'model/reminder';
 import type { DateTime } from 'model/time';
 import { App, EditorPosition, Platform } from 'obsidian';
-import { SETTINGS } from 'plugin/settings';
+import type { ReminderFormatType } from 'model/format';
 import { showDateTimeChooserModal } from './date-chooser-modal';
 import { DateTimeChooserView } from './datetime-chooser';
 
@@ -15,7 +15,11 @@ export interface AutoCompletableEditor {
 }
 
 export class AutoComplete {
-  constructor(private trigger: ReadOnlyReference<string>, private timeStep: ReadOnlyReference<number>) {}
+  constructor(
+    private trigger: ReadOnlyReference<string>,
+    private timeStep: ReadOnlyReference<number>,
+    private primaryFormat: ReadOnlyReference<ReminderFormatType>,
+  ) {}
 
   isTrigger(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) {
     const trigger = this.trigger.value;
@@ -77,7 +81,7 @@ export class AutoComplete {
       line = line.substring(0, pos.ch - this.trigger.value.length);
     }
     // append reminder to the line
-    const format = SETTINGS.primaryFormat.value.format;
+    const format = this.primaryFormat.value.format;
     try {
       const appended = format.appendReminder(line, value)?.insertedLine;
       if (appended == null) {

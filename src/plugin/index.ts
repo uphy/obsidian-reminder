@@ -7,7 +7,6 @@
  *
  * @module plugin
  */
-export { SETTINGS } from './settings';
 export { NotificationWorker } from './notification-worker';
 export { ReminderPluginUI } from './ui';
 export { ReminderPluginFileSystem } from './filesystem';

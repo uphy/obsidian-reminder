@@ -2,10 +2,10 @@ import { EditorSelection } from '@codemirror/state';
 import { ViewPlugin, ViewUpdate } from '@codemirror/view';
 import type { Reminders } from 'model/reminder';
 import type { App } from 'obsidian';
-import { SETTINGS } from 'plugin/settings';
+import type { Settings } from 'plugin/settings';
 import { showDateTimeChooserModal } from './date-chooser-modal';
 
-export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
+export function buildCodeMirrorPlugin(app: App, reminders: Reminders, settings: Settings) {
   return ViewPlugin.fromClass(
     class {
       update(update: ViewUpdate) {
@@ -18,12 +18,12 @@ export function buildCodeMirrorPlugin(app: App, reminders: Reminders) {
           if (inserted.length === 0) {
             return;
           }
-          const trigger = SETTINGS.autoCompleteTrigger.value;
-          const timeStep = SETTINGS.reminderTimeStep.value;
+          const trigger = settings.autoCompleteTrigger.value;
+          const timeStep = settings.reminderTimeStep.value;
           if (trigger === text) {
             showDateTimeChooserModal(app, reminders, timeStep)
               .then((value) => {
-                const format = SETTINGS.primaryFormat.value.format;
+                const format = settings.primaryFormat.value.format;
                 try {
                   const line = doc.lineAt(toB);
 

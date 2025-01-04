@@ -2,8 +2,7 @@ import type ReminderPlugin from 'main';
 import type { ReadOnlyReference } from 'model/ref';
 import type { DateTime } from 'model/time';
 import type { Reminder } from 'model/reminder';
-import { MarkdownView, Platform, TFile, WorkspaceLeaf } from 'obsidian';
-import { ReminderSettingTab, SETTINGS } from 'plugin/settings';
+import { App, MarkdownView, Platform, PluginSettingTab, TFile, WorkspaceLeaf } from 'obsidian';
 import { registerCommands } from 'plugin/commands';
 import { monkeyPatchConsole } from 'plugin/obsidian-hack/obsidian-debug-mobile';
 import { VIEW_TYPE_REMINDER_LIST } from './constants';
@@ -22,7 +21,7 @@ export class ReminderPluginUI {
     this.viewProxy = new ReminderListItemViewProxy(
       this.plugin.app.workspace,
       this.plugin.reminders,
-      SETTINGS.reminderTime,
+      this.plugin.settings.reminderTime,
       // On select a reminder in the list
       (reminder) => {
         if (reminder.muteNotification) {
@@ -32,9 +31,13 @@ export class ReminderPluginUI {
         this.openReminderFile(reminder);
       },
     );
-    this.autoComplete = new AutoComplete(SETTINGS.autoCompleteTrigger, SETTINGS.reminderTimeStep);
-    this.editDetector = new EditDetector(SETTINGS.editDetectionSec);
-    this.reminderModal = new ReminderModal(this.plugin.app, SETTINGS.useSystemNotification, SETTINGS.laters);
+    this.autoComplete = new AutoComplete(
+      plugin.settings.autoCompleteTrigger,
+      plugin.settings.reminderTimeStep,
+      plugin.settings.primaryFormat,
+    );
+    this.editDetector = new EditDetector(plugin.settings.editDetectionSec);
+    this.reminderModal = new ReminderModal(plugin.app, plugin.settings.useSystemNotification, plugin.settings.laters);
   }
 
   onload() {
@@ -48,7 +51,9 @@ export class ReminderPluginUI {
       this.editDetector.fileChanged();
     });
     if (Platform.isDesktopApp) {
-      this.plugin.registerEditorExtension(buildCodeMirrorPlugin(this.plugin.app, this.plugin.reminders));
+      this.plugin.registerEditorExtension(
+        buildCodeMirrorPlugin(this.plugin.app, this.plugin.reminders, this.plugin.settings),
+      );
       this.plugin.registerCodeMirror((cm: CodeMirror.Editor) => {
         const dateTimeChooser = new DateTimeChooserView(cm, this.plugin.reminders);
         cm.on('change', (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
@@ -202,5 +207,17 @@ class EditDetector {
     }
     const elapsedSec = (new Date().getTime() - this.lastModified.getTime()) / 1000;
     return elapsedSec < this.editDetectionSec.value;
+  }
+}
+
+export class ReminderSettingTab extends PluginSettingTab {
+  constructor(app: App, private plugin: ReminderPlugin) {
+    super(app, plugin);
+  }
+
+  display(): void {
+    const { containerEl } = this;
+
+    this.plugin.settings.settings.displayOn(containerEl);
   }
 }

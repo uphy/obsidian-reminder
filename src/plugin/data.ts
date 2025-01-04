@@ -1,8 +1,8 @@
+import type ReminderPlugin from 'main';
 import { Reference } from 'model/ref';
 import { Reminder, Reminders } from 'model/reminder';
 import { DateTime } from 'model/time';
-import type { Plugin_2 } from 'obsidian';
-import { SETTINGS, TAG_RESCAN } from 'plugin/settings';
+import { Settings, TAG_RESCAN } from 'plugin/settings';
 
 interface ReminderData {
   title: string;
@@ -15,9 +15,10 @@ export class PluginDataIO {
   changed: boolean = false;
   public scanned: Reference<boolean> = new Reference(false);
   public debug: Reference<boolean> = new Reference(false);
+  private readonly _settings = new Settings();
 
-  constructor(private plugin: Plugin_2, private reminders: Reminders) {
-    SETTINGS.forEach((setting) => {
+  constructor(private plugin: ReminderPlugin, private reminders: Reminders) {
+    this.settings.forEach((setting) => {
       setting.rawValue.onChanged(() => {
         if (this.restoring) {
           return;
@@ -43,7 +44,7 @@ export class PluginDataIO {
     }
 
     const loadedSettings = data.settings;
-    SETTINGS.forEach((setting) => {
+    this.settings.forEach((setting) => {
       setting.load(loadedSettings);
     });
 
@@ -79,7 +80,7 @@ export class PluginDataIO {
       }));
     });
     const settings = {};
-    SETTINGS.forEach((setting) => {
+    this.settings.forEach((setting) => {
       setting.store(settings);
     });
     await this.plugin.saveData({
@@ -89,5 +90,9 @@ export class PluginDataIO {
       settings,
     });
     this.changed = false;
+  }
+
+  get settings() {
+    return this._settings;
   }
 }
