@@ -1,9 +1,9 @@
 import type { ReadOnlyReference } from 'model/ref';
 import type { Time } from 'model/time';
 import { ItemView, TFile, View, Workspace, WorkspaceLeaf } from 'obsidian';
-import { VIEW_TYPE_REMINDER_LIST } from '../../constants';
-import { Reminder, Reminders, groupReminders } from '../../model/reminder';
 import ReminderListView from 'ui/ReminderList.svelte';
+import { Reminder, Reminders, groupReminders } from '../../model/reminder';
+import { VIEW_TYPE_REMINDER_LIST } from './constants';
 
 class ReminderListItemView extends ItemView {
   private view?: ReminderListView;

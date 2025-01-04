@@ -4,7 +4,7 @@ import type { DateTime } from 'model/time';
 import type { Reminder } from 'model/reminder';
 import { MarkdownView, Platform, TFile, WorkspaceLeaf } from 'obsidian';
 import { ReminderSettingTab, SETTINGS } from 'obsidian/settings';
-import { VIEW_TYPE_REMINDER_LIST } from '../../constants';
+import { VIEW_TYPE_REMINDER_LIST } from './constants';
 import type { ReminderListItemViewProxy } from './reminder-list';
 import { AutoCompletableEditor, AutoComplete } from './autocomplete';
 import { DateTimeChooserView } from './datetime-chooser';
