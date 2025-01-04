@@ -2,7 +2,7 @@ import { Reference } from 'model/ref';
 import { Reminder, Reminders } from 'model/reminder';
 import { DateTime } from 'model/time';
 import type { Plugin_2 } from 'obsidian';
-import { SETTINGS, TAG_RESCAN } from 'settings';
+import { SETTINGS, TAG_RESCAN } from 'obsidian/settings';
 
 interface ReminderData {
   title: string;

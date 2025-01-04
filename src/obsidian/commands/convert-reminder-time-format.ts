@@ -1,7 +1,7 @@
 import { openDateTimeFormatChooser } from 'ui/datetime-format-modal';
 import { OkCancel, showOkCancelDialog } from 'ui/util';
 import type ReminderPlugin from 'main';
-import { SETTINGS } from 'settings';
+import { SETTINGS } from 'obsidian/settings';
 import { Content } from 'model/content';
 
 async function convertDateTimeFormat(
