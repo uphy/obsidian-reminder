@@ -1,13 +1,11 @@
 import type ReminderPlugin from 'main';
-import type { Reminders } from 'model/reminder';
-import type { AutoComplete } from 'ui/autocomplete';
 import { scanReminders } from './scan-reminders';
 import { showReminderList } from './show-reminder-list';
 import { convertReminderTimeFormat } from './convert-reminder-time-format';
 import { showDateChooser } from './show-date-chooser';
 import { toggleChecklistStatus } from './toggle-checklist-status';
 
-export function registerCommands(plugin: ReminderPlugin, autoComplete: AutoComplete, reminders: Reminders) {
+export function registerCommands(plugin: ReminderPlugin) {
   plugin.addCommand({
     id: 'scan-reminders',
     name: 'Scan reminders',
@@ -20,7 +18,7 @@ export function registerCommands(plugin: ReminderPlugin, autoComplete: AutoCompl
     id: 'show-reminders',
     name: 'Show reminders',
     checkCallback: (checking: boolean) => {
-      return showReminderList(checking, plugin);
+      return showReminderList(checking, plugin.ui);
     },
   });
 
@@ -43,7 +41,7 @@ export function registerCommands(plugin: ReminderPlugin, autoComplete: AutoCompl
       },
     ],
     editorCheckCallback: (checking, editor): boolean | void => {
-      return showDateChooser(checking, editor, plugin, autoComplete, reminders);
+      return showDateChooser(checking, editor, plugin.ui);
     },
   });
 

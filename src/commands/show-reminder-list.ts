@@ -1,8 +1,8 @@
-import type ReminderPlugin from 'main';
+import type { ReminderPluginUI } from 'plugin/ui';
 
-export function showReminderList(checking: boolean, plugin: ReminderPlugin) {
+export function showReminderList(checking: boolean, ui: ReminderPluginUI) {
   if (!checking) {
-    plugin.showReminderList();
+    ui.showReminderList();
   }
   return true;
 }
