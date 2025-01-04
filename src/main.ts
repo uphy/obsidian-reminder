@@ -6,7 +6,7 @@ import { monkeyPatchConsole } from 'plugin/obsidian-hack/obsidian-debug-mobile';
 import { SETTINGS } from 'plugin/settings';
 import { registerCommands } from 'plugin/commands';
 import { ReminderPluginUI } from 'plugin/ui';
-import { ReminderPluginFileSystem } from 'plugin/vault';
+import { ReminderPluginFileSystem } from 'plugin/filesystem';
 
 export default class ReminderPlugin extends Plugin {
   _pluginDataIO: PluginDataIO;
