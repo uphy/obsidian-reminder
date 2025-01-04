@@ -9,7 +9,7 @@ import { AutoCompletableEditor, AutoComplete } from 'ui/autocomplete';
 import { DateTimeChooserView } from 'ui/datetime-chooser';
 import { buildCodeMirrorPlugin } from 'ui/editor-extension';
 import { ReminderModal } from 'ui/reminder';
-import { VIEW_TYPE_REMINDER_LIST } from '../constants';
+import { VIEW_TYPE_REMINDER_LIST } from '../../constants';
 
 export class ReminderPluginUI {
   private autoComplete: AutoComplete;
