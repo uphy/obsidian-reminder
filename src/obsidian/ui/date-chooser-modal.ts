@@ -1,7 +1,7 @@
 import type { Reminders } from 'model/reminder';
 import type { DateTime } from 'model/time';
 import { App, Modal, Platform } from 'obsidian';
-import DateTimeChooser from './components/DateTimeChooser.svelte';
+import DateTimeChooser from 'ui/DateTimeChooser.svelte';
 
 class DateTimeChooserModal extends Modal {
   private selected?: DateTime;

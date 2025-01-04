@@ -1,7 +1,7 @@
 <script lang="typescript">
   import type { Component } from "obsidian";
-  import type { Reminder } from "../../model/reminder";
-  import type { DateTime, Later } from "../../model/time";
+  import type { Reminder } from "../model/reminder";
+  import type { DateTime, Later } from "../model/time";
   import Icon from "./Icon.svelte";
   import Markdown from "./Markdown.svelte";
 

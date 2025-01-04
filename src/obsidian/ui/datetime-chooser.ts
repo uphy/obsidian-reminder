@@ -1,7 +1,7 @@
 import type { Reminders } from 'model/reminder';
 import type { DateTime } from 'model/time';
 import moment from 'moment';
-import DateTimeChooser from './components/DateTimeChooser.svelte';
+import DateTimeChooser from 'ui/DateTimeChooser.svelte';
 
 export class DateTimeChooserView {
   private view: HTMLElement;

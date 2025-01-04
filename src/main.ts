@@ -4,7 +4,7 @@ import { DATE_TIME_FORMATTER } from 'model/time';
 import { App, Plugin, PluginManifest } from 'obsidian';
 import { monkeyPatchConsole } from 'obsidian/obsidian-hack/obsidian-debug-mobile';
 import { SETTINGS } from 'obsidian/settings';
-import { ReminderListItemViewProxy } from 'ui/reminder-list';
+import { ReminderListItemViewProxy } from 'obsidian/ui/reminder-list';
 import { registerCommands } from 'obsidian/commands';
 import { ReminderPluginUI } from 'obsidian/ui';
 import { ReminderPluginFileSystem } from 'obsidian/vault';

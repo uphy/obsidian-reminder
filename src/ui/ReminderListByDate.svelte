@@ -1,7 +1,7 @@
 <script lang="typescript">
-  import type { DateTime } from "model/time";
+  import type { DateTime } from "../model/time";
   import type { Component } from "obsidian";
-  import type { Reminder } from "../../model/reminder";
+  import type { Reminder } from "../model/reminder";
   import Markdown from "./Markdown.svelte";
 
   export let reminders: Array<Reminder>;

@@ -1,15 +1,15 @@
 import type ReminderPlugin from 'main';
 import type { ReadOnlyReference } from 'model/ref';
 import type { DateTime } from 'model/time';
-import type { ReminderListItemViewProxy } from 'ui/reminder-list';
 import type { Reminder } from 'model/reminder';
 import { MarkdownView, Platform, TFile, WorkspaceLeaf } from 'obsidian';
 import { ReminderSettingTab, SETTINGS } from 'obsidian/settings';
-import { AutoCompletableEditor, AutoComplete } from 'ui/autocomplete';
-import { DateTimeChooserView } from 'ui/datetime-chooser';
-import { buildCodeMirrorPlugin } from 'ui/editor-extension';
-import { ReminderModal } from 'ui/reminder';
 import { VIEW_TYPE_REMINDER_LIST } from '../../constants';
+import type { ReminderListItemViewProxy } from './reminder-list';
+import { AutoCompletableEditor, AutoComplete } from './autocomplete';
+import { DateTimeChooserView } from './datetime-chooser';
+import { buildCodeMirrorPlugin } from './editor-extension';
+import { ReminderModal } from './reminder';
 
 export class ReminderPluginUI {
   private autoComplete: AutoComplete;

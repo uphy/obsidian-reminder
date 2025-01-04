@@ -1,5 +1,5 @@
 <script lang="typescript">
-  import type { GroupedReminder, Reminder } from "model/reminder";
+  import type { GroupedReminder, Reminder } from "../model/reminder";
   import type { Component } from "obsidian";
   import ReminderListByDate from "./ReminderListByDate.svelte";
 
