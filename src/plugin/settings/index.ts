@@ -8,15 +8,8 @@ import {
   tasksPluginReminderFormat,
 } from 'model/format';
 import { ReminderFormatConfig, ReminderFormatParameterKey } from 'model/format/reminder-base';
-import {
-  LatersSerde,
-  RawSerde,
-  ReminderFormatTypeSerde,
-  SettingModel,
-  SettingTabModel,
-  TimeSerde,
-} from 'model/settings';
 import { DateTime, Later, Time } from 'model/time';
+import { LatersSerde, RawSerde, ReminderFormatTypeSerde, SettingModel, SettingTabModel, TimeSerde } from './helper';
 
 export const TAG_RESCAN = 're-scan';
 
