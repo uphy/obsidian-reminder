@@ -1,11 +1,9 @@
 <script lang="typescript">
-  import type { Component } from "obsidian";
   import type { DateTime } from "../model/time";
   import type { Reminder } from "../model/reminder";
   import Markdown from "./Markdown.svelte";
 
   export let reminders: Array<Reminder>;
-  export let component: Component | undefined;
   export let onOpenReminder: (reminder: Reminder) => void = () => {};
   export let timeToString = (time: DateTime) => time.format("HH:MM");
   export let generateLink: (reminder: Reminder) => string = () => "";
@@ -35,11 +33,7 @@
           </span>
           <div class="reminder-title-container">
             <span class="reminder-title">
-              <Markdown
-                markdown={reminder.title}
-                sourcePath={reminder.file}
-                {component}
-              />
+              <Markdown markdown={reminder.title} sourcePath={reminder.file} />
             </span>
             <span class="reminder-file">
               {reminder.getFileName()}

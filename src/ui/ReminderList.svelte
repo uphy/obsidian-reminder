@@ -1,10 +1,8 @@
 <script lang="typescript">
-  import type { Component } from "obsidian";
   import type { GroupedReminder, Reminder } from "../model/reminder";
   import ReminderListByDate from "./ReminderListByDate.svelte";
 
   export let groups: Array<GroupedReminder>;
-  export let component: Component;
   export let onOpenReminder: (reminder: Reminder) => void;
   export let generateLink: (reminder: Reminder) => string;
 </script>
@@ -17,7 +15,6 @@
       </div>
       <ReminderListByDate
         reminders={group.reminders}
-        {component}
         {onOpenReminder}
         timeToString={(time) => group.timeToString(time)}
         {generateLink}

@@ -1,5 +1,4 @@
 <script lang="typescript">
-  import type { Component } from "obsidian";
   import { onMount, tick } from "svelte";
   import type { Reminder } from "../model/reminder";
   import type { DateTime, Later } from "../model/time";
@@ -7,7 +6,6 @@
   import Markdown from "./Markdown.svelte";
 
   export let reminder: Reminder;
-  export let component: Component | undefined;
   export let onRemindMeLater: (time: DateTime) => void;
   export let onDone: () => void;
   export let onOpenFile: () => void;
@@ -33,11 +31,7 @@
 
 <main>
   <h1 class="reminder-title">
-    <Markdown
-      markdown={reminder.title}
-      sourcePath={reminder.file}
-      {component}
-    />
+    <Markdown markdown={reminder.title} sourcePath={reminder.file} />
   </h1>
   <button class="reminder-file" on:click={onOpenFile}>
     <Icon icon="link" />

@@ -1,13 +1,11 @@
 <script lang="typescript">
   import moment from "moment";
-  import type { Component } from "obsidian";
   import type { Reminders } from "../model/reminder";
   import { DateTime } from "../model/time";
   import CalendarView from "./Calendar.svelte";
   import TimePicker from "./TimePicker.svelte";
   import ReminderListByDate from "./ReminderListByDate.svelte";
 
-  export let component: Component | undefined;
   export let date = moment();
   export let reminders: Reminders;
   export let onSelect: (time: DateTime) => void;
@@ -36,7 +34,6 @@
       <hr class="dtchooser-divider" />
       <ReminderListByDate
         reminders={reminders.byDate(new DateTime(date, false))}
-        {component}
       />
     </div>
   </CalendarView>

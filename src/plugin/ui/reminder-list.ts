@@ -35,7 +35,6 @@ class ReminderListItemView extends ItemView {
       props: {
         groups: this.remindersForView(),
         onOpenReminder: this.onOpenReminder,
-        component: this,
         generateLink: (reminder: Reminder): string => {
           const aFile = this.app.vault.getAbstractFileByPath(reminder.file);
           const destinationFile = this.app.workspace.getActiveFile();

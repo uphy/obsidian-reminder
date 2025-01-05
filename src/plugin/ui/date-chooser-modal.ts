@@ -34,7 +34,6 @@ class DateTimeChooserModal extends Modal {
           this.select(time);
         },
         reminders: this.reminders,
-        component: undefined,
         timeStep: this.timeStep,
       },
     });
