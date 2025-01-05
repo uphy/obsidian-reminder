@@ -4,18 +4,12 @@ import typescriptEslintPlugin from '@typescript-eslint/eslint-plugin';
 import importPlugin from 'eslint-plugin-import';
 import unusedImportsPlugin from 'eslint-plugin-unused-imports';
 import typescriptEslintParser from '@typescript-eslint/parser';
-
+import eslintPluginSvelte from 'eslint-plugin-svelte';
+import svelteParser from 'svelte-eslint-parser';
 
 /** @type {import("eslint").Linter.Config} */
 const config = {
-  files: ["src/**/*.ts"],
-  /*
-  env: {
-    es6: true,
-    node: true,
-    browser: true,
-  },
-  */
+  files: ["src/**/*.ts", "src/**/*.svelte"],
   /*
    extends: [
      
@@ -36,6 +30,7 @@ const config = {
       ecmaFeatures: {
         modules: true,
       },
+      extraFileExtensions: ['.svelte'],
     },
   },
   plugins: {
@@ -66,5 +61,15 @@ export default [
     ignores: ['main.js'],
   },
   config,
+  ...eslintPluginSvelte.configs['flat/recommended'],
+  {
+    files: ["src/**/*.svelte"],
+    languageOptions: {
+      parser: svelteParser,
+      parserOptions: {
+        parser: typescriptEslintParser,
+      }
+    },
+  },
   eslintConfigPrettier,
 ];

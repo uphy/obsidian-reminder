@@ -1,6 +1,6 @@
 <script lang="typescript">
-  import type { GroupedReminder, Reminder } from "../model/reminder";
   import type { Component } from "obsidian";
+  import type { GroupedReminder, Reminder } from "../model/reminder";
   import ReminderListByDate from "./ReminderListByDate.svelte";
 
   export let groups: Array<GroupedReminder>;

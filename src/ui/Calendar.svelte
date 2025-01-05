@@ -1,7 +1,7 @@
 <script lang="typescript">
-    import { Calendar } from "./calendar";
     import moment from "moment";
     import { createEventDispatcher, onMount } from 'svelte';
+    import { Calendar } from "./calendar";
     import { TimedInputHandler } from "./timed-input-handler";
 
     export let value: moment.Moment = moment();
@@ -85,7 +85,6 @@
         slot.style.width = table.clientWidth + "px";
     });
 </script>
-<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
 <div class="reminder-calendar" tabindex="0" role="grid" on:focus={()=>{dispatch("focus")}} on:blur={()=>{dispatch("blur")}} on:keydown={handleKeyDown}>
     <div class="year-month">
         <button tabindex="-1" class="month-nav" on:click={() => previousMonth()}>&lt;</button>

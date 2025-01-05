@@ -1,8 +1,8 @@
 <script lang="typescript">
-    import type { Reminders } from "../model/reminder";
-    import { DateTime } from "../model/time";
     import moment from "moment";
     import type { Component } from "obsidian";
+    import type { Reminders } from "../model/reminder";
+    import { DateTime } from "../model/time";
     import CalendarView from "./Calendar.svelte";
     import TimePicker from "./TimePicker.svelte";
     import ReminderListByDate from "./ReminderListByDate.svelte";
