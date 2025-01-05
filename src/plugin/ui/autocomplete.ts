@@ -1,7 +1,8 @@
 import type { ReadOnlyReference } from 'model/ref';
 import type { Reminders } from 'model/reminder';
 import type { DateTime } from 'model/time';
-import { App, EditorPosition, Platform } from 'obsidian';
+import { App, Platform } from 'obsidian';
+import type { EditorPosition } from 'obsidian';
 import type { ReminderFormatType } from 'model/format';
 import { showDateTimeChooserModal } from './date-chooser-modal';
 import { DateTimeChooserView } from './datetime-chooser';

@@ -9,12 +9,14 @@ export class DateTimeChooserView {
   private resultResolve?: (result: DateTime) => void;
   private resultReject?: () => void;
 
-  constructor(private editor: CodeMirror.Editor, reminders: Reminders) {
+  constructor(
+    private editor: CodeMirror.Editor,
+    reminders: Reminders,
+  ) {
     this.view = document.createElement('div');
     this.view.addClass('date-time-chooser-popup');
     this.view.style.position = 'fixed';
     this.dateTimeChooser = new DateTimeChooser({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       target: this.view,
       props: {
         onSelect: (time: DateTime) => {

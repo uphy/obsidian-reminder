@@ -7,7 +7,7 @@
   import { onMount, tick } from "svelte";
 
   export let reminder: Reminder;
-  export let component: Component;
+  export let component: Component|undefined;
   export let onRemindMeLater: (time: DateTime) => void;
   export let onDone: () => void;
   export let onOpenFile: () => void;

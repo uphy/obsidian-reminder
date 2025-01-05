@@ -31,7 +31,7 @@ osascript <<EOS
 EOS
 }
 
-npm run build
+npm run dev
 
 for target in $(cat deploy-targets.txt)
 do

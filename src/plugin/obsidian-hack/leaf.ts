@@ -4,14 +4,14 @@ export async function findLeafByFile(app: App, file: TFile, open = false): Promi
   let found: WorkspaceLeaf | null = null;
   app.workspace.iterateAllLeaves((leaf) => {
     if (leaf.view instanceof MarkdownView) {
-      if (leaf.view.file.path === file.path) {
+      if (leaf.view.file?.path === file.path) {
         found = leaf;
       }
     }
   });
 
   if (found === null && open) {
-    found = app.workspace.getUnpinnedLeaf();
+    found = app.workspace.getLeaf(false);
     await found.openFile(file);
     return found;
   }

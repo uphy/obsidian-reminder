@@ -1,4 +1,5 @@
 import type ReminderPlugin from 'main';
+import { MarkdownView } from 'obsidian';
 import { scanReminders } from './scan-reminders';
 import { showReminderList } from './show-reminder-list';
 import { convertReminderTimeFormat } from './convert-reminder-time-format';
@@ -55,7 +56,11 @@ export function registerCommands(plugin: ReminderPlugin) {
       },
     ],
     editorCheckCallback: (checking, editor, view): boolean | void => {
-      return toggleChecklistStatus(checking, view, plugin);
+      if (view instanceof MarkdownView) {
+        return toggleChecklistStatus(checking, view, plugin);
+      } else {
+        return false;
+      }
     },
   });
 }

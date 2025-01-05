@@ -1,8 +1,10 @@
 import type { MarkdownDocument, Todo } from 'model/format/markdown';
 import { DATE_TIME_FORMATTER, DateTime } from 'model/time';
-import moment, { Moment } from 'moment';
+import moment from 'moment';
+import type { Moment } from 'moment';
 import { RRule } from 'rrule';
-import { ReminderEdit, ReminderFormatParameterKey, ReminderModel, TodoBasedReminderFormat } from './reminder-base';
+import { ReminderFormatParameterKey, TodoBasedReminderFormat } from './reminder-base';
+import type { ReminderEdit, ReminderModel } from './reminder-base';
 import { Symbol, Tokens, splitBySymbol } from './splitter';
 
 function removeTags(text: string): string {
@@ -278,6 +280,9 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
     rruleOptions.dtstart = dtStart.utc(true).toDate();
     const rrule = new RRule(rruleOptions);
     const rdate = rrule.after(dtStart.toDate(), false);
+    if (rdate == null) {
+      return undefined;
+    }
 
     // apply rrule to `base`
     const diff = rdate.getTime() - rruleOptions.dtstart.getTime();

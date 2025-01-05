@@ -7,8 +7,8 @@ import { registerCommands } from 'plugin/commands';
 import { monkeyPatchConsole } from 'plugin/obsidian-hack/obsidian-debug-mobile';
 import { VIEW_TYPE_REMINDER_LIST } from './constants';
 import { ReminderListItemViewProxy } from './reminder-list';
-import { AutoCompletableEditor, AutoComplete } from './autocomplete';
-import { DateTimeChooserView } from './datetime-chooser';
+import { AutoComplete } from './autocomplete';
+import type { AutoCompletableEditor } from './autocomplete';
 import { buildCodeMirrorPlugin } from './editor-extension';
 import { ReminderModal } from './reminder';
 
@@ -54,24 +54,6 @@ export class ReminderPluginUI {
       this.plugin.registerEditorExtension(
         buildCodeMirrorPlugin(this.plugin.app, this.plugin.reminders, this.plugin.settings),
       );
-      this.plugin.registerCodeMirror((cm: CodeMirror.Editor) => {
-        const dateTimeChooser = new DateTimeChooserView(cm, this.plugin.reminders);
-        cm.on('change', (cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) => {
-          if (!this.autoComplete.isTrigger(cmEditor, changeObj)) {
-            dateTimeChooser.cancel();
-            return;
-          }
-          dateTimeChooser
-            .show()
-            .then((value) => {
-              this.autoComplete.insert(cmEditor, value);
-            })
-            .catch(() => {
-              /* do nothing on cancel */
-            });
-          return;
-        });
-      });
     }
 
     registerCommands(this.plugin);
@@ -121,7 +103,7 @@ export class ReminderPluginUI {
     if (this.plugin.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).length) {
       return;
     }
-    this.plugin.app.workspace.getRightLeaf(false).setViewState({
+    this.plugin.app.workspace.getRightLeaf(false)?.setViewState({
       type: VIEW_TYPE_REMINDER_LIST,
     });
   }
@@ -211,7 +193,10 @@ class EditDetector {
 }
 
 export class ReminderSettingTab extends PluginSettingTab {
-  constructor(app: App, private plugin: ReminderPlugin) {
+  constructor(
+    app: App,
+    private plugin: ReminderPlugin,
+  ) {
     super(app, plugin);
   }
 

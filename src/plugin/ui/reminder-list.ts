@@ -31,7 +31,6 @@ class ReminderListItemView extends ItemView {
 
   override async onOpen(): Promise<void> {
     this.view = new ReminderListView({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       target: (this as any).contentEl,
       props: {
         groups: this.remindersForView(),
@@ -95,7 +94,7 @@ export class ReminderListItemViewProxy {
       return;
     }
     // Create new view
-    this.workspace.getRightLeaf(false).setViewState({
+    this.workspace.getRightLeaf(false)?.setViewState({
       type: VIEW_TYPE_REMINDER_LIST,
     });
   }

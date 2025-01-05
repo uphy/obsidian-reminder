@@ -9,7 +9,8 @@ import {
 } from 'model/format';
 import { ReminderFormatConfig, ReminderFormatParameterKey } from 'model/format/reminder-base';
 import { DateTime, Later, Time } from 'model/time';
-import { LatersSerde, RawSerde, ReminderFormatTypeSerde, SettingModel, SettingTabModel, TimeSerde } from './helper';
+import { LatersSerde, RawSerde, ReminderFormatTypeSerde, SettingTabModel, TimeSerde } from './helper';
+import type { SettingModel } from './helper';
 
 export const TAG_RESCAN = 're-scan';
 

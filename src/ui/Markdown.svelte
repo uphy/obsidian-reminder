@@ -18,5 +18,5 @@
 </script>
 
 <span>
-    <span class="reminder-markdown" bind:this={span} />
+    <span class="reminder-markdown" bind:this={span}></span>
 </span>

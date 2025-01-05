@@ -2,15 +2,14 @@
     import { setIcon } from "obsidian";
     import { onMount } from "svelte";
     export let icon = "";
-    export let size = 16;
     let span: HTMLElement;
 
     onMount(() => {
-        setIcon(span, icon, size);
+        setIcon(span, icon);
     });
 </script>
 
-<span class="icon" bind:this={span} />
+<span class="icon" bind:this={span}></span>
 
 <style>
     .icon {

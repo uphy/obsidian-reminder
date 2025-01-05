@@ -86,7 +86,7 @@
     });
 </script>
 <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
-<div class="reminder-calendar" tabindex="0" on:focus={()=>{dispatch("focus")}} on:blur={()=>{dispatch("blur")}} on:keydown={handleKeyDown}>
+<div class="reminder-calendar" tabindex="0" role="grid" on:focus={()=>{dispatch("focus")}} on:blur={()=>{dispatch("blur")}} on:keydown={handleKeyDown}>
     <div class="year-month">
         <button tabindex="-1" class="month-nav" on:click={() => previousMonth()}>&lt;</button>
         <span class="month">{calendar.current.monthStart.format("MMM")}</span>

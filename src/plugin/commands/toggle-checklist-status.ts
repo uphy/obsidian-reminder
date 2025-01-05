@@ -29,5 +29,7 @@ export function toggleChecklistStatus(checking: boolean, view: MarkdownView, plu
   if (checking) {
     return true;
   }
-  toggleCheck(plugin, view.file, view.editor.getCursor().line);
+  if (view && view.file) {
+    toggleCheck(plugin, view.file, view.editor.getCursor().line);
+  }
 }

@@ -1,7 +1,8 @@
 import { DateTime } from 'model/time';
 import moment from 'moment';
 import type { Todo } from './markdown';
-import { ReminderModel, TodoBasedReminderFormat } from './reminder-base';
+import { TodoBasedReminderFormat } from './reminder-base';
+import type { ReminderModel } from './reminder-base';
 import { escapeRegExpChars } from './util';
 
 type KanbanSettingType = {
@@ -142,7 +143,10 @@ export class KanbanReminderModel implements ReminderModel {
     return new KanbanReminderModel(splitted.title, splitted.time);
   }
 
-  constructor(public title: string, public time: DateTime) {}
+  constructor(
+    public title: string,
+    public time: DateTime,
+  ) {}
 
   getTitle(): string {
     return this.title.trim();

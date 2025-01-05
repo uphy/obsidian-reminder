@@ -1,6 +1,7 @@
 import { DATE_TIME_FORMATTER, DateTime } from 'model/time';
 import type { Todo } from './markdown';
-import { ReminderFormatParameterKey, ReminderModel, TodoBasedReminderFormat } from './reminder-base';
+import { ReminderFormatParameterKey, TodoBasedReminderFormat } from './reminder-base';
+import type { ReminderModel } from './reminder-base';
 
 class DefaultReminderModel implements ReminderModel {
   public static readonly regexp = /^(?<title1>.*?)\(@(?<time>.+?)\)(?<title2>.*)$/;

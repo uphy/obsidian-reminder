@@ -1,7 +1,8 @@
 import { NotificationWorker, PluginData, ReminderPluginFileSystem, ReminderPluginUI } from 'plugin';
 import { Reminders } from 'model/reminder';
 import { DATE_TIME_FORMATTER } from 'model/time';
-import { App, Plugin, PluginManifest } from 'obsidian';
+import { App, Plugin } from 'obsidian';
+import type { PluginManifest } from 'obsidian';
 
 export default class ReminderPlugin extends Plugin {
   _data: PluginData;

@@ -1,5 +1,6 @@
 import { ReminderFormatConfig } from './reminder-base';
-import { MarkdownDocument, ReminderEdit, ReminderFormat } from '.';
+import { MarkdownDocument } from '.';
+import type { ReminderEdit, ReminderFormat } from '.';
 
 export class ReminderFormatTestUtil<T extends ReminderFormat> {
   constructor(private creator: () => T) {}

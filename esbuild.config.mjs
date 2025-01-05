@@ -1,9 +1,9 @@
-import esbuild from "esbuild";
 import process from "process";
+import fs from 'fs';
+import esbuild from "esbuild";
 import builtins from 'builtin-modules'
 import esbuildSvelte from "esbuild-svelte";
-import sveltePreprocess from "svelte-preprocess";
-import fs from 'fs';
+import { sveltePreprocess } from "svelte-preprocess";
 
 const banner =
     `/*
@@ -36,7 +36,6 @@ esbuild.build({
         '@lezer/lr',
         ...builtins],
     format: 'cjs',
-    watch: !prod,
     target: 'es2016',
     logLevel: "info",
     // minify: prod ? true : false,
@@ -62,4 +61,10 @@ esbuild.build({
             }
         }
     ]
-}).catch(() => process.exit(1));
+}).then((result) => {
+    if (process.env.NODE_ENV === 'development') {
+        result.watch();
+    }
+}).catch(() => {
+    process.exit(1);
+});

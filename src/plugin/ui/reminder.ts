@@ -106,7 +106,7 @@ class NotificationModal extends Modal {
       props: {
         reminder: this.reminder,
         laters: this.laters,
-        component: this,
+        component: undefined,
         onRemindMeLater: (time: DateTime) => {
           this.onRemindMeLater(time);
           this.canceled = false;

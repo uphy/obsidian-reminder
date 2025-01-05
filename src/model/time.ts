@@ -1,4 +1,5 @@
-import { ConstantReference, ReadOnlyReference } from 'model/ref';
+import { ConstantReference } from 'model/ref';
+import type { ReadOnlyReference } from 'model/ref';
 import moment from 'moment';
 
 export class DateTime {
@@ -18,7 +19,10 @@ export class DateTime {
     return to.fixedTime(defaultTime).diff(from.fixedTime(defaultTime), unit);
   }
 
-  constructor(private time: moment.Moment, private _hasTimePart: boolean) {}
+  constructor(
+    private time: moment.Moment,
+    private _hasTimePart: boolean,
+  ) {}
 
   public getTimeInMillis(defaultTime?: Time): number {
     return this.fixedTime(defaultTime).valueOf();
@@ -100,7 +104,10 @@ export class Time {
     }
     return new Time(hour, minute);
   }
-  private constructor(private hour: number, private minute: number) {}
+  private constructor(
+    private hour: number,
+    private minute: number,
+  ) {}
 
   get minutes(): number {
     return this.hour * 60 + this.minute;
@@ -187,7 +194,10 @@ export function nextYear(): later {
 }
 
 export class Later {
-  constructor(public label: string, public later: later) {}
+  constructor(
+    public label: string,
+    public later: later,
+  ) {}
 }
 
 export function parseLaters(laters: string): Array<Later> {

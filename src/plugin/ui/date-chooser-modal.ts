@@ -28,7 +28,6 @@ class DateTimeChooserModal extends Modal {
     }
 
     new DateTimeChooser({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       target: targetElement,
       props: {
         onSelect: (time: DateTime) => {

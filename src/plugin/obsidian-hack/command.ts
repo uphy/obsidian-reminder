@@ -1,4 +1,5 @@
-import { App, Command, Editor, MarkdownView, TFile, WorkspaceLeaf } from 'obsidian';
+import { App, Editor, MarkdownView, TFile, WorkspaceLeaf } from 'obsidian';
+import type { Command } from 'obsidian';
 import { findLeafByFile } from './leaf';
 
 class AbstractCommand {
@@ -59,7 +60,10 @@ class RunnableCommand extends AbstractCommand {
 }
 
 class RunnableEditorCommand extends AbstractCommand {
-  constructor(private app: App, command: Command) {
+  constructor(
+    private app: App,
+    command: Command,
+  ) {
     super(command);
   }
 
