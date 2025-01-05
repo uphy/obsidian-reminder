@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: '18'
+          node-version: '21'
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -70,9 +70,9 @@ jobs:
           git tag $version
           git push --tags
       - name: Use Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
-          node-version: '16.x' # You might need to adjust this value to your own version
+          node-version: '21'
       - name: Build
         id: build
         run: |
