@@ -36,12 +36,13 @@ esbuild.build({
         '@lezer/lr',
         ...builtins],
     format: 'cjs',
-    target: 'es2016',
+    target: 'es2018',
     logLevel: "info",
     // minify: prod ? true : false,
     sourcemap: prod ? false : 'inline',
     treeShaking: true,
     outfile: 'main.js',
+    minify: prod,
     plugins: [
         esbuildSvelte({
             preprocess: sveltePreprocess(),
