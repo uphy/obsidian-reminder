@@ -53,6 +53,9 @@
     "rrule": "^2.8.1",
     "svelte": "^4.2.18"
   },
+  "engines": {
+    "node": ">=21.0.0"
+  },
   "overrides": {
     "@electron/get": "2.0.2"
   },
