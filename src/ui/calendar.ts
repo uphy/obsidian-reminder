@@ -72,9 +72,9 @@ export class Calendar {
 
   public calendarString() {
     let str = `${this._current.monthStart.format('YYYY, MMM')}\nSun Mon Tue Wed Thu Fri Sat\n`;
-    this._current.weeks.forEach((week, weekIndex) => {
+    this._current.weeks.forEach((week) => {
       let line = ' ';
-      week.days.forEach((slot, slotIndex) => {
+      week.days.forEach((slot) => {
         let s;
         if (slot.date) {
           if (this._current.isThisMonth(slot.date)) {

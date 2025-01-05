@@ -249,12 +249,12 @@ class ReminderFormatSettings {
     this.reminderFormatSettings.push(setting);
 
     setting.rawValue.onChanged(() => {
-      this.updateReminderFormat(setting);
+      this.updateReminderFormat();
     });
     return setting;
   }
 
-  private updateReminderFormat(setting: SettingModel<boolean, boolean>) {
+  private updateReminderFormat() {
     const selectedFormats = this.reminderFormatSettings
       .filter((s) => s.value)
       .map((s) => this.settingKeyToFormatName.get(s.key))

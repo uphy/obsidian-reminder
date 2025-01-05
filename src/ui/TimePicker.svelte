@@ -47,16 +47,20 @@
           }
           break;
         case 2:
-          const prefix = input + ":";
-          const candidates = options.filter(o => o.startsWith(prefix));
-          if (candidates.length > 1) {
-            value = candidates[0];
+          {
+            const prefix = input + ":";
+            const candidates = options.filter(o => o.startsWith(prefix));
+            if (candidates.length > 1) {
+              value = candidates[0];
+            }
+            break;
           }
-          break;
         case 4:
-          const time = input.slice(0, 2) + ":" + input.slice(2, 4);
-          if (options.includes(time)) {
-            value = time;
+          {
+            const time = input.slice(0, 2) + ":" + input.slice(2, 4);
+            if (options.includes(time)) {
+              value = time;
+            }
           }
           break;
       }

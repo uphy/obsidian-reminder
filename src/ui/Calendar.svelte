@@ -47,16 +47,18 @@
                     value = value.set("date", parseInt(input));
                     break;
                 case 4:
-                    let month = input.slice(0, 2);
-                    let date = input.slice(2, 4);
-                    if (month.startsWith("0")) {
-                        month = month.slice(1);
+                    {
+                        let month = input.slice(0, 2);
+                        let date = input.slice(2, 4);
+                        if (month.startsWith("0")) {
+                            month = month.slice(1);
+                        }
+                        if (date.startsWith("0")) {
+                            date = date.slice(1);
+                        }
+                        value = value.set("month", parseInt(month) - 1);
+                        value = value.set("date", parseInt(date));
                     }
-                    if (date.startsWith("0")) {
-                        date = date.slice(1);
-                    }
-                    value = value.set("month", parseInt(month) - 1);
-                    value = value.set("date", parseInt(date));
                     break;
             }
             return;

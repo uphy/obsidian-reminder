@@ -303,7 +303,7 @@ class DropdownOption {
   ) {}
 }
 
-class DropdownSettingModelBuilder<E> extends AbstractSettingModelBuilder<string> {
+class DropdownSettingModelBuilder extends AbstractSettingModelBuilder<string> {
   private options: Array<DropdownOption> = [];
 
   addOption(label: string, value: string) {

@@ -4,7 +4,7 @@ import { App, Modal } from 'obsidian';
 import ReminderView from 'ui/Reminder.svelte';
 import type { Reminder } from '../../model/reminder';
 import type { Later } from '../../model/time';
-const electron = require('electron');
+const electron = window.require ? window.require('electron') : undefined;
 
 export class ReminderModal {
   constructor(

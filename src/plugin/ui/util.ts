@@ -1,6 +1,6 @@
 import type Electron from 'electron';
 
-const electron = require('electron');
+const electron = window.require ? window.require('electron') : undefined;
 
 export enum OkCancel {
   OK,

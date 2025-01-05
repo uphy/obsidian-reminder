@@ -47,7 +47,7 @@ export class ReminderPluginUI {
     });
     this.plugin.addSettingTab(new ReminderSettingTab(this.plugin.app, this.plugin));
 
-    this.plugin.registerDomEvent(document, 'keydown', (evt: KeyboardEvent) => {
+    this.plugin.registerDomEvent(document, 'keydown', () => {
       this.editDetector.fileChanged();
     });
     if (Platform.isDesktopApp) {

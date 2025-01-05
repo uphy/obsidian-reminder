@@ -55,7 +55,6 @@ esbuild.build({
                     const outcss = outfile.replace(/\.js$/, ".css");
                     const fixcss = outfile.replace(/main\.js$/, "styles.css");
                     if (fs.existsSync(outcss)) {
-                        console.log("Renaming", outcss, "to", fixcss);
                         fs.renameSync(outcss, fixcss);
                     }
                 });

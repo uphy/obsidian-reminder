@@ -1,7 +1,11 @@
 import { App, FuzzySuggestModal } from 'obsidian';
 
 class DateTimeFormatModal extends FuzzySuggestModal<string> {
-  constructor(app: App, private suggestions: Array<string>, private onChooseSuggestionFunc: (item: string) => void) {
+  constructor(
+    app: App,
+    private suggestions: Array<string>,
+    private onChooseSuggestionFunc: (item: string) => void,
+  ) {
     super(app);
   }
 
@@ -11,7 +15,7 @@ class DateTimeFormatModal extends FuzzySuggestModal<string> {
   getItemText(item: string): string {
     return item;
   }
-  onChooseItem(item: string, evt: MouseEvent | KeyboardEvent): void {
+  onChooseItem(item: string): void {
     this.onChooseSuggestionFunc(item);
   }
 }
