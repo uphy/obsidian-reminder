@@ -1,5 +1,5 @@
-import type ReminderPlugin from 'main';
-import type { Reminder } from 'model/reminder';
+import type ReminderPlugin from "main";
+import type { Reminder } from "model/reminder";
 
 export class NotificationWorker {
   constructor(private plugin: ReminderPlugin) {}
@@ -15,7 +15,9 @@ export class NotificationWorker {
     this.plugin.registerInterval(
       window.setInterval(() => {
         if (intervalTaskRunning) {
-          console.log('Skip reminder interval task because task is already running.');
+          console.log(
+            "Skip reminder interval task because task is already running.",
+          );
           return;
         }
         intervalTaskRunning = true;
@@ -41,7 +43,9 @@ export class NotificationWorker {
     if (this.plugin.ui.isEditing()) {
       return;
     }
-    const expired = this.plugin.reminders.getExpiredReminders(this.plugin.settings.reminderTime.value);
+    const expired = this.plugin.reminders.getExpiredReminders(
+      this.plugin.settings.reminderTime.value,
+    );
 
     let previousReminder: Reminder | undefined = undefined;
     for (const reminder of expired) {

@@ -1,4 +1,4 @@
-import { App, FuzzySuggestModal } from 'obsidian';
+import { App, FuzzySuggestModal } from "obsidian";
 
 class DateTimeFormatModal extends FuzzySuggestModal<string> {
   constructor(
@@ -24,13 +24,23 @@ export function openDateTimeFormatChooser(
   app: App,
   onSelectFormat: (dateFormat: string, dateTimeFormat: string) => void,
 ) {
-  new DateTimeFormatModal(app, ['YYYY-MM-DD', 'YYYY/MM/DD', 'DD-MM-YYYY', 'DD/MM/YYYY'], (dateFormat) => {
-    new DateTimeFormatModal(
-      app,
-      ['YYYY-MM-DD HH:mm', 'YYYY/MM/DD HH:mm', 'DD-MM-YYYY HH:mm', 'DD/MM/YYYY HH:mm', 'YYYY-MM-DDTHH:mm:ss:SSS'],
-      (dateTimeFormat) => {
-        onSelectFormat(dateFormat, dateTimeFormat);
-      },
-    ).open();
-  }).open();
+  new DateTimeFormatModal(
+    app,
+    ["YYYY-MM-DD", "YYYY/MM/DD", "DD-MM-YYYY", "DD/MM/YYYY"],
+    (dateFormat) => {
+      new DateTimeFormatModal(
+        app,
+        [
+          "YYYY-MM-DD HH:mm",
+          "YYYY/MM/DD HH:mm",
+          "DD-MM-YYYY HH:mm",
+          "DD/MM/YYYY HH:mm",
+          "YYYY-MM-DDTHH:mm:ss:SSS",
+        ],
+        (dateTimeFormat) => {
+          onSelectFormat(dateFormat, dateTimeFormat);
+        },
+      ).open();
+    },
+  ).open();
 }

@@ -1,7 +1,7 @@
-import type { Reminders } from 'model/reminder';
-import type { DateTime } from 'model/time';
-import { App, Modal, Platform } from 'obsidian';
-import DateTimeChooser from 'ui/DateTimeChooser.svelte';
+import type { Reminders } from "model/reminder";
+import type { DateTime } from "model/time";
+import { App, Modal, Platform } from "obsidian";
+import DateTimeChooser from "ui/DateTimeChooser.svelte";
 
 class DateTimeChooserModal extends Modal {
   private selected?: DateTime;
@@ -19,9 +19,9 @@ class DateTimeChooserModal extends Modal {
   override onOpen() {
     let targetElement: HTMLElement;
     if (Platform.isDesktop) {
-      this.modalEl.style.minWidth = '0px';
-      this.modalEl.style.minHeight = '0px';
-      this.modalEl.style.width = 'auto';
+      this.modalEl.style.minWidth = "0px";
+      this.modalEl.style.minHeight = "0px";
+      this.modalEl.style.width = "auto";
       targetElement = this.contentEl;
     } else {
       targetElement = this.containerEl;
@@ -54,9 +54,19 @@ class DateTimeChooserModal extends Modal {
   }
 }
 
-export function showDateTimeChooserModal(app: App, reminders: Reminders, timeStep: number = 15): Promise<DateTime> {
+export function showDateTimeChooserModal(
+  app: App,
+  reminders: Reminders,
+  timeStep: number = 15,
+): Promise<DateTime> {
   return new Promise((resolve, reject) => {
-    const modal = new DateTimeChooserModal(app, reminders, resolve, reject, timeStep);
+    const modal = new DateTimeChooserModal(
+      app,
+      reminders,
+      resolve,
+      reject,
+      timeStep,
+    );
     modal.open();
   });
 }

@@ -12,7 +12,7 @@ export class Symbol {
 
   static ofChars(ch: Array<string>): Symbol {
     if (ch.length === 0) {
-      throw 'empty symbol';
+      throw "empty symbol";
     }
     if (ch[0] == null) {
       throw "ch mustn't be null";
@@ -25,7 +25,10 @@ export class Symbol {
     });
   }
 
-  private constructor(public primary: string, private func: (text: string) => boolean) {}
+  private constructor(
+    public primary: string,
+    private func: (text: string) => boolean,
+  ) {}
 
   isSymbol(text: string) {
     return this.func(text);
@@ -54,15 +57,19 @@ export class Tokens {
       } else {
         token = { symbol, text };
       }
-      if (separateSymbolAndText && token.symbol !== '' && !token.text.startsWith(' ')) {
-        token.text = ' ' + token.text;
+      if (
+        separateSymbolAndText &&
+        token.symbol !== "" &&
+        !token.text.startsWith(" ")
+      ) {
+        token.text = " " + token.text;
       }
 
       if (this.tokens.length > 0) {
         const lastToken = this.tokens[this.tokens.length - 1]!;
         if (!this.isTokenEndsWithSpace(lastToken)) {
           // last token doesn't end with space.  Append space to last token.
-          lastToken.text += ' ';
+          lastToken.text += " ";
         }
       }
       if (insertAt == null) {
@@ -89,7 +96,7 @@ export class Tokens {
         } else {
           this.tokens.splice(insertTokenIndex, 0, token);
           if (insertTokenIndex < this.tokens.length - 1) {
-            token.text = token.text + ' ';
+            token.text = token.text + " ";
           }
         }
       }
@@ -132,7 +139,10 @@ export class Tokens {
     return null;
   }
 
-  public getTokenText(symbol: Symbol | string, removeSpace = false): string | null {
+  public getTokenText(
+    symbol: Symbol | string,
+    removeSpace = false,
+  ): string | null {
     const token = this.getToken(symbol);
     if (token === null) {
       return null;
@@ -140,7 +150,7 @@ export class Tokens {
     if (!removeSpace) {
       return token.text;
     }
-    return token.text.replace(/^\s*(.*?)\s*$/, '$1');
+    return token.text.replace(/^\s*(.*?)\s*$/, "$1");
   }
 
   public removeToken(symbol: Symbol) {
@@ -151,7 +161,9 @@ export class Tokens {
     this.tokens.forEach(consumer);
   }
 
-  public rangeOfSymbol(symbol: Symbol): { start: number; end: number } | undefined {
+  public rangeOfSymbol(
+    symbol: Symbol,
+  ): { start: number; end: number } | undefined {
     let index = 0;
     for (const token of this.tokens) {
       const end = index + token.symbol.length + token.text.length;
@@ -167,20 +179,23 @@ export class Tokens {
   }
 
   public join(): string {
-    return this.tokens.map((t) => t.symbol + t.text).join('');
+    return this.tokens.map((t) => t.symbol + t.text).join("");
   }
 }
 
-export function splitBySymbol(line: string, symbols: Array<Symbol>): Array<Token> {
+export function splitBySymbol(
+  line: string,
+  symbols: Array<Symbol>,
+): Array<Token> {
   const chars = [...line];
-  let text: string = '';
+  let text: string = "";
   let currentToken: Token | null = null;
   const splitted: Array<Token> = [];
 
   const fillPreviousToken = () => {
     if (currentToken === null) {
       // previous token
-      splitted.push({ symbol: '', text });
+      splitted.push({ symbol: "", text });
     } else {
       // previous token
       currentToken.text = text;
@@ -192,9 +207,9 @@ export function splitBySymbol(line: string, symbols: Array<Symbol>): Array<Token
       fillPreviousToken();
 
       // new token
-      currentToken = { symbol: c, text: '' };
+      currentToken = { symbol: c, text: "" };
       splitted.push(currentToken);
-      text = '';
+      text = "";
     } else {
       text += c;
     }

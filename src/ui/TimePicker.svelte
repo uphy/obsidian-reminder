@@ -1,22 +1,22 @@
 <script>
-  import { createEventDispatcher } from 'svelte';
-  import { TimedInputHandler } from './timed-input-handler';
+  import { createEventDispatcher } from "svelte";
+  import { TimedInputHandler } from "./timed-input-handler";
   export let value = "00:00";
   // step in minutes
   export let step = 15;
- 
+
   const dispatch = createEventDispatcher();
 
   function handleSelect() {
-    dispatch('select', value);
+    dispatch("select", value);
   }
 
   function handleFocus() {
-    dispatch('focus');
+    dispatch("focus");
   }
 
   function handleBlur() {
-    dispatch('blur');
+    dispatch("blur");
   }
 
   function generateOptions() {
@@ -24,7 +24,9 @@
     for (let i = 0; i < 60 * 24; i += step) {
       const hour = Math.floor(i / 60);
       const minute = i % 60;
-      options.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
+      options.push(
+        `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`,
+      );
     }
     return options;
   }
@@ -36,25 +38,24 @@
     if (event.key >= "0" && event.key <= "9") {
       event.preventDefault();
       const input = timedInputHandler.handle(event.key);
-      switch(input.length){
-        case 1: 
+      switch (input.length) {
+        case 1:
           {
-            const hour = input.padStart(2, '0');
-            const candidates = options.filter(o => o.startsWith(hour));
+            const hour = input.padStart(2, "0");
+            const candidates = options.filter((o) => o.startsWith(hour));
             if (candidates.length > 1) {
               value = candidates[0];
             }
           }
           break;
-        case 2:
-          {
-            const prefix = input + ":";
-            const candidates = options.filter(o => o.startsWith(prefix));
-            if (candidates.length > 1) {
-              value = candidates[0];
-            }
-            break;
+        case 2: {
+          const prefix = input + ":";
+          const candidates = options.filter((o) => o.startsWith(prefix));
+          if (candidates.length > 1) {
+            value = candidates[0];
           }
+          break;
+        }
         case 4:
           {
             const time = input.slice(0, 2) + ":" + input.slice(2, 4);
@@ -76,6 +77,19 @@
   }
 </script>
 
+<select
+  class="time-picker"
+  bind:value
+  on:dblclick={handleSelect}
+  on:focus={handleFocus}
+  on:blur={handleBlur}
+  on:keydown={handleKeyDown}
+>
+  {#each options as option}
+    <option value={option}>{option}</option>
+  {/each}
+</select>
+
 <style>
   .time-picker {
     padding: 0 0.5rem;
@@ -84,9 +98,3 @@
     box-shadow: 0 0 0px 1px var(--background-modifier-border-focus);
   }
 </style>
-
-<select class="time-picker" bind:value={value} on:dblclick={handleSelect} on:focus={handleFocus} on:blur={handleBlur} on:keydown={handleKeyDown}>
-  {#each options as option}
-    <option value={option}>{option}</option>
-  {/each}
-</select>

@@ -41,6 +41,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "moment": "^2.29.4",
     "obsidian": "^1.7.2",
+    "prettier-plugin-svelte": "^3.3.2",
     "svelte-check": "^4.1.1",
     "svelte-jester": "^5.0.0",
     "svelte-preprocess": "^6.0.3",
@@ -81,11 +82,16 @@
     "preset": "ts-jest/presets/default-esm"
   },
   "prettier": {
-    "trailingComma": "all",
-    "printWidth": 120,
-    "tabWidth": 2,
-    "useTabs": false,
-    "singleQuote": true,
-    "bracketSpacing": true
+    "plugins": [
+      "prettier-plugin-svelte"
+    ],
+    "overrides": [
+      {
+        "files": "*.svelte",
+        "options": {
+          "parser": "svelte"
+        }
+      }
+    ]
   }
 }

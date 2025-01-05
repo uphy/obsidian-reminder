@@ -7,7 +7,7 @@
   import Markdown from "./Markdown.svelte";
 
   export let reminder: Reminder;
-  export let component: Component|undefined;
+  export let component: Component | undefined;
   export let onRemindMeLater: (time: DateTime) => void;
   export let onDone: () => void;
   export let onOpenFile: () => void;

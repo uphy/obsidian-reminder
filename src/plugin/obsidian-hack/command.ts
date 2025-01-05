@@ -1,6 +1,6 @@
-import { App, Editor, MarkdownView, TFile, WorkspaceLeaf } from 'obsidian';
-import type { Command } from 'obsidian';
-import { findLeafByFile } from './leaf';
+import { App, Editor, MarkdownView, TFile, WorkspaceLeaf } from "obsidian";
+import type { Command } from "obsidian";
+import { findLeafByFile } from "./leaf";
 
 class AbstractCommand {
   constructor(protected command: Command) {}
@@ -11,7 +11,10 @@ class AbstractCommand {
     }
     const checkResult = this.command.checkCallback(true);
     if (checkResult !== undefined && !checkResult) {
-      console.info('The command is not available by checking: %o', this.command);
+      console.info(
+        "The command is not available by checking: %o",
+        this.command,
+      );
       return true;
     }
     this.command.checkCallback(false);
@@ -26,13 +29,19 @@ class AbstractCommand {
     return true;
   }
 
-  protected tryEditorCheckCallback(editor: Editor, view: MarkdownView): boolean | void {
+  protected tryEditorCheckCallback(
+    editor: Editor,
+    view: MarkdownView,
+  ): boolean | void {
     if (!this.command.editorCheckCallback) {
       return false;
     }
     const checkResult = this.command.editorCheckCallback(true, editor, view);
     if (checkResult !== undefined && !checkResult) {
-      console.info('The editor command is not available by checking: %o', this.command);
+      console.info(
+        "The editor command is not available by checking: %o",
+        this.command,
+      );
       return true;
     }
     this.command.editorCheckCallback(false, editor, view);
@@ -80,7 +89,7 @@ class RunnableEditorCommand extends AbstractCommand {
   runInLeaf(leaf: WorkspaceLeaf) {
     if (!(leaf.view instanceof MarkdownView)) {
       console.warn(leaf.view);
-      throw 'invalid state.  should be markdown view';
+      throw "invalid state.  should be markdown view";
     }
     const markdownView = leaf.view;
     this.run(markdownView.editor, markdownView);
@@ -110,7 +119,10 @@ export function findCommand(app: App, id: string): RunnableCommand | null {
   return null;
 }
 
-export function findEditorCommand(app: App, id: string): RunnableEditorCommand | null {
+export function findEditorCommand(
+  app: App,
+  id: string,
+): RunnableEditorCommand | null {
   const command = (app as any).commands.commands[id];
   if (command) {
     return new RunnableEditorCommand(app, command as Command);

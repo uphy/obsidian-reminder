@@ -1,9 +1,9 @@
-import type { ReadOnlyReference } from 'model/ref';
-import type { Time } from 'model/time';
-import { ItemView, TFile, View, Workspace, WorkspaceLeaf } from 'obsidian';
-import ReminderListView from 'ui/ReminderList.svelte';
-import { Reminder, Reminders, groupReminders } from '../../model/reminder';
-import { VIEW_TYPE_REMINDER_LIST } from './constants';
+import type { ReadOnlyReference } from "model/ref";
+import type { Time } from "model/time";
+import { ItemView, TFile, View, Workspace, WorkspaceLeaf } from "obsidian";
+import ReminderListView from "ui/ReminderList.svelte";
+import { Reminder, Reminders, groupReminders } from "../../model/reminder";
+import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 
 class ReminderListItemView extends ItemView {
   private view?: ReminderListView;
@@ -22,11 +22,11 @@ class ReminderListItemView extends ItemView {
   }
 
   getDisplayText(): string {
-    return 'Reminders';
+    return "Reminders";
   }
 
   override getIcon(): string {
-    return 'clock';
+    return "clock";
   }
 
   override async onOpen(): Promise<void> {
@@ -43,7 +43,10 @@ class ReminderListItemView extends ItemView {
           if (!(aFile instanceof TFile) || destinationFile == null) {
             linkMd = `[[${reminder.getFileName()}]]`;
           } else {
-            linkMd = this.app.fileManager.generateMarkdownLink(aFile, destinationFile.path);
+            linkMd = this.app.fileManager.generateMarkdownLink(
+              aFile,
+              destinationFile.path,
+            );
           }
           return `${reminder.title} - ${linkMd}`;
         },
@@ -85,7 +88,12 @@ export class ReminderListItemViewProxy {
   ) {}
 
   createView(leaf: WorkspaceLeaf): View {
-    return new ReminderListItemView(leaf, this.reminders, this.reminderTime, this.onOpenReminder);
+    return new ReminderListItemView(
+      leaf,
+      this.reminders,
+      this.reminderTime,
+      this.onOpenReminder,
+    );
   }
 
   openView(): void {
@@ -107,7 +115,7 @@ export class ReminderListItemViewProxy {
         this.valid = true;
       } else {
         this.valid = false;
-        console.debug('view is null.  Skipping reminder list view reload');
+        console.debug("view is null.  Skipping reminder list view reload");
       }
     }
   }

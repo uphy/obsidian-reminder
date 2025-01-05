@@ -1,8 +1,13 @@
-import { NotificationWorker, PluginData, ReminderPluginFileSystem, ReminderPluginUI } from 'plugin';
-import { Reminders } from 'model/reminder';
-import { DATE_TIME_FORMATTER } from 'model/time';
-import { App, Plugin } from 'obsidian';
-import type { PluginManifest } from 'obsidian';
+import {
+  NotificationWorker,
+  PluginData,
+  ReminderPluginFileSystem,
+  ReminderPluginUI,
+} from "plugin";
+import { Reminders } from "model/reminder";
+import { DATE_TIME_FORMATTER } from "model/time";
+import { App, Plugin } from "obsidian";
+import type { PluginManifest } from "obsidian";
 
 export default class ReminderPlugin extends Plugin {
   _data: PluginData;
@@ -28,9 +33,13 @@ export default class ReminderPlugin extends Plugin {
     );
 
     this._ui = new ReminderPluginUI(this);
-    this._fileSystem = new ReminderPluginFileSystem(app.vault, this.reminders, () => {
-      this.ui.reload(true);
-    });
+    this._fileSystem = new ReminderPluginFileSystem(
+      app.vault,
+      this.reminders,
+      () => {
+        this.ui.reload(true);
+      },
+    );
     this._notificationWorker = new NotificationWorker(this);
   }
 

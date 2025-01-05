@@ -1,10 +1,10 @@
-import type { ReadOnlyReference } from 'model/ref';
-import type { DateTime } from 'model/time';
-import { App, Modal } from 'obsidian';
-import ReminderView from 'ui/Reminder.svelte';
-import type { Reminder } from '../../model/reminder';
-import type { Later } from '../../model/time';
-const electron = window.require ? window.require('electron') : undefined;
+import type { ReadOnlyReference } from "model/ref";
+import type { DateTime } from "model/time";
+import { App, Modal } from "obsidian";
+import ReminderView from "ui/Reminder.svelte";
+import type { Reminder } from "../../model/reminder";
+import type { Later } from "../../model/time";
+const electron = window.require ? window.require("electron") : undefined;
 
 export class ReminderModal {
   constructor(
@@ -21,25 +21,37 @@ export class ReminderModal {
     onOpenFile: () => void,
   ) {
     if (!this.isSystemNotification()) {
-      this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onMute, onOpenFile);
+      this.showBuiltinReminder(
+        reminder,
+        onRemindMeLater,
+        onDone,
+        onMute,
+        onOpenFile,
+      );
     } else {
       // Show system notification
       const Notification = (electron as any).remote.Notification;
       const n = new Notification({
-        title: 'Obsidian Reminder',
+        title: "Obsidian Reminder",
         body: reminder.title,
       });
-      n.on('click', () => {
+      n.on("click", () => {
         n.close();
-        this.showBuiltinReminder(reminder, onRemindMeLater, onDone, onMute, onOpenFile);
+        this.showBuiltinReminder(
+          reminder,
+          onRemindMeLater,
+          onDone,
+          onMute,
+          onOpenFile,
+        );
       });
-      n.on('close', () => {
+      n.on("close", () => {
         onMute();
       });
       // Only for macOS
       {
         const laters = this.laters.value;
-        n.on('action', (_: any, index: any) => {
+        n.on("action", (_: any, index: any) => {
           if (index === 0) {
             onDone();
             return;
@@ -47,9 +59,9 @@ export class ReminderModal {
           const later = laters[index - 1]!;
           onRemindMeLater(later.later());
         });
-        const actions = [{ type: 'button', text: 'Mark as Done' }];
+        const actions = [{ type: "button", text: "Mark as Done" }];
         laters.forEach((later) => {
-          actions.push({ type: 'button', text: later.label });
+          actions.push({ type: "button", text: later.label });
         });
         n.actions = actions as any;
       }
@@ -65,7 +77,15 @@ export class ReminderModal {
     onCancel: () => void,
     onOpenFile: () => void,
   ) {
-    new NotificationModal(this.app, this.laters.value, reminder, onRemindMeLater, onDone, onCancel, onOpenFile).open();
+    new NotificationModal(
+      this.app,
+      this.laters.value,
+      reminder,
+      onRemindMeLater,
+      onDone,
+      onCancel,
+      onOpenFile,
+    ).open();
   }
 
   private isSystemNotification() {

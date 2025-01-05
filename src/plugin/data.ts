@@ -1,8 +1,8 @@
-import type ReminderPlugin from 'main';
-import { Reference } from 'model/ref';
-import { Reminder, Reminders } from 'model/reminder';
-import { DateTime } from 'model/time';
-import { Settings, TAG_RESCAN } from 'plugin/settings';
+import type ReminderPlugin from "main";
+import { Reference } from "model/ref";
+import { Reminder, Reminders } from "model/reminder";
+import { DateTime } from "model/time";
+import { Settings, TAG_RESCAN } from "plugin/settings";
 
 interface ReminderData {
   title: string;
@@ -17,7 +17,10 @@ export class PluginData {
   public debug: Reference<boolean> = new Reference(false);
   private readonly _settings = new Settings();
 
-  constructor(private plugin: ReminderPlugin, private reminders: Reminders) {
+  constructor(
+    private plugin: ReminderPlugin,
+    private reminders: Reminders,
+  ) {
     this.settings.forEach((setting) => {
       setting.rawValue.onChanged(() => {
         if (this.restoring) {
@@ -32,7 +35,7 @@ export class PluginData {
   }
 
   async load() {
-    console.debug('Load reminder plugin data');
+    console.debug("Load reminder plugin data");
     const data = await this.plugin.loadData();
     if (!data) {
       this.scanned.value = false;
@@ -56,7 +59,16 @@ export class PluginData {
         }
         this.reminders.replaceFile(
           filePath,
-          remindersInFile.map((d) => new Reminder(filePath, d.title, DateTime.parse(d.time), d.rowNumber, false)),
+          remindersInFile.map(
+            (d) =>
+              new Reminder(
+                filePath,
+                d.title,
+                DateTime.parse(d.time),
+                d.rowNumber,
+                false,
+              ),
+          ),
         );
       });
     }
@@ -70,7 +82,11 @@ export class PluginData {
     if (!force && !this.changed) {
       return;
     }
-    console.debug('Save reminder plugin data: force=%s, changed=%s', force, this.changed);
+    console.debug(
+      "Save reminder plugin data: force=%s, changed=%s",
+      force,
+      this.changed,
+    );
     const remindersData: any = {};
     this.reminders.fileToReminders.forEach((r, filePath) => {
       remindersData[filePath] = r.map((rr) => ({

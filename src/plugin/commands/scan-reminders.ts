@@ -1,6 +1,9 @@
-import type ReminderPlugin from 'main';
+import type ReminderPlugin from "main";
 
-export function scanReminders(checking: boolean, plugin: ReminderPlugin): boolean {
+export function scanReminders(
+  checking: boolean,
+  plugin: ReminderPlugin,
+): boolean {
   if (checking) {
     return true;
   }

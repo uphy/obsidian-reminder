@@ -1,7 +1,7 @@
-import type { Reminders } from 'model/reminder';
-import type { DateTime } from 'model/time';
-import moment from 'moment';
-import DateTimeChooser from 'ui/DateTimeChooser.svelte';
+import type { Reminders } from "model/reminder";
+import type { DateTime } from "model/time";
+import moment from "moment";
+import DateTimeChooser from "ui/DateTimeChooser.svelte";
 
 export class DateTimeChooserView {
   private view: HTMLElement;
@@ -13,9 +13,9 @@ export class DateTimeChooserView {
     private editor: CodeMirror.Editor,
     reminders: Reminders,
   ) {
-    this.view = document.createElement('div');
-    this.view.addClass('date-time-chooser-popup');
-    this.view.style.position = 'fixed';
+    this.view = document.createElement("div");
+    this.view.addClass("date-time-chooser-popup");
+    this.view.style.position = "fixed";
     this.dateTimeChooser = new DateTimeChooser({
       target: this.view,
       props: {

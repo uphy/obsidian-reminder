@@ -1,8 +1,8 @@
-import { Reference } from 'model/ref';
-import type { ReadOnlyReference } from 'model/ref';
-import { Later, Time, parseLaters } from 'model/time';
-import { AbstractTextComponent, Setting } from 'obsidian';
-import { ReminderFormatType, ReminderFormatTypes } from 'model/format';
+import { Reference } from "model/ref";
+import type { ReadOnlyReference } from "model/ref";
+import { Later, Time, parseLaters } from "model/time";
+import { AbstractTextComponent, Setting } from "obsidian";
+import { ReminderFormatType, ReminderFormatTypes } from "model/format";
 
 class SettingRegistry {
   private settingContexts: Array<SettingContext> = [];
@@ -33,21 +33,25 @@ class SettingContext {
 
   constructor(private _settingRegistry: SettingRegistry) {}
 
-  init(settingModel: SettingModel<any, any>, setting: Setting, containerEl: HTMLElement) {
+  init(
+    settingModel: SettingModel<any, any>,
+    setting: Setting,
+    containerEl: HTMLElement,
+  ) {
     this.settingModel = settingModel;
     this._setting = setting;
 
-    this.validationEl = containerEl.createDiv('validation', (el) => {
-      el.style.color = 'var(--text-error)';
-      el.style.marginBottom = '1rem';
-      el.style.fontSize = '14px';
-      el.style.display = 'none';
+    this.validationEl = containerEl.createDiv("validation", (el) => {
+      el.style.color = "var(--text-error)";
+      el.style.marginBottom = "1rem";
+      el.style.fontSize = "14px";
+      el.style.display = "none";
     });
-    this.infoEl = containerEl.createDiv('info', (el) => {
-      el.style.color = 'var(--text-faint)';
-      el.style.marginBottom = '1rem';
-      el.style.fontSize = '14px';
-      el.style.display = 'none';
+    this.infoEl = containerEl.createDiv("info", (el) => {
+      el.style.color = "var(--text-faint)";
+      el.style.marginBottom = "1rem";
+      el.style.fontSize = "14px";
+      el.style.display = "none";
     });
   }
 
@@ -61,13 +65,13 @@ class SettingContext {
 
   private setText(el: HTMLElement, text: string | null) {
     if (!el) {
-      console.error('element not created');
+      console.error("element not created");
       return;
     }
     if (text === null) {
-      el.style.display = 'none';
+      el.style.display = "none";
     } else {
-      el.style.display = 'block';
+      el.style.display = "block";
       el.innerHTML = text;
     }
   }
@@ -188,8 +192,16 @@ abstract class AbstractSettingModelBuilder<R> {
     });
   }
 
-  protected buildSettingModel<E>(serde: Serde<R, E>, initializer: SettingInitilizer<R>) {
-    return new SettingModelImpl(this.context, serde, this.initValue, initializer);
+  protected buildSettingModel<E>(
+    serde: Serde<R, E>,
+    initializer: SettingInitilizer<R>,
+  ) {
+    return new SettingModelImpl(
+      this.context,
+      serde,
+      this.initValue,
+      initializer,
+    );
   }
 }
 
@@ -213,7 +225,7 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
     return this.buildSettingModel(serde, ({ setting, rawValue, context }) => {
       const initText = (text: AbstractTextComponent<any>) => {
         text
-          .setPlaceholder(this._placeHolder ?? '')
+          .setPlaceholder(this._placeHolder ?? "")
           .setValue(rawValue.value)
           .onChange(async (value) => {
             try {
@@ -224,7 +236,7 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
             } catch (e) {
               if (e instanceof Error) {
                 context.setValidationError(e.message);
-              } else if (typeof e === 'string') {
+              } else if (typeof e === "string") {
                 context.setValidationError(e);
               }
             }
@@ -259,7 +271,7 @@ class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number> {
     return this.buildSettingModel(serde, ({ setting, rawValue, context }) => {
       const initText = (text: AbstractTextComponent<any>) => {
         text
-          .setPlaceholder(this._placeHolder ?? '')
+          .setPlaceholder(this._placeHolder ?? "")
           .setValue(rawValue.value.toString())
           .onChange(async (value) => {
             try {
@@ -270,7 +282,7 @@ class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number> {
             } catch (e) {
               if (e instanceof Error) {
                 context.setValidationError(e.message);
-              } else if (typeof e === 'string') {
+              } else if (typeof e === "string") {
                 context.setValidationError(e);
               }
             }
@@ -285,14 +297,19 @@ class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number> {
 
 class ToggleSettingModelBuilder extends AbstractSettingModelBuilder<boolean> {
   build<E>(serde: Serde<boolean, E>): SettingModel<boolean, E> {
-    return new SettingModelImpl(this.context, serde, this.initValue, ({ setting, rawValue }) => {
-      setting.addToggle((toggle) =>
-        toggle.setValue(rawValue.value).onChange(async (value) => {
-          rawValue.value = value;
-          this.onValueChange();
-        }),
-      );
-    });
+    return new SettingModelImpl(
+      this.context,
+      serde,
+      this.initValue,
+      ({ setting, rawValue }) => {
+        setting.addToggle((toggle) =>
+          toggle.setValue(rawValue.value).onChange(async (value) => {
+            rawValue.value = value;
+            this.onValueChange();
+          }),
+        );
+      },
+    );
   }
 }
 
@@ -312,18 +329,23 @@ class DropdownSettingModelBuilder extends AbstractSettingModelBuilder<string> {
   }
 
   build<E>(serde: Serde<string, E>): SettingModel<string, E> {
-    return new SettingModelImpl(this.context, serde, this.initValue, ({ setting, rawValue }) => {
-      setting.addDropdown((d) => {
-        this.options.forEach((option) => {
-          d.addOption(option.value, option.label);
+    return new SettingModelImpl(
+      this.context,
+      serde,
+      this.initValue,
+      ({ setting, rawValue }) => {
+        setting.addDropdown((d) => {
+          this.options.forEach((option) => {
+            d.addOption(option.value, option.label);
+          });
+          d.setValue(rawValue.value);
+          d.onChange(async (value) => {
+            rawValue.value = value;
+            this.onValueChange();
+          });
         });
-        d.setValue(rawValue.value);
-        d.onChange(async (value) => {
-          rawValue.value = value;
-          this.onValueChange();
-        });
-      });
-    });
+      },
+    );
   }
 }
 
@@ -362,12 +384,14 @@ class SettingModelImpl<R, E> implements SettingModel<R, E> {
   ) {
     this.rawValue = new Reference(initRawValue);
     if (context.key == null) {
-      throw new Error('key is required.');
+      throw new Error("key is required.");
     }
   }
 
   createSetting(containerEl: HTMLElement): Setting {
-    const setting = new Setting(containerEl).setName(this.context.name ?? '').setDesc(this.context.desc ?? '');
+    const setting = new Setting(containerEl)
+      .setName(this.context.name ?? "")
+      .setDesc(this.context.desc ?? "");
     this.context.init(this, setting, containerEl);
     this.settingInitializer({
       setting,
@@ -430,7 +454,7 @@ export class SettingTabModel {
   displayOn(el: HTMLElement) {
     el.empty();
     this.groups.forEach((group) => {
-      el.createEl('h3', { text: group.name });
+      el.createEl("h3", { text: group.name });
       group.settings.forEach((settings) => {
         settings.createSetting(el);
       });
@@ -470,13 +494,17 @@ export class LatersSerde implements Serde<string, Array<Later>> {
     return parseLaters(rawValue);
   }
   marshal(value: Later[]): string {
-    return value.map((v) => v.label).join('\n');
+    return value.map((v) => v.label).join("\n");
   }
 }
 
-export class ReminderFormatTypeSerde implements Serde<string, ReminderFormatType> {
+export class ReminderFormatTypeSerde
+  implements Serde<string, ReminderFormatType>
+{
   unmarshal(rawValue: string): ReminderFormatType {
-    const format = ReminderFormatTypes.find((format) => format.name === rawValue)!;
+    const format = ReminderFormatTypes.find(
+      (format) => format.name === rawValue,
+    )!;
     // TODO return undefined when it is not found
     return format;
   }

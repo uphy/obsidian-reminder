@@ -1,16 +1,23 @@
-import type ReminderPlugin from 'main';
-import type { ReadOnlyReference } from 'model/ref';
-import type { DateTime } from 'model/time';
-import type { Reminder } from 'model/reminder';
-import { App, MarkdownView, Platform, PluginSettingTab, TFile, WorkspaceLeaf } from 'obsidian';
-import { registerCommands } from 'plugin/commands';
-import { monkeyPatchConsole } from 'plugin/obsidian-hack/obsidian-debug-mobile';
-import { VIEW_TYPE_REMINDER_LIST } from './constants';
-import { ReminderListItemViewProxy } from './reminder-list';
-import { AutoComplete } from './autocomplete';
-import type { AutoCompletableEditor } from './autocomplete';
-import { buildCodeMirrorPlugin } from './editor-extension';
-import { ReminderModal } from './reminder';
+import type ReminderPlugin from "main";
+import type { ReadOnlyReference } from "model/ref";
+import type { DateTime } from "model/time";
+import type { Reminder } from "model/reminder";
+import {
+  App,
+  MarkdownView,
+  Platform,
+  PluginSettingTab,
+  TFile,
+  WorkspaceLeaf,
+} from "obsidian";
+import { registerCommands } from "plugin/commands";
+import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
+import { VIEW_TYPE_REMINDER_LIST } from "./constants";
+import { ReminderListItemViewProxy } from "./reminder-list";
+import { AutoComplete } from "./autocomplete";
+import type { AutoCompletableEditor } from "./autocomplete";
+import { buildCodeMirrorPlugin } from "./editor-extension";
+import { ReminderModal } from "./reminder";
 
 export class ReminderPluginUI {
   private autoComplete: AutoComplete;
@@ -37,7 +44,11 @@ export class ReminderPluginUI {
       plugin.settings.primaryFormat,
     );
     this.editDetector = new EditDetector(plugin.settings.editDetectionSec);
-    this.reminderModal = new ReminderModal(plugin.app, plugin.settings.useSystemNotification, plugin.settings.laters);
+    this.reminderModal = new ReminderModal(
+      plugin.app,
+      plugin.settings.useSystemNotification,
+      plugin.settings.laters,
+    );
   }
 
   onload() {
@@ -45,14 +56,20 @@ export class ReminderPluginUI {
     this.plugin.registerView(VIEW_TYPE_REMINDER_LIST, (leaf: WorkspaceLeaf) => {
       return this.viewProxy.createView(leaf);
     });
-    this.plugin.addSettingTab(new ReminderSettingTab(this.plugin.app, this.plugin));
+    this.plugin.addSettingTab(
+      new ReminderSettingTab(this.plugin.app, this.plugin),
+    );
 
-    this.plugin.registerDomEvent(document, 'keydown', () => {
+    this.plugin.registerDomEvent(document, "keydown", () => {
       this.editDetector.fileChanged();
     });
     if (Platform.isDesktopApp) {
       this.plugin.registerEditorExtension(
-        buildCodeMirrorPlugin(this.plugin.app, this.plugin.reminders, this.plugin.settings),
+        buildCodeMirrorPlugin(
+          this.plugin.app,
+          this.plugin.reminders,
+          this.plugin.settings,
+        ),
       );
     }
 
@@ -96,11 +113,19 @@ export class ReminderPluginUI {
     onMute: () => void,
     onOpenFile: () => void,
   ) {
-    this.reminderModal.show(reminder, onRemindMeLater, onDone, onMute, onOpenFile);
+    this.reminderModal.show(
+      reminder,
+      onRemindMeLater,
+      onDone,
+      onMute,
+      onOpenFile,
+    );
   }
 
   showReminderList() {
-    if (this.plugin.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).length) {
+    if (
+      this.plugin.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).length
+    ) {
       return;
     }
     this.plugin.app.workspace.getRightLeaf(false)?.setViewState({
@@ -109,13 +134,15 @@ export class ReminderPluginUI {
   }
 
   private detachReminderList() {
-    this.plugin.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).forEach((leaf) => leaf.detach());
+    this.plugin.app.workspace
+      .getLeavesOfType(VIEW_TYPE_REMINDER_LIST)
+      .forEach((leaf) => leaf.detach());
   }
 
   private async openReminderFile(reminder: Reminder) {
     const leaf = this.plugin.app.workspace.getLeaf(false);
 
-    console.log('Open reminder: ', reminder);
+    console.log("Open reminder: ", reminder);
     const file = this.plugin.app.vault.getAbstractFileByPath(reminder.file);
     if (!(file instanceof TFile)) {
       console.error("Cannot open file because it isn't a TFile: %o", file);
@@ -145,26 +172,26 @@ export class ReminderPluginUI {
     this.showReminderModal(
       reminder,
       (time) => {
-        console.info('Remind me later: time=%o', time);
+        console.info("Remind me later: time=%o", time);
         reminder.time = time;
         reminder.muteNotification = false;
         this.plugin.fileSystem.updateReminder(reminder, false);
         this.plugin.data.save(true);
       },
       () => {
-        console.info('done');
+        console.info("done");
         reminder.muteNotification = false;
         this.plugin.fileSystem.updateReminder(reminder, true);
         this.plugin.reminders.removeReminder(reminder);
         this.plugin.data.save(true);
       },
       () => {
-        console.info('Mute');
+        console.info("Mute");
         reminder.muteNotification = true;
         this.reload(true);
       },
       () => {
-        console.info('Open');
+        console.info("Open");
         this.openReminderFile(reminder);
       },
     );
@@ -187,7 +214,8 @@ class EditDetector {
     if (this.lastModified == null) {
       return false;
     }
-    const elapsedSec = (new Date().getTime() - this.lastModified.getTime()) / 1000;
+    const elapsedSec =
+      (new Date().getTime() - this.lastModified.getTime()) / 1000;
     return elapsedSec < this.editDetectionSec.value;
   }
 }

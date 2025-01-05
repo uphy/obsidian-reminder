@@ -1,11 +1,15 @@
-import { EditorSelection } from '@codemirror/state';
-import { ViewPlugin, ViewUpdate } from '@codemirror/view';
-import type { Reminders } from 'model/reminder';
-import type { App } from 'obsidian';
-import type { Settings } from 'plugin/settings';
-import { showDateTimeChooserModal } from './date-chooser-modal';
+import { EditorSelection } from "@codemirror/state";
+import { ViewPlugin, ViewUpdate } from "@codemirror/view";
+import type { Reminders } from "model/reminder";
+import type { App } from "obsidian";
+import type { Settings } from "plugin/settings";
+import { showDateTimeChooserModal } from "./date-chooser-modal";
 
-export function buildCodeMirrorPlugin(app: App, reminders: Reminders, settings: Settings) {
+export function buildCodeMirrorPlugin(
+  app: App,
+  reminders: Reminders,
+  settings: Settings,
+) {
   return ViewPlugin.fromClass(
     class {
       update(update: ViewUpdate) {
@@ -30,25 +34,44 @@ export function buildCodeMirrorPlugin(app: App, reminders: Reminders, settings: 
                   // remove trigger character from the line
                   const triggerStart = line.text.lastIndexOf(trigger);
                   let triggerEnd = triggerStart + trigger.length;
-                  if (trigger.startsWith('(') && line.text.charAt(triggerEnd) === ')') {
+                  if (
+                    trigger.startsWith("(") &&
+                    line.text.charAt(triggerEnd) === ")"
+                  ) {
                     // Obsidian complement `)` when user input `(`.
                     // To remove the end of the brace, adjust the trigger end index.
                     triggerEnd++;
                   }
-                  const triggerExcludedLine = line.text.substring(0, triggerStart) + line.text.substring(triggerEnd);
+                  const triggerExcludedLine =
+                    line.text.substring(0, triggerStart) +
+                    line.text.substring(triggerEnd);
 
                   // insert/update a reminder of the line
-                  const reminderInsertion = format.appendReminder(triggerExcludedLine, value, triggerStart);
+                  const reminderInsertion = format.appendReminder(
+                    triggerExcludedLine,
+                    value,
+                    triggerStart,
+                  );
                   if (reminderInsertion == null) {
-                    console.error('Cannot append reminder time to the line: line=%s, date=%s', line.text, value);
+                    console.error(
+                      "Cannot append reminder time to the line: line=%s, date=%s",
+                      line.text,
+                      value,
+                    );
                     return;
                   }
 
                   // overwrite the line
                   const updateTextTransaction = update.view.state.update({
-                    changes: { from: line.from, to: line.to, insert: reminderInsertion.insertedLine },
+                    changes: {
+                      from: line.from,
+                      to: line.to,
+                      insert: reminderInsertion.insertedLine,
+                    },
                     // Move the cursor to the last of date string to make it easy to input time part.
-                    selection: EditorSelection.cursor(line.from + reminderInsertion.caretPosition),
+                    selection: EditorSelection.cursor(
+                      line.from + reminderInsertion.caretPosition,
+                    ),
                   });
                   update.view.update([updateTextTransaction]);
                 } catch (ex) {

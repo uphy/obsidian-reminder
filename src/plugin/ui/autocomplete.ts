@@ -1,18 +1,23 @@
-import type { ReadOnlyReference } from 'model/ref';
-import type { Reminders } from 'model/reminder';
-import type { DateTime } from 'model/time';
-import { App, Platform } from 'obsidian';
-import type { EditorPosition } from 'obsidian';
-import type { ReminderFormatType } from 'model/format';
-import { showDateTimeChooserModal } from './date-chooser-modal';
-import { DateTimeChooserView } from './datetime-chooser';
+import type { ReadOnlyReference } from "model/ref";
+import type { Reminders } from "model/reminder";
+import type { DateTime } from "model/time";
+import { App, Platform } from "obsidian";
+import type { EditorPosition } from "obsidian";
+import type { ReminderFormatType } from "model/format";
+import { showDateTimeChooserModal } from "./date-chooser-modal";
+import { DateTimeChooserView } from "./datetime-chooser";
 
 export interface AutoCompletableEditor {
   getCursor(): EditorPosition;
 
   getLine(line: number): string;
 
-  replaceRange(replacement: string, from: EditorPosition, to?: EditorPosition, origin?: string): void;
+  replaceRange(
+    replacement: string,
+    from: EditorPosition,
+    to?: EditorPosition,
+    origin?: string,
+  ): void;
 }
 
 export class AutoComplete {
@@ -28,7 +33,9 @@ export class AutoComplete {
       return false;
     }
     if (changeObj.text.contains(trigger.charAt(trigger.length - 1))) {
-      const line = cmEditor.getLine(changeObj.from.line).substring(0, changeObj.to.ch) + changeObj.text;
+      const line =
+        cmEditor.getLine(changeObj.from.line).substring(0, changeObj.to.ch) +
+        changeObj.text;
       if (!line.match(/^\s*- \[.\]\s.*/)) {
         // is not a TODO line
         return false;
@@ -46,7 +53,7 @@ export class AutoComplete {
       try {
         const cm: CodeMirror.Editor = (editor as any).cm;
         if (cm == null) {
-          console.error('Cannot get codemirror editor.');
+          console.error("Cannot get codemirror editor.");
           return;
         }
         const v = new DateTimeChooserView(cm, reminders);
@@ -69,7 +76,11 @@ export class AutoComplete {
       });
   }
 
-  insert(editor: AutoCompletableEditor, value: DateTime, triggerFromCommand: boolean = false): void {
+  insert(
+    editor: AutoCompletableEditor,
+    value: DateTime,
+    triggerFromCommand: boolean = false,
+  ): void {
     const pos = editor.getCursor();
     let line = editor.getLine(pos.line);
     const endPos = {
@@ -86,7 +97,11 @@ export class AutoComplete {
     try {
       const appended = format.appendReminder(line, value)?.insertedLine;
       if (appended == null) {
-        console.error('Cannot append reminder time to the line: line=%s, date=%s', line, value);
+        console.error(
+          "Cannot append reminder time to the line: line=%s, date=%s",
+          line,
+          value,
+        );
         return;
       }
       editor.replaceRange(appended, { line: pos.line, ch: 0 }, endPos);

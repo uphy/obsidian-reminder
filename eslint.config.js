@@ -50,6 +50,7 @@ const config = {
     ],
     'unused-imports/no-unused-imports': 'error',
     'no-console': 'off',
+    'prettier/prettier': 'error',
   },
 };
 

@@ -1,1 +1,1 @@
-export const VIEW_TYPE_REMINDER_LIST = 'reminder-list';
+export const VIEW_TYPE_REMINDER_LIST = "reminder-list";
