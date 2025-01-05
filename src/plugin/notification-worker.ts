@@ -29,14 +29,14 @@ export class NotificationWorker {
   private async periodicTask(): Promise<void> {
     this.plugin.ui.reload(false);
 
-    if (!this.plugin.pluginDataIO.scanned.value) {
+    if (!this.plugin.data.scanned.value) {
       this.plugin.fileSystem.reloadRemindersInAllFiles().then(() => {
-        this.plugin.pluginDataIO.scanned.value = true;
-        this.plugin.pluginDataIO.save();
+        this.plugin.data.scanned.value = true;
+        this.plugin.data.save();
       });
     }
 
-    this.plugin.pluginDataIO.save(false);
+    this.plugin.data.save(false);
 
     if (this.plugin.ui.isEditing()) {
       return;

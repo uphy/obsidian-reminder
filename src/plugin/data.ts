@@ -10,7 +10,7 @@ interface ReminderData {
   rowNumber: number;
 }
 
-export class PluginDataIO {
+export class PluginData {
   private restoring = true;
   changed: boolean = false;
   public scanned: Reference<boolean> = new Reference(false);

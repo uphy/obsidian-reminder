@@ -1,10 +1,10 @@
-import { NotificationWorker, PluginDataIO, ReminderPluginFileSystem, ReminderPluginUI } from 'plugin';
+import { NotificationWorker, PluginData, ReminderPluginFileSystem, ReminderPluginUI } from 'plugin';
 import { Reminders } from 'model/reminder';
 import { DATE_TIME_FORMATTER } from 'model/time';
 import { App, Plugin, PluginManifest } from 'obsidian';
 
 export default class ReminderPlugin extends Plugin {
-  _pluginDataIO: PluginDataIO;
+  _data: PluginData;
   private _ui: ReminderPluginUI;
   private _reminders: Reminders;
   private _fileSystem: ReminderPluginFileSystem;
@@ -16,9 +16,9 @@ export default class ReminderPlugin extends Plugin {
       if (this.ui) {
         this.ui.invalidate();
       }
-      this.pluginDataIO.changed = true;
+      this.data.changed = true;
     });
-    this._pluginDataIO = new PluginDataIO(this, this.reminders);
+    this._data = new PluginData(this, this.reminders);
     this.reminders.reminderTime = this.settings.reminderTime;
     DATE_TIME_FORMATTER.setTimeFormat(
       this.settings.dateFormat,
@@ -36,7 +36,7 @@ export default class ReminderPlugin extends Plugin {
   override async onload() {
     this.ui.onload();
     this.app.workspace.onLayoutReady(async () => {
-      await this.pluginDataIO.load();
+      await this.data.load();
       this.ui.onLayoutReady();
       this.fileSystem.onload(this);
       this._notificationWorker.startPeriodicTask();
@@ -59,11 +59,11 @@ export default class ReminderPlugin extends Plugin {
     return this._fileSystem;
   }
 
-  get pluginDataIO() {
-    return this._pluginDataIO;
+  get data() {
+    return this._data;
   }
 
   get settings() {
-    return this.pluginDataIO.settings;
+    return this.data.settings;
   }
 }

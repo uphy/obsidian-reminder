@@ -78,7 +78,7 @@ export class ReminderPluginUI {
   }
 
   onLayoutReady() {
-    if (this.plugin.pluginDataIO.debug.value) {
+    if (this.plugin.data.debug.value) {
       monkeyPatchConsole(this.plugin);
     }
 
@@ -167,14 +167,14 @@ export class ReminderPluginUI {
         reminder.time = time;
         reminder.muteNotification = false;
         this.plugin.fileSystem.updateReminder(reminder, false);
-        this.plugin.pluginDataIO.save(true);
+        this.plugin.data.save(true);
       },
       () => {
         console.info('done');
         reminder.muteNotification = false;
         this.plugin.fileSystem.updateReminder(reminder, true);
         this.plugin.reminders.removeReminder(reminder);
-        this.plugin.pluginDataIO.save(true);
+        this.plugin.data.save(true);
       },
       () => {
         console.info('Mute');
