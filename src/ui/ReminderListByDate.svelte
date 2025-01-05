@@ -17,11 +17,11 @@
   {:else}
     <div>
       {#each reminders as reminder}
-        <div
-          class="reminder-list-item"
+        <button
+          class="reminder-list-item hover-highlight"
           aria-label={`[${reminder.time.toString()}] ${
             reminder.title
-          } - ${reminder.getFileName()}`},
+          } - ${reminder.getFileName()}`}
           draggable="true"
           on:dragstart={(e)=>{            
             e.dataTransfer?.setData("text/plain", generateLink(reminder));
@@ -33,36 +33,40 @@
           <span class="reminder-time">
             {timeToString(reminder.time)}
           </span>
-          <span class="reminder-title">
-            <Markdown
-              markdown={reminder.title}
-              sourcePath={reminder.file}
-              {component}
-            />
-          </span>
-          <span class="reminder-file">
-            - {reminder.getFileName()}
-          </span>
-        </div>
+          <div class="reminder-title-container">
+            <span class="reminder-title">
+              <Markdown
+                markdown={reminder.title}
+                sourcePath={reminder.file}
+                {component}
+              />
+            </span>
+            <span class="reminder-file">
+              {reminder.getFileName()}
+            </span>
+          </div>
+        </button>
       {/each}
     </div>
   {/if}
 </div>
 
 <style>
+  button {
+    background-color: transparent;
+    box-shadow: none;
+    justify-content: flex-start;
+    gap: 0.3rem;
+    display: inline-flex;
+  }
+
   .reminder-group {
     margin-bottom: 1rem;
     font-size: 13px;
     color: var(--text-muted);
   }
   .reminder-list-item {
-    list-style: none;
-    line-height: 14px;
     padding: 3px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    word-break: break-all;
     width: 100%;
   }
   .reminder-list-item:hover {
@@ -70,13 +74,38 @@
     background-color: var(--background-secondary-alt);
   }
   .reminder-time {
+    display: inline-block;
     font-size: 14px;
     font-family: monospace, serif;
   }
+  .reminder-title-container {
+    display: inline-flex;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-grow: 1;
+    justify-content: flex-start;
+    align-items: center;
+  }
+  .reminder-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-grow: 1;
+    text-align: left;
+  }
   .reminder-file {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
     color: var(--text-faint);
   }
   .no-reminders {
     font-style: italic;
+  }
+  .no-reminders:hover {
+    color: var(--text-muted);
+    background-color: transparent;
   }
 </style>

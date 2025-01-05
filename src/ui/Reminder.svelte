@@ -4,6 +4,7 @@
   import type { DateTime, Later } from "../model/time";
   import Icon from "./Icon.svelte";
   import Markdown from "./Markdown.svelte";
+  import { onMount, tick } from "svelte";
 
   export let reminder: Reminder;
   export let component: Component;
@@ -13,8 +14,8 @@
   export let onMute: () => void;
   // Do not set initial value so that svelte can render the placeholder `Remind Me Later`.
   let selectedIndex: number;
-
   export let laters: Array<Later> = [];
+  let doneButton: HTMLButtonElement;
 
   function remindMeLater() {
     const selected = laters[selectedIndex];
@@ -23,22 +24,27 @@
     }
     onRemindMeLater(selected.later());
   }
+
+  onMount(async () => {
+    await tick();
+    doneButton.focus();
+  });
 </script>
 
 <main>
-  <h1>
+  <h1 class="reminder-title">
     <Markdown
       markdown={reminder.title}
       sourcePath={reminder.file}
       {component}
     />
   </h1>
-  <span class="reminder-file" on:click={onOpenFile}>
+  <button class="reminder-file" on:click={onOpenFile}>
     <Icon icon="link" />
     {reminder.file}
-  </span>
+  </button>
   <div class="reminder-actions">
-    <button class="mod-cta" on:click={onDone}>
+    <button class="mod-cta" on:click={onDone} bind:this={doneButton}>
       <Icon icon="check-small" /> Mark as Done
     </button>
     <button on:click={onMute}>
@@ -71,9 +77,18 @@
     gap: 0.5rem;
   }
 
+  .reminder-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .reminder-file {
     color: var(--text-muted);
     cursor: pointer;
+    background-color: transparent;
+    text-decoration: underline;
+    box-shadow: none;
   }
 
   .reminder-file:hover {
