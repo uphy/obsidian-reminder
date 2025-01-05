@@ -1,20 +1,20 @@
-import { RemindersController } from 'controller';
-import { PluginDataIO } from 'plugin/data';
-import { Reminder, Reminders } from 'model/reminder';
-import { DATE_TIME_FORMATTER } from 'model/time';
-import { App, Plugin, PluginManifest, TFile } from 'obsidian';
-import { monkeyPatchConsole } from 'obsidian-hack/obsidian-debug-mobile';
-import { SETTINGS } from 'settings';
-import { ReminderListItemViewProxy } from 'ui/reminder-list';
-import { registerCommands } from 'commands';
-import { ReminderPluginUI } from 'plugin/ui';
+import {
+  NotificationWorker,
+  PluginData,
+  ReminderPluginFileSystem,
+  ReminderPluginUI,
+} from "plugin";
+import { Reminders } from "model/reminder";
+import { DATE_TIME_FORMATTER } from "model/time";
+import { App, Plugin } from "obsidian";
+import type { PluginManifest } from "obsidian";
 
 export default class ReminderPlugin extends Plugin {
-  pluginDataIO: PluginDataIO;
+  _data: PluginData;
   private _ui: ReminderPluginUI;
   private _reminders: Reminders;
-  private remindersController: RemindersController;
-
+  private _fileSystem: ReminderPluginFileSystem;
+  private _notificationWorker: NotificationWorker;
   constructor(app: App, manifest: PluginManifest) {
     super(app, manifest);
     this._reminders = new Reminders(() => {
@@ -22,173 +22,39 @@ export default class ReminderPlugin extends Plugin {
       if (this.ui) {
         this.ui.invalidate();
       }
-      this.pluginDataIO.changed = true;
+      this.data.changed = true;
     });
-    this.pluginDataIO = new PluginDataIO(this, this.reminders);
-    this.reminders.reminderTime = SETTINGS.reminderTime;
-    DATE_TIME_FORMATTER.setTimeFormat(SETTINGS.dateFormat, SETTINGS.dateTimeFormat, SETTINGS.strictDateFormat);
-    const viewProxy = new ReminderListItemViewProxy(
-      app.workspace,
-      this.reminders,
-      SETTINGS.reminderTime,
-      // On select a reminder in the list
-      (reminder) => {
-        if (reminder.muteNotification) {
-          this.showReminder(reminder);
-          return;
-        }
-        this.ui.openReminderFile(reminder);
-      },
+    this._data = new PluginData(this, this.reminders);
+    this.reminders.reminderTime = this.settings.reminderTime;
+    DATE_TIME_FORMATTER.setTimeFormat(
+      this.settings.dateFormat,
+      this.settings.dateTimeFormat,
+      this.settings.strictDateFormat,
     );
 
-    this._ui = new ReminderPluginUI(this, viewProxy);
-    this.remindersController = new RemindersController(app.vault, this.ui, this.reminders);
+    this._ui = new ReminderPluginUI(this);
+    this._fileSystem = new ReminderPluginFileSystem(
+      app.vault,
+      this.reminders,
+      () => {
+        this.ui.reload(true);
+      },
+    );
+    this._notificationWorker = new NotificationWorker(this);
   }
 
   override async onload() {
     this.ui.onload();
-    registerCommands(this);
     this.app.workspace.onLayoutReady(async () => {
-      await this.pluginDataIO.load();
-      if (this.pluginDataIO.debug.value) {
-        monkeyPatchConsole(this);
-      }
-      this.watchVault();
-      this.startPeriodicTask();
+      await this.data.load();
+      this.ui.onLayoutReady();
+      this.fileSystem.onload(this);
+      this._notificationWorker.startPeriodicTask();
     });
-  }
-
-  private watchVault() {
-    [
-      this.app.vault.on('modify', async (file) => {
-        this.remindersController.reloadFile(file, true);
-      }),
-      this.app.vault.on('delete', (file) => {
-        this.remindersController.removeFile(file.path);
-      }),
-      this.app.vault.on('rename', async (file, oldPath) => {
-        // We only reload the file if it CAN be deleted, otherwise this can
-        // cause crashes.
-        if (await this.remindersController.removeFile(oldPath)) {
-          // We need to do the reload synchronously so as to avoid racing.
-          await this.remindersController.reloadFile(file);
-        }
-      }),
-    ].forEach((eventRef) => {
-      this.registerEvent(eventRef);
-    });
-  }
-
-  private startPeriodicTask() {
-    let intervalTaskRunning = true;
-    // Force the view to refresh as soon as possible.
-    this.periodicTask().finally(() => {
-      intervalTaskRunning = false;
-    });
-
-    // Set up the recurring check for reminders.
-    this.registerInterval(
-      window.setInterval(() => {
-        if (intervalTaskRunning) {
-          console.log('Skip reminder interval task because task is already running.');
-          return;
-        }
-        intervalTaskRunning = true;
-        this.periodicTask().finally(() => {
-          intervalTaskRunning = false;
-        });
-      }, SETTINGS.reminderCheckIntervalSec.value * 1000),
-    );
-  }
-
-  private async periodicTask(): Promise<void> {
-    this.ui.reload(false);
-
-    if (!this.pluginDataIO.scanned.value) {
-      this.reloadAllFiles().then(() => {
-        this.pluginDataIO.scanned.value = true;
-        this.pluginDataIO.save();
-      });
-    }
-
-    this.pluginDataIO.save(false);
-
-    if (this.ui.isEditing()) {
-      return;
-    }
-    const expired = this.reminders.getExpiredReminders(SETTINGS.reminderTime.value);
-
-    let previousReminder: Reminder | undefined = undefined;
-    for (const reminder of expired) {
-      if (this.app.workspace.layoutReady) {
-        if (reminder.muteNotification) {
-          // We don't want to set `previousReminder` in this case as the current
-          // reminder won't be shown.
-          continue;
-        }
-        if (previousReminder) {
-          while (previousReminder.beingDisplayed) {
-            // Displaying too many reminders at once can cause crashes on
-            // mobile. We use `beingDisplayed` to wait for the current modal to
-            // be dismissed before displaying the next.
-            await this.sleep(100);
-          }
-        }
-        this.showReminder(reminder);
-        previousReminder = reminder;
-      }
-    }
-  }
-
-  /* An asynchronous sleep function. To use it you must `await` as it hands
-   * off control to other portions of the JS control loop whilst waiting.
-   *
-   * @param milliseconds - The number of milliseconds to wait before resuming.
-   */
-  private async sleep(milliseconds: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, milliseconds));
-  }
-
-  private showReminder(reminder: Reminder) {
-    reminder.muteNotification = true;
-    this.ui.showReminderModal(
-      reminder,
-      (time) => {
-        console.info('Remind me later: time=%o', time);
-        reminder.time = time;
-        reminder.muteNotification = false;
-        this.remindersController.updateReminder(reminder, false);
-        this.pluginDataIO.save(true);
-      },
-      () => {
-        console.info('done');
-        reminder.muteNotification = false;
-        this.remindersController.updateReminder(reminder, true);
-        this.reminders.removeReminder(reminder);
-        this.pluginDataIO.save(true);
-      },
-      () => {
-        console.info('Mute');
-        reminder.muteNotification = true;
-        this.ui.reload(true);
-      },
-      () => {
-        console.info('Open');
-        this.ui.openReminderFile(reminder);
-      },
-    );
   }
 
   override onunload(): void {
     this.ui.onunload();
-  }
-
-  reloadAllFiles() {
-    return this.remindersController.reloadAllFiles();
-  }
-
-  isMarkdownFile(file: TFile) {
-    return this.remindersController.isMarkdownFile(file);
   }
 
   get reminders() {
@@ -197,5 +63,17 @@ export default class ReminderPlugin extends Plugin {
 
   get ui() {
     return this._ui;
+  }
+
+  get fileSystem() {
+    return this._fileSystem;
+  }
+
+  get data() {
+    return this._data;
+  }
+
+  get settings() {
+    return this.data.settings;
   }
 }

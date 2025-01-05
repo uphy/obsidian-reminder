@@ -1,8 +1,8 @@
-import { Reference } from 'model/ref';
-import { Reminder, Reminders } from 'model/reminder';
-import { DateTime } from 'model/time';
-import type { Plugin_2 } from 'obsidian';
-import { SETTINGS, TAG_RESCAN } from 'settings';
+import type ReminderPlugin from "main";
+import { Reference } from "model/ref";
+import { Reminder, Reminders } from "model/reminder";
+import { DateTime } from "model/time";
+import { Settings, TAG_RESCAN } from "plugin/settings";
 
 interface ReminderData {
   title: string;
@@ -10,14 +10,18 @@ interface ReminderData {
   rowNumber: number;
 }
 
-export class PluginDataIO {
+export class PluginData {
   private restoring = true;
   changed: boolean = false;
   public scanned: Reference<boolean> = new Reference(false);
   public debug: Reference<boolean> = new Reference(false);
+  private readonly _settings = new Settings();
 
-  constructor(private plugin: Plugin_2, private reminders: Reminders) {
-    SETTINGS.forEach((setting) => {
+  constructor(
+    private plugin: ReminderPlugin,
+    private reminders: Reminders,
+  ) {
+    this.settings.forEach((setting) => {
       setting.rawValue.onChanged(() => {
         if (this.restoring) {
           return;
@@ -31,7 +35,7 @@ export class PluginDataIO {
   }
 
   async load() {
-    console.debug('Load reminder plugin data');
+    console.debug("Load reminder plugin data");
     const data = await this.plugin.loadData();
     if (!data) {
       this.scanned.value = false;
@@ -43,7 +47,7 @@ export class PluginDataIO {
     }
 
     const loadedSettings = data.settings;
-    SETTINGS.forEach((setting) => {
+    this.settings.forEach((setting) => {
       setting.load(loadedSettings);
     });
 
@@ -55,7 +59,16 @@ export class PluginDataIO {
         }
         this.reminders.replaceFile(
           filePath,
-          remindersInFile.map((d) => new Reminder(filePath, d.title, DateTime.parse(d.time), d.rowNumber, false)),
+          remindersInFile.map(
+            (d) =>
+              new Reminder(
+                filePath,
+                d.title,
+                DateTime.parse(d.time),
+                d.rowNumber,
+                false,
+              ),
+          ),
         );
       });
     }
@@ -69,7 +82,11 @@ export class PluginDataIO {
     if (!force && !this.changed) {
       return;
     }
-    console.debug('Save reminder plugin data: force=%s, changed=%s', force, this.changed);
+    console.debug(
+      "Save reminder plugin data: force=%s, changed=%s",
+      force,
+      this.changed,
+    );
     const remindersData: any = {};
     this.reminders.fileToReminders.forEach((r, filePath) => {
       remindersData[filePath] = r.map((rr) => ({
@@ -79,7 +96,7 @@ export class PluginDataIO {
       }));
     });
     const settings = {};
-    SETTINGS.forEach((setting) => {
+    this.settings.forEach((setting) => {
       setting.store(settings);
     });
     await this.plugin.saveData({
@@ -89,5 +106,9 @@ export class PluginDataIO {
       settings,
     });
     this.changed = false;
+  }
+
+  get settings() {
+    return this._settings;
   }
 }

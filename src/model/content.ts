@@ -1,6 +1,7 @@
-import { MarkdownDocument, ReminderEdit, modifyReminder, parseReminder } from 'model/format';
-import type { Reminder } from 'model/reminder';
-import type { Todo } from './format/markdown';
+import { MarkdownDocument, modifyReminder, parseReminder } from "model/format";
+import type { ReminderEdit } from "model/format";
+import type { Reminder } from "model/reminder";
+import type { Todo } from "./format/markdown";
 
 export type ReminderTodoEdit = ReminderEdit & {
   checked?: boolean;
@@ -25,7 +26,9 @@ export class Content {
     return this.doc.getTodos();
   }
 
-  public async modifyReminderLines(modifyFunc: (reminder: Reminder) => ReminderTodoEdit | null) {
+  public async modifyReminderLines(
+    modifyFunc: (reminder: Reminder) => ReminderTodoEdit | null,
+  ) {
     for (const reminder of this.getReminders(false)) {
       const edit = modifyFunc(reminder);
       if (edit === null) {
@@ -42,9 +45,12 @@ export class Content {
   private async modifyReminderLine(reminder: Reminder, edit: ReminderTodoEdit) {
     const modified = await modifyReminder(this.doc, reminder, edit);
     if (modified) {
-      console.info('Reminder was updated: reminder=%o', reminder);
+      console.info("Reminder was updated: reminder=%o", reminder);
     } else {
-      console.warn("Cannot modify reminder because it's not a reminder todo: reminder=%o", reminder);
+      console.warn(
+        "Cannot modify reminder because it's not a reminder todo: reminder=%o",
+        reminder,
+      );
     }
     return modified;
   }

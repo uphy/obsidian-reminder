@@ -9,18 +9,19 @@ export class Todo {
   // check: 'x'
   // suffix: '] '
   // body: hello
-  private static readonly regexp = /^(?<prefix>((> ?)*)?\s*[-*][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
-  private static readonly checkedStatuses = ['x', '-'];
+  private static readonly regexp =
+    /^(?<prefix>((> ?)*)?\s*[-*][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
+  private static readonly checkedStatuses = ["x", "-"];
 
   static parse(lineIndex: number, line: string): Todo | null {
     const match = Todo.regexp.exec(line);
     if (match) {
       return new Todo(
         lineIndex,
-        match.groups!['prefix']!,
-        match.groups!['check']!,
-        match.groups!['suffix']!,
-        match.groups!['body']!,
+        match.groups!["prefix"]!,
+        match.groups!["check"]!,
+        match.groups!["suffix"]!,
+        match.groups!["body"]!,
       );
     }
     return null;
@@ -43,7 +44,7 @@ export class Todo {
   }
 
   public setChecked(checked: boolean) {
-    this.check = checked ? 'x' : ' ';
+    this.check = checked ? "x" : " ";
   }
 
   public getHeaderLength() {
@@ -64,12 +65,15 @@ export class MarkdownDocument {
   private lines: Array<string> = [];
   private todos: Array<Todo> = [];
 
-  constructor(public file: string, content: string) {
+  constructor(
+    public file: string,
+    content: string,
+  ) {
     this.parse(content);
   }
 
   private parse(content: string) {
-    this.lines = content.split('\n');
+    this.lines = content.split("\n");
     this.todos = [];
     this.lines.forEach((line, lineIndex) => {
       const todo = Todo.parse(lineIndex, line);
@@ -120,6 +124,6 @@ export class MarkdownDocument {
 
   public toMarkdown(): string {
     this.applyChanges();
-    return this.lines.join('\n');
+    return this.lines.join("\n");
   }
 }
