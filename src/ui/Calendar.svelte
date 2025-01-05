@@ -1,12 +1,14 @@
 <script lang="typescript">
     import { Calendar } from "./calendar";
     import moment from "moment";
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher, onMount } from 'svelte';
     import { TimedInputHandler } from "./timed-input-handler";
 
     export let value: moment.Moment = moment();
     const dispatch = createEventDispatcher();
     $: calendar = new Calendar(moment().startOf("day"), value.startOf("day"));
+    let table: HTMLElement;
+    let slot: HTMLElement;
 
     function onClick(clicked: moment.Moment){
         value = clicked;
@@ -77,6 +79,11 @@
             event.preventDefault();
         }
     }
+
+    onMount(()=>{
+        // Force the footer slot to be the same width as the table
+        slot.style.width = table.clientWidth + "px";
+    });
 </script>
 <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
 <div class="reminder-calendar" tabindex="0" on:focus={()=>{dispatch("focus")}} on:blur={()=>{dispatch("blur")}} on:keydown={handleKeyDown}>
@@ -86,7 +93,7 @@
         <span class="year">{calendar.current.monthStart.format("YYYY")}</span>
         <button tabindex="-1" class="month-nav" on:click={() => nextMonth()}>&gt;</button>
     </div>
-    <table>
+    <table bind:this={table}>
         <thead>
             <tr>
                 <th>SUN</th>
@@ -122,7 +129,9 @@
             {/each}
         </tbody>
     </table>
-    <slot name="footer" />
+    <div class="footer" bind:this={slot}>
+        <slot name="footer" />
+    </div>
 </div>
 
 <style>
@@ -166,10 +175,6 @@
         text-align: center;
         min-width: 2rem;
         max-width: 2rem;
-    }
-    .reminder-calendar .calendar-date > button{
-        padding: 0;
-        width: 100%;
     }
     .reminder-calendar .calendar-date:hover {
         background-color: var(--background-secondary-alt);
