@@ -1,4 +1,5 @@
-import { ConstantReference, ReadOnlyReference } from "model/ref";
+import { ConstantReference } from "model/ref";
+import type { ReadOnlyReference } from "model/ref";
 import moment from "moment";
 
 export class DateTime {
@@ -18,12 +19,15 @@ export class DateTime {
     from: DateTime,
     to: DateTime,
     unit: Unit,
-    defaultTime?: Time
+    defaultTime?: Time,
   ): number {
     return to.fixedTime(defaultTime).diff(from.fixedTime(defaultTime), unit);
   }
 
-  constructor(private time: moment.Moment, private _hasTimePart: boolean) { }
+  constructor(
+    private time: moment.Moment,
+    private _hasTimePart: boolean,
+  ) {}
 
   public getTimeInMillis(defaultTime?: Time): number {
     return this.fixedTime(defaultTime).valueOf();
@@ -44,7 +48,7 @@ export class DateTime {
   public add(amount: number, unit: Unit, defaultTime?: Time): DateTime {
     return new DateTime(
       this.fixedTime(defaultTime).clone().add(amount, unit),
-      this._hasTimePart
+      this._hasTimePart,
     );
   }
 
@@ -85,8 +89,9 @@ export class DateTime {
   }
 
   public equals(time: DateTime) {
-    return this._hasTimePart === time._hasTimePart
-      && this.time.isSame(time.time);
+    return (
+      this._hasTimePart === time._hasTimePart && this.time.isSame(time.time)
+    );
   }
 }
 
@@ -102,14 +107,17 @@ export class Time {
     const hour = parseInt(s[0]!);
     const minute = parseInt(s[1]!);
     if (hour > 23 || hour < 0) {
-      throw `hour must be 0~23`;
+      throw "hour must be 0~23";
     }
     if (minute > 59 || minute < 0) {
-      throw `minute must be 0~59`;
+      throw "minute must be 0~59";
     }
     return new Time(hour, minute);
   }
-  private constructor(private hour: number, private minute: number) { }
+  private constructor(
+    private hour: number,
+    private minute: number,
+  ) {}
 
   get minutes(): number {
     return this.hour * 60 + this.minute;
@@ -127,7 +135,14 @@ export class Time {
 }
 
 export type later = () => DateTime;
-type Unit = "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years";
+type Unit =
+  | "seconds"
+  | "minutes"
+  | "hours"
+  | "days"
+  | "weeks"
+  | "months"
+  | "years";
 
 function add(amount: number, unit: Unit): later {
   return () => {
@@ -196,11 +211,14 @@ export function nextYear(): later {
 }
 
 export class Later {
-  constructor(public label: string, public later: later) { }
+  constructor(
+    public label: string,
+    public later: later,
+  ) {}
 }
 
 export function parseLaters(laters: string): Array<Later> {
-  return laters.split("\n").map(l => parseLater(l.trim()));
+  return laters.split("\n").map((l) => parseLater(l.trim()));
 }
 
 export function parseLater(later: string): Later {
@@ -208,46 +226,41 @@ export function parseLater(later: string): Later {
   if (later.startsWith("in")) {
     const tokens = later.split(" ");
     if (tokens.length !== 3) {
-      throw `Unsupported format.  Should be 'In N (minutes|hours)'`;
+      throw "Unsupported format.  Should be 'In N (minutes|hours)'";
     }
-    const n = tokens[1] === "a" || tokens[1] === "an" ? 1 : parseInt(tokens[1]!);
+    const n =
+      tokens[1] === "a" || tokens[1] === "an" ? 1 : parseInt(tokens[1]!);
     switch (tokens[2]) {
       case "minute":
-      case "minutes":
-        {
-          const unit = n == 1 ? "minute" : "minutes";
-          return new Later(`In ${n} ${unit}`, inMinutes(n));
-        }
+      case "minutes": {
+        const unit = n == 1 ? "minute" : "minutes";
+        return new Later(`In ${n} ${unit}`, inMinutes(n));
+      }
       case "hour":
-      case "hours":
-        {
-          const unit = n == 1 ? "hour" : "hours";
-          return new Later(`In ${n} ${unit}`, inHours(n));
-        }
+      case "hours": {
+        const unit = n == 1 ? "hour" : "hours";
+        return new Later(`In ${n} ${unit}`, inHours(n));
+      }
       case "day":
-      case "days":
-        {
-          const unit = n == 1 ? "day" : "days";
-          return new Later(`In ${n} ${unit}`, inDays(n));
-        }
+      case "days": {
+        const unit = n == 1 ? "day" : "days";
+        return new Later(`In ${n} ${unit}`, inDays(n));
+      }
       case "week":
-      case "weeks":
-        {
-          const unit = n == 1 ? "week" : "weeks";
-          return new Later(`In ${n} ${unit}`, inWeeks(n));
-        }
+      case "weeks": {
+        const unit = n == 1 ? "week" : "weeks";
+        return new Later(`In ${n} ${unit}`, inWeeks(n));
+      }
       case "month":
-      case "months":
-        {
-          const unit = n == 1 ? "month" : "months";
-          return new Later(`In ${n} ${unit}`, inMonths(n));
-        }
+      case "months": {
+        const unit = n == 1 ? "month" : "months";
+        return new Later(`In ${n} ${unit}`, inMonths(n));
+      }
       case "year":
-      case "years":
-        {
-          const unit = n == 1 ? "year" : "years";
-          return new Later(`In ${n} ${unit}`, inYears(n));
-        }
+      case "years": {
+        const unit = n == 1 ? "year" : "years";
+        return new Later(`In ${n} ${unit}`, inYears(n));
+      }
     }
   } else if (later.startsWith("next")) {
     const weekday = later.substring(5);
@@ -292,12 +305,19 @@ export const DEFAULT_LATERS: Array<Later> = [
 ];
 
 class DateTimeFormatter {
-
-  private dateFormat: ReadOnlyReference<string> = new ConstantReference("YYYY-MM-DD");
-  private dateTimeFormat: ReadOnlyReference<string> = new ConstantReference("YYYY-MM-DD HH:mm");
+  private dateFormat: ReadOnlyReference<string> = new ConstantReference(
+    "YYYY-MM-DD",
+  );
+  private dateTimeFormat: ReadOnlyReference<string> = new ConstantReference(
+    "YYYY-MM-DD HH:mm",
+  );
   private strict: ReadOnlyReference<boolean> = new ConstantReference(false);
 
-  setTimeFormat(dateFormat: ReadOnlyReference<string>, dateTimeFormat: ReadOnlyReference<string>, strict: ReadOnlyReference<boolean>) {
+  setTimeFormat(
+    dateFormat: ReadOnlyReference<string>,
+    dateTimeFormat: ReadOnlyReference<string>,
+    strict: ReadOnlyReference<boolean>,
+  ) {
     this.dateFormat = dateFormat;
     this.dateTimeFormat = dateTimeFormat;
     this.strict = strict;
@@ -333,7 +353,6 @@ class DateTimeFormatter {
       return time.format(this.dateFormat.value);
     }
   }
-
 }
 
 export const DATE_TIME_FORMATTER = new DateTimeFormatter();

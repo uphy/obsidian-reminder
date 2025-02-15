@@ -12,6 +12,13 @@ Time when a reminder with no time part will show.
 - Format: `HH:mm` (HH: hour, mm: minute)
 - Default: `09:00`
 
+## Reminder Time Step
+
+Step of time for reminder time.
+
+- Type: `number`
+- Default: `15`
+
 ## Date format
 
 Format for reminder date without time.

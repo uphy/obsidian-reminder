@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "EditorConfig.EditorConfig",
+    "Orta.vscode-jest",
+    "DavidAnson.vscode-markdownlint",
+    "svelte.svelte-vscode"
+  ]
+}
