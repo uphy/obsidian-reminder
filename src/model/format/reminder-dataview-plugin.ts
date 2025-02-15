@@ -9,14 +9,14 @@ type DataviewSettingType = {
     dateFormat: string
 }
 
-const dataviewSetting = new (class DataviewSetting {
+const dataviewSettings = new (class DataviewSettings {
 
     get dateTrigger() {
-        return this.get("date-trigger", "due:: ");
+        return "due:: ";
     }
 
     get dateFormat() {
-        return this.get("date-format", "YYYY-MM-DD");
+        return this.get("defaultDateFormat", "YYYY-MM-DD");
     }
 
     private get<E>(key: string, defaultValue: E): E {
@@ -50,7 +50,7 @@ type DataviewSplitResult = {
 
 export class DataviewDateTimeFormat {
 
-    static instance: DataviewDateTimeFormat = new DataviewDateTimeFormat(dataviewSetting);
+    static instance: DataviewDateTimeFormat = new DataviewDateTimeFormat(dataviewSettings);
 
     private dateRegExp: RegExp;
 
