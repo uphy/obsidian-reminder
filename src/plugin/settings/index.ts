@@ -32,6 +32,7 @@ export class Settings {
   laters: SettingModel<string, Array<Later>>;
   dateFormat: SettingModel<string, string>;
   dateTimeFormat: SettingModel<string, string>;
+  reverseSidebarGroupFormat: SettingModel<boolean, boolean>;
   strictDateFormat: SettingModel<boolean, boolean>;
   autoCompleteTrigger: SettingModel<string, string>;
   primaryFormat: SettingModel<string, ReminderFormatType>;
@@ -120,6 +121,14 @@ export class Settings {
           reminderFormatSettings.enableReminderPluginReminderFormat.value,
         );
       })
+      .build(new RawSerde());
+
+    this.reverseSidebarGroupFormat = this.settings
+      .newSettingBuilder()
+      .key("reverseSidebarGroupFormat")
+      .name("Reverse sidebar group format")
+      .desc("E.g. for April 1st, `04/01` becomes `01/04`")
+      .toggle(false)
       .build(new RawSerde());
 
     this.linkDatesToDailyNotes = this.settings
@@ -231,6 +240,7 @@ export class Settings {
         reminderFormatSettings.enableReminderPluginReminderFormat,
         this.dateFormat,
         this.dateTimeFormat,
+        this.reverseSidebarGroupFormat,
         this.strictDateFormat,
         this.linkDatesToDailyNotes,
       );

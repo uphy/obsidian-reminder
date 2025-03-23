@@ -12,6 +12,7 @@ class ReminderListItemView extends ItemView {
     leaf: WorkspaceLeaf,
     private reminders: Reminders,
     private reminderTime: ReadOnlyReference<Time>,
+    private reverseSidebarGroupFormat: ReadOnlyReference<boolean>,
     private onOpenReminder: (reminder: Reminder) => void,
   ) {
     super(leaf);
@@ -64,7 +65,7 @@ class ReminderListItemView extends ItemView {
   }
 
   private remindersForView() {
-    return groupReminders(this.reminders.reminders, this.reminderTime.value);
+    return groupReminders(this.reminders.reminders, this.reminderTime.value, this.reverseSidebarGroupFormat.value);
   }
 
   override onClose(): Promise<void> {
@@ -83,6 +84,7 @@ export class ReminderListItemViewProxy {
     private workspace: Workspace,
     private reminders: Reminders,
     private reminderTime: ReadOnlyReference<Time>,
+    private reverseSidebarGroupFormat: ReadOnlyReference<boolean>,
     private onOpenReminder: (reminder: Reminder) => void,
   ) {}
 
@@ -91,6 +93,7 @@ export class ReminderListItemViewProxy {
       leaf,
       this.reminders,
       this.reminderTime,
+      this.reverseSidebarGroupFormat,
       this.onOpenReminder,
     );
   }
