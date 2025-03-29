@@ -178,18 +178,20 @@ export class Reminders {
   }
 }
 
-function generateGroup(time: DateTime, now: DateTime, reminderTime: Time) {
+function generateGroup(time: DateTime, now: DateTime, reminderTime: Time, reverseSidebarGroupFormat: boolean) {
   const days = DateTime.duration(now, time, "days", reminderTime);
   if (days > 30) {
     return new Group(time.toYYYYMMMM(reminderTime), (time) =>
-      time.format("MM/DD", reminderTime),
+      time.format(reverseSidebarGroupFormat === true ? "DD/MM" : "MM/DD", reminderTime),
     );
   }
+
   if (days >= 7) {
     return new Group("Over 1 week", (time) =>
-      time.format("MM/DD", reminderTime),
+      time.format(reverseSidebarGroupFormat === true ? "DD/MM" : "MM/DD", reminderTime),
     );
   }
+
   if (time.toYYYYMMDD(reminderTime) === now.toYYYYMMDD(reminderTime)) {
     const todaysGroup = new Group("Today", (time) =>
       time.format("HH:mm", reminderTime),
@@ -197,13 +199,15 @@ function generateGroup(time: DateTime, now: DateTime, reminderTime: Time) {
     todaysGroup.isToday = true;
     return todaysGroup;
   }
+
   if (
     time.toYYYYMMDD(reminderTime) ===
     now.add(1, "days", reminderTime).toYYYYMMDD()
   ) {
     return new Group("Tomorrow", (time) => time.format("HH:mm", reminderTime));
   }
-  return new Group(time.format("M/DD (ddd)", reminderTime), (time) =>
+
+  return new Group(time.format(reverseSidebarGroupFormat === true ? "(ddd) DD/M" : "M/DD (ddd)", reminderTime), (time) =>
     time.format("HH:mm", reminderTime),
   );
 }
@@ -224,20 +228,21 @@ class Group {
 export function groupReminders(
   sortedReminders: Array<Reminder>,
   reminderTime: Time,
+  reverseSidebarGroupFormat: boolean,
 ): Array<GroupedReminder> {
   const now = DateTime.now();
   const result: Array<GroupedReminder> = [];
   let currentReminders: Array<Reminder> = [];
   const overdueReminders: Array<Reminder> = [];
   // Always shows today's group
-  let previousGroup: Group = generateGroup(now, now, reminderTime);
+  let previousGroup: Group = generateGroup(now, now, reminderTime, reverseSidebarGroupFormat);
   for (let i = 0; i < sortedReminders.length; i++) {
     const r = sortedReminders[i]!;
     if (r.muteNotification) {
       overdueReminders.push(r);
       continue;
     }
-    const group = generateGroup(r.time, now, reminderTime);
+    const group = generateGroup(r.time, now, reminderTime, reverseSidebarGroupFormat);
     if (group.name !== previousGroup.name) {
       if (currentReminders.length > 0 || previousGroup.isToday) {
         result.push(new GroupedReminder(previousGroup, currentReminders));
