@@ -38,6 +38,9 @@ export class Settings {
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
   removeTagsForTasksPlugin: SettingModel<boolean, boolean>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
+  yearMonthDisplayFormat: SettingModel<string, string>;
+  monthDayDisplayFormat: SettingModel<string, string>;
+  shortDateWithWeekdayDisplayFormat: SettingModel<string, string>;
   editDetectionSec: SettingModel<number, number>;
   reminderCheckIntervalSec: SettingModel<number, number>;
 
@@ -195,6 +198,37 @@ export class Settings {
       })
       .build(new RawSerde());
 
+    this.yearMonthDisplayFormat = this.settings
+      .newSettingBuilder()
+      .key("yearMonthDisplayFormat")
+      .name("Year & Month Format")
+      .desc(
+        "Moment style year and month format:\nhttps://momentjs.com/docs/#/displaying/format/",
+      )
+      .text("YYYY, MMMM")
+      .placeHolder("YYYY, MMMM")
+      .build(new RawSerde());
+    this.monthDayDisplayFormat = this.settings
+      .newSettingBuilder()
+      .key("monthDayDisplayFormat")
+      .name("Month & Day Format")
+      .desc(
+        "Moment style month and day format:\nhttps://momentjs.com/docs/#/displaying/format/",
+      )
+      .text("MM/DD")
+      .placeHolder("MM/DD")
+      .build(new RawSerde());
+    this.shortDateWithWeekdayDisplayFormat = this.settings
+      .newSettingBuilder()
+      .key("shortDateWithWeekdayDisplayFormat")
+      .name("Short Date with Weekday Format")
+      .desc(
+        "Moment style short date with weekday format:\nhttps://momentjs.com/docs/#/displaying/format/",
+      )
+      .text("M/DD (ddd)")
+      .placeHolder("M/DD (ddd)")
+      .build(new RawSerde());
+
     this.editDetectionSec = this.settings
       .newSettingBuilder()
       .key("editDetectionSec")
@@ -244,6 +278,13 @@ export class Settings {
     this.settings
       .newGroup("Reminder Format - Kanban Plugin")
       .addSettings(reminderFormatSettings.enableKanbanPluginReminderFormat);
+    this.settings
+      .newGroup("Date Display Format")
+      .addSettings(
+        this.yearMonthDisplayFormat,
+        this.monthDayDisplayFormat,
+        this.shortDateWithWeekdayDisplayFormat,
+      );
     this.settings
       .newGroup("Advanced")
       .addSettings(this.editDetectionSec, this.reminderCheckIntervalSec);
