@@ -2,7 +2,7 @@
   import { onMount, tick } from "svelte";
   import type { Reminder } from "../model/reminder";
   import type { DateTime, Later } from "../model/time";
-  import Icon from "./Icon.svelte";
+  import IconText from "./IconText.svelte";
   import Markdown from "./Markdown.svelte";
 
   export let reminder: Reminder;
@@ -30,19 +30,18 @@
 </script>
 
 <main>
-  <h1 class="reminder-title">
+  <h3 class="reminder-title">
     <Markdown markdown={reminder.title} sourcePath={reminder.file} />
-  </h1>
+  </h3>
   <button class="reminder-file" on:click={onOpenFile}>
-    <Icon icon="link" />
-    {reminder.file}
+    <IconText icon="link" text={reminder.file} />
   </button>
   <div class="reminder-actions">
     <button class="mod-cta" on:click={onDone} bind:this={doneButton}>
-      <Icon icon="check-small" /> Mark as Done
+      <IconText icon="check-small" /><span>Done</span>
     </button>
     <button on:click={onMute}>
-      <Icon icon="minus-with-circle" /> Mute
+      <IconText icon="minus-with-circle" text="Mute" />
     </button>
     <select
       class="dropdown later-select"
@@ -50,7 +49,7 @@
       on:change={remindMeLater}
     >
       <!-- placeholder -->
-      <option selected disabled hidden>Remind Me Later</option>
+      <option selected disabled hidden>Snooze</option>
       <!-- options -->
       {#each laters as later, i}
         <option value={i} selected={selectedIndex === i}>{later.label}</option>
@@ -60,21 +59,15 @@
 </main>
 
 <style>
-  main {
-    padding: 1em;
-    margin: 0 auto;
-  }
-
   .reminder-actions {
     margin-top: 1rem;
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .reminder-title {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    margin: 0.3rem 0;
   }
 
   .reminder-file {
