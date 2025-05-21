@@ -26,7 +26,7 @@ class ReminderListItemView extends ItemView {
   }
 
   override getIcon(): string {
-    return "clock";
+    return "square-check-big";
   }
 
   override async onOpen(): Promise<void> {
