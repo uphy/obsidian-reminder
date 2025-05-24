@@ -7,6 +7,9 @@
   export let value: moment.Moment = moment();
   const dispatch = createEventDispatcher();
   $: calendar = new Calendar(moment().startOf("day"), value.startOf("day"));
+  $: daysOfWeek = Array.from({ length: 7 }, (_, i) =>
+    moment().weekday((calendar.weekStart + i) % 7).format("ddd")
+  );
   let table: HTMLElement;
   let slot: HTMLElement;
 
@@ -121,13 +124,9 @@
   <table bind:this={table}>
     <thead>
       <tr>
-        <th>SUN</th>
-        <th>MON</th>
-        <th>TUE</th>
-        <th>WED</th>
-        <th>THU</th>
-        <th>FRI</th>
-        <th>SAT</th>
+        {#each daysOfWeek as day}
+          <th>{day}</th>
+        {/each}
       </tr>
     </thead>
     <tbody>

@@ -1,4 +1,5 @@
 import moment from "moment";
+import { Settings } from "plugin/settings";
 
 export class Day {
   constructor(public date: moment.Moment) {}
@@ -32,8 +33,12 @@ export class Week {
 
 export class Month {
   public weeks: Array<Week> = [];
+  private settings = new Settings();
+  public readonly weekStart = Number(this.settings.weekStart.value);
   constructor(public monthStart: moment.Moment) {
-    const current = monthStart.clone().add(-monthStart.weekday(), "day");
+    const current = monthStart
+      .clone()
+      .add(-(monthStart.weekday() - this.weekStart + 7) % 7, "day");
     for (let i: number = 0; i < 6; i++) {
       if (i > 0 && !this.isThisMonth(current)) {
         break;
@@ -54,6 +59,8 @@ export class Month {
 export class Calendar {
   private _current: Month;
   public today: moment.Moment;
+  private settings = new Settings();
+  public readonly weekStart = Number(this.settings.weekStart.value);
 
   constructor(today?: moment.Moment, monthStart?: moment.Moment) {
     if (today) {
@@ -84,7 +91,12 @@ export class Calendar {
   }
 
   public calendarString() {
-    let str = `${this._current.monthStart.format("YYYY, MMM")}\nSun Mon Tue Wed Thu Fri Sat\n`;
+    const daysOfWeek = Array.from({ length: 7 }, (_, i) =>
+      moment()
+        .weekday((this.weekStart + i) % 7)
+        .format("ddd"),
+    ).join(" ");
+    let str = `${this._current.monthStart.format("YYYY, MMM")}\n${daysOfWeek}\n`;
     this._current.weeks.forEach((week) => {
       let line = " ";
       week.days.forEach((slot) => {
