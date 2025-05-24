@@ -1,5 +1,4 @@
 import moment from "moment";
-import { Settings } from "plugin/settings";
 
 export class Day {
   constructor(public date: moment.Moment) {}
@@ -33,9 +32,12 @@ export class Week {
 
 export class Month {
   public weeks: Array<Week> = [];
-  private settings = new Settings();
-  public readonly weekStart = Number(this.settings.weekStart.value);
-  constructor(public monthStart: moment.Moment) {
+  private weekStart: number;
+  constructor(
+    public monthStart: moment.Moment,
+    weekStart?: number,
+  ) {
+    this.weekStart = weekStart || 0;
     const current = monthStart
       .clone()
       .add(-(monthStart.weekday() - this.weekStart + 7) % 7, "day");
@@ -59,10 +61,14 @@ export class Month {
 export class Calendar {
   private _current: Month;
   public today: moment.Moment;
-  private settings = new Settings();
-  public readonly weekStart = Number(this.settings.weekStart.value);
+  public weekStart: number;
 
-  constructor(today?: moment.Moment, monthStart?: moment.Moment) {
+  constructor(
+    today?: moment.Moment,
+    monthStart?: moment.Moment,
+    weekStart?: number,
+  ) {
+    this.weekStart = weekStart || 0;
     if (today) {
       this.today = today;
     } else {
@@ -70,9 +76,15 @@ export class Calendar {
     }
 
     if (monthStart) {
-      this._current = new Month(monthStart.clone().set("date", 1));
+      this._current = new Month(
+        monthStart.clone().set("date", 1),
+        this.weekStart,
+      );
     } else {
-      this._current = new Month(this.today.clone().set("date", 1));
+      this._current = new Month(
+        this.today.clone().set("date", 1),
+        this.weekStart,
+      );
     }
   }
 
@@ -80,6 +92,7 @@ export class Calendar {
     return new Calendar(
       this.today,
       this._current.monthStart.clone().add(1, "month"),
+      this.weekStart,
     );
   }
 
@@ -87,6 +100,7 @@ export class Calendar {
     return new Calendar(
       this.today,
       this._current.monthStart.clone().add(-1, "month"),
+      this.weekStart,
     );
   }
 

@@ -2,11 +2,14 @@
   import moment from "moment";
   import { createEventDispatcher, onMount } from "svelte";
   import { Calendar } from "./calendar";
+  import { Settings } from "plugin/settings";
   import { TimedInputHandler } from "./timed-input-handler";
 
   export let value: moment.Moment = moment();
   const dispatch = createEventDispatcher();
-  $: calendar = new Calendar(moment().startOf("day"), value.startOf("day"));
+  const settings = new Settings()
+  const weekStart = Number(settings.weekStart.value)
+  $: calendar = new Calendar(moment().startOf("day"), value.startOf("day"), weekStart);
   $: daysOfWeek = Array.from({ length: 7 }, (_, i) =>
     moment().weekday((calendar.weekStart + i) % 7).format("ddd")
   );
