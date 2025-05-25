@@ -15,7 +15,9 @@ export class Day {
   }
 
   public isHoliday() {
-    return this.date.weekday() === 0 || this.date.weekday() === 6;
+    const weekStart = moment.localeData().firstDayOfWeek();
+    const weekendDays = [(6 - weekStart + 7) % 7, (0 - weekStart + 7) % 7];
+    return weekendDays.includes(this.date.weekday());
   }
 }
 
