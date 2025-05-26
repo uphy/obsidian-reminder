@@ -31,9 +31,14 @@ export class ReminderPluginUI {
       this.plugin.settings.reminderTime,
       // On select a reminder in the list
       (reminder) => {
-        if (reminder.muteNotification) {
-          this.showReminder(reminder);
-          return;
+        if (this.plugin.settings.silence.value == true) {
+          // Do not show buildin notification
+        }
+        else {
+          if (reminder.muteNotification) {
+            this.showReminder(reminder);
+            return;
+          }
         }
         this.openReminderFile(reminder);
       },
@@ -201,7 +206,7 @@ export class ReminderPluginUI {
 class EditDetector {
   private lastModified?: Date;
 
-  constructor(private editDetectionSec: ReadOnlyReference<number>) {}
+  constructor(private editDetectionSec: ReadOnlyReference<number>) { }
 
   fileChanged() {
     this.lastModified = new Date();

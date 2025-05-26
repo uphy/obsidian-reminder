@@ -29,6 +29,7 @@ export class Settings {
   reminderTime: SettingModel<string, Time>;
   reminderTimeStep: SettingModel<number, number>;
   useSystemNotification: SettingModel<boolean, boolean>;
+  silence: SettingModel<boolean, boolean>;
   laters: SettingModel<string, Array<Later>>;
   dateFormat: SettingModel<string, string>;
   dateTimeFormat: SettingModel<string, string>;
@@ -67,6 +68,14 @@ export class Settings {
       .key("useSystemNotification")
       .name("Use system notification")
       .desc("Use system notification for reminder notifications")
+      .toggle(false)
+      .build(new RawSerde());
+
+    this.silence = this.settings
+      .newSettingBuilder()
+      .key("keepSilence")
+      .name("Keep silence")
+      .desc("Do not show buildin notification")
       .toggle(false)
       .build(new RawSerde());
 
@@ -221,6 +230,7 @@ export class Settings {
         this.reminderTimeStep,
         this.laters,
         this.useSystemNotification,
+        this.silence,
       );
     this.settings
       .newGroup("Editor")
