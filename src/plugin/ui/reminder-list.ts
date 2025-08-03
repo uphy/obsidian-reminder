@@ -90,7 +90,21 @@ export class ReminderListItemViewProxy {
   constructor(
     private plugin: ReminderPlugin,
     private onOpenReminder: (reminder: Reminder) => void,
-  ) {}
+  ) {
+    // Automatically reflect display format changes in the Reminder List UI
+    const formats = [
+      this.plugin.settings.yearMonthDisplayFormat,
+      this.plugin.settings.monthDayDisplayFormat,
+      this.plugin.settings.shortDateWithWeekdayDisplayFormat,
+      this.plugin.settings.timeDisplayFormat,
+    ];
+    formats.forEach((fmt) => {
+      fmt.rawValue.onChanged(() => {
+        this.invalidate();
+        this.reload(true);
+      });
+    });
+  }
 
   createView(leaf: WorkspaceLeaf): View {
     return new ReminderListItemView(this.plugin, leaf, this.onOpenReminder);
