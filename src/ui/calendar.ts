@@ -15,7 +15,9 @@ export class Day {
   }
 
   public isHoliday() {
-    return this.date.weekday() === 0 || this.date.weekday() === 6;
+    const weekStart = moment.localeData().firstDayOfWeek();
+    const weekendDays = [(6 - weekStart + 7) % 7, (0 - weekStart + 7) % 7];
+    return weekendDays.includes(this.date.weekday());
   }
 }
 
@@ -32,8 +34,15 @@ export class Week {
 
 export class Month {
   public weeks: Array<Week> = [];
-  constructor(public monthStart: moment.Moment) {
-    const current = monthStart.clone().add(-monthStart.weekday(), "day");
+  private weekStart: number;
+  constructor(
+    public monthStart: moment.Moment,
+    weekStart?: number,
+  ) {
+    this.weekStart = weekStart || 0;
+    const current = monthStart
+      .clone()
+      .add(-(monthStart.weekday() - this.weekStart + 7) % 7, "day");
     for (let i: number = 0; i < 6; i++) {
       if (i > 0 && !this.isThisMonth(current)) {
         break;
@@ -54,8 +63,14 @@ export class Month {
 export class Calendar {
   private _current: Month;
   public today: moment.Moment;
+  public weekStart: number;
 
-  constructor(today?: moment.Moment, monthStart?: moment.Moment) {
+  constructor(
+    today?: moment.Moment,
+    monthStart?: moment.Moment,
+    weekStart?: number,
+  ) {
+    this.weekStart = weekStart || 0;
     if (today) {
       this.today = today;
     } else {
@@ -63,9 +78,15 @@ export class Calendar {
     }
 
     if (monthStart) {
-      this._current = new Month(monthStart.clone().set("date", 1));
+      this._current = new Month(
+        monthStart.clone().set("date", 1),
+        this.weekStart,
+      );
     } else {
-      this._current = new Month(this.today.clone().set("date", 1));
+      this._current = new Month(
+        this.today.clone().set("date", 1),
+        this.weekStart,
+      );
     }
   }
 
@@ -73,6 +94,7 @@ export class Calendar {
     return new Calendar(
       this.today,
       this._current.monthStart.clone().add(1, "month"),
+      this.weekStart,
     );
   }
 
@@ -80,11 +102,17 @@ export class Calendar {
     return new Calendar(
       this.today,
       this._current.monthStart.clone().add(-1, "month"),
+      this.weekStart,
     );
   }
 
   public calendarString() {
-    let str = `${this._current.monthStart.format("YYYY, MMM")}\nSun Mon Tue Wed Thu Fri Sat\n`;
+    const daysOfWeek = Array.from({ length: 7 }, (_, i) =>
+      moment()
+        .weekday((this.weekStart + i) % 7)
+        .format("ddd"),
+    ).join(" ");
+    let str = `${this._current.monthStart.format("YYYY, MMM")}\n${daysOfWeek}\n`;
     this._current.weeks.forEach((week) => {
       let line = " ";
       week.days.forEach((slot) => {

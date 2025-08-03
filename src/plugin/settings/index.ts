@@ -12,6 +12,7 @@ import {
   ReminderFormatParameterKey,
 } from "model/format/reminder-base";
 import { DateTime, Later, Time } from "model/time";
+import moment from "moment";
 import {
   LatersSerde,
   RawSerde,
@@ -30,6 +31,7 @@ export class Settings {
   reminderTimeStep: SettingModel<number, number>;
   useSystemNotification: SettingModel<boolean, boolean>;
   laters: SettingModel<string, Array<Later>>;
+  weekStart: SettingModel<string, string>;
   dateFormat: SettingModel<string, string>;
   dateTimeFormat: SettingModel<string, string>;
   strictDateFormat: SettingModel<boolean, boolean>;
@@ -82,6 +84,26 @@ export class Settings {
       .textArea("In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week")
       .placeHolder("In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week")
       .build(new LatersSerde());
+
+    const weekStartBuilder = this.settings
+      .newSettingBuilder()
+      .key("weekStart")
+      .name("Week start")
+      .desc("Select the first day of the week")
+      .dropdown("0");
+    Array.from({ length: 7 }, (_, d) => {
+      const dayName = moment().weekday(d).format("dddd");
+      weekStartBuilder.addOption(dayName, d.toString());
+    });
+    this.weekStart = weekStartBuilder
+      .onAnyValueChanged(() => {
+        moment.updateLocale("en", {
+          week: {
+            dow: Number(this.weekStart.value),
+          },
+        });
+      })
+      .build(new RawSerde());
 
     this.dateFormat = this.settings
       .newSettingBuilder()
@@ -299,7 +321,11 @@ export class Settings {
       );
     this.settings
       .newGroup("Advanced")
-      .addSettings(this.editDetectionSec, this.reminderCheckIntervalSec);
+      .addSettings(
+        this.editDetectionSec,
+        this.reminderCheckIntervalSec,
+        this.weekStart,
+      );
 
     const config = new ReminderFormatConfig();
     config.setParameterFunc(ReminderFormatParameterKey.now, () =>
