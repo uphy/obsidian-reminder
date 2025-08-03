@@ -30,10 +30,14 @@
 </script>
 
 <main>
-  <h3 class="reminder-title">
+  <h3 class="reminder-title" aria-label={reminder.title}>
     <Markdown markdown={reminder.title} sourcePath={reminder.file} />
   </h3>
-  <button class="reminder-file" on:click={onOpenFile}>
+  <button
+    class="reminder-file"
+    on:click={onOpenFile}
+    aria-label={reminder.file}
+  >
     <IconText icon="link" text={reminder.file} />
   </button>
   <div class="reminder-actions">

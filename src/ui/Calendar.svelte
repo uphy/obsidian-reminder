@@ -1,17 +1,23 @@
 <script lang="typescript">
   import moment from "moment";
   import { createEventDispatcher, onMount } from "svelte";
-  import { Calendar } from "./calendar";
   import { Settings } from "plugin/settings";
+  import { Calendar } from "./calendar";
   import { TimedInputHandler } from "./timed-input-handler";
 
   export let value: moment.Moment = moment();
   const dispatch = createEventDispatcher();
-  const settings = new Settings()
-  const weekStart = Number(settings.weekStart.value)
-  $: calendar = new Calendar(moment().startOf("day"), value.startOf("day"), weekStart);
+  const settings = new Settings();
+  const weekStart = Number(settings.weekStart.value);
+  $: calendar = new Calendar(
+    moment().startOf("day"),
+    value.startOf("day"),
+    weekStart,
+  );
   $: daysOfWeek = Array.from({ length: 7 }, (_, i) =>
-    moment().weekday((calendar.weekStart + i) % 7).format("ddd")
+    moment()
+      .weekday((calendar.weekStart + i) % 7)
+      .format("ddd"),
   );
   let table: HTMLElement;
   let slot: HTMLElement;
