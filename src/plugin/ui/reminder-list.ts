@@ -1,17 +1,15 @@
-import type { ReadOnlyReference } from "model/ref";
-import type { Time } from "model/time";
-import { ItemView, TFile, View, Workspace, WorkspaceLeaf } from "obsidian";
+import { ItemView, TFile, View, WorkspaceLeaf } from "obsidian";
 import ReminderListView from "ui/ReminderList.svelte";
-import { Reminder, Reminders, groupReminders } from "../../model/reminder";
+import type ReminderPlugin from "main";
+import { Reminder, groupReminders } from "../../model/reminder";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 
 class ReminderListItemView extends ItemView {
   private view?: ReminderListView;
 
   constructor(
+    private plugin: ReminderPlugin,
     leaf: WorkspaceLeaf,
-    private reminders: Reminders,
-    private reminderTime: ReadOnlyReference<Time>,
     private onOpenReminder: (reminder: Reminder) => void,
   ) {
     super(leaf);
@@ -64,7 +62,17 @@ class ReminderListItemView extends ItemView {
   }
 
   private remindersForView() {
-    return groupReminders(this.reminders.reminders, this.reminderTime.value);
+    return groupReminders(
+      this.plugin.reminders.reminders,
+      this.plugin.settings.reminderTime.value,
+      {
+        yearMonthFormat: this.plugin.settings.yearMonthDisplayFormat.value,
+        monthDayFormat: this.plugin.settings.monthDayDisplayFormat.value,
+        shortDateWithWeekdayFormat:
+          this.plugin.settings.shortDateWithWeekdayDisplayFormat.value,
+        timeFormat: this.plugin.settings.timeDisplayFormat.value,
+      },
+    );
   }
 
   override onClose(): Promise<void> {
@@ -80,28 +88,37 @@ export class ReminderListItemViewProxy {
   private valid: boolean = false;
 
   constructor(
-    private workspace: Workspace,
-    private reminders: Reminders,
-    private reminderTime: ReadOnlyReference<Time>,
+    private plugin: ReminderPlugin,
     private onOpenReminder: (reminder: Reminder) => void,
-  ) {}
+  ) {
+    // Automatically reflect display format changes in the Reminder List UI
+    const formats = [
+      this.plugin.settings.yearMonthDisplayFormat,
+      this.plugin.settings.monthDayDisplayFormat,
+      this.plugin.settings.shortDateWithWeekdayDisplayFormat,
+      this.plugin.settings.timeDisplayFormat,
+    ];
+    formats.forEach((fmt) => {
+      fmt.rawValue.onChanged(() => {
+        this.invalidate();
+        this.reload(true);
+      });
+    });
+  }
 
   createView(leaf: WorkspaceLeaf): View {
-    return new ReminderListItemView(
-      leaf,
-      this.reminders,
-      this.reminderTime,
-      this.onOpenReminder,
-    );
+    return new ReminderListItemView(this.plugin, leaf, this.onOpenReminder);
   }
 
   openView(): void {
-    if (this.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).length) {
+    if (
+      this.plugin.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).length
+    ) {
       // reminder list view is already in workspace
       return;
     }
     // Create new view
-    this.workspace.getRightLeaf(false)?.setViewState({
+    this.plugin.app.workspace.getRightLeaf(false)?.setViewState({
       type: VIEW_TYPE_REMINDER_LIST,
     });
   }
@@ -120,7 +137,7 @@ export class ReminderListItemViewProxy {
   }
 
   private getViews() {
-    return this.workspace
+    return this.plugin.app.workspace
       .getLeavesOfType(VIEW_TYPE_REMINDER_LIST)
       .map((leaf) => {
         if (leaf && leaf.view instanceof ReminderListItemView) {

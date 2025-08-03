@@ -26,9 +26,7 @@ export class ReminderPluginUI {
   private viewProxy: ReminderListItemViewProxy;
   constructor(private plugin: ReminderPlugin) {
     this.viewProxy = new ReminderListItemViewProxy(
-      this.plugin.app.workspace,
-      this.plugin.reminders,
-      this.plugin.settings.reminderTime,
+      this.plugin,
       // On select a reminder in the list
       (reminder) => {
         if (reminder.muteNotification) {

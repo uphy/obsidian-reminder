@@ -1,0 +1,44 @@
+[tools]
+node = "22.17.1"
+
+# --------------------------------------------------------------------------------
+# Tasks: docs
+
+[tasks."docs:init"]
+run = "npm install"
+sources = ["package.json", "package-lock.json"]
+outputs = { auto = true }
+dir = "docs"
+
+[tasks.docs]
+depends = ["docs:init"]
+run = "npm run dev"
+dir = "docs"
+
+# --------------------------------------------------------------------------------
+# Tasks: main
+
+[tasks."main:init"]
+run = "npm install"
+sources = ["package.json", "package-lock.json"]
+outputs = { auto = true }
+
+[tasks."main:build"]
+depends = ["main:init"]
+run = "npm run dev"
+
+[tasks."main:test"]
+depends = ["main:init"]
+run = "npm run test"
+
+[tasks."main:lint:fix"]
+depends = ["main:init"]
+run = "npm run lint:fix"
+
+[tasks."pre-commit"]
+depends = ["main:lint:fix", "main:test"]
+run = "npm run lint:fix && npm run test"
+
+[tasks.deploy]
+depends = ["main:build"]
+run = "./deploy.sh"

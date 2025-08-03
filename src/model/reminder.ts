@@ -178,21 +178,96 @@ export class Reminders {
   }
 }
 
-function generateGroup(time: DateTime, now: DateTime, reminderTime: Time) {
+export type DateDisplayFormat = {
+  yearMonthFormat: string;
+  monthDayFormat: string;
+  shortDateWithWeekdayFormat: string;
+  timeFormat: string;
+};
+
+export type DateDisplayFormatPreset = {
+  name: string;
+  format: DateDisplayFormat;
+};
+
+export const dateDisplayFormatPresets: DateDisplayFormatPreset[] = [
+  {
+    name: "US Style (12h)",
+    format: {
+      yearMonthFormat: "MMMM YYYY",
+      monthDayFormat: "MM/DD",
+      shortDateWithWeekdayFormat: "M/DD (ddd)",
+      timeFormat: "h:mm A",
+    },
+  },
+  {
+    name: "US Style (24h)",
+    format: {
+      yearMonthFormat: "MMMM YYYY",
+      monthDayFormat: "MM/DD",
+      shortDateWithWeekdayFormat: "M/DD (ddd)",
+      timeFormat: "HH:mm",
+    },
+  },
+  {
+    name: "EU Style (24h)",
+    format: {
+      yearMonthFormat: "MMMM YYYY",
+      monthDayFormat: "DD/MM",
+      shortDateWithWeekdayFormat: "D/MM (ddd)",
+      timeFormat: "HH:mm",
+    },
+  },
+  {
+    name: "EU Style (12h)",
+    format: {
+      yearMonthFormat: "MMMM YYYY",
+      monthDayFormat: "DD/MM",
+      shortDateWithWeekdayFormat: "D/MM (ddd)",
+      timeFormat: "h:mm A",
+    },
+  },
+  {
+    name: "JP Style (24h)",
+    format: {
+      yearMonthFormat: "YYYY年MM月",
+      monthDayFormat: "MM/DD",
+      shortDateWithWeekdayFormat: "M月D日 (ddd)",
+      timeFormat: "HH:mm",
+    },
+  },
+  {
+    name: "JP Style (12h)",
+    format: {
+      yearMonthFormat: "YYYY年MM月",
+      monthDayFormat: "MM/DD",
+      shortDateWithWeekdayFormat: "M月D日 (ddd)",
+      timeFormat: "h:mm A",
+    },
+  },
+];
+
+function generateGroup(
+  time: DateTime,
+  now: DateTime,
+  reminderTime: Time,
+  format: DateDisplayFormat,
+) {
   const days = DateTime.duration(now, time, "days", reminderTime);
   if (days > 30) {
-    return new Group(time.toYYYYMMMM(reminderTime), (time) =>
-      time.format("MM/DD", reminderTime),
+    return new Group(
+      time.format(format.yearMonthFormat, reminderTime),
+      (time) => time.format(format.monthDayFormat, reminderTime),
     );
   }
   if (days >= 7) {
     return new Group("Over 1 week", (time) =>
-      time.format("MM/DD", reminderTime),
+      time.format(format.monthDayFormat, reminderTime),
     );
   }
   if (time.toYYYYMMDD(reminderTime) === now.toYYYYMMDD(reminderTime)) {
     const todaysGroup = new Group("Today", (time) =>
-      time.format("HH:mm", reminderTime),
+      time.format(format.timeFormat, reminderTime),
     );
     todaysGroup.isToday = true;
     return todaysGroup;
@@ -201,10 +276,13 @@ function generateGroup(time: DateTime, now: DateTime, reminderTime: Time) {
     time.toYYYYMMDD(reminderTime) ===
     now.add(1, "days", reminderTime).toYYYYMMDD()
   ) {
-    return new Group("Tomorrow", (time) => time.format("HH:mm", reminderTime));
+    return new Group("Tomorrow", (time) =>
+      time.format(format.timeFormat, reminderTime),
+    );
   }
-  return new Group(time.format("M/DD (ddd)", reminderTime), (time) =>
-    time.format("HH:mm", reminderTime),
+  return new Group(
+    time.format(format.shortDateWithWeekdayFormat, reminderTime),
+    (time) => time.format(format.timeFormat, reminderTime),
   );
 }
 
@@ -224,20 +302,21 @@ class Group {
 export function groupReminders(
   sortedReminders: Array<Reminder>,
   reminderTime: Time,
+  format: DateDisplayFormat,
 ): Array<GroupedReminder> {
   const now = DateTime.now();
   const result: Array<GroupedReminder> = [];
   let currentReminders: Array<Reminder> = [];
   const overdueReminders: Array<Reminder> = [];
   // Always shows today's group
-  let previousGroup: Group = generateGroup(now, now, reminderTime);
+  let previousGroup: Group = generateGroup(now, now, reminderTime, format);
   for (let i = 0; i < sortedReminders.length; i++) {
     const r = sortedReminders[i]!;
     if (r.muteNotification) {
       overdueReminders.push(r);
       continue;
     }
-    const group = generateGroup(r.time, now, reminderTime);
+    const group = generateGroup(r.time, now, reminderTime, format);
     if (group.name !== previousGroup.name) {
       if (currentReminders.length > 0 || previousGroup.isToday) {
         result.push(new GroupedReminder(previousGroup, currentReminders));
@@ -252,7 +331,7 @@ export function groupReminders(
   }
   if (overdueReminders.length > 0) {
     const overdueGroup: Group = new Group("Overdue", (time) =>
-      time.format("HH:mm", reminderTime),
+      time.format(format.timeFormat, reminderTime),
     );
     overdueGroup.isOverdue = true;
     result.splice(0, 0, new GroupedReminder(overdueGroup, overdueReminders));

@@ -40,7 +40,7 @@ Format for reminder date time.
 Trigger to show calendar popup.
 
 - Type: `string`
-- Format: Any string.  If you make this setting empty string, calendar popup will be disabled.
+- Format: Any string. If you make this setting empty string, calendar popup will be disabled.
 - Default: `(@`
 
 ## Primary reminder format
@@ -49,9 +49,9 @@ Reminder format for generated reminder by calendar popup.
 
 - Type: `select`
 - Values:
-    - [Reminder plugin format](/guide/set-reminders.html#reminder-format)
-    - [Tasks plugin format](/guide/interop-tasks.html)
-    - [Kanban plugin format](/guide/interop-kanban.html)
+  - [Reminder plugin format](/guide/set-reminders.html#reminder-format)
+  - [Tasks plugin format](/guide/interop-tasks.html)
+  - [Kanban plugin format](/guide/interop-kanban.html)
 
 ## Link dates to daily notes
 
@@ -59,8 +59,8 @@ You can link dates to daily notes with this option.
 
 - Type: `boolean`
 - Values:
-    - ON: Reminder date links to daily notes
-    - OFF: Reminder date doesn't link to daily notes
+  - ON: Reminder date links to daily notes
+  - OFF: Reminder date doesn't link to daily notes
 - Default: OFF
 
 Example (OFF)
@@ -81,9 +81,9 @@ You can change option which will be shown when you click `Remind Me Later` butto
 
 - Type: `string`
 - Format: Line-separated following options
-    - In N minutes/hours/days/weeks/months/years
-    - Next Sunday/Monday/Tuesday/Wednesday/Thursday/Friday/Saturday/day/week/month/year
-    - Tomorrow
+  - In N minutes/hours/days/weeks/months/years
+  - Next Sunday/Monday/Tuesday/Wednesday/Thursday/Friday/Saturday/day/week/month/year
+  - Tomorrow
 
 ## Use system notification
 
@@ -93,8 +93,8 @@ Only available on desktop OS.
 
 - Type: `boolean`
 - Values:
-    - ON: Use system notification.  In mobile devices, this setting is ignored and builtin notification is used.
-    - OFF: Use builtin notification
+  - ON: Use system notification. In mobile devices, this setting is ignored and builtin notification is used.
+  - OFF: Use builtin notification
 
 ## Enable Tasks plugin format
 
@@ -102,8 +102,8 @@ Enable support for [Tasks Plugin](https://github.com/schemar/obsidian-tasks)
 
 - Type: `boolean`
 - Values:
-    - ON: Enable Tasks plugin format
-    - OFF: Disable Tasks plugin format (default)
+  - ON: Enable Tasks plugin format
+  - OFF: Disable Tasks plugin format (default)
 
 ## Distinguish between reminder date and due date
 
@@ -111,8 +111,8 @@ Use custom emoji ⏰ instead of 📅 and distinguish between reminder date/time 
 
 - Type: `boolean`
 - Values:
-    - ON: Reminder is set using ⏰
-    - OFF: Reminder is set using 📅 (default)
+  - ON: Reminder is set using ⏰
+  - OFF: Reminder is set using 📅 (default)
 
 ## Remove tags from reminder title
 
@@ -121,8 +121,8 @@ This setting affects only tasks plugin format.
 
 - Type: `boolean`
 - Values:
-    - ON: Tags are removed
-    - OFF: Tags are not removed (default)
+  - ON: Tags are removed
+  - OFF: Tags are not removed (default)
 
 ## Enable Kanban plugin format
 
@@ -130,8 +130,8 @@ Enable support for [Kanban Plugin](https://github.com/mgmeyers/obsidian-kanban)
 
 - Type: `boolean`
 - Values:
-    - ON: Enable Kanban plugin format
-    - OFF: Disable Kanban plugin format (default)
+  - ON: Enable Kanban plugin format
+  - OFF: Disable Kanban plugin format (default)
 
 ## Edit Detection Time
 
@@ -139,7 +139,7 @@ In order not to interfere with normal Markdown editing, the Reminder Plugin will
 The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable.
 
 - Type: `number`
-- Value: The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable.  If this value is set to 0, the reminder will be displayed even if the file is being edited.
+- Value: The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable. If this value is set to 0, the reminder will be displayed even if the file is being edited.
 - Default: `10`
 
 ## Reminder check interval
@@ -148,4 +148,55 @@ Interval(in seconds) to periodically check whether or not you should be notified
 You will need to restart Obsidian for this setting to take effect.
 
 - Type: `number`
+
+## Date/Time Display Format
+
+You can customize how dates and times are displayed in the Reminder List and related UI. This affects:
+
+- Group headers such as Year/Month, Today, Tomorrow, and weekday lines
+- Time display for each reminder item
+
+Four independent Moment-style display formats are available:
+
+- Year & Month Format
+
+  - Type: `string`
+  - Format: [momentjs format](https://momentjs.com/docs/#/displaying/format/)
+  - Default: `YYYY, MMMM`
+  - Example: `2025, August`
+
+- Month & Day Format
+
+  - Type: `string`
+  - Format: [momentjs format](https://momentjs.com/docs/#/displaying/format/)
+  - Default: `MM/DD`
+  - Example: `08/03`
+
+- Short Date with Weekday Format
+
+  - Type: `string`
+  - Format: [momentjs format](https://momentjs.com/docs/#/displaying/format/)
+  - Default: `M/DD (ddd)`
+  - Example: `8/03 (Sun)`
+
+- Time Format
+  - Type: `string`
+  - Format: [momentjs format](https://momentjs.com/docs/#/displaying/format/)
+  - Default: `HH:mm`
+  - Example: `09:30`
+
+### Presets
+
+You can quickly apply a preset via the command palette:
+
+- Command: “Set date display format”
+- Presets include typical regional styles, e.g.:
+  - US Style (12h): `MMMM YYYY`, `MM/DD`, `M/DD (ddd)`, `h:mm A`
+  - US Style (24h): `MMMM YYYY`, `MM/DD`, `M/DD (ddd)`, `HH:mm`
+  - EU Style (24h): `MMMM YYYY`, `DD/MM`, `D/MM (ddd)`, `HH:mm`
+  - EU Style (12h): `MMMM YYYY`, `DD/MM`, `D/MM (ddd)`, `h:mm A`
+  - JP Style (24h): `YYYY年MM月`, `MM/DD`, `M月D日 (ddd)`, `HH:mm`
+
+Running the command opens a chooser with live examples. Selecting a preset immediately saves settings and refreshes the Reminder List.
+
 - Default: `5`
