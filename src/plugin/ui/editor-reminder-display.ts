@@ -188,6 +188,25 @@ class PillWidget extends WidgetType {
     root.setAttribute("role", "button");
     root.setAttribute("tabindex", "0");
     root.title = this.spec.title;
+    // Prevent the editor from moving the caret on pointer down inside the widget.
+    // This ensures the pill isn't suppressed before click activation runs.
+    root.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    // Mobile: prevent default to avoid selection/focus changes before activation.
+    try {
+      root.addEventListener(
+        "touchstart",
+        (e: TouchEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+        },
+        { passive: false },
+      );
+    } catch {
+      // ignore if TouchEvent/options unsupported
+    }
     // TODO(a11y): Add aria-label content per design.
     const inner = document.createElement("span");
     inner.className = "reminder-pill__inner";
@@ -384,9 +403,11 @@ const createReminderPillField = (app: App) =>
     },
 
     update: (value, tr) => {
-      // Recompute on doc changes or explicit effects
+      // Recompute on doc changes, selection movement, or explicit effects
+      const selectionChanged = !tr.startState.selection.eq(tr.state.selection);
       if (
         tr.docChanged ||
+        selectionChanged ||
         tr.effects.some((e) => e.is(forceReminderPillRecompute))
       ) {
         const content = tr.state.doc.toString();
@@ -401,7 +422,7 @@ const createReminderPillField = (app: App) =>
         const ctx: PillContext = { app };
 
         // Apply suppression in update path as well.
-        // TODO(opt): Consider debouncing selectionSet updates to reduce recompute churn.
+        // TODO(opt): Consider debouncing selection updates to reduce recompute churn.
         if (!PILL_DECORATIONS_ENABLED) return Decoration.none;
         const builder = new RangeSetBuilder<Decoration>();
         const head = tr.state.selection.main.head;
