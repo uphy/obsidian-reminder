@@ -1,0 +1,28 @@
+[tools]
+node = "22.17.1"
+
+# --------------------------------------------------------------------------------
+# Tasks: docs
+
+[tasks."docs:init"]
+run = "npm install"
+dir = "docs"
+
+[tasks.docs]
+depends = ["docs:init"]
+run = "npm run dev"
+dir = "docs"
+
+# --------------------------------------------------------------------------------
+# Tasks: main
+
+[tasks."main:init"]
+run = "npm install"
+
+[tasks."main:build"]
+depends = ["main:init"]
+run = "npm run dev"
+
+[tasks.deploy]
+depends = ["main:build"]
+run = "./deploy.sh"
