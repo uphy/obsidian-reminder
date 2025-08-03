@@ -2,19 +2,21 @@
  * Pill widget DOM rendering and helpers
  */
 import type { App } from "obsidian";
-import { EditorView, Decoration, WidgetType } from "@codemirror/view";
-import type { PillContext, PillSpec, TokenSpan } from "./types";
+import { Decoration, EditorView, WidgetType } from "@codemirror/view";
+import type { EditorState } from "@codemirror/state";
 import type { Reminders } from "../../../model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "../../../model/time";
 import { showDateTimeChooserModal } from "../date-chooser-modal";
 import { MarkdownDocument } from "../../../model/format/markdown";
+import { modifyReminder } from "../../../model/format/index";
 import { forceReminderPillRecompute } from "./state-effects";
-import type { EditorState } from "@codemirror/state";
+import type { PillContext, PillSpec, TokenSpan } from "./types";
 
-// Minimal spec builder
+// Minimal spec builder with guards
 export function specFrom(span: TokenSpan): PillSpec {
-  const label = `⏰ ${span.text}`;
-  const title = `Reminder: ${span.text}`;
+  const safeText = typeof span?.text === "string" ? span.text : "";
+  const label = `⏰ ${safeText}`;
+  const title = `Reminder: ${safeText}`;
   return { title, label, span };
 }
 
@@ -38,18 +40,18 @@ export class PillWidget extends WidgetType {
   }
 
   toDOM(view: EditorView): HTMLElement {
-    const root = document.createElement("span");
-    root.className = "reminder-pill";
-    root.setAttribute("role", "button");
-    root.setAttribute("tabindex", "0");
-    root.title = this.spec.title;
-
-    // Prevent caret/click suppression
-    root.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
     try {
+      const root = document.createElement("span");
+      root.className = "reminder-pill";
+      root.setAttribute("role", "button");
+      root.setAttribute("tabindex", "0");
+      root.title = this.spec?.title ?? "";
+
+      // Prevent caret/click suppression
+      root.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
       root.addEventListener(
         "touchstart",
         (e: TouchEvent) => {
@@ -58,26 +60,34 @@ export class PillWidget extends WidgetType {
         },
         { passive: false },
       );
+
+      const inner = document.createElement("span");
+      inner.className = "reminder-pill__inner";
+      inner.textContent = this.spec?.label ?? "";
+      root.appendChild(inner);
+
+      const activate = async (ev: Event) => {
+        try {
+          ev.preventDefault();
+          ev.stopPropagation();
+          await openChooserAndApply(view, this.ctx.app, this.spec.span);
+        } catch {
+          // swallow activation errors to avoid breaking the editor
+        }
+      };
+
+      root.addEventListener("click", activate);
+      root.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") activate(e);
+      });
+
+      return root;
     } catch {
-      // ignore
+      // Fallback plain element
+      const fallback = document.createElement("span");
+      fallback.textContent = this.spec?.label ?? "";
+      return fallback;
     }
-
-    const inner = document.createElement("span");
-    inner.className = "reminder-pill__inner";
-    inner.textContent = this.spec.label;
-    root.appendChild(inner);
-
-    const activate = async (ev: Event) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      await openChooserAndApply(view, this.ctx.app, this.spec.span);
-    };
-    root.addEventListener("click", activate);
-    root.addEventListener("keydown", (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") activate(e);
-    });
-
-    return root;
   }
 
   override ignoreEvent(event: Event): boolean {
@@ -97,15 +107,19 @@ function preservedSelection(
   span: TokenSpan,
   nextContent: string,
 ) {
-  const prevHead = prevSel.main.head;
-  const nextLen = nextContent.length;
+  const prevHead =
+    typeof prevSel?.main?.head === "number" ? prevSel.main.head : 0;
+  const nextLen = Number.isFinite(nextContent?.length) ? nextContent.length : 0;
 
-  if (prevHead < span.from || prevHead > span.to) {
+  const from = Number.isFinite(span?.from) ? span.from : 0;
+  const to = Number.isFinite(span?.to) ? span.to : from;
+
+  if (prevHead < from || prevHead > to) {
     const clamped = Math.max(0, Math.min(prevHead, nextLen));
     return { anchor: clamped, head: clamped };
   }
 
-  const head = Math.min(span.to + 1, nextLen);
+  const head = Math.min(to + 1, nextLen);
   return { anchor: head, head };
 }
 
@@ -120,54 +134,85 @@ async function openChooserAndApply(
   app: App,
   span: TokenSpan,
 ): Promise<void> {
-  const content = view.state.doc.toString();
-  const md = new MarkdownDocument(getActiveFilePath(app), content);
+  // 1) Capture content and build MarkdownDocument
+  let content = "";
+  let md: MarkdownDocument;
+  {
+    const maybe = view?.state?.doc;
+    content = typeof maybe?.toString === "function" ? maybe.toString() : "";
+    md = new MarkdownDocument(getActiveFilePath(app), content);
+  }
 
+  // 2) Derive initial time (no try/catch; use guards)
   let initialTime: DateTime | undefined;
-  const rawTime = span.reminder?.time;
+  const rawTime = (span as any)?.reminder?.time;
   if (rawTime != null) {
     if (typeof rawTime === "string") {
       const parsed = DATE_TIME_FORMATTER.parse(rawTime);
-      if (parsed?.isValid()) {
-        initialTime = parsed;
-      }
+      if (parsed?.isValid()) initialTime = parsed;
     } else if (
       typeof rawTime === "object" &&
-      typeof rawTime.toString === "function"
+      typeof (rawTime as any)?.toString === "function"
     ) {
       initialTime = rawTime as DateTime;
     }
   }
 
+  // Minimal facade for chooser
   const minimalReminders = {
     byDate: () => [],
     ...(initialTime && {
-      reminderTime: { value: { toString: () => initialTime!.format("HH:mm") } },
+      reminderTime: {
+        value: {
+          toString: () => initialTime!.format("HH:mm"),
+        },
+      },
     }),
   } as unknown as Reminders;
 
-  const chosen = await showDateTimeChooserModal(app, minimalReminders);
+  // 3) Open modal - wrap whole async step to guard UI failure
+  let chosen: string | DateTime | undefined;
+  try {
+    chosen = await showDateTimeChooserModal(app, minimalReminders);
+  } catch {
+    chosen = undefined;
+  }
   if (!chosen) return;
 
+  // 4) Modify reminder and compute next markdown
   try {
-    // dynamic import to avoid circular dep; modifyReminder is exported from ../../../model/format/index
-    const { modifyReminder } = await import("../../../model/format/index");
-    const ok = await modifyReminder(md, span.reminder, { time: chosen });
+    const ok = await modifyReminder(md, (span as any).reminder, {
+      time: chosen,
+    });
     if (!ok) return;
   } catch {
     return;
   }
+  const next = (() => {
+    try {
+      return md.toMarkdown();
+    } catch {
+      return content;
+    }
+  })();
 
-  const next = md.toMarkdown();
+  // 5) Compute next selection (no try/catch needed)
   const prevSel = view.state.selection;
   const nextSelection = preservedSelection(prevSel, span, next);
 
-  view.dispatch({
-    changes: { from: 0, to: view.state.doc.length, insert: next },
-    selection: nextSelection,
-  });
-  view.dispatch({ effects: forceReminderPillRecompute.of() });
+  // 6) Dispatch changes and force recompute
+  try {
+    const docLen = view.state.doc.length ?? next.length;
+    view.dispatch({
+      changes: { from: 0, to: docLen, insert: next },
+      selection: nextSelection,
+    });
+    view.dispatch({ effects: forceReminderPillRecompute.of() });
+  } catch {
+    // ignore dispatch failures
+  }
 
+  // 7) Defensive microtask recompute (keep per user preference)
   queueMicrotask(() => {
     try {
       view.dispatch({ effects: forceReminderPillRecompute.of() });
