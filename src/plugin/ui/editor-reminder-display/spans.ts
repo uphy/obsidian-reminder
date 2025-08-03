@@ -44,9 +44,9 @@ export function deriveSpans(
   }
 
   for (const rs of reminders ?? []) {
-    if (!rs || !(rs as any).reminder) continue;
+    if (!rs || !rs.reminder) continue;
 
-    const rowNum: unknown = (rs as any).reminder?.rowNumber;
+    const rowNum: unknown = rs.reminder?.rowNumber;
     if (!Number.isInteger(rowNum)) continue;
 
     // rowNumber in Reminder is line index (0-based) for MarkdownDocument Todo
@@ -75,7 +75,7 @@ export function deriveSpans(
 
     // Extract visible text for label safely
     let text = "";
-    const t = (rs as any).reminder?.time;
+    const t = rs.reminder?.time;
     if (t != null) {
       if (typeof t === "string") text = t;
       else if (typeof t?.toString === "function") text = t.toString();
@@ -87,7 +87,7 @@ export function deriveSpans(
       to,
       row: lineIdx0,
       text,
-      reminder: (rs as any).reminder,
+      reminder: rs.reminder,
     });
   }
 

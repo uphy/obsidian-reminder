@@ -1,6 +1,7 @@
 /**
  * Types for editor reminder pill display
  */
+import type { Reminder } from "model/reminder";
 import type { App } from "obsidian";
 
 export interface TokenSpan {
@@ -8,7 +9,7 @@ export interface TokenSpan {
   to: number;
   row: number;
   text: string;
-  reminder: any; // TODO: refine to repository Reminder type
+  reminder: Reminder; // TODO: refine to repository Reminder type
 }
 
 export interface PillSpec {

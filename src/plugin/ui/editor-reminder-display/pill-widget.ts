@@ -145,14 +145,14 @@ async function openChooserAndApply(
 
   // 2) Derive initial time (no try/catch; use guards)
   let initialTime: DateTime | undefined;
-  const rawTime = (span as any)?.reminder?.time;
+  const rawTime = span.reminder?.time;
   if (rawTime != null) {
     if (typeof rawTime === "string") {
       const parsed = DATE_TIME_FORMATTER.parse(rawTime);
       if (parsed?.isValid()) initialTime = parsed;
     } else if (
       typeof rawTime === "object" &&
-      typeof (rawTime as any)?.toString === "function"
+      typeof rawTime?.toString === "function"
     ) {
       initialTime = rawTime as DateTime;
     }
@@ -181,7 +181,7 @@ async function openChooserAndApply(
 
   // 4) Modify reminder and compute next markdown
   try {
-    const ok = await modifyReminder(md, (span as any).reminder, {
+    const ok = await modifyReminder(md, span.reminder, {
       time: chosen,
     });
     if (!ok) return;
