@@ -142,6 +142,19 @@ The value of this setting is the minimum amount of time (in seconds) after a key
 - Value: The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable. If this value is set to 0, the reminder will be displayed even if the file is being edited.
 - Default: `10`
 
+## Week start
+
+Select which day is considered the first day of the week. This affects the Calendar popup.
+
+- Type: `select`
+- Values: Localized weekday names Sunday, Monday, ... Saturday
+- Default: `Sunday`
+
+Notes:
+
+- Changing this updates the calendar grid to start on your chosen day.
+- Weekend highlighting adapts automatically based on this setting.
+
 ## Reminder check interval
 
 Interval(in seconds) to periodically check whether or not you should be notified of reminders.  
