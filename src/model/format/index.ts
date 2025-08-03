@@ -9,6 +9,7 @@ import { CompositeReminderFormat } from "./reminder-base";
 import { DefaultReminderFormat } from "./reminder-default";
 import { KanbanReminderFormat } from "./reminder-kanban-plugin";
 import { TasksPluginFormat } from "./reminder-tasks-plugin";
+import type { ReminderSpan } from "./reminder-base";
 
 const REMINDER_FORMAT = new CompositeReminderFormat();
 REMINDER_FORMAT.resetFormat([DefaultReminderFormat.instance]);
@@ -24,8 +25,9 @@ export class ReminderFormatType {
 }
 
 export type { ReminderFormat, ReminderEdit };
+export type { ReminderSpan };
 
-export function parseReminder(doc: MarkdownDocument): Array<Reminder> {
+export function parseReminder(doc: MarkdownDocument): Array<ReminderSpan> {
   return REMINDER_FORMAT.parse(doc);
 }
 

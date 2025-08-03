@@ -99,6 +99,15 @@ export class TasksPluginReminderModel implements ReminderModel {
     return this.toMarkdown().length;
   }
 
+  computeSpan(): { start: number; end: number } {
+    const sym = this.getReminderSymbol();
+    const range = this.tokens.rangeOfSymbol(sym);
+    if (!range) {
+      return { start: 0, end: 0 };
+    }
+    return { start: range.start, end: range.end - 1 };
+  }
+
   toMarkdown(): string {
     return this.tokens.join();
   }

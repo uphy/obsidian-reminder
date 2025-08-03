@@ -11,6 +11,7 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@2021-09-14)",
       expectedTime: "2021-09-14",
       expectedTitle: "Task1",
+      expectedSpan: { start: 6, end: 6 + 13 }, // "(@" + "2021-09-14" + ")"
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,
@@ -22,6 +23,7 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@2021-09-14 10:00)",
       expectedTime: "2021-09-14 10:00",
       expectedTitle: "Task1",
+      expectedSpan: { start: 6, end: 6 + 19 }, // "(@" + "2021-09-14 10:00" + ")"
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,
@@ -35,6 +37,8 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@[[2021-09-14]] 10:00)",
       expectedTime: "2021-09-14 10:00",
       expectedTitle: "Task1",
+      // Spec: include full "(@[[...]] 10:00)" → start at 6, end at 29 (exclusive) for this string
+      expectedSpan: { start: 6, end: 29 },
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,
@@ -46,6 +50,8 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@[[2021-09-14]])",
       expectedTime: "2021-09-14",
       expectedTitle: "Task1",
+      // Observed span end is 19 (start=6) in runtime
+      expectedSpan: { start: 6, end: 23 },
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,

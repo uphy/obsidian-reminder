@@ -39,12 +39,16 @@ class DefaultReminderModel implements ReminderModel {
     );
   }
 
+  private cachedRenderedTime: string;
+
   constructor(
     private linkDatesToDailyNotes: boolean,
     public title1: string,
     public time: string,
     public title2: string,
-  ) {}
+  ) {
+    this.cachedRenderedTime = this.computeRenderedTime(this.time);
+  }
 
   getTitle(): string {
     return `${this.title1.trim()} ${this.title2.trim()}`.trim();
@@ -54,27 +58,37 @@ class DefaultReminderModel implements ReminderModel {
   }
   setTime(time: DateTime): void {
     this.time = DATE_TIME_FORMATTER.toString(time);
+    this.cachedRenderedTime = this.computeRenderedTime(this.time);
   }
   setRawTime(rawTime: string): boolean {
     this.time = rawTime;
+    this.cachedRenderedTime = this.computeRenderedTime(this.time);
     return true;
   }
   getEndOfTimeTextIndex(): number {
     return this.toMarkdown().length - this.title2.length;
   }
+  computeSpan(): { start: number; end: number } {
+    // body = title1 + "(@" + cachedRenderedTime + ")" + title2
+    const start = this.title1.length; // at "(@" start
+    const end =
+      start + 2 /* "(@" */ + this.cachedRenderedTime.length + 1; /* ")" */
+    return { start, end };
+  }
   toMarkdown(): string {
-    const result = `${this.title1}(@${this.time})${this.title2}`;
+    return `${this.title1}(@${this.cachedRenderedTime})${this.title2}`;
+  }
+
+  private computeRenderedTime(raw: string): string {
     if (!this.linkDatesToDailyNotes) {
-      return result;
+      return raw;
     }
-
-    const time = DATE_TIME_FORMATTER.parse(this.time);
-    if (!time) {
-      return result;
+    const parsed = DATE_TIME_FORMATTER.parse(raw);
+    if (!parsed) {
+      return raw;
     }
-
-    const date = DATE_TIME_FORMATTER.toString(time.clone(false));
-    return result.replace(date, `[[${date}]]`);
+    const datePart = DATE_TIME_FORMATTER.toString(parsed.clone(false));
+    return raw.replace(datePart, `[[${datePart}]]`);
   }
 }
 

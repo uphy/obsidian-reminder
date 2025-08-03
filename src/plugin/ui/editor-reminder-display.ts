@@ -33,10 +33,14 @@ import { EditorState } from "@codemirror/state";
 
 // Model format imports
 import { MarkdownDocument } from "../../model/format/markdown";
-import { modifyReminder, parseReminder } from "../../model/format";
-import { showDateTimeChooserModal } from "./date-chooser-modal";
+import {
+  type ReminderSpan,
+  modifyReminder,
+  parseReminder,
+} from "../../model/format";
 import type { Reminders } from "../../model/reminder";
-import { DateTime, DATE_TIME_FORMATTER } from "../../model/time";
+import { DATE_TIME_FORMATTER, DateTime } from "../../model/time";
+import { showDateTimeChooserModal } from "./date-chooser-modal";
 
 // Internal types for span derivation and pill specs
 export interface TokenSpan {
@@ -110,7 +114,7 @@ function buildMarkdownDocument(app: App, content: string): MarkdownDocument {
 // See design: "Parse and Span Derivation".
 function deriveSpans(
   md: MarkdownDocument,
-  reminders: any[],
+  reminders: ReminderSpan[],
   state: EditorState,
 ): TokenSpan[] {
   if (DEV_DEBUG_PILLS) {
@@ -189,7 +193,7 @@ function deriveSpans(
 
   for (const reminder of reminders ?? []) {
     // Expect parser to provide rowNumber; skip if absent
-    const rowNum: number | undefined = reminder?.rowNumber;
+    const rowNum: number | undefined = reminder.reminder.rowNumber;
     if (typeof rowNum !== "number") {
       if (DEV_DEBUG_PILLS) {
         try {
@@ -588,7 +592,7 @@ const createReminderPillField = (app: App) =>
       // Parse reminders and derive spans
       const content = state.doc.toString();
       const md = buildMarkdownDocument(app, content);
-      let reminders: any[] = [];
+      let reminders: ReminderSpan[] = [];
       try {
         reminders = parseReminder(md);
       } catch {
@@ -662,7 +666,7 @@ const createReminderPillField = (app: App) =>
       ) {
         const content = tr.state.doc.toString();
         const md = buildMarkdownDocument(app, content);
-        let reminders: any[] = [];
+        let reminders: ReminderSpan[] = [];
         try {
           reminders = parseReminder(md);
         } catch {

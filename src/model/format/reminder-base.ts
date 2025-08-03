@@ -14,6 +14,8 @@ export type ReminderInsertion = {
   caretPosition: number;
 };
 
+type Span = { start: number; end: number };
+
 export interface ReminderModel {
   getTitle(): string | null;
   getTime(): DateTime | null;
@@ -27,6 +29,13 @@ export interface ReminderModel {
    * this is used for decision of caret position after inserting reminder.
    */
   getEndOfTimeTextIndex(): number;
+
+  /**
+   * Compute the span [start, end) in 0-based column indices within the todo body
+   * that corresponds to the reminder time text for this model.
+   * Implementations should use only the parsed model state without needing the raw body.
+   */
+  computeSpan(): Span;
 }
 
 export class ReminderFormatParameterKey<T> {
@@ -97,12 +106,18 @@ export class ReminderFormatConfig {
   }
 }
 
+export type ReminderSpan = {
+  reminder: Reminder;
+  columnStart: number;
+  columnEnd: number;
+};
+
 export interface ReminderFormat {
   setConfig(config: ReminderFormatConfig): void;
   /**
    * Parse given line if possible.
    */
-  parse(doc: MarkdownDocument): Array<Reminder> | null;
+  parse(doc: MarkdownDocument): Array<ReminderSpan> | null;
   /**
    * Modify the given line if possible.
    *
@@ -140,7 +155,7 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel>
     this.config = config;
   }
 
-  parse(doc: MarkdownDocument): Reminder[] {
+  parse(doc: MarkdownDocument): ReminderSpan[] {
     return doc
       .getTodos()
       .map((todo) => {
@@ -156,15 +171,22 @@ export abstract class TodoBasedReminderFormat<E extends ReminderModel>
         if (time == null) {
           return null;
         }
-        return new Reminder(
+        const reminder = new Reminder(
           doc.file,
           title,
           time,
           todo.lineIndex,
           todo.isChecked(),
         );
+        const span = parsed.computeSpan();
+        const headerLength = todo.getHeaderLength();
+        return {
+          reminder,
+          columnStart: span.start + headerLength,
+          columnEnd: span.end + headerLength,
+        };
       })
-      .filter((reminder): reminder is Reminder => reminder != null);
+      .filter((span): span is ReminderSpan => span != null);
   }
 
   async modify(
@@ -275,8 +297,8 @@ export class CompositeReminderFormat implements ReminderFormat {
     this.syncConfig();
   }
 
-  parse(doc: MarkdownDocument): Reminder[] {
-    const reminders: Array<Reminder> = [];
+  parse(doc: MarkdownDocument): ReminderSpan[] {
+    const reminders: Array<ReminderSpan> = [];
     for (const format of this.formats) {
       const parsed = format.parse(doc);
       if (parsed == null) {
