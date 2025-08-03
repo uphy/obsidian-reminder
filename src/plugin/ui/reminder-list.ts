@@ -70,6 +70,7 @@ class ReminderListItemView extends ItemView {
         monthDayFormat: this.plugin.settings.monthDayDisplayFormat.value,
         shortDateWithWeekdayFormat:
           this.plugin.settings.shortDateWithWeekdayDisplayFormat.value,
+        timeFormat: this.plugin.settings.timeDisplayFormat.value,
       },
     );
   }

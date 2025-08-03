@@ -182,6 +182,7 @@ export type DateDisplayFormat = {
   yearMonthFormat: string;
   monthDayFormat: string;
   shortDateWithWeekdayFormat: string;
+  timeFormat: string;
 };
 
 export type DateDisplayFormatPreset = {
@@ -196,6 +197,7 @@ export const dateDisplayFormatPresets: DateDisplayFormatPreset[] = [
       yearMonthFormat: "MMMM YYYY",
       monthDayFormat: "MM/DD",
       shortDateWithWeekdayFormat: "M/DD (ddd)",
+      timeFormat: "HH:mm",
     },
   },
   {
@@ -204,6 +206,7 @@ export const dateDisplayFormatPresets: DateDisplayFormatPreset[] = [
       yearMonthFormat: "MMMM YYYY",
       monthDayFormat: "DD/MM",
       shortDateWithWeekdayFormat: "D/MM (ddd)",
+      timeFormat: "HH:mm",
     },
   },
   {
@@ -212,6 +215,7 @@ export const dateDisplayFormatPresets: DateDisplayFormatPreset[] = [
       yearMonthFormat: "YYYY年MM月",
       monthDayFormat: "MM/DD",
       shortDateWithWeekdayFormat: "M月D日 (ddd)",
+      timeFormat: "HH:mm",
     },
   },
 ];
@@ -236,7 +240,7 @@ function generateGroup(
   }
   if (time.toYYYYMMDD(reminderTime) === now.toYYYYMMDD(reminderTime)) {
     const todaysGroup = new Group("Today", (time) =>
-      time.format("HH:mm", reminderTime),
+      time.format(format.timeFormat, reminderTime),
     );
     todaysGroup.isToday = true;
     return todaysGroup;
@@ -245,11 +249,13 @@ function generateGroup(
     time.toYYYYMMDD(reminderTime) ===
     now.add(1, "days", reminderTime).toYYYYMMDD()
   ) {
-    return new Group("Tomorrow", (time) => time.format("HH:mm", reminderTime));
+    return new Group("Tomorrow", (time) =>
+      time.format(format.timeFormat, reminderTime),
+    );
   }
   return new Group(
     time.format(format.shortDateWithWeekdayFormat, reminderTime),
-    (time) => time.format("HH:mm", reminderTime),
+    (time) => time.format(format.timeFormat, reminderTime),
   );
 }
 
@@ -298,7 +304,7 @@ export function groupReminders(
   }
   if (overdueReminders.length > 0) {
     const overdueGroup: Group = new Group("Overdue", (time) =>
-      time.format("HH:mm", reminderTime),
+      time.format(format.timeFormat, reminderTime),
     );
     overdueGroup.isOverdue = true;
     result.splice(0, 0, new GroupedReminder(overdueGroup, overdueReminders));

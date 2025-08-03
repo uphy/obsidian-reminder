@@ -40,6 +40,7 @@ export class Settings {
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
   yearMonthDisplayFormat: SettingModel<string, string>;
   monthDayDisplayFormat: SettingModel<string, string>;
+  timeDisplayFormat: SettingModel<string, string>;
   shortDateWithWeekdayDisplayFormat: SettingModel<string, string>;
   editDetectionSec: SettingModel<number, number>;
   reminderCheckIntervalSec: SettingModel<number, number>;
@@ -228,6 +229,16 @@ export class Settings {
       .text("M/DD (ddd)")
       .placeHolder("M/DD (ddd)")
       .build(new RawSerde());
+    this.timeDisplayFormat = this.settings
+      .newSettingBuilder()
+      .key("timeDisplayFormat")
+      .name("Time Format")
+      .desc(
+        "Moment style time format:\nhttps://momentjs.com/docs/#/displaying/format/",
+      )
+      .text("HH:mm")
+      .placeHolder("HH:mm")
+      .build(new RawSerde());
 
     this.editDetectionSec = this.settings
       .newSettingBuilder()
@@ -279,11 +290,12 @@ export class Settings {
       .newGroup("Reminder Format - Kanban Plugin")
       .addSettings(reminderFormatSettings.enableKanbanPluginReminderFormat);
     this.settings
-      .newGroup("Date Display Format")
+      .newGroup("Date/Time Display Format")
       .addSettings(
         this.yearMonthDisplayFormat,
         this.monthDayDisplayFormat,
         this.shortDateWithWeekdayDisplayFormat,
+        this.timeDisplayFormat,
       );
     this.settings
       .newGroup("Advanced")
