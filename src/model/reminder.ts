@@ -192,7 +192,16 @@ export type DateDisplayFormatPreset = {
 
 export const dateDisplayFormatPresets: DateDisplayFormatPreset[] = [
   {
-    name: "US Style",
+    name: "US Style (12h)",
+    format: {
+      yearMonthFormat: "MMMM YYYY",
+      monthDayFormat: "MM/DD",
+      shortDateWithWeekdayFormat: "M/DD (ddd)",
+      timeFormat: "h:mm A",
+    },
+  },
+  {
+    name: "US Style (24h)",
     format: {
       yearMonthFormat: "MMMM YYYY",
       monthDayFormat: "MM/DD",
@@ -201,7 +210,7 @@ export const dateDisplayFormatPresets: DateDisplayFormatPreset[] = [
     },
   },
   {
-    name: "EU Style",
+    name: "EU Style (24h)",
     format: {
       yearMonthFormat: "MMMM YYYY",
       monthDayFormat: "DD/MM",
@@ -210,12 +219,30 @@ export const dateDisplayFormatPresets: DateDisplayFormatPreset[] = [
     },
   },
   {
-    name: "JP Style",
+    name: "EU Style (12h)",
+    format: {
+      yearMonthFormat: "MMMM YYYY",
+      monthDayFormat: "DD/MM",
+      shortDateWithWeekdayFormat: "D/MM (ddd)",
+      timeFormat: "h:mm A",
+    },
+  },
+  {
+    name: "JP Style (24h)",
     format: {
       yearMonthFormat: "YYYY年MM月",
       monthDayFormat: "MM/DD",
       shortDateWithWeekdayFormat: "M月D日 (ddd)",
       timeFormat: "HH:mm",
+    },
+  },
+  {
+    name: "JP Style (12h)",
+    format: {
+      yearMonthFormat: "YYYY年MM月",
+      monthDayFormat: "MM/DD",
+      shortDateWithWeekdayFormat: "M月D日 (ddd)",
+      timeFormat: "h:mm A",
     },
   },
 ];
