@@ -4,8 +4,7 @@
 import type { App } from "obsidian";
 import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import type { EditorState } from "@codemirror/state";
-import type { Reminders } from "../../../model/reminder";
-import { DATE_TIME_FORMATTER, DateTime } from "../../../model/time";
+import { DateTime } from "../../../model/time";
 import { showDateTimeChooserModal } from "../date-chooser-modal";
 import { MarkdownDocument } from "../../../model/format/markdown";
 import { modifyReminder } from "../../../model/format/index";
@@ -143,37 +142,17 @@ async function openChooserAndApply(
     md = new MarkdownDocument(getActiveFilePath(app), content);
   }
 
-  // 2) Derive initial time (no try/catch; use guards)
-  let initialTime: DateTime | undefined;
-  const rawTime = span.reminder?.time;
-  if (rawTime != null) {
-    if (typeof rawTime === "string") {
-      const parsed = DATE_TIME_FORMATTER.parse(rawTime);
-      if (parsed?.isValid()) initialTime = parsed;
-    } else if (
-      typeof rawTime === "object" &&
-      typeof rawTime?.toString === "function"
-    ) {
-      initialTime = rawTime as DateTime;
-    }
+  // 2) Get reminders from plugin
+  const reminders = app.plugins.plugins["obsidian-reminder-plugin"]?.reminders;
+  if (!reminders) {
+    console.warn("Reminder plugin not available");
+    return;
   }
-
-  // Minimal facade for chooser
-  const minimalReminders = {
-    byDate: () => [],
-    ...(initialTime && {
-      reminderTime: {
-        value: {
-          toString: () => initialTime!.format("HH:mm"),
-        },
-      },
-    }),
-  } as unknown as Reminders;
 
   // 3) Open modal - wrap whole async step to guard UI failure
   let chosen: string | DateTime | undefined;
   try {
-    chosen = await showDateTimeChooserModal(app, minimalReminders);
+    chosen = await showDateTimeChooserModal(app, reminders);
   } catch {
     chosen = undefined;
   }
