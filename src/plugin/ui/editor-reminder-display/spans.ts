@@ -46,20 +46,20 @@ export function deriveSpans(
   for (const rs of reminders ?? []) {
     if (!rs || !rs.reminder) continue;
 
-    const rowNum: unknown = rs.reminder?.rowNumber;
+    const rowNum: number = rs.reminder.rowNumber;
     if (!Number.isInteger(rowNum)) continue;
 
     // rowNumber in Reminder is line index (0-based) for MarkdownDocument Todo
-    const lineIdx0 = rowNum as number;
+    const lineIdx0 = rowNum;
     if (lineIdx0 < 0 || lineIdx0 >= totalLines) continue;
 
     const lineStart = lineStarts[lineIdx0] ?? 0;
 
     const colStart = Number.isFinite(rs.columnStart ?? NaN)
-      ? (rs.columnStart as number)
+      ? rs.columnStart
       : 0;
     const colEnd = Number.isFinite(rs.columnEnd ?? NaN)
-      ? (rs.columnEnd as number)
+      ? rs.columnEnd
       : colStart;
 
     let from = lineStart + Math.max(0, colStart);

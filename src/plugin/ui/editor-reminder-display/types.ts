@@ -9,7 +9,7 @@ export interface TokenSpan {
   to: number;
   row: number;
   text: string;
-  reminder: Reminder; // TODO: refine to repository Reminder type
+  reminder: Reminder;
 }
 
 export interface PillSpec {
