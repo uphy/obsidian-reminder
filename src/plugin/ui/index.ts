@@ -18,6 +18,7 @@ import { AutoComplete } from "./autocomplete";
 import type { AutoCompletableEditor } from "./autocomplete";
 import { buildCodeMirrorPlugin } from "./editor-extension";
 import { ReminderModal } from "./reminder";
+import { createReminderPillExtension } from "./editor-reminder-display";
 
 export class ReminderPluginUI {
   private autoComplete: AutoComplete;
@@ -68,6 +69,9 @@ export class ReminderPluginUI {
           this.plugin.reminders,
           this.plugin.settings,
         ),
+      );
+      this.plugin.registerEditorExtension(
+        createReminderPillExtension(this.plugin.app),
       );
     }
 
