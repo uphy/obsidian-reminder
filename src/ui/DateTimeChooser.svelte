@@ -10,7 +10,26 @@
   export let reminders: Reminders;
   export let onSelect: (time: DateTime) => void;
   export let timeStep = 15;
-  let time = reminders.reminderTime?.value.toString() ?? "10:00";
+
+  // New optional initial time coming from caller (modal)
+  export let initialTime: DateTime | undefined;
+
+  // Initialize date/time from initialTime when provided, else fall back
+  if (initialTime) {
+    // Use DateTime.moment() to get underlying moment
+    date = initialTime.moment().clone();
+  }
+
+  let time = (() => {
+    if (initialTime) {
+      const m = initialTime.moment();
+      const hh = m.format("HH");
+      const mm = m.format("mm");
+      return `${hh}:${mm}`;
+    }
+    return reminders.reminderTime?.value.toString() ?? "10:00";
+  })();
+
   let timeIsFocused = false;
 
   function handleSelect() {

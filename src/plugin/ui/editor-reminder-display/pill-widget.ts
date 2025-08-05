@@ -149,10 +149,14 @@ async function openChooserAndApply(
     return;
   }
 
-  // 3) Open modal - wrap whole async step to guard UI failure
+  // 3) Open modal - pass current reminder time as initial selection
   let chosen: string | DateTime | undefined;
   try {
-    chosen = await showDateTimeChooserModal(app, reminders);
+    const current = span?.reminder?.time as DateTime | undefined;
+    const step =
+      app.plugins.plugins["obsidian-reminder-plugin"].settings.reminderTimeStep
+        .value;
+    chosen = await showDateTimeChooserModal(app, reminders, step, current);
   } catch {
     chosen = undefined;
   }

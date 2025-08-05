@@ -32,7 +32,7 @@ export function createReminderPillExtension(app: App): Extension[] {
     focus: (_event, view) => {
       (globalThis as ReminderGlobal)[REMINDER_VIEW_REF] = view;
     },
-    blur: (_event, _view) => {
+    blur: () => {
       // Keep the last view to allow scheduling while typing resumes.
     },
   });

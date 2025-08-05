@@ -5,7 +5,8 @@
 
   export let reminders: Array<Reminder>;
   export let onOpenReminder: (reminder: Reminder) => void = () => {};
-  export let timeToString = (time: DateTime) => time.format("HH:MM");
+  // Fix incorrect Moment.js token: use mm for minutes (MM is month)
+  export let timeToString = (time: DateTime) => time.format("HH:mm");
   export let generateLink: (reminder: Reminder) => string = () => "";
 </script>
 
@@ -21,6 +22,7 @@
             reminder.title
           } - ${reminder.getFileName()}`}
           draggable="true"
+          tabindex="-1"
           on:dragstart={(e) => {
             e.dataTransfer?.setData("text/plain", generateLink(reminder));
           }}
@@ -52,6 +54,10 @@
     justify-content: flex-start;
     gap: 0.3rem;
     display: inline-flex;
+  }
+  /* Ensure footer reminder items are not tabbable/focusable */
+  .reminder-group button.reminder-list-item {
+    outline: none;
   }
 
   .reminder-group {
