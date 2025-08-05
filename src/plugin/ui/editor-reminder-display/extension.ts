@@ -8,7 +8,6 @@ import { Annotation, RangeSetBuilder, StateField } from "@codemirror/state";
 import { Decoration, type DecorationSet, EditorView } from "@codemirror/view";
 
 import { type ReminderSpan, parseReminder } from "../../../model/format";
-import { ensureReminderPillStylesInjected } from "./styles";
 import type { PillContext, TokenSpan } from "./types";
 import { PillWidget, pillReplace, specFrom } from "./pill-widget";
 import { buildMarkdownDocument, deriveSpans } from "./spans";
@@ -25,8 +24,6 @@ type ReminderGlobal = { [REMINDER_VIEW_REF]?: EditorView };
  * - Register view reference handler and StateField
  */
 export function createReminderPillExtension(app: App): Extension[] {
-  ensureReminderPillStylesInjected();
-
   // Keep a reference to the current EditorView for debounced recomputes.
   const viewRefPlugin = EditorView.domEventHandlers({
     focus: (_event, view) => {

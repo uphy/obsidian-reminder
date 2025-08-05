@@ -10,6 +10,7 @@ import { MarkdownDocument } from "../../../model/format/markdown";
 import { modifyReminder } from "../../../model/format/index";
 import { forceReminderPillRecompute } from "./state-effects";
 import type { PillContext, PillSpec, TokenSpan } from "./types";
+import ReminderPill from "./ReminderPill.svelte";
 
 // Minimal spec builder with guards
 export function specFrom(span: TokenSpan): PillSpec {
@@ -41,44 +42,28 @@ export class PillWidget extends WidgetType {
   toDOM(view: EditorView): HTMLElement {
     try {
       const root = document.createElement("span");
-      root.className = "reminder-pill";
-      root.setAttribute("role", "button");
-      root.setAttribute("tabindex", "0");
-      root.title = this.spec?.title ?? "";
-
-      // Prevent caret/click suppression
-      root.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-      root.addEventListener(
-        "touchstart",
-        (e: TouchEvent) => {
-          e.preventDefault();
-          e.stopPropagation();
+      const component = new ReminderPill({
+        target: root,
+        props: {
+          label: this.spec?.label ?? "",
+          title: this.spec?.title ?? "",
         },
-        { passive: false },
-      );
+      });
 
-      const inner = document.createElement("span");
-      inner.className = "reminder-pill__inner";
-      inner.textContent = this.spec?.label ?? "";
-      root.appendChild(inner);
-
-      const activate = async (ev: Event) => {
+      const activate = async () => {
         try {
-          ev.preventDefault();
-          ev.stopPropagation();
           await openChooserAndApply(view, this.ctx.app, this.spec.span);
         } catch {
           // swallow activation errors to avoid breaking the editor
         }
       };
 
-      root.addEventListener("click", activate);
-      root.addEventListener("keydown", (e: KeyboardEvent) => {
-        if (e.key === "Enter" || e.key === " ") activate(e);
-      });
+      // Listen both to the custom "activate" and native "click" as a fallback for safety.
+      root.addEventListener("activate", activate, true);
+      root.addEventListener("click", activate, true);
+
+      // Store component for cleanup
+      (root as any).__svelte_component = component;
 
       return root;
     } catch {
@@ -89,14 +74,16 @@ export class PillWidget extends WidgetType {
     }
   }
 
-  override ignoreEvent(event: Event): boolean {
-    if (
-      event.type === "mousedown" ||
-      event.type === "click" ||
-      event.type === "keydown"
-    )
-      return false;
-    return true;
+  override destroy(dom: HTMLElement): void {
+    const component = (dom as any).__svelte_component;
+    if (component) {
+      component.$destroy();
+    }
+  }
+
+  override ignoreEvent(): boolean {
+    // Allow all events to reach the Svelte component
+    return false;
   }
 }
 
