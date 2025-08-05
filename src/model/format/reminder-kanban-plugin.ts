@@ -186,6 +186,28 @@ export class KanbanReminderModel implements ReminderModel {
     return this.toMarkdown().length;
   }
 
+  computeSpan(): { start: number; end: number } {
+    // toMarkdown() = `${title.trim()} ${dateSegment}[ optional " " + timeSegment ]`
+    // Span should begin at the first character of the date segment, i.e., right after "title.trim() " (one space)
+    const titleTrimmed = this.title.trim();
+    const start = titleTrimmed.length + 1; // skip the single space after title
+
+    // Construct date segment exactly as KanbanDateTimeFormat.format() would
+    const dateSegment = kanbanSetting.linkDateToDailyNote
+      ? `${kanbanSetting.dateTrigger}[[${this.time.format(kanbanSetting.dateFormat)}]]`
+      : `${kanbanSetting.dateTrigger}{${this.time.format(kanbanSetting.dateFormat)}}`;
+
+    let end = start + dateSegment.length;
+
+    // If time part exists, format() appends: " " + timeTrigger{time}
+    if (this.time.hasTimePart) {
+      const timeSegment = ` ${kanbanSetting.timeTrigger}{${this.time.format(kanbanSetting.timeFormat)}}`;
+      end += timeSegment.length;
+    }
+
+    return { start, end };
+  }
+
   toMarkdown(): string {
     return `${this.title.trim()} ${KanbanDateTimeFormat.instance.format(this.time)}`;
   }

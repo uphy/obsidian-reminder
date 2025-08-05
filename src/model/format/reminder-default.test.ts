@@ -11,6 +11,7 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@2021-09-14)",
       expectedTime: "2021-09-14",
       expectedTitle: "Task1",
+      expectedSpan: { start: 12, end: 12 + 13 },
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,
@@ -22,6 +23,7 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@2021-09-14 10:00)",
       expectedTime: "2021-09-14 10:00",
       expectedTitle: "Task1",
+      expectedSpan: { start: 12, end: 12 + 19 },
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,
@@ -35,6 +37,7 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@[[2021-09-14]] 10:00)",
       expectedTime: "2021-09-14 10:00",
       expectedTitle: "Task1",
+      expectedSpan: { start: 12, end: 35 },
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,
@@ -46,6 +49,7 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@[[2021-09-14]])",
       expectedTime: "2021-09-14",
       expectedTitle: "Task1",
+      expectedSpan: { start: 12, end: 29 },
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,

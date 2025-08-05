@@ -24,6 +24,7 @@ export class DateTimeChooserView {
           this.hide();
         },
         reminders,
+        initialTime: undefined,
       },
     });
   }
