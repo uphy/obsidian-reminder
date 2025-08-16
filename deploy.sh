@@ -31,8 +31,6 @@ osascript <<EOS
 EOS
 }
 
-npm run dev
-
 for target in $(cat deploy-targets.txt)
 do
     deploy "$target"

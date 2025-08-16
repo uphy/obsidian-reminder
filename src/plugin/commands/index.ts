@@ -5,6 +5,7 @@ import { showReminderList } from "./show-reminder-list";
 import { convertReminderTimeFormat } from "./convert-reminder-time-format";
 import { showDateChooser } from "./show-date-chooser";
 import { toggleChecklistStatus } from "./toggle-checklist-status";
+import { setDateDisplayFormat } from "./set-date-display-format";
 
 export function registerCommands(plugin: ReminderPlugin) {
   plugin.addCommand({
@@ -61,6 +62,14 @@ export function registerCommands(plugin: ReminderPlugin) {
       } else {
         return false;
       }
+    },
+  });
+
+  plugin.addCommand({
+    id: "set-date-display-format",
+    name: "Set date display format",
+    checkCallback: (checking: boolean) => {
+      return setDateDisplayFormat(checking, plugin);
     },
   });
 }

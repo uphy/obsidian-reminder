@@ -1,6 +1,7 @@
 import { changeReminderFormat, kanbanPluginReminderFormat, ReminderFormatType, ReminderFormatTypes, reminderPluginReminderFormat, setReminderFormatConfig, tasksPluginReminderFormat, dataviewPluginReminderFormat } from "model/format";
 import { ReminderFormatConfig, ReminderFormatParameterKey } from "model/format/reminder-base";
 import { DateTime, Later, Time } from "model/time";
+import moment from "moment";
 import {
   LatersSerde,
   RawSerde,
@@ -19,6 +20,7 @@ export class Settings {
   reminderTimeStep: SettingModel<number, number>;
   useSystemNotification: SettingModel<boolean, boolean>;
   laters: SettingModel<string, Array<Later>>;
+  weekStart: SettingModel<string, string>;
   dateFormat: SettingModel<string, string>;
   dateTimeFormat: SettingModel<string, string>;
   strictDateFormat: SettingModel<boolean, boolean>;
@@ -27,6 +29,10 @@ export class Settings {
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
   removeTagsForTasksPlugin: SettingModel<boolean, boolean>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
+  yearMonthDisplayFormat: SettingModel<string, string>;
+  monthDayDisplayFormat: SettingModel<string, string>;
+  timeDisplayFormat: SettingModel<string, string>;
+  shortDateWithWeekdayDisplayFormat: SettingModel<string, string>;
   editDetectionSec: SettingModel<number, number>;
   reminderCheckIntervalSec: SettingModel<number, number>;
 
@@ -67,6 +73,26 @@ export class Settings {
       .textArea("In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week")
       .placeHolder("In 30 minutes\nIn 1 hour\nIn 3 hours\nTomorrow\nNext week")
       .build(new LatersSerde());
+
+    const weekStartBuilder = this.settings
+      .newSettingBuilder()
+      .key("weekStart")
+      .name("Week start")
+      .desc("Select the first day of the week")
+      .dropdown("0");
+    Array.from({ length: 7 }, (_, d) => {
+      const dayName = moment().weekday(d).format("dddd");
+      weekStartBuilder.addOption(dayName, d.toString());
+    });
+    this.weekStart = weekStartBuilder
+      .onAnyValueChanged(() => {
+        moment.updateLocale("en", {
+          week: {
+            dow: Number(this.weekStart.value),
+          },
+        });
+      })
+      .build(new RawSerde());
 
     this.dateFormat = this.settings
       .newSettingBuilder()
@@ -184,6 +210,47 @@ export class Settings {
       })
       .build(new RawSerde());
 
+    this.yearMonthDisplayFormat = this.settings
+      .newSettingBuilder()
+      .key("yearMonthDisplayFormat")
+      .name("Year & Month Format")
+      .desc(
+        "Moment style year and month format:\nhttps://momentjs.com/docs/#/displaying/format/",
+      )
+      .text("YYYY, MMMM")
+      .placeHolder("YYYY, MMMM")
+      .build(new RawSerde());
+    this.monthDayDisplayFormat = this.settings
+      .newSettingBuilder()
+      .key("monthDayDisplayFormat")
+      .name("Month & Day Format")
+      .desc(
+        "Moment style month and day format:\nhttps://momentjs.com/docs/#/displaying/format/",
+      )
+      .text("MM/DD")
+      .placeHolder("MM/DD")
+      .build(new RawSerde());
+    this.shortDateWithWeekdayDisplayFormat = this.settings
+      .newSettingBuilder()
+      .key("shortDateWithWeekdayDisplayFormat")
+      .name("Short Date with Weekday Format")
+      .desc(
+        "Moment style short date with weekday format:\nhttps://momentjs.com/docs/#/displaying/format/",
+      )
+      .text("M/DD (ddd)")
+      .placeHolder("M/DD (ddd)")
+      .build(new RawSerde());
+    this.timeDisplayFormat = this.settings
+      .newSettingBuilder()
+      .key("timeDisplayFormat")
+      .name("Time Format")
+      .desc(
+        "Moment style time format:\nhttps://momentjs.com/docs/#/displaying/format/",
+      )
+      .text("HH:mm")
+      .placeHolder("HH:mm")
+      .build(new RawSerde());
+
     this.editDetectionSec = this.settings
       .newSettingBuilder()
       .key("editDetectionSec")
@@ -235,12 +302,22 @@ export class Settings {
       .addSettings(reminderFormatSettings.enableKanbanPluginReminderFormat);
     this.settings
       .newGroup("Reminder Format - Dataview Plugin")
+      .addSettings(reminderFormatSettings.enableDataviewPluginReminderFormat);
+    this.settings
+      .newGroup("Date/Time Display Format")
       .addSettings(
-        reminderFormatSettings.enableDataviewPluginReminderFormat,
+        this.yearMonthDisplayFormat,
+        this.monthDayDisplayFormat,
+        this.shortDateWithWeekdayDisplayFormat,
+        this.timeDisplayFormat,
       );
     this.settings
       .newGroup("Advanced")
-      .addSettings(this.editDetectionSec, this.reminderCheckIntervalSec);
+      .addSettings(
+        this.editDetectionSec,
+        this.reminderCheckIntervalSec,
+        this.weekStart,
+      );
 
     const config = new ReminderFormatConfig();
     config.setParameterFunc(ReminderFormatParameterKey.now, () =>

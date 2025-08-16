@@ -28,6 +28,7 @@ See following settings.
 
 - [Date Format](/setting/#date-format)
 - [Date and Time Format](/setting/#date-and-time-format)
+- For display formats (how dates/times are shown in the UI), see [Date/Time Display Format](/setting/#date-time-display-format)
 
 ## Reminder date input support
 
@@ -46,7 +47,7 @@ There are multiple ways to display the calendar popup.
 
 ### Key input trigger (Desktop only)
 
-When you input `(@` in TODO list item, you will see calendar/time picker popup.  
+When you input `(@` in TODO list item, you will see calendar/time picker popup.
 
 <img :src="$withBase('/images/reminder-input-support.png')" width="400px">
 
@@ -91,7 +92,7 @@ For mobile users, it would be useful to add a button to the toolbar at the botto
 1. `Options` > `Mobile`
 2. `Configure`
 3. Select the command named `Show calendar popup`
-:::
+   :::
 
 ## Toggle checklist status
 
@@ -99,9 +100,10 @@ This plugin provides 2 ways to toggle checklist status.
 
 ::: tip
 If you are using [Tasks Plugin format](/guide/interop-tasks.html), this action do the following additionally:
+
 - Insert done date (`✅ YYYY-MM-DD`)
 - Create next recurring task (if you use `🔁 XXX`)
-:::
+  :::
 
 **By keyboad shortcut**
 

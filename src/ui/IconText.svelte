@@ -24,4 +24,8 @@
   .icon {
     vertical-align: middle;
   }
+  .text {
+    word-break: break-word;
+    text-wrap: pretty;
+  }
 </style>
