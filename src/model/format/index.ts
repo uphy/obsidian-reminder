@@ -9,6 +9,7 @@ import { CompositeReminderFormat } from "./reminder-base";
 import { DefaultReminderFormat } from "./reminder-default";
 import { KanbanReminderFormat } from "./reminder-kanban-plugin";
 import { TasksPluginFormat } from "./reminder-tasks-plugin";
+import { DataviewReminderFormat } from "./reminder-dataview-plugin";
 
 const REMINDER_FORMAT = new CompositeReminderFormat();
 REMINDER_FORMAT.resetFormat([DefaultReminderFormat.instance]);
@@ -49,32 +50,16 @@ export function setReminderFormatConfig(config: ReminderFormatConfig) {
   REMINDER_FORMAT.setConfig(config);
 }
 
-export const reminderPluginReminderFormat = new ReminderFormatType(
-  "ReminderPluginReminderFormat",
-  "Reminder plugin format",
-  "(@2021-09-08)",
-  DefaultReminderFormat.instance,
-  true,
-);
-export const tasksPluginReminderFormat = new ReminderFormatType(
-  "TasksPluginReminderFormat",
-  "Tasks plugin format",
-  "📅 2021-09-08",
-  TasksPluginFormat.instance,
-  false,
-);
-export const kanbanPluginReminderFormat = new ReminderFormatType(
-  "KanbanPluginReminderFormat",
-  "Kanban plugin format",
-  "@{2021-09-08}",
-  KanbanReminderFormat.instance,
-  false,
-);
+export const reminderPluginReminderFormat = new ReminderFormatType("ReminderPluginReminderFormat", "Reminder plugin format", "(@2021-09-08)", DefaultReminderFormat.instance, true);
+export const tasksPluginReminderFormat = new ReminderFormatType("TasksPluginReminderFormat", "Tasks plugin format", "📅 2021-09-08", TasksPluginFormat.instance, false);
+export const kanbanPluginReminderFormat = new ReminderFormatType("KanbanPluginReminderFormat", "Kanban plugin format", "@{2021-09-08}", KanbanReminderFormat.instance, false);
+export const dataviewPluginReminderFormat = new ReminderFormatType("DataviewPluginReminderFormat", "Dataview plugin format", "[due:: 2021-09-08]", DataviewReminderFormat.instance, false);
 
 export const ReminderFormatTypes = [
-  reminderPluginReminderFormat,
-  tasksPluginReminderFormat,
-  kanbanPluginReminderFormat,
+    reminderPluginReminderFormat,
+    tasksPluginReminderFormat,
+    kanbanPluginReminderFormat,
+    dataviewPluginReminderFormat
 ];
 
 export { MarkdownDocument };
