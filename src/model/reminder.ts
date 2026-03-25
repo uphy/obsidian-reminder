@@ -8,11 +8,11 @@ export class Reminder {
   /* Given that `muteNotification` above is playing double duty, we need a flag
    * that lets us serialize reminder display to prevent overload problems on
    * mobile.
-   *
-   * It should be set to `true` before the reminder is displayed, and then set
-   * to false once the reminder is dealt with.
    */
   public beingDisplayed: boolean = false;
+
+  //Speichert den Zeitstempel der letzten Benachrichtigung für Wiederholungen
+  public lastNotifiedTime?: number;
 
   constructor(
     public file: string,
@@ -53,14 +53,36 @@ export class Reminders {
 
   constructor(private onChange: () => void) {}
 
-  public getExpiredReminders(defaultTime: Time): Array<Reminder> {
+  /**
+   * Gibt alle fälligen Reminder zurück.
+   * @param defaultTime Standardzeit für Reminder ohne Zeitangabe.
+   * @param repeatConfig Optional: Konfiguration für wiederholte Benachrichtigungen überfälliger Aufgaben.
+   */
+  public getExpiredReminders(
+    defaultTime: Time,
+    repeatConfig?: { repeat: boolean; intervalMin: number },
+  ): Array<Reminder> {
     const now = new Date().getTime();
     const result: Array<Reminder> = [];
+
     for (let i = 0; i < this.reminders.length; i++) {
       const reminder = this.reminders[i]!;
-      if (reminder.time.getTimeInMillis(defaultTime) <= now) {
-        result.push(reminder);
+      const reminderTimeMillis = reminder.time.getTimeInMillis(defaultTime);
+
+      if (reminderTimeMillis <= now) {
+        // Fall 1: Wurde noch nicht benachrichtigt
+        if (!reminder.muteNotification) {
+          result.push(reminder);
+        }
+        // Fall 2: Wurde bereits benachrichtigt, aber soll wiederholt werden
+        else if (repeatConfig?.repeat && reminder.lastNotifiedTime) {
+          const intervalMs = repeatConfig.intervalMin * 60 * 1000;
+          if (now - reminder.lastNotifiedTime >= intervalMs) {
+            result.push(reminder);
+          }
+        }
       } else {
+        // Da die Liste sortiert ist, können wir abbrechen, sobald eine Zeit in der Zukunft liegt
         break;
       }
     }
@@ -101,27 +123,29 @@ export class Reminders {
   }
 
   public replaceFile(filePath: string, reminders: Array<Reminder>): boolean {
-    // migrate notificationVisible property
     const oldReminders = this.fileToReminders.get(filePath);
     if (oldReminders) {
       if (this.equals(oldReminders, reminders)) {
         return false;
       }
-      const reminderToNotificationVisible = new Map<string, boolean>();
+
+      // Zustand (Mute & Zeitstempel) von alten Remindern auf neue übertragen
+      const reminderState = new Map<
+        string,
+        { mute: boolean; lastNotified?: number }
+      >();
       for (const reminder of oldReminders) {
-        reminderToNotificationVisible.set(
-          reminder.key(),
-          reminder.muteNotification,
-        );
+        reminderState.set(reminder.key(), {
+          mute: reminder.muteNotification,
+          lastNotified: reminder.lastNotifiedTime,
+        });
       }
+
       for (const reminder of reminders) {
-        const visible = reminderToNotificationVisible.get(reminder.key());
-        reminderToNotificationVisible.set(
-          reminder.key(),
-          reminder.muteNotification,
-        );
-        if (visible !== undefined) {
-          reminder.muteNotification = visible;
+        const state = reminderState.get(reminder.key());
+        if (state !== undefined) {
+          reminder.muteNotification = state.mute;
+          reminder.lastNotifiedTime = state.lastNotified;
         }
       }
     }
@@ -140,29 +164,19 @@ export class Reminders {
     for (const i in r1) {
       const reminder1 = r1[i];
       const reminder2 = r2[i];
-      if (reminder1 == null && reminder2 != null) {
-        return false;
-      }
-      if (reminder2 == null && reminder1 != null) {
-        return false;
-      }
-      if (reminder1 == null && reminder2 == null) {
-        continue;
-      }
-      if (!reminder1!.equals(reminder2!)) {
-        return false;
-      }
+      if (reminder1 == null && reminder2 != null) return false;
+      if (reminder2 == null && reminder1 != null) return false;
+      if (reminder1 == null && reminder2 == null) continue;
+      if (!reminder1!.equals(reminder2!)) return false;
     }
     return true;
   }
 
   private sortReminders() {
     const reminders: Array<Reminder> = [];
-
     for (const r of this.fileToReminders.values()) {
       reminders.push(...r);
     }
-
     this.sort(reminders);
     this.reminders = reminders;
     this.onChange();
@@ -177,6 +191,8 @@ export class Reminders {
     });
   }
 }
+
+// ... (Rest der Datei: DateDisplayFormat, groupReminders etc. bleibt gleich)
 
 export type DateDisplayFormat = {
   yearMonthFormat: string;
