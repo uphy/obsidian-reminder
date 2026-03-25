@@ -30,6 +30,10 @@ export class Settings {
   reminderTime: SettingModel<string, Time>;
   reminderTimeStep: SettingModel<number, number>;
   useSystemNotification: SettingModel<boolean, boolean>;
+  // --- NEU ---
+  repeatOverdue: SettingModel<boolean, boolean>;
+  overdueIntervalMin: SettingModel<number, number>;
+  // -----------
   laters: SettingModel<string, Array<Later>>;
   weekStart: SettingModel<string, string>;
   dateFormat: SettingModel<string, string>;
@@ -75,6 +79,24 @@ export class Settings {
       .desc("Use system notification for reminder notifications")
       .toggle(false)
       .build(new RawSerde());
+
+    // this is the new setting to enable the repeating of notifications for overdue reminders. The logic for this is implemented in the NotificationWorker.
+    this.repeatOverdue = this.settings
+      .newSettingBuilder()
+      .key("repeatOverdue")
+      .name("Repeat notification for overdue reminders")
+      .desc("If enabled, you will be notified again for overdue reminders.")
+      .toggle(false)
+      .build(new RawSerde());
+    //this is the interval for the repeating
+    this.overdueIntervalMin = this.settings
+      .newSettingBuilder()
+      .key("overdueIntervalMin")
+      .name("Repeat interval (minutes)")
+      .desc("Interval in minutes to re-notify for overdue reminders.")
+      .number(30)
+      .build(new RawSerde());
+    // ------------------------------------------
 
     this.laters = this.settings
       .newSettingBuilder()
@@ -288,6 +310,10 @@ export class Settings {
         this.reminderTimeStep,
         this.laters,
         this.useSystemNotification,
+        // --- NEU ---
+        this.repeatOverdue,
+        this.overdueIntervalMin,
+        // -----------
       );
     this.settings
       .newGroup("Editor")

@@ -43,37 +43,45 @@ export class NotificationWorker {
     if (this.plugin.ui.isEditing()) {
       return;
     }
+
     const expired = this.plugin.reminders.getExpiredReminders(
       this.plugin.settings.reminderTime.value,
+      {
+        repeat: this.plugin.settings.repeatOverdue.value,
+        intervalMin: this.plugin.settings.overdueIntervalMin.value
+      }
     );
 
     let previousReminder: Reminder | undefined = undefined;
     for (const reminder of expired) {
       if (this.plugin.app.workspace.layoutReady) {
-        if (reminder.muteNotification) {
-          // We don't want to set `previousReminder` in this case as the current
-          // reminder won't be shown.
+
+
+
+        const isRepeat = reminder.muteNotification &&
+                         this.plugin.settings.repeatOverdue.value;
+
+        if (reminder.muteNotification && !isRepeat) {
           continue;
         }
+
         if (previousReminder) {
           while (previousReminder.beingDisplayed) {
-            // Displaying too many reminders at once can cause crashes on
-            // mobile. We use `beingDisplayed` to wait for the current modal to
-            // be dismissed before displaying the next.
             await this.sleep(100);
           }
         }
+
+        // Benachrichtigung anzeigen
         this.plugin.ui.showReminder(reminder);
+
+
+        reminder.lastNotifiedTime = new Date().getTime();
+
         previousReminder = reminder;
       }
     }
   }
 
-  /* An asynchronous sleep function. To use it you must `await` as it hands
-   * off control to other portions of the JS control loop whilst waiting.
-   *
-   * @param milliseconds - The number of milliseconds to wait before resuming.
-   */
   private async sleep(milliseconds: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
   }
