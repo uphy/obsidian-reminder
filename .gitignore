@@ -6,6 +6,7 @@
 node_modules
 
 # build
+dist/
 main.js
 *.js.map
 styles.css

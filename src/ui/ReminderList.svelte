@@ -1,10 +1,12 @@
 <script lang="typescript">
   import type { GroupedReminder, Reminder } from "../model/reminder";
+  import type { DateTime } from "../model/time";
   import ReminderListByDate from "./ReminderListByDate.svelte";
 
   export let groups: Array<GroupedReminder>;
   export let onOpenReminder: (reminder: Reminder) => void;
   export let generateLink: (reminder: Reminder) => string;
+  export let onRescheduleContext: (event: MouseEvent | TouchEvent, reminder: Reminder) => void = () => {};
 </script>
 
 <main>
@@ -18,6 +20,8 @@
         {onOpenReminder}
         timeToString={(time) => group.timeToString(time)}
         {generateLink}
+        {onRescheduleContext}
+        isOverdue={group.isOverdue}
       />
     {/each}
   </div>

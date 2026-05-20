@@ -1,6 +1,6 @@
 {
   "name": "obsidian-reminder-plugin",
-  "version": "1.1.15",
+  "version": "1.1.22",
   "description": "Reminder plugin for Obsidian",
   "main": "main.js",
   "scripts": {
@@ -45,7 +45,7 @@
     "svelte-check": "^4.1.1",
     "svelte-jester": "^5.0.0",
     "svelte-preprocess": "^6.0.3",
-    "ts-jest": "^29.2.5",
+    "ts-jest": "^29.4.10",
     "tslib": "^2.8.1",
     "typescript": "^5.7.2"
   },

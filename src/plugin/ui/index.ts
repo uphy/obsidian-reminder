@@ -194,6 +194,14 @@ export class ReminderPluginUI {
       },
     );
   }
+
+  async rescheduleReminder(reminder: Reminder, newTime: DateTime): Promise<void> {
+    console.info("Reschedule reminder: reminder=%o, newTime=%o", reminder, newTime);
+    reminder.time = newTime;
+    await this.plugin.fileSystem.updateReminder(reminder, false);
+    this.plugin.data.save(true);
+    this.reload(true);
+  }
 }
 
 class EditDetector {

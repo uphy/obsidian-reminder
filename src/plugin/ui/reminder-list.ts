@@ -1,8 +1,10 @@
-import { ItemView, TFile, View, WorkspaceLeaf } from "obsidian";
+import { ItemView, Menu, Platform, TFile, View, WorkspaceLeaf } from "obsidian";
 import ReminderListView from "ui/ReminderList.svelte";
 import type ReminderPlugin from "main";
 import { Reminder, groupReminders } from "../../model/reminder";
+import { DateTime } from "../../model/time";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
+import { showRescheduleModal } from "./reschedule-modal";
 
 class ReminderListItemView extends ItemView {
   private view?: ReminderListView;
@@ -33,6 +35,16 @@ class ReminderListItemView extends ItemView {
       props: {
         groups: this.remindersForView(),
         onOpenReminder: this.onOpenReminder,
+        isMobile: Platform.isMobile,
+        onReschedule: (reminder: Reminder, newTime: DateTime) => {
+          this.plugin.ui.rescheduleReminder(reminder, newTime);
+        },
+        onShowRescheduleModal: (reminder: Reminder) => {
+          this.showRescheduleModalForReminder(reminder);
+        },
+        onRescheduleContext: (event: MouseEvent | TouchEvent, reminder: Reminder) => {
+          this.showRescheduleContextMenu(event, reminder);
+        },
         generateLink: (reminder: Reminder): string => {
           const aFile = this.app.vault.getAbstractFileByPath(reminder.file);
           const destinationFile = this.app.workspace.getActiveFile();
@@ -49,6 +61,71 @@ class ReminderListItemView extends ItemView {
         },
       },
     });
+  }
+
+  private showRescheduleContextMenu(event: MouseEvent | TouchEvent, reminder: Reminder) {
+    const menu = new Menu();
+
+    // Get mouse coordinates from either MouseEvent or TouchEvent
+    const mouseEvent = "clientX" in event ? event : new MouseEvent("contextmenu", {
+      clientX: (event as TouchEvent).touches?.[0]?.clientX ?? 0,
+      clientY: (event as TouchEvent).touches?.[0]?.clientY ?? 0,
+      bubbles: true,
+    });
+
+    menu.addItem((item) => {
+      item.setTitle("In 3 hours")
+        .setIcon("clock")
+        .onClick(() => {
+          const newTime = DateTime.now().add(3, "hours");
+          this.plugin.ui.rescheduleReminder(reminder, newTime);
+        });
+    });
+
+    menu.addItem((item) => {
+      item.setTitle("Tomorrow")
+        .setIcon("calendar")
+        .onClick(() => {
+          const newTime = DateTime.now().add(1, "days");
+          this.plugin.ui.rescheduleReminder(reminder, newTime);
+        });
+    });
+
+    menu.addItem((item) => {
+      item.setTitle("Next week")
+        .setIcon("calendar")
+        .onClick(() => {
+          const newTime = DateTime.now().add(1, "weeks");
+          this.plugin.ui.rescheduleReminder(reminder, newTime);
+        });
+    });
+
+    menu.addSeparator();
+
+    menu.addItem((item) => {
+      item.setTitle("Custom...")
+        .setIcon("calendar-clock")
+        .onClick(() => {
+          this.showRescheduleModalForReminder(reminder);
+        });
+    });
+
+    menu.showAtMouseEvent(mouseEvent);
+  }
+
+  private showRescheduleModalForReminder(reminder: Reminder) {
+    showRescheduleModal(
+      this.app,
+      this.plugin.reminders,
+      this.plugin.settings.reminderTimeStep.value,
+      reminder.time,
+    )
+      .then((newTime) => {
+        this.plugin.ui.rescheduleReminder(reminder, newTime);
+      })
+      .catch(() => {
+        // User cancelled
+      });
   }
 
   reload() {
