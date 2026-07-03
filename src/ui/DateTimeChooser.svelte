@@ -10,26 +10,25 @@
   export let reminders: Reminders;
   export let onSelect: (time: DateTime) => void;
   export let timeStep = 15;
+  export let weekStart = 0;
   let time = reminders.reminderTime?.value.toString() ?? "10:00";
   let timeIsFocused = false;
 
   function handleSelect() {
     const [hour, minute] = time.split(":");
     const selection = date.clone();
-    if (timeIsFocused) {
-      selection.set({
-        hour: parseInt(hour!),
-        minute: parseInt(minute!),
-      });
-      onSelect(new DateTime(selection, true));
-    } else {
-      onSelect(new DateTime(selection, false));
-    }
+    // 始终将时间选择器的值写入 moment，确保时分信息可用
+    // hasTimePart 由 timeIsFocused 控制：用户主动操作时间选择器时为 true
+    selection.set({
+      hour: parseInt(hour!),
+      minute: parseInt(minute!),
+    });
+    onSelect(new DateTime(selection, timeIsFocused));
   }
 </script>
 
 <div class="dtchooser">
-  <CalendarView bind:value={date} on:select={() => handleSelect()}>
+  <CalendarView bind:value={date} {weekStart} on:select={() => handleSelect()}>
     <div slot="footer">
       <hr class="dtchooser-divider" />
       <ReminderListByDate

@@ -39,6 +39,7 @@ export class Settings {
   primaryFormat: SettingModel<string, ReminderFormatType>;
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
   removeTagsForTasksPlugin: SettingModel<boolean, boolean>;
+  tasksDueDateWithTime: SettingModel<boolean, boolean>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
   yearMonthDisplayFormat: SettingModel<string, string>;
   monthDayDisplayFormat: SettingModel<string, string>;
@@ -221,6 +222,24 @@ export class Settings {
       })
       .build(new RawSerde());
 
+    this.tasksDueDateWithTime = this.settings
+      .newSettingBuilder()
+      .key("tasksDueDateWithTime")
+      .name("Store time in reminder emoji (⏰) alongside due date (📅)")
+      .desc(
+        "When enabled, selecting a date+time via the calendar popup will write the time to ⏰ and the date to 📅. " +
+        "This allows reminders with specific times while keeping Tasks plugin compatibility. " +
+        "Note: this option is independent of \"Distinguish between reminder date and due date\".",
+      )
+      .tag(TAG_RESCAN)
+      .toggle(false)
+      .onAnyValueChanged((context) => {
+        context.setEnabled(
+          reminderFormatSettings.enableTasksPluginReminderFormat.value,
+        );
+      })
+      .build(new RawSerde());
+
     this.yearMonthDisplayFormat = this.settings
       .newSettingBuilder()
       .key("yearMonthDisplayFormat")
@@ -307,6 +326,7 @@ export class Settings {
         reminderFormatSettings.enableTasksPluginReminderFormat,
         this.useCustomEmojiForTasksPlugin,
         this.removeTagsForTasksPlugin,
+        this.tasksDueDateWithTime,
       );
     this.settings
       .newGroup("Reminder Format - Kanban Plugin")
@@ -342,6 +362,10 @@ export class Settings {
     config.setParameter(
       ReminderFormatParameterKey.removeTagsForTasksPlugin,
       this.removeTagsForTasksPlugin,
+    );
+    config.setParameter(
+      ReminderFormatParameterKey.tasksDueDateWithTime,
+      this.tasksDueDateWithTime,
     );
     setReminderFormatConfig(config);
   }

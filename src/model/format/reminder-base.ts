@@ -47,6 +47,8 @@ export class ReminderFormatParameterKey<T> {
     "strictDateFormat",
     false,
   );
+  static readonly tasksDueDateWithTime =
+    new ReminderFormatParameterKey<boolean>("tasksDueDateWithTime", false);
   constructor(
     public readonly key: string,
     public readonly defaultValue: T,

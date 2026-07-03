@@ -24,8 +24,9 @@ export function buildCodeMirrorPlugin(
           }
           const trigger = settings.autoCompleteTrigger.value;
           const timeStep = settings.reminderTimeStep.value;
+          const weekStart = Number(settings.weekStart.value);
           if (trigger === text) {
-            showDateTimeChooserModal(app, reminders, timeStep)
+            showDateTimeChooserModal(app, reminders, timeStep, weekStart)
               .then((value) => {
                 const format = settings.primaryFormat.value.format;
                 try {
