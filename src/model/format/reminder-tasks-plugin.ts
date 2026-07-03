@@ -35,11 +35,13 @@ export class TasksPluginReminderModel implements ReminderModel {
     useCustomEmoji?: boolean,
     removeTags?: boolean,
     strictDateFormat?: boolean,
+    dueDateWithTime?: boolean,
   ): TasksPluginReminderModel {
     return new TasksPluginReminderModel(
       useCustomEmoji ?? false,
       removeTags ?? false,
       strictDateFormat ?? true,
+      dueDateWithTime ?? false,
       new Tokens(splitBySymbol(line, this.allSymbols)),
     );
   }
@@ -48,6 +50,8 @@ export class TasksPluginReminderModel implements ReminderModel {
     private useCustomEmoji: boolean,
     private removeTags: boolean,
     private strictDateFormat: boolean,
+    /** 当开启时，在 📅 日期旁额外用 ⏰ 存储具体时间，以弥补 Tasks 插件不支持时间的限制 */
+    private dueDateWithTime: boolean,
     private tokens: Tokens,
   ) {}
 
@@ -59,9 +63,27 @@ export class TasksPluginReminderModel implements ReminderModel {
     return title;
   }
   getTime(): DateTime | null {
+    if (this.dueDateWithTime) {
+      // 优先读取 ⏰ 中的精确时间；若不存在则回退到 📅 日期
+      const timeWithTime = this.getDate(TasksPluginReminderModel.symbolReminder);
+      if (timeWithTime !== null) {
+        return timeWithTime;
+      }
+      return this.getDate(TasksPluginReminderModel.symbolDueDate);
+    }
     return this.getDate(this.getReminderSymbol());
   }
   setTime(time: DateTime, insertAt?: number): void {
+    if (this.dueDateWithTime) {
+      // 将日期写入 📅，将完整时间（强制带时间部分）写入 ⏰
+      // 注意：不依赖 hasTimePart，因为日历弹窗 OK 按钮点击时 hasTimePart 可能为 false
+      // 但时间选择器始终有默认值，需要强制写入
+      this.setDate(TasksPluginReminderModel.symbolDueDate, time);
+      // 强制将时间标记为带时间部分后写入 ⏰
+      const timeWithTimePart = time.hasTimePart ? time : time.clone(true);
+      this.setDate(TasksPluginReminderModel.symbolReminder, timeWithTimePart, 1);
+      return;
+    }
     if (this.useCustomEmoji) {
       this.setDate(this.getReminderSymbol(), time, 1);
     } else {
@@ -128,6 +150,7 @@ export class TasksPluginReminderModel implements ReminderModel {
       this.useCustomEmoji,
       this.removeTags,
       this.strictDateFormat,
+      this.dueDateWithTime,
     );
   }
 
@@ -137,7 +160,21 @@ export class TasksPluginReminderModel implements ReminderModel {
       return null;
     }
     if (symbol === TasksPluginReminderModel.symbolReminder) {
-      return DATE_TIME_FORMATTER.parse(dateText);
+      // ⏰ 字段：先尝试带时间格式，再尝试纯日期格式
+      const dt = DATE_TIME_FORMATTER.parse(dateText);
+      if (dt !== null) {
+        return dt;
+      }
+      // dueDateWithTime 模式下 ⏰ 可能只存了日期
+      const date = moment(
+        dateText,
+        TasksPluginReminderModel.dateFormat,
+        this.strictDateFormat,
+      );
+      if (!date.isValid()) {
+        return null;
+      }
+      return new DateTime(date, false);
     } else {
       const date = moment(
         dateText,
@@ -163,8 +200,10 @@ export class TasksPluginReminderModel implements ReminderModel {
     let timeStr: string;
     if (time instanceof DateTime) {
       if (symbol === TasksPluginReminderModel.symbolReminder) {
+        // ⏰ 字段：始终用 DATE_TIME_FORMATTER 格式化（带时间或纯日期均可）
         timeStr = DATE_TIME_FORMATTER.toString(time);
       } else {
+        // 📅 等日期字段只写日期部分
         timeStr = time.format(TasksPluginReminderModel.dateFormat);
       }
     } else {
@@ -212,6 +251,7 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
       this.useCustomEmoji(),
       this.removeTagsEnabled(),
       this.isStrictDateFormat(),
+      this.isDueDateWithTime(),
     );
     if (this.useCustomEmoji() && parsed.getDueDate() == null) {
       return null;
@@ -228,6 +268,12 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
   private useCustomEmoji() {
     return this.config.getParameter(
       ReminderFormatParameterKey.useCustomEmojiForTasksPlugin,
+    );
+  }
+
+  private isDueDateWithTime() {
+    return this.config.getParameter(
+      ReminderFormatParameterKey.tasksDueDateWithTime,
     );
   }
 
@@ -338,6 +384,7 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
       this.useCustomEmoji(),
       this.removeTagsEnabled(),
       this.isStrictDateFormat(),
+      this.isDueDateWithTime(),
     );
     parsed.setTime(time, insertAt);
     if (this.useCustomEmoji() && parsed.getDueDate() == null) {
