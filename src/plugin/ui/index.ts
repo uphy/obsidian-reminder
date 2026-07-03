@@ -5,7 +5,6 @@ import type { Reminder } from "model/reminder";
 import {
   App,
   MarkdownView,
-  Platform,
   PluginSettingTab,
   TFile,
   WorkspaceLeaf,
@@ -61,15 +60,13 @@ export class ReminderPluginUI {
     this.plugin.registerDomEvent(document, "keydown", () => {
       this.editDetector.fileChanged();
     });
-    if (Platform.isDesktopApp) {
-      this.plugin.registerEditorExtension(
-        buildCodeMirrorPlugin(
-          this.plugin.app,
-          this.plugin.reminders,
-          this.plugin.settings,
-        ),
-      );
-    }
+    this.plugin.registerEditorExtension(
+      buildCodeMirrorPlugin(
+        this.plugin.app,
+        this.plugin.reminders,
+        this.plugin.settings,
+      ),
+    );
 
     registerCommands(this.plugin);
   }
