@@ -43,6 +43,8 @@ In addition to original format `@YYYY-MM-DD`, this plugin also supports followin
 - [Obsidian Tasks](https://uphy.github.io/obsidian-reminder/guide/interop-tasks.html) (e.g. `📅 2021-05-02`)
 - [Kanban](https://uphy.github.io/obsidian-reminder/guide/interop-kanban.html) (e.g. `@{YYYY-MM-DD}`)
 
+If you use the [Natural Language Dates](https://uphy.github.io/obsidian-reminder/guide/interop-nldates.html) plugin, see the guide for how to avoid the `@` autocompletion conflict.
+
 ### Guide
 
 https://uphy.github.io/obsidian-reminder/
@@ -51,6 +53,25 @@ https://uphy.github.io/obsidian-reminder/
 
 - Notification in mobile (Android/iOS)
   - System notification in mobile device is not available because Obsidian doesn't provide the feature.
+
+### Development
+
+Requires [mise](https://mise.jdx.dev/) (which provides the pinned Node.js version), or Node.js 22 with plain npm.
+
+```bash
+mise run main:init      # install dependencies
+mise run dev            # watch build; rebuilds on every save
+mise run main:test      # run the test suite
+mise run main:lint:fix  # eslint --fix + tsc --noEmit + svelte-check
+```
+
+To try your changes in a real vault, symlink this repository into the vault's plugin directory and install the [hot-reload](https://github.com/pjeby/hot-reload) plugin:
+
+```bash
+ln -s /path/to/obsidian-reminder /path/to/vault/.obsidian/plugins/obsidian-reminder-plugin
+```
+
+With `mise run dev` running, every save rebuilds the plugin and hot-reload reloads it in Obsidian automatically. See [CLAUDE.md](CLAUDE.md) for an overview of the codebase and the release flow.
 
 ### Support
 
