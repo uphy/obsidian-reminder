@@ -8,6 +8,7 @@
     "module": "ESNext",
     "target": "ESNext",
     "esModuleInterop": true,
+    "isolatedModules": true,
     "allowJs": true,
     "moduleResolution": "node",
     "importHelpers": true,
