@@ -40,7 +40,7 @@
     "jest-environment-jsdom": "^30.4.1",
     "moment": "^2.30.1",
     "obsidian": "^1.13.1",
-    "prettier-plugin-svelte": "^3.5.2",
+    "prettier-plugin-svelte": "^4.1.1",
     "svelte-check": "^4.7.2",
     "svelte-jester": "^5.0.0",
     "svelte-preprocess": "^6.0.5",
@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "rrule": "^2.8.1",
-    "svelte": "^4.2.18"
+    "svelte": "^5.56.4"
   },
   "engines": {
     "node": ">=22.0.0"
