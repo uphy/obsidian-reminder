@@ -3,7 +3,6 @@
   import { createEventDispatcher, onMount } from "svelte";
   import { Settings } from "plugin/settings";
   import { Calendar } from "./calendar";
-  import type { Week } from "./calendar";
   import { TimedInputHandler } from "./timed-input-handler";
 
   export let value: moment.Moment = moment();
@@ -42,9 +41,6 @@
   }
   function dispatchSelect() {
     dispatch("select", value);
-  }
-  function weekKey(week: Week): string {
-    return week.days[0]!.date.format("YYYY-MM-DD");
   }
   const timedInputHandler = new TimedInputHandler();
   function handleKeyDown(event: KeyboardEvent) {
@@ -147,9 +143,9 @@
       </tr>
     </thead>
     <tbody>
-      {#each calendar.current.weeks as week (weekKey(week))}
+      {#each calendar.current.weeks as week (week.key)}
         <tr>
-          {#each week.days as day (day.date.format("YYYY-MM-DD"))}
+          {#each week.days as day (day.date.valueOf())}
             <td>
               <button
                 tabindex="-1"
