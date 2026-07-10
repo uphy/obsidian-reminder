@@ -55,7 +55,7 @@
       <!-- placeholder -->
       <option selected disabled hidden>Snooze</option>
       <!-- options -->
-      {#each laters as later, i}
+      {#each laters as later, i (later.label)}
         <option value={i} selected={selectedIndex === i}>{later.label}</option>
       {/each}
     </select>

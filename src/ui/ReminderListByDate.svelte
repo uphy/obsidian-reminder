@@ -14,7 +14,7 @@
     <div class="reminder-list-item no-reminders">No reminders</div>
   {:else}
     <div>
-      {#each reminders as reminder}
+      {#each reminders as reminder (reminder.key())}
         <button
           class="reminder-list-item hover-highlight"
           aria-label={`[${reminder.time.toString()}] ${
