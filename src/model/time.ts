@@ -136,13 +136,7 @@ export class Time {
 
 export type later = () => DateTime;
 type Unit =
-  | "seconds"
-  | "minutes"
-  | "hours"
-  | "days"
-  | "weeks"
-  | "months"
-  | "years";
+  "seconds" | "minutes" | "hours" | "days" | "weeks" | "months" | "years";
 
 function add(amount: number, unit: Unit): later {
   return () => {
