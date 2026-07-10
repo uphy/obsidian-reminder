@@ -2,6 +2,10 @@ import type { Reminders } from "model/reminder";
 import type { DateTime } from "model/time";
 import moment from "moment";
 import DateTimeChooser from "ui/DateTimeChooser.svelte";
+// obsidian's own type definitions dropped their (unused) re-export of the
+// legacy CodeMirror 5 types in 1.13, so import them directly here for the
+// Live Preview CM5 compatibility workaround.
+import type * as CodeMirror from "codemirror";
 
 export class DateTimeChooserView {
   private view: HTMLElement;

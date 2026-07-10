@@ -226,7 +226,7 @@ export class ReminderSettingTab extends PluginSettingTab {
     super(app, plugin);
   }
 
-  display(): void {
+  override display(): void {
     const { containerEl } = this;
 
     this.plugin.settings.settings.displayOn(containerEl);

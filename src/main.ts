@@ -6,11 +6,17 @@ import {
 } from "plugin";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER } from "model/time";
+import type { Settings } from "plugin/settings";
 import { App, Plugin } from "obsidian";
 import type { PluginManifest } from "obsidian";
 
 export default class ReminderPlugin extends Plugin {
   _data: PluginData;
+  // `Plugin.settings` is declared as `settings?: unknown` since obsidian 1.13.0.
+  // We override it with the concrete `Settings` type here. It has to be a plain
+  // field (not a getter) because TypeScript doesn't allow overriding a base
+  // class property with an accessor.
+  override settings: Settings;
   private _ui: ReminderPluginUI;
   private _reminders: Reminders;
   private _fileSystem: ReminderPluginFileSystem;
@@ -25,6 +31,10 @@ export default class ReminderPlugin extends Plugin {
       this.data.changed = true;
     });
     this._data = new PluginData(this, this.reminders);
+    // `data.settings` always returns the same `Settings` instance for the
+    // lifetime of the plugin (only its values change on reload), so it's
+    // safe to capture the reference once here.
+    this.settings = this.data.settings;
     this.reminders.reminderTime = this.settings.reminderTime;
     DATE_TIME_FORMATTER.setTimeFormat(
       this.settings.dateFormat,
@@ -71,9 +81,5 @@ export default class ReminderPlugin extends Plugin {
 
   get data() {
     return this._data;
-  }
-
-  get settings() {
-    return this.data.settings;
   }
 }

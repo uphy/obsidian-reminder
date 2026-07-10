@@ -4,6 +4,10 @@ import type { DateTime } from "model/time";
 import { App, Platform } from "obsidian";
 import type { EditorPosition } from "obsidian";
 import type { ReminderFormatType } from "model/format";
+// obsidian's own type definitions dropped their (unused) re-export of the
+// legacy CodeMirror 5 types in 1.13, so import them directly here for the
+// Live Preview CM5 compatibility workaround below.
+import type * as CodeMirror from "codemirror";
 import { showDateTimeChooserModal } from "./date-chooser-modal";
 import { DateTimeChooserView } from "./datetime-chooser";
 
