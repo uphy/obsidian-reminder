@@ -12,9 +12,10 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
+const watch = (process.argv[2] === 'watch');
 const prod = (process.argv[2] === 'production');
 
-esbuild.build({
+const ctx = await esbuild.context({
     banner: {
         js: banner,
     },
@@ -61,10 +62,15 @@ esbuild.build({
             }
         }
     ]
-}).then((result) => {
-    if (process.env.NODE_ENV === 'development') {
-        result.watch();
-    }
-}).catch(() => {
-    process.exit(1);
 });
+
+try {
+    if (watch) {
+        await ctx.watch();
+    } else {
+        await ctx.rebuild();
+        await ctx.dispose();
+    }
+} catch {
+    process.exit(1);
+}

@@ -25,6 +25,11 @@ outputs = { auto = true }
 
 [tasks."main:build"]
 depends = ["main:init"]
+run = "npm run build"
+
+# Persistent watch build for development. Rebuilds automatically on save.
+[tasks.dev]
+depends = ["main:init"]
 run = "npm run dev"
 
 [tasks."main:test"]
@@ -38,7 +43,3 @@ run = "npm run lint:fix"
 [tasks."pre-commit"]
 depends = ["main:lint:fix", "main:test"]
 run = "npm run lint:fix && npm run test"
-
-[tasks.deploy]
-depends = ["main:build"]
-run = "./deploy.sh"

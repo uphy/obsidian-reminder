@@ -4,7 +4,7 @@
   "description": "Reminder plugin for Obsidian",
   "main": "main.js",
   "scripts": {
-    "dev": "node esbuild.config.mjs",
+    "dev": "node esbuild.config.mjs watch",
     "build": "node esbuild.config.mjs production",
     "lint": "eslint && tsc --noEmit --pretty && svelte-check",
     "lint:fix": "eslint --fix && tsc --noEmit --pretty && svelte-check",
