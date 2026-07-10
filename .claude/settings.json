@@ -1,0 +1,54 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mise run main:test)",
+      "Bash(mise run main:test:*)",
+      "Bash(mise run main:lint:fix)",
+      "Bash(mise run main:build)",
+      "Bash(mise run main:init)",
+      "Bash(mise run pre-commit)",
+      "Bash(mise run dev)",
+      "Bash(npm run test)",
+      "Bash(npm run test:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:fix)",
+      "Bash(npm run dev)",
+      "Bash(npm run build)",
+      "Bash(npx eslint)",
+      "Bash(npx eslint:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx svelte-check)",
+      "Bash(npx svelte-check:*)",
+      "Bash(npx jest:*)",
+      "Bash(mise exec -- npx eslint:*)",
+      "Bash(mise exec -- npx tsc:*)",
+      "Bash(mise exec -- npx svelte-check:*)",
+      "Bash(mise exec -- npx jest:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit-lint.sh",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-check.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -56,7 +56,7 @@ const config = {
 
 export default [
   {
-    ignores: ['main.js', 'docs/**/*'],
+    ignores: ['main.js', 'docs/**/*', '.claude/**/*'],
   },
   config,
   js.configs.recommended,
