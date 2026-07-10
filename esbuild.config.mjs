@@ -46,6 +46,15 @@ const ctx = await esbuild.context({
     minify: prod,
     plugins: [
         esbuildSvelte({
+            compilerOptions: {
+                // Keep the Svelte 4-style `new Component({ target, props })`
+                // constructor (plus `.$set()`/`.$destroy()`) working, since
+                // plugin/ui/*.ts instantiates Svelte components that way.
+                // Without this, Svelte 5 throws `component_api_invalid_new`
+                // at runtime (a regression tests can't catch, since no test
+                // imports a .svelte file - see .claude/rules/testing.md).
+                compatibility: { componentApi: 4 },
+            },
             preprocess: sveltePreprocess(),
         }),
         {
