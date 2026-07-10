@@ -9,7 +9,7 @@
 
 <main>
   <div>
-    {#each groups as group}
+    {#each groups as group (group.name)}
       <div class="group-name" class:group-name-overdue={group.isOverdue}>
         {group.name}
       </div>
