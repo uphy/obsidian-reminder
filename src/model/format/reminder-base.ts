@@ -131,9 +131,9 @@ export interface ReminderFormat {
   ): ReminderInsertion | null;
 }
 
-export abstract class TodoBasedReminderFormat<E extends ReminderModel>
-  implements ReminderFormat
-{
+export abstract class TodoBasedReminderFormat<
+  E extends ReminderModel,
+> implements ReminderFormat {
   protected config: ReminderFormatConfig = new ReminderFormatConfig();
 
   setConfig(config: ReminderFormatConfig): void {

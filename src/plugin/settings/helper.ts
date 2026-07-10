@@ -498,9 +498,10 @@ export class LatersSerde implements Serde<string, Array<Later>> {
   }
 }
 
-export class ReminderFormatTypeSerde
-  implements Serde<string, ReminderFormatType>
-{
+export class ReminderFormatTypeSerde implements Serde<
+  string,
+  ReminderFormatType
+> {
   unmarshal(rawValue: string): ReminderFormatType {
     const format = ReminderFormatTypes.find(
       (format) => format.name === rawValue,
