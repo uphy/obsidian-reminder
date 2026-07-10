@@ -30,6 +30,10 @@ export class Week {
       current.add(1, "day");
     }
   }
+
+  get key(): number {
+    return this.weekStart.valueOf();
+  }
 }
 
 export class Month {
