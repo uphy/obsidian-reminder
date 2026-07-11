@@ -4,6 +4,7 @@ import type {
   ReminderEdit,
   ReminderFormat,
   ReminderFormatConfig,
+  ReminderSpan,
 } from "./reminder-base";
 import { CompositeReminderFormat } from "./reminder-base";
 import { DefaultReminderFormat } from "./reminder-default";
@@ -23,9 +24,9 @@ export class ReminderFormatType {
   ) {}
 }
 
-export type { ReminderFormat, ReminderEdit };
+export type { ReminderFormat, ReminderEdit, ReminderSpan };
 
-export function parseReminder(doc: MarkdownDocument): Array<Reminder> {
+export function parseReminder(doc: MarkdownDocument): Array<ReminderSpan> {
   return REMINDER_FORMAT.parse(doc);
 }
 

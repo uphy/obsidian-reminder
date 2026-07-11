@@ -6,12 +6,20 @@
   import TimePicker from "./TimePicker.svelte";
   import ReminderListByDate from "./ReminderListByDate.svelte";
 
-  export let date = moment();
   export let reminders: Reminders;
   export let onSelect: (time: DateTime) => void;
   export let timeStep = 15;
-  let time = reminders.reminderTime?.value.toString() ?? "10:00";
-  let timeIsFocused = false;
+  // When set, pre-initializes the calendar (and, if it has a time part, the
+  // time input) from this value instead of the usual "now"/reminder-time
+  // defaults. Used when editing an existing reminder (e.g. from the editor
+  // pill) so the chooser opens on the reminder's current time.
+  export let initialTime: DateTime | undefined = undefined;
+
+  export let date = initialTime?.moment().clone() ?? moment();
+  let time = initialTime?.hasTimePart
+    ? initialTime.format("HH:mm")
+    : (reminders.reminderTime?.value.toString() ?? "10:00");
+  let timeIsFocused = initialTime?.hasTimePart ?? false;
 
   function handleSelect() {
     const [hour, minute] = time.split(":");

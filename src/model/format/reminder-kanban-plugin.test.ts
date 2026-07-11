@@ -131,20 +131,36 @@ describe("KanbanReminderFormat", (): void => {
     expect(parsed!.time.toString()).toBe("2021-09-08");
     expect(parsed!.getTime()!.toString()).toBe("2021-09-08");
     expect(parsed!.title).toBe("task1");
+    // computeSpan(): "task1 " is 6 chars, "@{2021-09-08}" is 13 chars.
+    const span = parsed!.computeSpan();
+    expect(span.start).toBe(6);
+    expect(span.end).toBe(19);
   });
   test("parse() with time", (): void => {
     const parsed = KanbanReminderModel.parse("task1 @{2021-09-08} @@{12:15}");
     expect(parsed!.time.toString()).toBe("2021-09-08 12:15");
     expect(parsed!.title).toBe("task1");
+    // computeSpan(): "task1 " (6) + "@{2021-09-08} @@{12:15}" (23) => end 29.
+    const span = parsed!.computeSpan();
+    expect(span.start).toBe(6);
+    expect(span.end).toBe(29);
   });
   test("setDate() simple", (): void => {
     const parsed = KanbanReminderModel.parse("task1 @{2021-09-07}");
     parsed!.setTime(new DateTime(moment("2021-09-08"), false));
     expect(parsed!.toMarkdown()).toBe("task1 @{2021-09-08}");
+    // computeSpan() after update: same shape as parse() without time.
+    const span = parsed!.computeSpan();
+    expect(span.start).toBe(6);
+    expect(span.end).toBe(19);
   });
   test("setDate() with time", (): void => {
     const parsed = KanbanReminderModel.parse("task1 @{2021-09-07}");
     parsed!.setTime(new DateTime(moment("2021-09-08 10:00"), true));
     expect(parsed!.toMarkdown()).toBe("task1 @{2021-09-08} @@{10:00}");
+    // "task1 " (6) + "@{2021-09-08} @@{10:00}" (23) => end 29.
+    const span = parsed!.computeSpan();
+    expect(span.start).toBe(6);
+    expect(span.end).toBe(29);
   });
 });

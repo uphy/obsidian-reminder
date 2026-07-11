@@ -196,6 +196,15 @@ export class KanbanReminderModel implements ReminderModel {
     return this.toMarkdown().length;
   }
 
+  computeSpan(): { start: number; end: number } {
+    // toMarkdown() = `${title.trim()} ${formatted time}`, so the time text
+    // starts right after "title.trim() " (one separating space) and runs to
+    // the end of the markdown.
+    const start = this.title.trim().length + 1;
+    const end = start + KanbanDateTimeFormat.instance.format(this.time).length;
+    return { start, end };
+  }
+
   toMarkdown(): string {
     return `${this.title.trim()} ${KanbanDateTimeFormat.instance.format(this.time)}`;
   }

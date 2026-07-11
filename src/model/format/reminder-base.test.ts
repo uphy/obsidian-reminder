@@ -9,11 +9,13 @@ export class ReminderFormatTestUtil<T extends ReminderFormat> {
     inputMarkdown,
     expectedTime,
     expectedTitle,
+    expectedSpan,
     configFunc,
   }: {
     inputMarkdown: string;
     expectedTime: string;
     expectedTitle: string;
+    expectedSpan?: { start: number; end: number };
     configFunc?: (config: ReminderFormatConfig) => void;
   }) {
     const sut = this.creator();
@@ -23,10 +25,15 @@ export class ReminderFormatTestUtil<T extends ReminderFormat> {
     }
     sut.setConfig(config);
 
-    const reminders = sut.parse(new MarkdownDocument("file", inputMarkdown));
-    const reminder = reminders![0]!;
-    expect(reminder.time.toString()).toBe(expectedTime);
-    expect(reminder.title).toBe(expectedTitle);
+    const spans = sut.parse(new MarkdownDocument("file", inputMarkdown));
+    const span = spans![0]!;
+    expect(span.reminder.time.toString()).toBe(expectedTime);
+    expect(span.reminder.title).toBe(expectedTitle);
+    if (expectedSpan) {
+      expect({ start: span.columnStart, end: span.columnEnd }).toEqual(
+        expectedSpan,
+      );
+    }
   }
 
   async testModify({
@@ -48,8 +55,8 @@ export class ReminderFormatTestUtil<T extends ReminderFormat> {
     }
     sut.setConfig(config);
 
-    const reminders = sut.parse(doc);
-    await sut.modify(doc, reminders![0]!, edit);
+    const spans = sut.parse(doc);
+    await sut.modify(doc, spans![0]!.reminder, edit);
     expect(doc.toMarkdown()).toBe(expectedMarkdown);
   }
 }

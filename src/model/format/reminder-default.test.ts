@@ -34,6 +34,7 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@2021-09-14)",
       expectedTime: "2021-09-14",
       expectedTitle: "Task1",
+      expectedSpan: { start: 12, end: 12 + 13 },
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,
@@ -45,6 +46,7 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@2021-09-14 10:00)",
       expectedTime: "2021-09-14 10:00",
       expectedTitle: "Task1",
+      expectedSpan: { start: 12, end: 12 + 19 },
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,
@@ -58,6 +60,7 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@[[2021-09-14]] 10:00)",
       expectedTime: "2021-09-14 10:00",
       expectedTitle: "Task1",
+      expectedSpan: { start: 12, end: 35 },
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,
@@ -69,6 +72,7 @@ describe("DefaultReminderFormat", (): void => {
       inputMarkdown: "- [ ] Task1 (@[[2021-09-14]])",
       expectedTime: "2021-09-14",
       expectedTitle: "Task1",
+      expectedSpan: { start: 12, end: 29 },
       configFunc: (config) => {
         config.setParameterValue(
           ReminderFormatParameterKey.linkDatesToDailyNotes,
@@ -116,6 +120,9 @@ describe("DefaultReminderFormat", (): void => {
         inputMarkdown: "- [ ] Task1 (@2021-09-14 🔁every day)",
         expectedTime: "2021-09-14",
         expectedTitle: "Task1",
+        // "- [ ] " (6) + "Task1 " (6) = 12; "(@2021-09-14 🔁every day)" is 25
+        // UTF-16 units long (🔁 is a surrogate pair, 2 units).
+        expectedSpan: { start: 12, end: 12 + 25 },
       });
     });
     test("datetime with recurrence", (): void => {
@@ -303,8 +310,8 @@ describe("DefaultReminderFormat", (): void => {
       const config = new ReminderFormatConfig();
       sut.setConfig(config);
 
-      let reminders = sut.parse(doc);
-      await sut.modify(doc, reminders[0]!, {
+      let spans = sut.parse(doc);
+      await sut.modify(doc, spans[0]!.reminder, {
         time: new DateTime(moment("2021-09-12 15:00"), true),
       });
       expect(doc.toMarkdown()).toBe(
@@ -315,8 +322,8 @@ describe("DefaultReminderFormat", (): void => {
         ReminderFormatParameterKey.now,
         new DateTime(moment("2021-09-13 08:00"), true),
       );
-      reminders = sut.parse(doc);
-      await sut.modify(doc, reminders[0]!, { checked: true });
+      spans = sut.parse(doc);
+      await sut.modify(doc, spans[0]!.reminder, { checked: true });
       expect(doc.toMarkdown()).toBe(
         `- [ ] Task (@2021-09-14 15:00 🔁every day)
 - [x] Task (@2021-09-12 15:00 🔁every day)`,
@@ -332,8 +339,8 @@ describe("DefaultReminderFormat", (): void => {
       const config = new ReminderFormatConfig();
       sut.setConfig(config);
 
-      let reminders = sut.parse(doc);
-      await sut.modify(doc, reminders[0]!, {
+      let spans = sut.parse(doc);
+      await sut.modify(doc, spans[0]!.reminder, {
         time: new DateTime(moment("2021-09-13"), false),
       });
       expect(doc.toMarkdown()).toBe("- [ ] Task (@2021-09-13 🔁every day)");
@@ -342,8 +349,8 @@ describe("DefaultReminderFormat", (): void => {
         ReminderFormatParameterKey.now,
         new DateTime(moment("2021-09-13"), true),
       );
-      reminders = sut.parse(doc);
-      await sut.modify(doc, reminders[0]!, { checked: true });
+      spans = sut.parse(doc);
+      await sut.modify(doc, spans[0]!.reminder, { checked: true });
       expect(doc.toMarkdown()).toBe(
         `- [ ] Task (@2021-09-14 🔁every day)
 - [x] Task (@2021-09-13 🔁every day)`,

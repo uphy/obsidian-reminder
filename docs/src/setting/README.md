@@ -63,6 +63,16 @@ Reminder format for generated reminder by calendar popup.
   - [Tasks plugin format](/guide/interop-tasks.html)
   - [Kanban plugin format](/guide/interop-kanban.html)
 
+## Show reminder pills in editor
+
+Render each reminder's time as a clickable pill (⏰) in [Live Preview](https://help.obsidian.md/Editing+and+formatting/Editing+modes). Clicking a pill opens the date/time chooser to change it, only available on desktop.
+
+- Type: `boolean`
+- Values:
+  - ON: Reminder times are shown as clickable pills in Live Preview (default)
+  - OFF: Reminder times are shown as raw text
+- Default: ON
+
 ## Excluded files/folders
 
 Reminders in these files/folders are ignored when scanning the vault, and any reminders already found in them are removed.
