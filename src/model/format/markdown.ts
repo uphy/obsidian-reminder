@@ -10,7 +10,7 @@ export class Todo {
   // suffix: '] '
   // body: hello
   private static readonly regexp =
-    /^(?<prefix>((> ?)*)?\s*[-*][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
+    /^(?<prefix>((> ?)*)?\s*[-*+][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
   private static readonly checkedStatuses = ["x", "-"];
 
   static parse(lineIndex: number, line: string): Todo | null {

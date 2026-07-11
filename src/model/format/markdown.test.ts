@@ -9,6 +9,8 @@ describe("MarkdownDocument", (): void => {
   * [x] Task2-1
   - [ ]   Task2-2
   -  [ ]   Task2-3
++ [ ] Task3
+  + [x] Task3-1
 > - [ ] Task in call out
 >> - [ ] Task in nested call out
 > > - [ ] Task in nested call out2`;
@@ -21,13 +23,16 @@ describe("MarkdownDocument", (): void => {
       new Todo(4, "  * [", "x", "] ", "Task2-1"),
       new Todo(5, "  - [", " ", "]   ", "Task2-2"),
       new Todo(6, "  -  [", " ", "]   ", "Task2-3"),
-      new Todo(7, "> - [", " ", "] ", "Task in call out"),
-      new Todo(8, ">> - [", " ", "] ", "Task in nested call out"),
-      new Todo(9, "> > - [", " ", "] ", "Task in nested call out2"),
+      new Todo(7, "+ [", " ", "] ", "Task3"),
+      new Todo(8, "  + [", "x", "] ", "Task3-1"),
+      new Todo(9, "> - [", " ", "] ", "Task in call out"),
+      new Todo(10, ">> - [", " ", "] ", "Task in nested call out"),
+      new Todo(11, "> > - [", " ", "] ", "Task in nested call out2"),
     ]);
 
     todos[0]!.body = "New Task1 ";
     todos[0]!.setChecked(true);
+    todos[5]!.setChecked(true);
     expect(doc.toMarkdown()).toEqual(`# TODO
         
 - [x] New Task1 
@@ -35,6 +40,8 @@ describe("MarkdownDocument", (): void => {
   * [x] Task2-1
   - [ ]   Task2-2
   -  [ ]   Task2-3
++ [x] Task3
+  + [x] Task3-1
 > - [ ] Task in call out
 >> - [ ] Task in nested call out
 > > - [ ] Task in nested call out2`);
@@ -50,6 +57,8 @@ describe("MarkdownDocument", (): void => {
   * [x] Task2-1
   - [ ]   Task2-2
   -  [ ]   Task2-3
++ [x] Task3
+  + [x] Task3-1
 > - [ ] Task in call out
 >> - [ ] Task in nested call out
 > > - [ ] Task in nested call out2`);
