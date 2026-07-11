@@ -3,6 +3,7 @@ import { Reference } from "model/ref";
 import { Reminder, Reminders } from "model/reminder";
 import { DateTime } from "model/time";
 import { Settings, TAG_RESCAN } from "plugin/settings";
+import type { SettingModel } from "plugin/settings/helper";
 
 interface ReminderData {
   title: string;
@@ -22,7 +23,10 @@ export class PluginData {
     private reminders: Reminders,
   ) {
     this.settings.forEach((setting) => {
-      setting.rawValue.onChanged(() => {
+      // `setting` is type-erased to `SettingModelBase` here; `rawValue.onChanged`
+      // only registers a listener and doesn't use the raw value type, so
+      // widening to `SettingModel<unknown, unknown>` to reach `rawValue` is safe.
+      (setting as SettingModel<unknown, unknown>).rawValue.onChanged(() => {
         if (this.restoring) {
           return;
         }
@@ -46,7 +50,10 @@ export class PluginData {
       this.debug.value = data.debug;
     }
 
-    const loadedSettings = data.settings;
+    // `loadData()` returns data of unknown shape (it's whatever was
+    // previously passed to `saveData()`), so this cast is a minimal, trusted
+    // bridge between Obsidian's untyped persistence API and our settings model.
+    const loadedSettings = data.settings as Record<string, unknown> | undefined;
     this.settings.forEach((setting) => {
       setting.load(loadedSettings);
     });
@@ -95,7 +102,7 @@ export class PluginData {
         rowNumber: rr.rowNumber,
       }));
     });
-    const settings = {};
+    const settings: Record<string, unknown> = {};
     this.settings.forEach((setting) => {
       setting.store(settings);
     });
