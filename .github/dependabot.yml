@@ -19,6 +19,11 @@ updates:
       # embed (see #282); bump manually when Obsidian ships a newer one
       - dependency-name: electron
         versions: [">=40"]
+      # TypeScript >=6 (and the native TS7 compiler) is not yet supported
+      # by typescript-eslint, ts-jest, svelte-check, svelte-preprocess and
+      # esbuild-svelte; revisit once the ecosystem catches up (see #292)
+      - dependency-name: typescript
+        versions: [">=6"]
     groups:
       minor-and-patch:
         applies-to: version-updates
