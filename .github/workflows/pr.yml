@@ -25,10 +25,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check version consistency
+        run: node scripts/check-versions.mjs
+
       - name: Lint with ESLint
         continue-on-error: true
         run: |
-          npm run lint
+          npx eslint
 
       - name: Annotate ESLint results
         uses: reviewdog/action-eslint@556a3fdaf8b4201d4d74d406013386aa4f7dab96 # v1.34.0
@@ -38,6 +41,11 @@ jobs:
           reporter: github-pr-review
           filter_mode: nofilter
           fail_level: any
+
+      - name: Type check
+        run: |
+          npx tsc --noEmit --pretty
+          npx svelte-check
 
       - name: Test
         run: npm run test
