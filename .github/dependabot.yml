@@ -15,10 +15,15 @@ updates:
       # obsidian declares an exact peer dependency on @codemirror/state
       # (currently 6.5.0), so newer @codemirror/* versions break npm install
       - dependency-name: "@codemirror/*"
-      # prettier-plugin-svelte v4 requires Svelte 5; drop this once the
-      # project migrates from Svelte 4
-      - dependency-name: prettier-plugin-svelte
-        versions: [">=4"]
+      # electron is pinned to the major that current Obsidian installers
+      # embed (see #282); bump manually when Obsidian ships a newer one
+      - dependency-name: electron
+        versions: [">=40"]
+      # TypeScript >=6 (and the native TS7 compiler) is not yet supported
+      # by typescript-eslint, ts-jest, svelte-check, svelte-preprocess and
+      # esbuild-svelte; revisit once the ecosystem catches up (see #292)
+      - dependency-name: typescript
+        versions: [">=6"]
     groups:
       minor-and-patch:
         applies-to: version-updates
