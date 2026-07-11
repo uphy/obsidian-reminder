@@ -1,7 +1,7 @@
 <script lang="typescript">
   import moment from "moment";
-  import type { Reminders } from "../model/reminder";
-  import { DateTime } from "../model/time";
+  import type { Reminders } from "model/reminder";
+  import { DateTime } from "model/time";
   import CalendarView from "./Calendar.svelte";
   import TimePicker from "./TimePicker.svelte";
   import ReminderListByDate from "./ReminderListByDate.svelte";

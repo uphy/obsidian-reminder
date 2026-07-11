@@ -1,7 +1,7 @@
 <script lang="typescript">
   import { onMount, tick } from "svelte";
-  import type { Reminder } from "../model/reminder";
-  import type { DateTime, Later } from "../model/time";
+  import type { Reminder } from "model/reminder";
+  import type { DateTime, Later } from "model/time";
   import IconText from "./IconText.svelte";
   import Markdown from "./Markdown.svelte";
 

@@ -1,6 +1,6 @@
 <script lang="typescript">
-  import type { DateTime } from "../model/time";
-  import type { Reminder } from "../model/reminder";
+  import type { DateTime } from "model/time";
+  import type { Reminder } from "model/reminder";
   import Markdown from "./Markdown.svelte";
 
   export let reminders: Array<Reminder>;

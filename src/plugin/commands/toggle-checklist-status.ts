@@ -22,7 +22,6 @@ async function toggleCheck(
     });
   } else {
     const todo = content.getTodos().find((t) => t.lineIndex === lineNumber);
-    console.log(todo);
     if (!todo) {
       return;
     }

@@ -140,7 +140,7 @@ export class ReminderPluginUI {
   private async openReminderFile(reminder: Reminder) {
     const leaf = this.plugin.app.workspace.getLeaf(false);
 
-    console.log("Open reminder: ", reminder);
+    console.debug("Open reminder: ", reminder);
     const file = this.plugin.app.vault.getAbstractFileByPath(reminder.file);
     if (!(file instanceof TFile)) {
       console.error("Cannot open file because it isn't a TFile: %o", file);
@@ -170,26 +170,26 @@ export class ReminderPluginUI {
     this.showReminderModal(
       reminder,
       (time) => {
-        console.info("Remind me later: time=%o", time);
+        console.debug("Remind me later: time=%o", time);
         reminder.time = time;
         reminder.muteNotification = false;
         this.plugin.fileSystem.updateReminder(reminder, false);
         this.plugin.data.save(true);
       },
       () => {
-        console.info("done");
+        console.debug("done");
         reminder.muteNotification = false;
         this.plugin.fileSystem.updateReminder(reminder, true);
         this.plugin.reminders.removeReminder(reminder);
         this.plugin.data.save(true);
       },
       () => {
-        console.info("Mute");
+        console.debug("Mute");
         reminder.muteNotification = true;
         this.reload(true);
       },
       () => {
-        console.info("Open");
+        console.debug("Open");
         this.openReminderFile(reminder);
       },
     );

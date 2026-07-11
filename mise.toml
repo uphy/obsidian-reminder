@@ -1,6 +1,13 @@
 [tools]
 node = "22.17.1"
 
+[env]
+# The electron package is only used for its TypeScript types
+# (see src/plugin/ui/util.ts); skip the ~100MB binary download.
+# electron's install.js only honors this bare environment variable
+# (an .npmrc key would be exposed as npm_config_* and be ignored).
+ELECTRON_SKIP_BINARY_DOWNLOAD = "1"
+
 # --------------------------------------------------------------------------------
 # Tasks: docs
 

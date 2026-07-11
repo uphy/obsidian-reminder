@@ -20,7 +20,7 @@ import {
   SettingTabModel,
   TimeSerde,
 } from "./helper";
-import type { SettingModel } from "./helper";
+import type { SettingModel, SettingModelBase } from "./helper";
 
 export const TAG_RESCAN = "re-scan";
 
@@ -346,7 +346,7 @@ export class Settings {
     setReminderFormatConfig(config);
   }
 
-  public forEach(consumer: (setting: SettingModel<any, any>) => void) {
+  public forEach(consumer: (setting: SettingModelBase) => void) {
     this.settings.forEach(consumer);
   }
 }

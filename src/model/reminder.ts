@@ -36,8 +36,7 @@ export class Reminder {
   }
 
   public getFileName(): string {
-    const p = this.file.split(/[/\\]/);
-    return p[p.length - 1]!.replace(/^(.*?)(\..+)?$/, "$1");
+    return Reminder.extractFileName(this.file);
   }
 
   static extractFileName(path: string) {
@@ -101,27 +100,21 @@ export class Reminders {
   }
 
   public replaceFile(filePath: string, reminders: Array<Reminder>): boolean {
-    // migrate notificationVisible property
+    // migrate muteNotification property
     const oldReminders = this.fileToReminders.get(filePath);
     if (oldReminders) {
       if (this.equals(oldReminders, reminders)) {
         return false;
       }
-      const reminderToNotificationVisible = new Map<string, boolean>();
+      const keyToMuteNotification = new Map<string, boolean>();
       for (const reminder of oldReminders) {
-        reminderToNotificationVisible.set(
-          reminder.key(),
-          reminder.muteNotification,
-        );
+        keyToMuteNotification.set(reminder.key(), reminder.muteNotification);
       }
       for (const reminder of reminders) {
-        const visible = reminderToNotificationVisible.get(reminder.key());
-        reminderToNotificationVisible.set(
-          reminder.key(),
-          reminder.muteNotification,
-        );
-        if (visible !== undefined) {
-          reminder.muteNotification = visible;
+        const mute = keyToMuteNotification.get(reminder.key());
+        keyToMuteNotification.set(reminder.key(), reminder.muteNotification);
+        if (mute !== undefined) {
+          reminder.muteNotification = mute;
         }
       }
     }
@@ -135,25 +128,14 @@ export class Reminders {
     if (r1.length !== r2.length) {
       return false;
     }
-    this.sort(r1);
-    this.sort(r2);
-    for (const i in r1) {
-      const reminder1 = r1[i];
-      const reminder2 = r2[i];
-      if (reminder1 == null && reminder2 != null) {
-        return false;
-      }
-      if (reminder2 == null && reminder1 != null) {
-        return false;
-      }
-      if (reminder1 == null && reminder2 == null) {
-        continue;
-      }
-      if (!reminder1!.equals(reminder2!)) {
-        return false;
-      }
-    }
-    return true;
+    // Sort copies so we don't mutate the arrays passed in (r1 may be the
+    // array stored inside fileToReminders, and an equality check must not
+    // change stored state).
+    const sorted1 = [...r1];
+    const sorted2 = [...r2];
+    this.sort(sorted1);
+    this.sort(sorted2);
+    return sorted1.every((a, i) => a.equals(sorted2[i]!));
   }
 
   private sortReminders() {
@@ -335,8 +317,6 @@ export function groupReminders(
     );
     overdueGroup.isOverdue = true;
     result.splice(0, 0, new GroupedReminder(overdueGroup, overdueReminders));
-    console.log(overdueGroup);
-    console.log(result);
   }
   return result;
 }

@@ -1,7 +1,7 @@
 import { ItemView, TFile, View, WorkspaceLeaf } from "obsidian";
 import ReminderListView from "ui/ReminderList.svelte";
 import type ReminderPlugin from "main";
-import { Reminder, groupReminders } from "../../model/reminder";
+import { Reminder, groupReminders } from "model/reminder";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 
 class ReminderListItemView extends ItemView {
