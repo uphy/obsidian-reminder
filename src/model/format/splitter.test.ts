@@ -40,6 +40,65 @@ describe("splitBySymbol()", (): void => {
       splitBySymbol("this is a title", symbolOf("📅📆🗓✅🔁")),
     ).toStrictEqual([{ symbol: "", text: "this is a title" }]);
   });
+
+  test("tag after a symbol token becomes its own token (#141)", (): void => {
+    expect(
+      splitBySymbol("Task 📅 2021-09-08 #mytag", symbolOf("📅📆🗓✅🔁")),
+    ).toStrictEqual([
+      { symbol: "", text: "Task " },
+      { symbol: "📅", text: " 2021-09-08 " },
+      { symbol: "", text: "#mytag" },
+    ]);
+  });
+
+  test("tag between two symbol tokens becomes its own token", (): void => {
+    expect(
+      splitBySymbol(
+        "Task 📅 2021-09-08 #mytag ✅ 2021-08-31",
+        symbolOf("📅📆🗓✅🔁"),
+      ),
+    ).toStrictEqual([
+      { symbol: "", text: "Task " },
+      { symbol: "📅", text: " 2021-09-08 " },
+      { symbol: "", text: "#mytag " },
+      { symbol: "✅", text: " 2021-08-31" },
+    ]);
+  });
+
+  test("# inside a word does not split", (): void => {
+    expect(
+      splitBySymbol("Task 📅 2021-09-08 a#b", symbolOf("📅📆🗓✅🔁")),
+    ).toStrictEqual([
+      { symbol: "", text: "Task " },
+      { symbol: "📅", text: " 2021-09-08 a#b" },
+    ]);
+  });
+
+  test("tag in the title (before any symbol) is unaffected", (): void => {
+    expect(
+      splitBySymbol("Task #mytag 📅 2021-09-08", symbolOf("📅📆🗓✅🔁")),
+    ).toStrictEqual([
+      { symbol: "", text: "Task #mytag " },
+      { symbol: "📅", text: " 2021-09-08" },
+    ]);
+  });
+
+  test("round-trip: join() reproduces the original line", (): void => {
+    const symbols = symbolOf("📅📆🗓✅🔁");
+    const lines = [
+      "this is a title #tag1 #tag2 🔁every hour📅2021-09-08 ✅2021-08-31",
+      "this is a title",
+      "Task 📅 2021-09-08 #mytag",
+      "Task 📅 2021-09-08 #mytag ✅ 2021-08-31",
+      "Task 📅 2021-09-08 a#b",
+      "Task #mytag 📅 2021-09-08",
+      "#mytag",
+      "📅#mytag",
+    ];
+    for (const line of lines) {
+      expect(new Tokens(splitBySymbol(line, symbols)).join()).toBe(line);
+    }
+  });
 });
 
 describe("Tokens", (): void => {
