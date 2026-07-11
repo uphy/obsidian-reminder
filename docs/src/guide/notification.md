@@ -34,7 +34,7 @@ Instead of built-in notification, a system notification is also available by [se
 
 <img :src="$withBase('/images/notification-mac.png')" width="400px">
 
-- If you click the notification, the built-in notification will be displayed in the Obsidian app.
+- If you click the notification, the built-in notification will be displayed in the Obsidian app, unless [Open note on reminder click](/setting/#open-note-on-reminder-click) is enabled, in which case the note is opened directly instead.
 - If you close the notification, the reminder is [muted](#mute-notification)
 
 Also, if you are using macOS, you can mark it as done or postpone the reminder with the notification options.

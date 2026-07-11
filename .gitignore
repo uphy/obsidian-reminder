@@ -23,4 +23,5 @@ data.json
 .claude/settings.local.json
 .claude/hooks/.stop-check-state
 .claude/hooks/.manual-verify-state
+.claude/hooks/.docs-update-state
 .claude/worktrees/

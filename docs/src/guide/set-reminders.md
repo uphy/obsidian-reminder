@@ -8,6 +8,8 @@ You can set reminders by putting `(@YYYY-MM-DD HH:mm)` to the TODO list.
 - [ ] Task 1 (@2021-09-15 20:40)
 ```
 
+Any of `-`, `*`, or `+` can be used as the list marker.
+
 Time is omittable.
 
 ```markdown
@@ -43,11 +45,15 @@ Also, you can set reminder time with time picker.
 
 :::
 
+::: tip
+The calendar popup can only insert a reminder into a checklist/task line (e.g. `- [ ] Task`). On other lines, a notice is shown instead.
+:::
+
 There are multiple ways to display the calendar popup.
 
 ### Key input trigger (Desktop only)
 
-When you input `(@` in TODO list item, you will see calendar/time picker popup.
+When you input `(@` in TODO list item, you will see calendar/time picker popup. In Live Preview, the popup appears inline, right next to the cursor. It's dismissed with <kbd>Esc</kbd> or by clicking outside of it.
 
 <img :src="$withBase('/images/reminder-input-support.png')" width="400px">
 
@@ -85,6 +91,8 @@ You can move focus to time picker by <kbd>Tab</kbd> key.
 
 Open the command palette and search `Show calendar popup`.
 It will open the calendar popup.
+
+Unlike the inline popup shown when typing the trigger, this always opens as a dialog — this is also how the calendar popup is shown on mobile.
 
 ::: tip
 For mobile users, it would be useful to add a button to the toolbar at the bottom of the markdown editor to show the calendar popup.

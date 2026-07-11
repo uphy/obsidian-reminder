@@ -19,8 +19,14 @@ When you [toggle checklist status](/guide/set-reminders.html#toggle-checklist-st
 - [x] Task 📅 2021-09-16 ✅ 2021-09-17
 ```
 
+The due date can also carry a time, as an extension beyond what the Tasks Plugin itself supports. In this case, the reminder fires at that time instead of the [default reminder time](/setting/#reminder-time).
+
+```markdown
+- [ ] Task 📅 2021-09-16 10:00
+```
+
 ::: warning Note
-- You cannot change this time format for interoperability with Tasks Plugin
+- You can't customize the due date format (`YYYY-MM-DD`, optionally followed by ` HH:mm`) for interoperability with Tasks Plugin
 - If you want to specify the reminder time separately from the due date in the Tasks Plugin, you can use [reminder emoji](#distinguish-due-date-and-reminder-date).
 :::
 
