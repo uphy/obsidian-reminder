@@ -52,6 +52,8 @@ Symlink the dev vault's `.obsidian/plugins/obsidian-reminder-plugin` to this rep
 
 With this set up, running `mise run dev` keeps esbuild's watch build resident, so every time you save a source file it automatically rebuilds and reloads in Obsidian. No manual copying or restarting Obsidian is needed.
 
+Automated tests only cover `src/model/`. After implementing a change that affects runtime behavior in Obsidian (anything under `src/plugin/` or `src/ui/`, or parsing behavior visible in the vault), run the `manual-verify` skill to set up the test vault and walk the user through verification before opening a PR. A Stop hook (`.claude/hooks/manual-verify-reminder.sh`) reminds about this once per change state.
+
 ## Release flow
 
 `release.sh` (a local script that bumps the version and creates a tag, master branch only) rewrites both package.json and manifest.json, but what's actually used in practice is `.github/workflows/release.yml` and `release-beta.yml` (triggered manually via `workflow_dispatch`). These rewrite **only manifest.json**, then handle the commit, tagging, GitHub Release creation, and (for the official release only) the gh-pages deploy of the docs site. **package.json's version is never updated by this flow, so it can drift from manifest.json** (indeed, in this repository package.json=1.1.15 and manifest.json=1.1.21 currently disagree). Treat manifest.json/manifest-beta.json/versions.json as the source of truth for version consistency.

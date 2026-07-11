@@ -22,4 +22,5 @@ data.json
 # Claude Code local-only files
 .claude/settings.local.json
 .claude/hooks/.stop-check-state
+.claude/hooks/.manual-verify-state
 .claude/worktrees/
