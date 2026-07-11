@@ -10,6 +10,7 @@
   export let onDone: () => void;
   export let onOpenFile: () => void;
   export let onMute: () => void;
+  export let onPauseAllNotifications: () => void;
   // Do not set initial value so that svelte can render the placeholder `Remind Me Later`.
   let selectedIndex: number;
   export let laters: Array<Later> = [];
@@ -60,6 +61,9 @@
       {/each}
     </select>
   </div>
+  <button class="reminder-pause-all" on:click={onPauseAllNotifications}>
+    Pause all notifications…
+  </button>
 </main>
 
 <style>
@@ -89,5 +93,22 @@
 
   .later-select {
     font-size: 14px;
+  }
+
+  .reminder-pause-all {
+    display: block;
+    margin-top: 0.75rem;
+    padding: 0;
+    color: var(--text-faint);
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    text-decoration: underline;
+    box-shadow: none;
+    font-size: 12px;
+  }
+
+  .reminder-pause-all:hover {
+    color: var(--text-muted);
   }
 </style>

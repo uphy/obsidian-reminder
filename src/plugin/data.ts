@@ -26,6 +26,12 @@ export class PluginData {
   changed: boolean = false;
   public scanned: Reference<boolean> = new Reference(false);
   public debug: Reference<boolean> = new Reference(false);
+  // Do-not-disturb end time, or `null` while do-not-disturb is inactive.
+  // Transient state (not a setting): not exposed in the settings tab, but
+  // still persisted so a pause survives an Obsidian restart.
+  public dndUntil: Reference<DateTime | null> = new Reference<DateTime | null>(
+    null,
+  );
   private readonly _settings = new Settings();
 
   constructor(
@@ -57,6 +63,7 @@ export class PluginData {
       | {
           scanned: boolean;
           debug?: boolean;
+          dndUntil?: number | null;
           settings?: Record<string, unknown>;
           reminders?: Record<string, Array<ReminderData>>;
         }
@@ -69,6 +76,8 @@ export class PluginData {
     if (data.debug != null) {
       this.debug.value = data.debug;
     }
+    this.dndUntil.value =
+      data.dndUntil != null ? DateTime.ofEpochMillis(data.dndUntil) : null;
 
     this.settings.forEach((setting) => {
       setting.load(data.settings);
@@ -127,6 +136,7 @@ export class PluginData {
       scanned: this.scanned.value,
       reminders: remindersData,
       debug: this.debug.value,
+      dndUntil: this.dndUntil.value?.getTimeInMillis() ?? null,
       settings,
     });
     this.changed = false;

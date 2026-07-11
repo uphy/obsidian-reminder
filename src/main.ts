@@ -4,8 +4,9 @@ import {
   ReminderPluginFileSystem,
   ReminderPluginUI,
 } from "plugin";
+import { isNotificationPaused } from "model/dnd";
 import { Reminders } from "model/reminder";
-import { DATE_TIME_FORMATTER } from "model/time";
+import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
 import { App, Plugin } from "obsidian";
 import type { PluginManifest } from "obsidian";
@@ -72,6 +73,8 @@ export default class ReminderPlugin extends Plugin {
         this.reminders.getExpiredReminders(this.settings.reminderTime.value),
       checkIntervalSec: () => this.settings.reminderCheckIntervalSec.value,
       isNotificationEnabled: () => this.settings.enableNotification.value,
+      isNotificationPaused: () =>
+        isNotificationPaused(this.data.dndUntil.value, DateTime.now()),
     });
   }
 

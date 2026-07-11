@@ -23,6 +23,7 @@ function createDeps(
     getExpiredReminders: () => [],
     checkIntervalSec: () => 60,
     isNotificationEnabled: () => true,
+    isNotificationPaused: () => false,
     ...overrides,
   };
 }
@@ -169,6 +170,57 @@ describe("NotificationWorker", (): void => {
     await callPeriodicTask(worker);
 
     expect(reloadUI).toHaveBeenCalledWith(true);
+    expect(showReminder).toHaveBeenCalledWith(reminder);
+  });
+
+  test("does not show reminders while paused (do-not-disturb)", async (): Promise<void> => {
+    const showReminder = jest.fn();
+    const deps = createDeps({
+      isNotificationPaused: () => true,
+      getExpiredReminders: () => [makeReminder("r1")],
+      showReminder,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+
+    expect(showReminder).not.toHaveBeenCalled();
+  });
+
+  test("still reloads UI and scans while paused (do-not-disturb)", async (): Promise<void> => {
+    const reloadUI = jest.fn();
+    const reloadRemindersInAllFiles = jest.fn(async () => {});
+    const deps = createDeps({
+      isNotificationPaused: () => true,
+      isScanned: () => false,
+      reloadUI,
+      reloadRemindersInAllFiles,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+
+    expect(reloadUI).toHaveBeenCalled();
+    expect(reloadRemindersInAllFiles).toHaveBeenCalled();
+  });
+
+  test("shows a still-expired reminder on the tick after the pause ends", async (): Promise<void> => {
+    const showReminder = jest.fn();
+    const reminder = makeReminder("r1");
+    let paused = true;
+    const deps = createDeps({
+      isNotificationPaused: () => paused,
+      getExpiredReminders: () => [reminder],
+      showReminder,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+    expect(showReminder).not.toHaveBeenCalled();
+
+    paused = false;
+    await callPeriodicTask(worker);
+
     expect(showReminder).toHaveBeenCalledWith(reminder);
   });
 

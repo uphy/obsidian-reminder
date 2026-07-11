@@ -11,8 +11,10 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { registerCommands } from "plugin/commands";
+import { showPauseDurationChooser } from "plugin/dnd";
 import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
+import { DndStatusBar } from "./dnd-status-bar";
 import { ReminderListItemViewProxy } from "./reminder-list";
 import { AutoComplete } from "./autocomplete";
 import type { AutoCompletableEditor } from "./autocomplete";
@@ -24,6 +26,7 @@ export class ReminderPluginUI {
   private editDetector: EditDetector;
   private reminderModal: ReminderModal;
   private viewProxy: ReminderListItemViewProxy;
+  private dndStatusBar: DndStatusBar;
   constructor(private plugin: ReminderPlugin) {
     this.viewProxy = new ReminderListItemViewProxy(
       this.plugin,
@@ -54,9 +57,12 @@ export class ReminderPluginUI {
       plugin.settings.openNoteOnReminderClick,
       plugin.settings.showPopupWithSystemNotification,
     );
+    this.dndStatusBar = new DndStatusBar(plugin);
   }
 
   onload() {
+    this.dndStatusBar.onload();
+
     // Reminder List
     this.plugin.registerView(VIEW_TYPE_REMINDER_LIST, (leaf: WorkspaceLeaf) => {
       return this.viewProxy.createView(leaf);
@@ -111,12 +117,17 @@ export class ReminderPluginUI {
     this.autoComplete.show(this.plugin.app, editor, this.plugin.reminders);
   }
 
+  refreshDndStatusBar() {
+    this.dndStatusBar.refresh();
+  }
+
   private showReminderModal(
     reminder: Reminder,
     onRemindMeLater: (time: DateTime) => void,
     onDone: () => void,
     onMute: () => void,
     onOpenFile: () => void,
+    onPauseAllNotifications: () => void,
   ) {
     this.reminderModal.show(
       reminder,
@@ -124,6 +135,7 @@ export class ReminderPluginUI {
       onDone,
       onMute,
       onOpenFile,
+      onPauseAllNotifications,
     );
   }
 
@@ -208,6 +220,14 @@ export class ReminderPluginUI {
         console.debug("Open");
         // Callback is synchronous; opening the file is fire-and-forget here.
         void this.openReminderFile(reminder);
+      },
+      () => {
+        console.debug("Pause all notifications");
+        // Unlike Mute, this must not leave this specific reminder muted:
+        // pausing suppresses notifications globally without touching
+        // individual reminders, so it re-fires once the pause ends.
+        reminder.muteNotification = false;
+        showPauseDurationChooser(this.plugin);
       },
     );
   }

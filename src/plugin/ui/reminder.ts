@@ -20,6 +20,7 @@ export class ReminderModal {
     onDone: () => void,
     onMute: () => void,
     onOpenFile: () => void,
+    onPauseAllNotifications: () => void,
   ) {
     if (!this.isSystemNotification()) {
       this.showBuiltinReminder(
@@ -28,6 +29,7 @@ export class ReminderModal {
         onDone,
         onMute,
         onOpenFile,
+        onPauseAllNotifications,
       );
       return;
     }
@@ -82,6 +84,7 @@ export class ReminderModal {
           onDone,
           onMute,
           onOpenFile,
+          onPauseAllNotifications,
         );
       }
     });
@@ -117,6 +120,7 @@ export class ReminderModal {
     onDone: () => void,
     onCancel: () => void,
     onOpenFile: () => void,
+    onPauseAllNotifications: () => void,
   ) {
     new NotificationModal(
       this.app,
@@ -126,6 +130,7 @@ export class ReminderModal {
       onDone,
       onCancel,
       onOpenFile,
+      onPauseAllNotifications,
     ).open();
   }
 
@@ -143,6 +148,11 @@ export class ReminderModal {
 
 class NotificationModal extends Modal {
   canceled: boolean = true;
+  // Set when the modal is closed via "Pause all notifications...". This
+  // takes precedence over `canceled` in `onClose()` so `onCancel` (which
+  // mutes the reminder) is skipped, letting the reminder re-fire once the
+  // pause ends.
+  private pausingAll: boolean = false;
 
   constructor(
     app: App,
@@ -152,6 +162,7 @@ class NotificationModal extends Modal {
     private onDone: () => void,
     private onCancel: () => void,
     private onOpenFile: () => void,
+    private onPauseAllNotifications: () => void,
   ) {
     super(app);
   }
@@ -186,6 +197,11 @@ class NotificationModal extends Modal {
           this.canceled = true;
           this.close();
         },
+        onPauseAllNotifications: () => {
+          this.pausingAll = true;
+          this.onPauseAllNotifications();
+          this.close();
+        },
       },
     });
   }
@@ -196,7 +212,10 @@ class NotificationModal extends Modal {
     this.reminder.beingDisplayed = false;
     const { contentEl } = this;
     contentEl.empty();
-    if (this.canceled) {
+    if (this.pausingAll) {
+      // Skip `onCancel` (mute): pausing suppresses notifications globally
+      // without muting this specific reminder.
+    } else if (this.canceled) {
       this.onCancel();
     }
   }

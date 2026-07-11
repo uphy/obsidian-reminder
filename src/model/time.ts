@@ -15,6 +15,16 @@ export class DateTime {
     }
   }
 
+  /**
+   * Builds a `DateTime` from an epoch-milliseconds timestamp. Used for
+   * persisting values (e.g. do-not-disturb's `dndUntil`) that must survive a
+   * round trip through storage without losing precision, unlike
+   * `toString()`/`parse()` which are lossy for date-only `DateTime`s.
+   */
+  public static ofEpochMillis(epochMillis: number): DateTime {
+    return new DateTime(moment(epochMillis), true);
+  }
+
   public static duration(
     from: DateTime,
     to: DateTime,
