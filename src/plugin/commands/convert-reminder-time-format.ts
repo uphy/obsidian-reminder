@@ -43,7 +43,9 @@ export function convertReminderTimeFormat(
   plugin: ReminderPlugin,
 ) {
   if (!checking) {
-    showOkCancelDialog(
+    // The command's check callback must return synchronously, so the dialog
+    // and subsequent conversion are intentionally fire-and-forget here.
+    void showOkCancelDialog(
       "Convert reminder time format",
       "This command rewrite reminder dates in all markdown files.  You should make a backup of your vault before you execute this.  May I continue to convert?",
     ).then((res) => {

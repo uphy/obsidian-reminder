@@ -61,7 +61,9 @@ export default class ReminderPlugin extends Plugin {
         this.data.scanned.value = true;
       },
       saveData: (force) => {
-        this.data.save(force);
+        // `NotificationWorkerDeps.saveData` is synchronous by contract; the
+        // save itself is fire-and-forget here.
+        void this.data.save(force);
       },
       reloadRemindersInAllFiles: () =>
         this.fileSystem.reloadRemindersInAllFiles(),

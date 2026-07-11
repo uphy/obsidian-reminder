@@ -39,7 +39,6 @@ const config = {
   rules: {
     'linebreak-style': ['error', 'unix'],
     quotes: ['error', 'single', { avoidEscape: true }],
-    '@typescript-eslint/no-unused-vars': 0, // Configured in tsconfig instead.
     semi: ['error', 'always'],
     'import/order': 'error',
     'sort-imports': [
@@ -52,6 +51,36 @@ const config = {
     'no-console': ['error', { allow: ['warn', 'error', 'debug'] }],
     'no-restricted-imports': ['error', { patterns: [{ group: ['../*'], message: 'Use src-rooted import paths (e.g. "model/reminder") instead of parent-relative paths.' }] }],
     'prettier/prettier': 'error',
+  },
+};
+
+/**
+ * Unused-vars handling, placed after js.configs.recommended in the array below so
+ * it can override the base `no-unused-vars` rule that recommended re-enables.
+ */
+/** @type {import("eslint").Linter.Config} */
+const unusedVarsConfig = {
+  files: ["src/**/*.ts", "src/**/*.svelte"],
+  rules: {
+    'no-unused-vars': 'off', // Replaced by @typescript-eslint/no-unused-vars.
+    '@typescript-eslint/no-unused-vars': 'error',
+  },
+};
+
+/** Type-aware rules: TS files only (projectService can't include .svelte files). */
+/** @type {import("eslint").Linter.Config} */
+const typeAwareConfig = {
+  files: ["src/**/*.ts"],
+  languageOptions: {
+    parserOptions: {
+      projectService: true,
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+  rules: {
+    '@typescript-eslint/no-floating-promises': 'error',
+    '@typescript-eslint/no-misused-promises': 'error',
+    '@typescript-eslint/await-thenable': 'error',
   },
 };
 
@@ -71,5 +100,7 @@ export default [
       }
     },
   },
+  unusedVarsConfig,
+  typeAwareConfig,
   eslintConfigPrettier,
 ];

@@ -28,8 +28,9 @@ export class NotificationWorker {
 
   startPeriodicTask() {
     let intervalTaskRunning = true;
-    // Force the view to refresh as soon as possible.
-    this.periodicTask().finally(() => {
+    // Force the view to refresh as soon as possible. This is intentionally
+    // fire-and-forget; the loop below tracks completion via `intervalTaskRunning`.
+    void this.periodicTask().finally(() => {
       intervalTaskRunning = false;
     });
 
@@ -43,7 +44,7 @@ export class NotificationWorker {
           return;
         }
         intervalTaskRunning = true;
-        this.periodicTask().finally(() => {
+        void this.periodicTask().finally(() => {
           intervalTaskRunning = false;
         });
       }, this.deps.checkIntervalSec() * 1000),
@@ -54,7 +55,10 @@ export class NotificationWorker {
     this.deps.reloadUI(false);
 
     if (!this.deps.isScanned()) {
-      this.deps.reloadRemindersInAllFiles().then(() => {
+      // Intentionally not awaited: the initial full-vault scan runs
+      // concurrently with the rest of this periodic task rather than
+      // blocking it.
+      void this.deps.reloadRemindersInAllFiles().then(() => {
         this.deps.markScanned();
         this.deps.saveData();
       });

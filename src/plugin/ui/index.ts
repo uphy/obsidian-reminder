@@ -36,7 +36,8 @@ export class ReminderPluginUI {
           this.showReminder(reminder);
           return;
         }
-        this.openReminderFile(reminder);
+        // Callback is synchronous; opening the file is fire-and-forget here.
+        void this.openReminderFile(reminder);
       },
     );
     this.autoComplete = new AutoComplete(
@@ -139,7 +140,7 @@ export class ReminderPluginUI {
     }
     // Without revealing the leaf, the view stays hidden when the right
     // sidebar is collapsed or another view is on top of it.
-    workspace.revealLeaf(leaf);
+    await workspace.revealLeaf(leaf);
   }
 
   private detachReminderList() {
@@ -184,15 +185,17 @@ export class ReminderPluginUI {
         console.debug("Remind me later: time=%o", time);
         reminder.time = time;
         reminder.muteNotification = false;
-        this.plugin.fileSystem.updateReminder(reminder, false);
-        this.plugin.data.save(true);
+        // Callback is synchronous; both calls are fire-and-forget here.
+        void this.plugin.fileSystem.updateReminder(reminder, false);
+        void this.plugin.data.save(true);
       },
       () => {
         console.debug("done");
         reminder.muteNotification = false;
-        this.plugin.fileSystem.updateReminder(reminder, true);
+        // Callback is synchronous; both calls are fire-and-forget here.
+        void this.plugin.fileSystem.updateReminder(reminder, true);
         this.plugin.reminders.removeReminder(reminder);
-        this.plugin.data.save(true);
+        void this.plugin.data.save(true);
       },
       () => {
         console.debug("Mute");
@@ -201,7 +204,8 @@ export class ReminderPluginUI {
       },
       () => {
         console.debug("Open");
-        this.openReminderFile(reminder);
+        // Callback is synchronous; opening the file is fire-and-forget here.
+        void this.openReminderFile(reminder);
       },
     );
   }

@@ -17,8 +17,9 @@ export function setDateDisplayFormat(
       plugin.data.settings.timeDisplayFormat.rawValue.value =
         preset.format.timeFormat;
 
-      // Save data and refresh UI to reflect changes immediately
-      plugin.data.save(true);
+      // Save data and refresh UI to reflect changes immediately. This
+      // callback is synchronous, so the save is fire-and-forget here.
+      void plugin.data.save(true);
       plugin.ui.invalidate();
       plugin.ui.reload(true);
     }).open();

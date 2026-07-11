@@ -21,7 +21,9 @@ export function monkeyPatchConsole(plugin: Plugin) {
       for (const message of messages) {
         logs.push(String(message));
       }
-      plugin.app.vault.adapter.write(logFile, logs.join(" "));
+      // This monkey-patched console method must stay synchronous; the write
+      // is intentionally fire-and-forget.
+      void plugin.app.vault.adapter.write(logFile, logs.join(" "));
     };
 
   console.debug = logMessages("debug");
