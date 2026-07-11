@@ -120,15 +120,22 @@ export class ReminderPluginUI {
     );
   }
 
-  showReminderList() {
-    if (
-      this.plugin.app.workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST).length
-    ) {
-      return;
+  async showReminderList() {
+    const workspace = this.plugin.app.workspace;
+    let leaf = workspace.getLeavesOfType(VIEW_TYPE_REMINDER_LIST)[0];
+    if (leaf == null) {
+      const rightLeaf = workspace.getRightLeaf(false);
+      if (rightLeaf == null) {
+        return;
+      }
+      await rightLeaf.setViewState({
+        type: VIEW_TYPE_REMINDER_LIST,
+      });
+      leaf = rightLeaf;
     }
-    this.plugin.app.workspace.getRightLeaf(false)?.setViewState({
-      type: VIEW_TYPE_REMINDER_LIST,
-    });
+    // Without revealing the leaf, the view stays hidden when the right
+    // sidebar is collapsed or another view is on top of it.
+    workspace.revealLeaf(leaf);
   }
 
   private detachReminderList() {
