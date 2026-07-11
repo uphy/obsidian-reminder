@@ -19,6 +19,7 @@ export interface NotificationWorkerDeps {
   getExpiredReminders(): Array<Reminder>;
   checkIntervalSec(): number;
   isNotificationEnabled(): boolean;
+  isNotificationPaused(): boolean;
 }
 
 export class NotificationWorker {
@@ -92,6 +93,14 @@ export class NotificationWorker {
       // initial scan, saveData, and the newly-expired forced reload) must
       // still run so the reminder list view stays up to date even while
       // popups/system notifications are suppressed.
+      return;
+    }
+
+    if (this.deps.isNotificationPaused()) {
+      // Do-not-disturb is active. As with the disabled-notifications guard
+      // above, everything above it must still run. Reminders are not muted
+      // by the pause, so anything still expired fires on the next tick once
+      // the pause ends.
       return;
     }
 
