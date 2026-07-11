@@ -18,9 +18,12 @@ export interface NotificationWorkerDeps {
   reloadRemindersInAllFiles(): Promise<void>;
   getExpiredReminders(): Array<Reminder>;
   checkIntervalSec(): number;
+  isNotificationEnabled(): boolean;
 }
 
 export class NotificationWorker {
+  private lastExpiredKeys: Set<string> = new Set();
+
   constructor(private deps: NotificationWorkerDeps) {}
 
   startPeriodicTask() {
@@ -62,7 +65,31 @@ export class NotificationWorker {
     if (this.deps.isEditing()) {
       return;
     }
+
     const expired = this.deps.getExpiredReminders();
+
+    // The reminder list view only re-renders when it is invalidated
+    // (reminders added/edited); mere passage of time never invalidates it.
+    // Force a reload when reminders newly become expired so they move to
+    // the "Overdue" group — this must happen regardless of whether
+    // notifications are enabled. Only new expirations trigger the reload,
+    // to avoid re-rendering the list on every tick.
+    const expiredKeys = new Set(expired.map((r) => r.key()));
+    for (const key of expiredKeys) {
+      if (!this.lastExpiredKeys.has(key)) {
+        this.deps.reloadUI(true);
+        break;
+      }
+    }
+    this.lastExpiredKeys = expiredKeys;
+
+    if (!this.deps.isNotificationEnabled()) {
+      // Notifications are disabled, but everything above (reloadUI, the
+      // initial scan, saveData, and the newly-expired forced reload) must
+      // still run so the reminder list view stays up to date even while
+      // popups/system notifications are suppressed.
+      return;
+    }
 
     let previousReminder: Reminder | undefined = undefined;
     for (const reminder of expired) {

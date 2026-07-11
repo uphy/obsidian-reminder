@@ -68,6 +68,7 @@ export default class ReminderPlugin extends Plugin {
       getExpiredReminders: () =>
         this.reminders.getExpiredReminders(this.settings.reminderTime.value),
       checkIntervalSec: () => this.settings.reminderCheckIntervalSec.value,
+      isNotificationEnabled: () => this.settings.enableNotification.value,
     });
   }
 

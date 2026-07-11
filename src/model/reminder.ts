@@ -26,6 +26,17 @@ export class Reminder {
     return this.file + this.title + this.time.toString();
   }
 
+  /**
+   * Checks whether this reminder's time has already passed at `nowMillis`.
+   * A date-only reminder falls back to `defaultTime` (the "Reminder Time"
+   * setting) for its time part. This is the single expiry predicate shared
+   * by the notification flow (`Reminders.getExpiredReminders()`) and the
+   * "Overdue" grouping (`groupReminders()`).
+   */
+  isExpired(nowMillis: number, defaultTime?: Time): boolean {
+    return this.time.getTimeInMillis(defaultTime) <= nowMillis;
+  }
+
   equals(reminder: Reminder) {
     return (
       this.rowNumber === reminder.rowNumber &&
@@ -57,7 +68,7 @@ export class Reminders {
     const result: Array<Reminder> = [];
     for (let i = 0; i < this.reminders.length; i++) {
       const reminder = this.reminders[i]!;
-      if (reminder.time.getTimeInMillis(defaultTime) <= now) {
+      if (reminder.isExpired(now, defaultTime)) {
         result.push(reminder);
       } else {
         break;
@@ -287,6 +298,7 @@ export function groupReminders(
   format: DateDisplayFormat,
 ): Array<GroupedReminder> {
   const now = DateTime.now();
+  const nowMillis = now.getTimeInMillis();
   const result: Array<GroupedReminder> = [];
   let currentReminders: Array<Reminder> = [];
   const overdueReminders: Array<Reminder> = [];
@@ -294,7 +306,12 @@ export function groupReminders(
   let previousGroup: Group = generateGroup(now, now, reminderTime, format);
   for (let i = 0; i < sortedReminders.length; i++) {
     const r = sortedReminders[i]!;
-    if (r.muteNotification) {
+    // The Overdue group must reflect actual time, not just mute state:
+    // `muteNotification` is only set by the notification flow, so with
+    // notifications disabled (or at startup, before the first notification
+    // fires) it never gets set. Use the same expiry predicate as
+    // `Reminders.getExpiredReminders()`.
+    if (r.muteNotification || r.isExpired(nowMillis, reminderTime)) {
       overdueReminders.push(r);
       continue;
     }

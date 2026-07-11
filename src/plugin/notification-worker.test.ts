@@ -22,6 +22,7 @@ function createDeps(
     reloadRemindersInAllFiles: async () => {},
     getExpiredReminders: () => [],
     checkIntervalSec: () => 60,
+    isNotificationEnabled: () => true,
     ...overrides,
   };
 }
@@ -86,6 +87,89 @@ describe("NotificationWorker", (): void => {
 
     expect(getExpiredReminders).not.toHaveBeenCalled();
     expect(showReminder).not.toHaveBeenCalled();
+  });
+
+  test("does not show reminders when notifications are disabled", async (): Promise<void> => {
+    const showReminder = jest.fn();
+    const deps = createDeps({
+      isNotificationEnabled: () => false,
+      getExpiredReminders: () => [makeReminder("r1")],
+      showReminder,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+
+    expect(showReminder).not.toHaveBeenCalled();
+  });
+
+  test("still reloads UI and scans when notifications are disabled", async (): Promise<void> => {
+    const reloadUI = jest.fn();
+    const reloadRemindersInAllFiles = jest.fn(async () => {});
+    const deps = createDeps({
+      isNotificationEnabled: () => false,
+      isScanned: () => false,
+      reloadUI,
+      reloadRemindersInAllFiles,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+
+    expect(reloadUI).toHaveBeenCalled();
+    expect(reloadRemindersInAllFiles).toHaveBeenCalled();
+  });
+
+  test("force-reloads the list when a reminder newly expires while notifications are disabled", async (): Promise<void> => {
+    const reloadUI = jest.fn();
+    const deps = createDeps({
+      isNotificationEnabled: () => false,
+      getExpiredReminders: () => [makeReminder("r1")],
+      reloadUI,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+
+    expect(reloadUI).toHaveBeenCalledWith(true);
+  });
+
+  test("does not force-reload again for the same expired reminders", async (): Promise<void> => {
+    const reloadUI = jest.fn();
+    const deps = createDeps({
+      isNotificationEnabled: () => false,
+      getExpiredReminders: () => [makeReminder("r1")],
+      reloadUI,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+    await callPeriodicTask(worker);
+
+    // The second tick only calls `reloadUI(false)` at the top of
+    // `periodicTask()`; the forced reload must not repeat for reminders
+    // that were already expired on the previous tick.
+    const forcedReloads = reloadUI.mock.calls.filter(
+      (args) => args[0] === true,
+    );
+    expect(forcedReloads).toHaveLength(1);
+  });
+
+  test("force-reloads and shows a newly expired reminder when notifications are enabled", async (): Promise<void> => {
+    const reloadUI = jest.fn();
+    const showReminder = jest.fn();
+    const reminder = makeReminder("r1");
+    const deps = createDeps({
+      getExpiredReminders: () => [reminder],
+      reloadUI,
+      showReminder,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+
+    expect(reloadUI).toHaveBeenCalledWith(true);
+    expect(showReminder).toHaveBeenCalledWith(reminder);
   });
 
   test("waits for the previous reminder's beingDisplayed flag before showing the next", async (): Promise<void> => {

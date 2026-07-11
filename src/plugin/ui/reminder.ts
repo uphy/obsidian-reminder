@@ -10,6 +10,7 @@ export class ReminderModal {
     private app: App,
     private useSystemNotification: ReadOnlyReference<boolean>,
     private laters: ReadOnlyReference<Array<Later>>,
+    private openNoteOnReminderClick: ReadOnlyReference<boolean>,
   ) {}
 
   public show(
@@ -36,6 +37,10 @@ export class ReminderModal {
       });
       n.on("click", () => {
         n.close();
+        if (this.openNoteOnReminderClick.value) {
+          onOpenFile();
+          return;
+        }
         this.showBuiltinReminder(
           reminder,
           onRemindMeLater,
