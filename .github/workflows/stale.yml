@@ -1,0 +1,53 @@
+name: Close stale awaiting-response PRs
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+    inputs:
+      debug-only:
+        description: "Dry run: log what would happen without commenting, labeling, or closing"
+        type: boolean
+        default: true
+      days-before-stale:
+        description: "Override days before marking stale (for testing)"
+        type: number
+        default: 30
+      days-before-close:
+        description: "Override days before closing after stale (for testing)"
+        type: number
+        default: 7
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
+        with:
+          # Only PRs explicitly labeled by a maintainer are subject to auto-close.
+          any-of-pr-labels: awaiting-response
+          # Manual runs are dry runs by default; scheduled runs always act.
+          debug-only: ${{ inputs.debug-only == true }}
+          days-before-stale: ${{ inputs.days-before-stale || 30 }}
+          days-before-close: ${{ inputs.days-before-close || 7 }}
+          # Issues are out of scope for now.
+          days-before-issue-stale: -1
+          days-before-issue-close: -1
+          exempt-draft-pr: true
+          exempt-pr-labels: pinned
+          stale-pr-label: stale
+          stale-pr-message: >
+            This pull request has been marked as stale because it has been
+            awaiting a response from the author for 30 days. It will be closed
+            in 7 days if there is no further activity. If you are still working
+            on this, just leave a comment or push a commit — that resets the
+            timer.
+          close-pr-message: >
+            Closing this pull request because there was no response from the
+            author after the stale notice. Thank you for the contribution — if
+            you would like to continue, feel free to reopen it or submit a new
+            pull request against the latest master.
