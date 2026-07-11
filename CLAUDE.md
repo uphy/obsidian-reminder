@@ -62,6 +62,8 @@ Automated tests only cover `src/model/`. After implementing a change that affect
 - Beta release: run `release-beta.yml` on the equivalent of the develop branch, still with a typed-in explicit version (e.g. `1.2.0-beta.1`) since beta versions don't map to a bump level → updates manifest-beta.json, pushes to develop, and tags it → automatically opens a PR from a branch that cherry-picks that change onto master (merging is manual) → creates a GitHub Release marked as prerelease. Because BRAT reads `manifest.json` from the release assets, the build step copies `manifest-beta.json` over `manifest.json` before packaging, so BRAT sees the beta version.
 - `versions.json` maps plugin versions to the minimum supported Obsidian version; `release.yml` appends the new version automatically using manifest.json's `minAppVersion`, so this file no longer needs manual upkeep.
 
+GitHub Release notes are auto-generated from PR labels according to `.github/release.yml`. Every PR should be labeled with one of `breaking-change`, `enhancement`, `bug`, `documentation`, or `chore` (Dependabot PRs get `dependencies` automatically). Unlabeled PRs fall into "Other Changes".
+
 ## Notes
 
 - Unlike the common practice of using the `window.moment` that Obsidian itself provides, this plugin imports `moment` directly as an npm dependency (it's not listed in `esbuild.config.mjs`'s `external` either) and bundles it itself with esbuild. Don't write code that assumes Obsidian's bundled moment.
