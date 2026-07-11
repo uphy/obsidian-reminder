@@ -70,6 +70,28 @@ describe("KanbanDateTimeFormat", (): void => {
       expect(res.time).toBe(undefined);
     }
   });
+  test("split - reflects setting changes after construction", (): void => {
+    // The Kanban plugin's settings are read lazily, so toggling
+    // "link date to daily note" must be reflected without recreating the
+    // format instance (https://github.com/uphy/obsidian-reminder/issues/30).
+    const setting = {
+      dateTrigger: "@",
+      dateFormat: "YYYY-MM-DD",
+      timeTrigger: "@@",
+      timeFormat: "HH:mm",
+      linkDateToDailyNote: false,
+    };
+    const sut = new KanbanDateTimeFormat(setting);
+    expect(sut.split("a b c @{2021-09-12}").time!.toString()).toBe(
+      "2021-09-12",
+    );
+    expect(sut.split("a b c @[[2021-09-12]]").time).toBe(undefined);
+
+    setting.linkDateToDailyNote = true;
+    const res = sut.split("a b c @[[2021-09-12]]");
+    expect(res.title).toBe("a b c");
+    expect(res.time!.toString()).toBe("2021-09-12");
+  });
   test("split - with page link", (): void => {
     const sut = new KanbanDateTimeFormat({
       dateTrigger: "@",
