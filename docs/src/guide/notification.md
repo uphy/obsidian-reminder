@@ -51,3 +51,18 @@ The reminder will be muted if you do the following:
 A muted reminder will not be notified again until
 - you restart the Obsidian app
 - you click muted reminder in [reminder list view](/guide/list-reminders.html)
+
+## Pausing notifications temporarily (do not disturb)
+
+Unlike the [Enable reminder notifications](/setting/#enable-reminder-notifications) setting, which turns notifications off permanently until you turn it back on, do-not-disturb lets you pause notifications for a fixed duration and have them resume automatically.
+
+You can start it from either place:
+- Run `Pause reminder notifications` from the command palette. It opens a duration chooser with the same options as the [Remind Me Later](/setting/#remind-me-later) setting.
+- Click `Pause all notifications…` at the bottom of a notification popup. This closes the popup (without [muting](#mute-notification) that reminder) and opens the same duration chooser.
+
+While paused:
+- No builtin notification popups or system notifications are shown.
+- The [reminder list view](/guide/list-reminders.html) keeps updating as usual, including moving reminders into [Overdue](/guide/list-reminders.html#overdue-reminders).
+- Reminders are not muted by the pause, so any reminder that's still overdue is notified again shortly after the pause ends.
+
+A status bar item (🔕) shows the time the pause ends; click it to resume notifications immediately. You can also run `Resume reminder notifications` from the command palette, which is only available while paused. The pause is remembered across Obsidian restarts, but it's a transient state rather than a setting, so it doesn't appear in the settings tab.
