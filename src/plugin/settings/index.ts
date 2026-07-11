@@ -14,6 +14,7 @@ import {
 import { DateTime, Later, Time } from "model/time";
 import moment from "moment";
 import {
+  ExcludedPathsSerde,
   LatersSerde,
   RawSerde,
   ReminderFormatTypeSerde,
@@ -39,6 +40,7 @@ export class Settings {
   strictDateFormat: SettingModel<boolean, boolean>;
   autoCompleteTrigger: SettingModel<string, string>;
   primaryFormat: SettingModel<string, ReminderFormatType>;
+  excludedPaths: SettingModel<string, Array<string>>;
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
   removeTagsForTasksPlugin: SettingModel<boolean, boolean>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
@@ -212,6 +214,18 @@ export class Settings {
       new ReminderFormatTypeSerde(),
     );
 
+    this.excludedPaths = this.settings
+      .newSettingBuilder()
+      .key("excludedPaths")
+      .name("Excluded files/folders")
+      .desc(
+        "Reminders in these files/folders are ignored. One vault-relative path per line (e.g. Templates or Archive/2020).",
+      )
+      .tag(TAG_RESCAN)
+      .textArea("")
+      .placeHolder("Templates\nArchive/2020")
+      .build(new ExcludedPathsSerde());
+
     this.useCustomEmojiForTasksPlugin = this.settings
       .newSettingBuilder()
       .key("useCustomEmojiForTasksPlugin")
@@ -316,6 +330,7 @@ export class Settings {
     this.settings
       .newGroup("Editor")
       .addSettings(this.autoCompleteTrigger, this.primaryFormat);
+    this.settings.newGroup("File Scanning").addSettings(this.excludedPaths);
     this.settings
       .newGroup("Reminder Format - Reminder Plugin")
       .addSettings(

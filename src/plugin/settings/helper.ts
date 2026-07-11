@@ -530,6 +530,18 @@ export class LatersSerde implements Serde<string, Array<Later>> {
   }
 }
 
+export class ExcludedPathsSerde implements Serde<string, Array<string>> {
+  unmarshal(rawValue: string): Array<string> {
+    return rawValue
+      .split("\n")
+      .map((path) => path.trim())
+      .filter((path) => path.length > 0);
+  }
+  marshal(value: Array<string>): string {
+    return value.join("\n");
+  }
+}
+
 export class ReminderFormatTypeSerde implements Serde<
   string,
   ReminderFormatType
