@@ -7,6 +7,10 @@ on:
         description: "The beta version of the plugin e.g. 1.0.0-beta.1"
         required: true
 
+permissions:
+  contents: write
+  pull-requests: write
+
 env:
   PLUGIN_NAME: obsidian-reminder
   # The electron package is only used for its TypeScript types; skip the
@@ -60,6 +64,8 @@ jobs:
         run: |
           npm ci
           npm run build
+          # BRAT reads manifest.json from the release assets, so it must carry the beta version
+          cp manifest-beta.json manifest.json
           mkdir ${{ env.PLUGIN_NAME }}
           cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
           zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
@@ -70,6 +76,7 @@ jobs:
           name: ${{ env.RELEASE_VERSION }}
           draft: false
           prerelease: true
+          generate_release_notes: true
           files: |
             ${{ env.PLUGIN_NAME }}.zip
             main.js
