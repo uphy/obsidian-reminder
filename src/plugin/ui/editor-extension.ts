@@ -4,6 +4,7 @@ import type { Reminders } from "model/reminder";
 import type { App } from "obsidian";
 import type { Settings } from "plugin/settings";
 import { showDateTimeChooserModal } from "./date-chooser-modal";
+import { showReminderInsertionFailureNotice } from "./util";
 
 export function buildCodeMirrorPlugin(
   app: App,
@@ -53,6 +54,7 @@ export function buildCodeMirrorPlugin(
                     triggerStart,
                   );
                   if (reminderInsertion == null) {
+                    showReminderInsertionFailureNotice();
                     console.error(
                       "Cannot append reminder time to the line: line=%s, date=%s",
                       line.text,

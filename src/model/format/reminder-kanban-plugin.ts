@@ -68,19 +68,27 @@ export class KanbanDateTimeFormat {
     kanbanSetting,
   );
 
-  private dateRegExp: RegExp;
-  private timeRegExp: RegExp;
+  constructor(private setting: KanbanSettingType) {}
 
-  constructor(private setting: KanbanSettingType) {
-    let dateRegExpStr: string;
-    if (setting.linkDateToDailyNote) {
-      dateRegExpStr = `${escapeRegExpChars(this.setting.dateTrigger)}\\[\\[(?<date>.+?)\\]\\]`;
-    } else {
-      dateRegExpStr = `${escapeRegExpChars(this.setting.dateTrigger)}\\{(?<date>.+?)\\}`;
+  // The Kanban plugin's settings are not available yet when this module is
+  // loaded (`KanbanDateTimeFormat.instance` is created at import time) and
+  // can change at any time afterwards, so the regular expressions must be
+  // built from the current settings on every use.
+  private get dateRegExp(): RegExp {
+    if (this.setting.linkDateToDailyNote) {
+      return new RegExp(
+        `${escapeRegExpChars(this.setting.dateTrigger)}\\[\\[(?<date>.+?)\\]\\]`,
+      );
     }
-    const timeRegExpStr = `${escapeRegExpChars(this.setting.timeTrigger)}\\{(?<time>.+?)\\}`;
-    this.dateRegExp = new RegExp(dateRegExpStr);
-    this.timeRegExp = new RegExp(timeRegExpStr);
+    return new RegExp(
+      `${escapeRegExpChars(this.setting.dateTrigger)}\\{(?<date>.+?)\\}`,
+    );
+  }
+
+  private get timeRegExp(): RegExp {
+    return new RegExp(
+      `${escapeRegExpChars(this.setting.timeTrigger)}\\{(?<time>.+?)\\}`,
+    );
   }
 
   format(time: DateTime): string {
@@ -104,18 +112,20 @@ export class KanbanDateTimeFormat {
     let date: string;
     let time: string | undefined;
 
-    const dateMatch = this.dateRegExp.exec(text);
+    const dateRegExp = this.dateRegExp;
+    const dateMatch = dateRegExp.exec(text);
     if (dateMatch) {
       date = dateMatch.groups!["date"]!;
-      text = text.replace(this.dateRegExp, "");
+      text = text.replace(dateRegExp, "");
     } else {
       return { title: originalText };
     }
 
-    const timeMatch = this.timeRegExp.exec(text);
+    const timeRegExp = this.timeRegExp;
+    const timeMatch = timeRegExp.exec(text);
     if (timeMatch) {
       time = timeMatch.groups!["time"]!;
-      text = text.replace(this.timeRegExp, "");
+      text = text.replace(timeRegExp, "");
     }
     const title = text.trim();
 

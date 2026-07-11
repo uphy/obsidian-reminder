@@ -11,7 +11,9 @@ import type { ReminderEdit, ReminderModel } from "./reminder-base";
 import { Symbol, Tokens, splitBySymbol } from "./splitter";
 
 function removeTags(text: string): string {
-  return text.replace(/#\w+/g, "");
+  // Obsidian tags may contain any letters and digits (including non-ASCII
+  // characters), plus "-", "_" and "/" for nested tags.
+  return text.replace(/#[\p{L}\p{N}\p{M}_/-]+/gu, "").trim();
 }
 export class TasksPluginReminderModel implements ReminderModel {
   private static readonly dateFormat = "YYYY-MM-DD";
