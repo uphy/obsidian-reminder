@@ -3,9 +3,21 @@ changelog:
     - title: Breaking Changes 🛠
       labels:
         - breaking-change
-    - title: Exciting New Features 🎉
+    - title: New Features 🎉
       labels:
         - enhancement
+    - title: Bug Fixes 🐛
+      labels:
+        - bug
+    - title: Documentation 📚
+      labels:
+        - documentation
+    - title: Dependency Updates ⛓️
+      labels:
+        - dependencies
+    - title: Maintenance 🔧
+      labels:
+        - chore
     - title: Other Changes
       labels:
         - "*"
