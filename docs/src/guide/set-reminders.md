@@ -23,6 +23,27 @@ Reminder plugin is interoperable with other plugins which has different date tim
 For more information on interoperability, please click [here](/guide/interop-tasks).
 :::
 
+## Recurring reminders
+
+You can make a reminder recur by appending `🔁` and a recurrence rule inside the parentheses, after the date/time.
+
+```markdown
+- [ ] Water plants (@2026-07-13 09:00 🔁every monday)
+- [ ] Pay rent (@2026-08-01 🔁every month)
+```
+
+The recurrence rule uses the same natural-language vocabulary as the [Tasks plugin format](/guide/interop-tasks.html) (`every day`, `every 2 weeks`, `every month on the 1st`, `every day until 2026-12-31`, `every day for 3 times`, …).
+
+When a recurring reminder is completed (via the [notification's "Mark as Done"](/guide/notification.html) button, or the `Toggle checklist status` command/hotkey), a new unchecked TODO line for the next occurrence is inserted above the completed line, and the recurrence rule is carried over to it.
+
+::: tip
+Snoozing ("Remind me later") re-anchors the series: the next occurrence after completion is computed from the snoozed time, not the original one.
+:::
+
+::: warning
+Recurrence only takes effect when the reminder is completed through this plugin (the notification modal or the `Toggle checklist status` command/hotkey). Clicking the native checkbox directly in the editor (live preview or reading mode) — or having another plugin edit the file — just flips `[ ]` to `[x]` without going through the plugin, so no next occurrence is inserted.
+:::
+
 ## Date Time Format
 
 You can change time format by setting.
