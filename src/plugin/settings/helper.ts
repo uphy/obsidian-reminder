@@ -72,7 +72,7 @@ class SettingContext {
       el.style.display = "none";
     } else {
       el.style.display = "block";
-      el.innerHTML = text;
+      el.textContent = text;
     }
   }
 
