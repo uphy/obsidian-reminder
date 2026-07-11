@@ -53,6 +53,26 @@ Reminder format for generated reminder by calendar popup.
   - [Tasks plugin format](/guide/interop-tasks.html)
   - [Kanban plugin format](/guide/interop-kanban.html)
 
+## Excluded files/folders
+
+Reminders in these files/folders are ignored when scanning the vault, and any reminders already found in them are removed.
+
+- Type: `string`
+- Format: Line-separated list of vault-relative paths. One path per line.
+  - An entry matches the file/folder itself and everything under it, on a path-segment boundary. For example, `Templates` excludes `Templates/Daily.md`, but not `Templates2/Daily.md`.
+  - Leading/trailing slashes are ignored.
+  - Matching is case-sensitive.
+- Default: (empty)
+
+Example
+
+```
+Templates
+Archive/2020
+```
+
+Takes effect immediately; you don't need to restart Obsidian.
+
 ## Link dates to daily notes
 
 You can link dates to daily notes with this option.
@@ -84,6 +104,26 @@ You can change option which will be shown when you click `Remind Me Later` butto
   - In N minutes/hours/days/weeks/months/years
   - Next Sunday/Monday/Tuesday/Wednesday/Thursday/Friday/Saturday/day/week/month/year
   - Tomorrow
+
+## Enable reminder notifications
+
+Show reminder popups and system notifications when a reminder is due.
+
+- Type: `boolean`
+- Values:
+  - ON: Reminder popups/system notifications are shown when due (default)
+  - OFF: Reminder popups/system notifications are suppressed. The [reminder list view](/guide/list-reminders.html) keeps updating, and expired reminders still move to the [Overdue section](/guide/list-reminders.html#overdue-reminders).
+- Default: ON
+
+## Open note on reminder click
+
+Open the note directly instead of showing the reminder popup when you click a reminder.
+
+- Type: `boolean`
+- Values:
+  - ON: Clicking a reminder in the [reminder list](/guide/list-reminders.html), or clicking a system notification, opens the note directly.
+  - OFF: Clicking an overdue/muted reminder shows the [reminder popup](/guide/notification.html) again. Clicking a system notification shows the builtin notification in Obsidian.
+- Default: OFF
 
 ## Use system notification
 
