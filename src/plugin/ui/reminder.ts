@@ -21,6 +21,7 @@ export class ReminderModal {
     onMute: () => void,
     onOpenFile: () => void,
     onPauseAllNotifications: () => void,
+    onMuteAll: () => void,
   ) {
     if (!this.isSystemNotification()) {
       this.showBuiltinReminder(
@@ -30,6 +31,7 @@ export class ReminderModal {
         onMute,
         onOpenFile,
         onPauseAllNotifications,
+        onMuteAll,
       );
       return;
     }
@@ -47,6 +49,7 @@ export class ReminderModal {
         onMute,
         onOpenFile,
         onPauseAllNotifications,
+        onMuteAll,
       );
     }
     this.showSystemNotification(
@@ -56,6 +59,7 @@ export class ReminderModal {
       onMute,
       onOpenFile,
       onPauseAllNotifications,
+      onMuteAll,
       showBothSurfaces,
     );
   }
@@ -67,6 +71,7 @@ export class ReminderModal {
     onMute: () => void,
     onOpenFile: () => void,
     onPauseAllNotifications: () => void,
+    onMuteAll: () => void,
     alertOnly: boolean,
   ) {
     const Notification = (electron as any).remote.Notification;
@@ -88,6 +93,7 @@ export class ReminderModal {
           onMute,
           onOpenFile,
           onPauseAllNotifications,
+          onMuteAll,
         );
       }
     });
@@ -124,6 +130,7 @@ export class ReminderModal {
     onCancel: () => void,
     onOpenFile: () => void,
     onPauseAllNotifications: () => void,
+    onMuteAll: () => void,
   ) {
     new NotificationModal(
       this.app,
@@ -134,6 +141,7 @@ export class ReminderModal {
       onCancel,
       onOpenFile,
       onPauseAllNotifications,
+      onMuteAll,
     ).open();
   }
 
@@ -156,6 +164,11 @@ class NotificationModal extends Modal {
   // mutes the reminder) is skipped, letting the reminder re-fire once the
   // pause ends.
   private pausingAll: boolean = false;
+  // Set when the modal is closed via "Mute all reminders...". Like
+  // `pausingAll`, this takes precedence over `canceled` in `onClose()` so
+  // `onCancel` (single mute) is skipped -- muting all already covers this
+  // reminder, so the single mute would be redundant.
+  private mutingAll: boolean = false;
 
   constructor(
     app: App,
@@ -166,6 +179,7 @@ class NotificationModal extends Modal {
     private onCancel: () => void,
     private onOpenFile: () => void,
     private onPauseAllNotifications: () => void,
+    private onMuteAll: () => void,
   ) {
     super(app);
   }
@@ -205,6 +219,11 @@ class NotificationModal extends Modal {
           this.onPauseAllNotifications();
           this.close();
         },
+        onMuteAll: () => {
+          this.mutingAll = true;
+          this.onMuteAll();
+          this.close();
+        },
       },
     });
   }
@@ -218,6 +237,9 @@ class NotificationModal extends Modal {
     if (this.pausingAll) {
       // Skip `onCancel` (mute): pausing suppresses notifications globally
       // without muting this specific reminder.
+    } else if (this.mutingAll) {
+      // Skip `onCancel` (single mute): muting all already covers this
+      // reminder.
     } else if (this.canceled) {
       this.onCancel();
     }

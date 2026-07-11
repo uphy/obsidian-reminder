@@ -5,6 +5,7 @@ import type { Reminder } from "model/reminder";
 import {
   App,
   MarkdownView,
+  Notice,
   Platform,
   PluginSettingTab,
   TFile,
@@ -128,6 +129,7 @@ export class ReminderPluginUI {
     onMute: () => void,
     onOpenFile: () => void,
     onPauseAllNotifications: () => void,
+    onMuteAll: () => void,
   ) {
     this.reminderModal.show(
       reminder,
@@ -136,6 +138,7 @@ export class ReminderPluginUI {
       onMute,
       onOpenFile,
       onPauseAllNotifications,
+      onMuteAll,
     );
   }
 
@@ -215,6 +218,7 @@ export class ReminderPluginUI {
         console.debug("Mute");
         reminder.muteNotification = true;
         this.reload(true);
+        void this.plugin.data.save(true);
       },
       () => {
         console.debug("Open");
@@ -228,6 +232,24 @@ export class ReminderPluginUI {
         // individual reminders, so it re-fires once the pause ends.
         reminder.muteNotification = false;
         showPauseDurationChooser(this.plugin);
+      },
+      () => {
+        console.debug("Mute all reminders");
+        // +1 for the currently displayed reminder: it was already flagged
+        // muted at display time (top of `showReminder()`), so
+        // `muteExpiredReminders()` never counts it as newly muted, but from
+        // the user's perspective this action is what mutes it.
+        const count =
+          this.plugin.reminders.muteExpiredReminders(
+            this.plugin.settings.reminderTime.value,
+          ) + 1;
+        // Already covered by muteExpiredReminders() in the common case, but
+        // set explicitly to stay correct even if this reminder's expiry
+        // check races with the bulk mute above.
+        reminder.muteNotification = true;
+        this.reload(true);
+        void this.plugin.data.save(true);
+        new Notice(`Muted ${count} reminder${count === 1 ? "" : "s"}`);
       },
     );
   }

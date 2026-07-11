@@ -1,6 +1,6 @@
 import moment from "moment";
 import { DateTime, Time } from "./time";
-import { Reminder, groupReminders } from "./reminder";
+import { Reminder, Reminders, groupReminders } from "./reminder";
 import type { DateDisplayFormat, GroupedReminder } from "./reminder";
 
 describe("Reminder", (): void => {
@@ -93,5 +93,52 @@ describe("groupReminders()", (): void => {
     const group = groupOf(groups, reminder);
     expect(group?.name).toBe("Overdue");
     expect(group?.isOverdue).toBe(true);
+  });
+});
+
+describe("Reminders#muteExpiredReminders()", (): void => {
+  const reminderTime = Time.parse("09:00");
+
+  function makeReminder(
+    title: string,
+    time: DateTime,
+    muteNotification: boolean = false,
+  ): Reminder {
+    const reminder = new Reminder("file.md", title, time, 0, false);
+    reminder.muteNotification = muteNotification;
+    return reminder;
+  }
+
+  test("mutes expired reminders and leaves non-expired reminders unmuted", (): void => {
+    const reminders = new Reminders(() => {});
+    const expired = makeReminder("expired", DateTime.now().add(-1, "hours"));
+    const future = makeReminder("future", DateTime.now().add(1, "days"));
+    reminders.replaceFile("file.md", [expired, future]);
+
+    const count = reminders.muteExpiredReminders(reminderTime);
+
+    expect(count).toBe(1);
+    expect(expired.muteNotification).toBe(true);
+    expect(future.muteNotification).toBe(false);
+  });
+
+  test("returns only the count of newly muted reminders, not already-muted ones", (): void => {
+    const reminders = new Reminders(() => {});
+    const alreadyMuted = makeReminder(
+      "already-muted",
+      DateTime.now().add(-2, "hours"),
+      true,
+    );
+    const newlyMuted = makeReminder(
+      "newly-muted",
+      DateTime.now().add(-1, "hours"),
+    );
+    reminders.replaceFile("file.md", [alreadyMuted, newlyMuted]);
+
+    const count = reminders.muteExpiredReminders(reminderTime);
+
+    expect(count).toBe(1);
+    expect(alreadyMuted.muteNotification).toBe(true);
+    expect(newlyMuted.muteNotification).toBe(true);
   });
 });

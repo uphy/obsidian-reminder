@@ -52,9 +52,19 @@ The reminder will be muted if you do the following:
     - click outside of the notification modal
 - Close the system notification
 
-A muted reminder will not be notified again until
-- you restart the Obsidian app
-- you click muted reminder in [reminder list view](/guide/list-reminders.html)
+A muted reminder is remembered across Obsidian restarts, so it stays muted even after you close and reopen the app (useful on mobile, where the app restarts frequently).
+
+A muted reminder becomes active again if you:
+- click it in [reminder list view](/guide/list-reminders.html), which opens the reminder popup again so you can mark it done or snooze it
+- change the reminder's date/time in the markdown
+
+## Muting all reminders at once
+
+If notifications have piled up (for example, after a vacation), you can mute every currently overdue reminder in one action:
+- Click `Mute all reminders…` at the bottom of a notification popup.
+- Run `Mute all current reminders` from the command palette.
+
+This mutes every reminder that is currently overdue, the same way [muting a single reminder](#mute-notification) does. Unlike [pausing notifications](#pausing-notifications-temporarily-do-not-disturb), which is temporary and lets overdue reminders notify you again once it ends, mute-all is permanent per reminder: each muted reminder stays muted (and survives restarts) until you interact with it as described above.
 
 ## Pausing notifications temporarily (do not disturb)
 

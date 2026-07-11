@@ -77,6 +77,26 @@ export class Reminders {
     return result;
   }
 
+  /**
+   * Mutes every currently expired reminder (bulk mute, #220), so the
+   * notification storm after a long absence can be stopped in one action.
+   * Mirrors the single-reminder mute path: it only flips `muteNotification`
+   * and does not call `onChange()`, leaving UI reload to the caller.
+   *
+   * @returns the number of reminders that were newly muted (already-muted
+   * expired reminders don't count).
+   */
+  public muteExpiredReminders(defaultTime: Time): number {
+    let count = 0;
+    for (const reminder of this.getExpiredReminders(defaultTime)) {
+      if (!reminder.muteNotification) {
+        reminder.muteNotification = true;
+        count++;
+      }
+    }
+    return count;
+  }
+
   public byDate(date: DateTime) {
     return this.reminders.filter(
       (reminder) => reminder.time.toYYYYMMDD() === date.toYYYYMMDD(),

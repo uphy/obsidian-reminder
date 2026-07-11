@@ -1,5 +1,6 @@
 import type ReminderPlugin from "main";
 import { MarkdownView } from "obsidian";
+import { muteAllReminders } from "./mute-all-reminders";
 import { pauseNotifications } from "./pause-notifications";
 import { resumeNotifications } from "./resume-notifications";
 import { scanReminders } from "./scan-reminders";
@@ -88,6 +89,14 @@ export function registerCommands(plugin: ReminderPlugin) {
     name: "Resume reminder notifications",
     checkCallback: (checking: boolean) => {
       return resumeNotifications(checking, plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: "mute-all-reminders",
+    name: "Mute all current reminders",
+    checkCallback: (checking: boolean) => {
+      return muteAllReminders(checking, plugin);
     },
   });
 }
