@@ -41,6 +41,7 @@ export class Settings {
   strictDateFormat: SettingModel<boolean, boolean>;
   autoCompleteTrigger: SettingModel<string, string>;
   convertNonTaskLines: SettingModel<boolean, boolean>;
+  editorReminderDisplay: SettingModel<boolean, boolean>;
   primaryFormat: SettingModel<string, ReminderFormatType>;
   excludedPaths: SettingModel<string, Array<string>>;
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
@@ -223,6 +224,16 @@ export class Settings {
       .toggle(true)
       .build(new RawSerde());
 
+    this.editorReminderDisplay = this.settings
+      .newSettingBuilder()
+      .key("editorReminderDisplay")
+      .name("Show reminder pills in editor")
+      .desc(
+        "Render each reminder's time as a clickable pill (⏰) in Live Preview. Clicking a pill opens the date/time chooser to change it. Disable to show the raw reminder text instead.",
+      )
+      .toggle(true)
+      .build(new RawSerde());
+
     const primaryFormatBuilder = this.settings
       .newSettingBuilder()
       .key("primaryReminderFormat")
@@ -356,6 +367,7 @@ export class Settings {
         this.autoCompleteTrigger,
         this.convertNonTaskLines,
         this.primaryFormat,
+        this.editorReminderDisplay,
       );
     this.settings.newGroup("File Scanning").addSettings(this.excludedPaths);
     this.settings

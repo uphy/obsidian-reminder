@@ -15,7 +15,7 @@ export class Content {
   }
 
   public getReminders(doneOnly: boolean = true): Array<Reminder> {
-    const reminders = parseReminder(this.doc);
+    const reminders = parseReminder(this.doc).map((span) => span.reminder);
     if (!doneOnly) {
       return reminders;
     }

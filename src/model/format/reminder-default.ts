@@ -82,23 +82,45 @@ export class DefaultReminderModel implements ReminderModel {
   getEndOfTimeTextIndex(): number {
     return this.toMarkdown().length - this.title2.length;
   }
+  computeSpan(): { start: number; end: number } {
+    const start = this.title1.length;
+    const groupText = this.computeGroupText();
+    return { start, end: start + groupText.length };
+  }
   toMarkdown(): string {
+    return `${this.title1}${this.computeGroupText()}${this.title2}`;
+  }
+
+  /**
+   * Render the whole `(@...)` group text, including the recurrence segment
+   * (if any) and the daily-note-link rendering (if enabled). This is the
+   * single source of truth for both `toMarkdown()` and `computeSpan()`.
+   */
+  private computeGroupText(): string {
     const timeText =
       this.recurrence !== null
         ? `${this.time} ${DefaultReminderModel.recurrenceSymbol}${this.recurrence}`
         : this.time;
-    const result = `${this.title1}(@${timeText})${this.title2}`;
+    return `(@${this.renderTimeText(timeText)})`;
+  }
+
+  /**
+   * Apply the daily-note-link rendering to the time text only (not the
+   * whole line), so that a date-like string in the title is never
+   * mistakenly turned into a link.
+   */
+  private renderTimeText(timeText: string): string {
     if (!this.linkDatesToDailyNotes) {
-      return result;
+      return timeText;
     }
 
     const time = DATE_TIME_FORMATTER.parse(this.time);
     if (!time) {
-      return result;
+      return timeText;
     }
 
     const date = DATE_TIME_FORMATTER.toString(time.clone(false));
-    return result.replace(date, `[[${date}]]`);
+    return timeText.replace(date, `[[${date}]]`);
   }
 
   clone(): DefaultReminderModel {

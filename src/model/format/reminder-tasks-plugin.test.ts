@@ -18,6 +18,12 @@ describe("TasksPluginReminderLine", (): void => {
     expect(parsed.getTitle()).toBe("this is a title");
     expect(parsed.getTime()!.toString()).toBe("2021-09-08");
     expect(parsed.getDoneDate()!.toString()).toBe("2021-08-31");
+    // "this is a title " (16) + "🔁 every hour " (14, 🔁 is a UTF-16
+    // surrogate pair) = 30 chars before "📅"; the span covers "📅 2021-09-08"
+    // (13 chars), trimmed of the trailing separator space before "✅".
+    const span = parsed.computeSpan();
+    expect(span.start).toBe(30);
+    expect(span.end).toBe(43);
   });
   test("parse() - due date with time part", (): void => {
     const parsed = TasksPluginReminderModel.parse("task 📅 2021-09-16 10:00");
@@ -49,6 +55,9 @@ describe("TasksPluginReminderLine", (): void => {
     expect(parsed.toMarkdown()).toBe(
       "ABC 🔁 every hour 📅 2021-09-08 ✅ 2021-08-31",
     );
+    const span = parsed.computeSpan();
+    expect(span.start).toBe(18);
+    expect(span.end).toBe(31);
   });
   test("setTime() - date", (): void => {
     const parsed = TasksPluginReminderModel.parse(
@@ -59,6 +68,9 @@ describe("TasksPluginReminderLine", (): void => {
     expect(parsed.toMarkdown()).toBe(
       "this is a title 🔁 every hour 📅 2021-09-09 ✅ 2021-08-31",
     );
+    const span = parsed.computeSpan();
+    expect(span.start).toBe(30);
+    expect(span.end).toBe(43);
   });
   test("setTime() - due date with time part", (): void => {
     const parsed = TasksPluginReminderModel.parse(
@@ -79,6 +91,9 @@ describe("TasksPluginReminderLine", (): void => {
     expect(parsed.toMarkdown()).toBe(
       "this is a title 🔁 every hour 📅 XXX ✅ 2021-08-31",
     );
+    const span = parsed.computeSpan();
+    expect(span.start).toBe(30);
+    expect(span.end).toBe(36);
   });
   test("setTime() - append - with space", (): void => {
     const parsed = TasksPluginReminderModel.parse(
@@ -89,6 +104,11 @@ describe("TasksPluginReminderLine", (): void => {
     expect(parsed.toMarkdown()).toBe(
       "this is a title 🔁 every hour ✅ 2021-08-31 📅 2021-09-08",
     );
+    // 📅 is the last token here (no trailing separator), so the span runs to
+    // the very end of the line (verified against `toMarkdown().length`).
+    const span = parsed.computeSpan();
+    expect(span.start).toBe(43);
+    expect(span.end).toBe(56);
   });
   test("setTime() - append - without space", (): void => {
     const parsed = TasksPluginReminderModel.parse(
@@ -99,6 +119,10 @@ describe("TasksPluginReminderLine", (): void => {
     expect(parsed.toMarkdown()).toBe(
       "this is a title 🔁every hour ✅2021-08-31 📅2021-09-08",
     );
+    // 📅 is again the last token, so the span runs to the end of the line.
+    const span = parsed.computeSpan();
+    expect(span.start).toBe(41);
+    expect(span.end).toBe(53);
   });
   test("setTime() - tag after due date is preserved (#141)", (): void => {
     const parsed = TasksPluginReminderModel.parse("Task 📅 2021-09-08 #mytag");
@@ -125,6 +149,10 @@ describe("TasksPluginReminderLine", (): void => {
     parsed.setTime(new DateTime(moment("2021-09-08"), false));
     expect(parsed.getTime()!.toString()).toBe("2021-09-08");
     expect(parsed.toMarkdown()).toBe("this is a title 📅 2021-09-08");
+    // 📅 is the only/last token, so the span covers the full remaining text.
+    const span = parsed.computeSpan();
+    expect(span.start).toBe(16);
+    expect(span.end).toBe(29);
   });
   test("modify() - default", async () => {
     await testModify({
@@ -226,10 +254,10 @@ async function testModify({
   );
   sut.setConfig(config);
 
-  const reminders = sut.parse(doc);
-  if (reminders.length === 0 && expectedMarkdown === undefined) {
+  const spans = sut.parse(doc);
+  if (spans.length === 0 && expectedMarkdown === undefined) {
     return;
   }
-  await sut.modify(doc, reminders[0]!, { checked: true });
+  await sut.modify(doc, spans[0]!.reminder, { checked: true });
   expect(doc.toMarkdown()).toBe(expectedMarkdown);
 }

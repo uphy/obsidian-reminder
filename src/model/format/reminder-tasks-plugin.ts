@@ -106,6 +106,26 @@ export class TasksPluginReminderModel implements ReminderModel {
     return this.toMarkdown().length;
   }
 
+  computeSpan(): { start: number; end: number } {
+    const symbol = this.getReminderSymbol();
+    const range = this.tokens.rangeOfSymbol(symbol);
+    const token = this.tokens.getToken(symbol);
+    if (range == null || token == null) {
+      return { start: 0, end: 0 };
+    }
+    // `token.text` may carry a trailing separator space that actually
+    // belongs before the *next* token (see `splitBySymbol`); trim it so the
+    // span covers exactly the rendered time text (symbol + value) and
+    // nothing past it. Note this is not simply `range.end - 1`: when the
+    // reminder symbol is the last token in the line, there is no trailing
+    // separator to trim at all.
+    const trimmedTextLength = token.text.replace(/\s+$/, "").length;
+    return {
+      start: range.start,
+      end: range.start + token.symbol.length + trimmedTextLength,
+    };
+  }
+
   toMarkdown(): string {
     return this.tokens.join();
   }
