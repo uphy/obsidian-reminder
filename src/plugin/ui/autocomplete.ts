@@ -10,6 +10,7 @@ import type { ReminderFormatType } from "model/format";
 import type * as CodeMirror from "codemirror";
 import { showDateTimeChooserModal } from "./date-chooser-modal";
 import { DateTimeChooserView } from "./datetime-chooser";
+import { showReminderInsertionFailureNotice } from "./util";
 
 export interface AutoCompletableEditor {
   getCursor(): EditorPosition;
@@ -101,6 +102,7 @@ export class AutoComplete {
     try {
       const appended = format.appendReminder(line, value)?.insertedLine;
       if (appended == null) {
+        showReminderInsertionFailureNotice();
         console.error(
           "Cannot append reminder time to the line: line=%s, date=%s",
           line,
