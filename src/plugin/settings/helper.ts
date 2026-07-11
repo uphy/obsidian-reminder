@@ -274,18 +274,14 @@ class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number> {
           .setPlaceholder(this._placeHolder ?? "")
           .setValue(rawValue.value.toString())
           .onChange(async (value) => {
-            try {
-              const n = parseInt(value);
-              rawValue.value = n;
-              context.setValidationError(null);
-              this.onValueChange();
-            } catch (e) {
-              if (e instanceof Error) {
-                context.setValidationError(e.message);
-              } else if (typeof e === "string") {
-                context.setValidationError(e);
-              }
+            const n = parseInt(value, 10);
+            if (Number.isNaN(n)) {
+              context.setValidationError("Please enter a valid number.");
+              return;
             }
+            context.setValidationError(null);
+            rawValue.value = n;
+            this.onValueChange();
           });
       };
       setting.addText((textarea) => {
@@ -505,9 +501,15 @@ export class ReminderFormatTypeSerde implements Serde<
   unmarshal(rawValue: string): ReminderFormatType {
     const format = ReminderFormatTypes.find(
       (format) => format.name === rawValue,
-    )!;
-    // TODO return undefined when it is not found
-    return format;
+    );
+    if (format !== undefined) {
+      return format;
+    }
+    console.warn(
+      `Unknown reminder format: ${rawValue}. Falling back to the default format.`,
+    );
+    // ReminderFormatTypes is guaranteed to be non-empty.
+    return ReminderFormatTypes[0]!;
   }
   marshal(value: ReminderFormatType): string {
     return value.name;
