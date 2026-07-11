@@ -24,6 +24,11 @@ updates:
       # esbuild-svelte; revisit once the ecosystem catches up (see #292)
       - dependency-name: typescript
         versions: [">=6"]
+      # eslint-plugin-import only supports eslint up to ^9 (see #293);
+      # remove once it supports eslint 10 or after migrating to
+      # eslint-plugin-import-x
+      - dependency-name: eslint
+        versions: [">=10"]
     groups:
       minor-and-patch:
         applies-to: version-updates
