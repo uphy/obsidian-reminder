@@ -3,6 +3,11 @@ name: CI
 on:
   - pull_request
 
+env:
+  # The electron package is only used for its TypeScript types; skip the
+  # ~100MB binary download (electron's install.js honors this variable).
+  ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
 jobs:
   test:
     runs-on: ubuntu-latest
