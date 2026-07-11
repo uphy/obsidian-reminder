@@ -102,6 +102,14 @@ For mobile users, it would be useful to add a button to the toolbar at the botto
 3. Select the command named `Show calendar popup`
    :::
 
+### Using the trigger on a non-task line
+
+If you pick a date while the cursor is on a line that isn't a task list item, that line is automatically converted into an unchecked task (`- [ ] `) before the reminder is inserted. Bullets get a checkbox; plain text and empty lines get `- [ ] ` prepended.
+
+Headings, numbered lists, table rows, and code fences are not converted — a notice is shown instead, and nothing is inserted.
+
+This behavior is controlled by [Convert non-task lines when inserting a reminder](/setting/#convert-non-task-lines-when-inserting-a-reminder). If you disable it, a notice is always shown for non-task lines instead of converting them.
+
 ## Toggle checklist status
 
 This plugin provides 2 ways to toggle checklist status.

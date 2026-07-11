@@ -43,6 +43,16 @@ Trigger to show calendar popup.
 - Format: Any string. If you make this setting empty string, calendar popup will be disabled.
 - Default: `(@`
 
+## Convert non-task lines when inserting a reminder
+
+When inserting a reminder from the [calendar popup](/guide/set-reminders.html#reminder-date-input-support) on a line that is not a task, the line is automatically converted into a task list item (`- [ ] `). Bullets (`- `, `* `, `+ `) get a checkbox inserted after the marker, and plain text or empty lines get `- [ ] ` prepended. Headings, numbered lists, tables, and code fences are not converted; a notice is shown instead.
+
+- Type: `boolean`
+- Values:
+  - ON: Non-task lines are converted into tasks automatically (default)
+  - OFF: A notice is always shown for non-task lines
+- Default: ON
+
 ## Primary reminder format
 
 Reminder format for generated reminder by calendar popup.
