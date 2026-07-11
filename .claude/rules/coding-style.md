@@ -15,7 +15,7 @@ Only documents conventions that can be read off from `eslint.config.js`, `tsconf
 
 - The order of import statements is checked by the `import/order` rule (group ordering is enforced).
 - The order of named imports within a single import statement is checked by `sort-imports` (`ignoreDeclarationSort: true`) — this doesn't enforce ordering between statements, but does enforce the ordering of names within one statement.
-- Unused imports are an error via `unused-imports/no-unused-imports`. Unused variables themselves are left to tsconfig (equivalent to `noUnusedLocals`), and eslint's `@typescript-eslint/no-unused-vars` is explicitly turned off.
+- Unused imports are an error via `unused-imports/no-unused-imports`. Unused variables are caught by `@typescript-eslint/no-unused-vars` (`error`), with the base `no-unused-vars` rule turned off for `.ts`/`.svelte` files so it doesn't double-report (tsconfig itself does not set `noUnusedLocals`).
 - Because `tsconfig.json`'s `baseUrl` is `./src/`, you can write absolute-path-style imports rooted at src, like `model/reminder` (not relative paths). Most files use this style, but some, like `src/plugin/ui/reminder.ts`, mix in relative paths (`../../model/reminder`) as well — prefer the src-rooted style for new code.
 - Type-only imports are explicitly written as `import type { ... }` in most places (since `verbatimModuleSyntax: true` effectively requires `import type` for type-only imports).
 

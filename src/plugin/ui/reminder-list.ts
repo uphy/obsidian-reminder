@@ -117,8 +117,9 @@ export class ReminderListItemViewProxy {
       // reminder list view is already in workspace
       return;
     }
-    // Create new view
-    this.plugin.app.workspace.getRightLeaf(false)?.setViewState({
+    // Create new view. `openView()` has a synchronous `void` return type, so
+    // this is intentionally fire-and-forget.
+    void this.plugin.app.workspace.getRightLeaf(false)?.setViewState({
       type: VIEW_TYPE_REMINDER_LIST,
     });
   }
