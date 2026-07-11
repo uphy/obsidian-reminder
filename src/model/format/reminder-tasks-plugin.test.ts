@@ -19,6 +19,15 @@ describe("TasksPluginReminderLine", (): void => {
     expect(parsed.getTime()!.toString()).toBe("2021-09-08");
     expect(parsed.getDoneDate()!.toString()).toBe("2021-08-31");
   });
+  test("getTitle() - remove tags", (): void => {
+    const parse = (line: string) =>
+      TasksPluginReminderModel.parse(line, false, true);
+    expect(parse("Task1 #task 📅 2021-09-08").getTitle()).toBe("Task1");
+    // nested tag
+    expect(parse("Task1 #task/sub 📅 2021-09-08").getTitle()).toBe("Task1");
+    // non-ASCII tag (https://github.com/uphy/obsidian-reminder/issues/169)
+    expect(parse("Task1 #zokjfkdsaób 📅 2021-09-08").getTitle()).toBe("Task1");
+  });
   test("setTitle()", (): void => {
     const parsed = TasksPluginReminderModel.parse(
       "this is a title 🔁 every hour 📅 2021-09-08 ✅ 2021-08-31",
