@@ -19,6 +19,18 @@ describe("TasksPluginReminderLine", (): void => {
     expect(parsed.getTime()!.toString()).toBe("2021-09-08");
     expect(parsed.getDoneDate()!.toString()).toBe("2021-08-31");
   });
+  test("parse() - due date with time part", (): void => {
+    const parsed = TasksPluginReminderModel.parse("task 📅 2021-09-16 10:00");
+    expect(parsed.getDueDate()!.toString()).toBe("2021-09-16 10:00");
+    expect(parsed.getDueDate()!.hasTimePart).toBe(true);
+    // Without custom emoji, getTime() reads from the due-date symbol too.
+    expect(parsed.getTime()!.toString()).toBe("2021-09-16 10:00");
+  });
+  test("parse() - due date without time part (unchanged)", (): void => {
+    const parsed = TasksPluginReminderModel.parse("task 📅 2021-09-16");
+    expect(parsed.getDueDate()!.toString()).toBe("2021-09-16");
+    expect(parsed.getDueDate()!.hasTimePart).toBe(false);
+  });
   test("getTitle() - remove tags", (): void => {
     const parse = (line: string) =>
       TasksPluginReminderModel.parse(line, false, true);
@@ -46,6 +58,16 @@ describe("TasksPluginReminderLine", (): void => {
     expect(parsed.getTime()!.toString()).toBe("2021-09-09");
     expect(parsed.toMarkdown()).toBe(
       "this is a title 🔁 every hour 📅 2021-09-09 ✅ 2021-08-31",
+    );
+  });
+  test("setTime() - due date with time part", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "this is a title 🔁 every hour 📅 2021-09-08 ✅ 2021-08-31",
+    );
+    parsed.setTime(new DateTime(moment("2021-09-16 10:00"), true));
+    expect(parsed.getTime()!.toString()).toBe("2021-09-16 10:00");
+    expect(parsed.toMarkdown()).toBe(
+      "this is a title 🔁 every hour 📅 2021-09-16 10:00 ✅ 2021-08-31",
     );
   });
   test("setTime() - string", (): void => {
@@ -128,6 +150,15 @@ describe("TasksPluginReminderLine", (): void => {
       inputMarkdown: "- [ ] Task ⏰ 2021-09-13 09:00 📅 2021-09-13",
       expectedMarkdown:
         "- [x] Task ⏰ 2021-09-13 09:00 📅 2021-09-13 ✅ 2021-09-15",
+    });
+  });
+  test("modify() - default - due date with time part is preserved across recurrence", async () => {
+    await testModify({
+      now: "2021-09-13",
+      customEmoji: false,
+      inputMarkdown: "- [ ] Task 🔁 every day 📅 2021-09-12 10:00",
+      expectedMarkdown: `- [ ] Task 🔁 every day 📅 2021-09-14 10:00
+- [x] Task 🔁 every day 📅 2021-09-12 10:00 ✅ 2021-09-13`,
     });
   });
   test("modify() - default - every month", async () => {
