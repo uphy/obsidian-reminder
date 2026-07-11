@@ -7,7 +7,10 @@ import type { App } from "obsidian";
 import type { Settings } from "plugin/settings";
 import { CM6DateTimeChooserPopup } from "./cm6-datetime-chooser";
 import { showDateTimeChooserModal } from "./date-chooser-modal";
-import { showReminderInsertionFailureNotice } from "./util";
+import {
+  appendReminderOrConvert,
+  showReminderInsertionFailureNotice,
+} from "./util";
 
 export function buildCodeMirrorPlugin(
   app: App,
@@ -91,10 +94,12 @@ export function buildCodeMirrorPlugin(
                     line.text.substring(triggerEnd);
 
                   // insert/update a reminder of the line
-                  const reminderInsertion = format.appendReminder(
+                  const reminderInsertion = appendReminderOrConvert(
+                    format,
                     triggerExcludedLine,
                     value,
                     triggerStart,
+                    settings.convertNonTaskLines.value,
                   );
                   if (reminderInsertion == null) {
                     showReminderInsertionFailureNotice();

@@ -44,6 +44,7 @@ export class ReminderPluginUI {
       plugin.settings.autoCompleteTrigger,
       plugin.settings.reminderTimeStep,
       plugin.settings.primaryFormat,
+      plugin.settings.convertNonTaskLines,
     );
     this.editDetector = new EditDetector(plugin.settings.editDetectionSec);
     this.reminderModal = new ReminderModal(
