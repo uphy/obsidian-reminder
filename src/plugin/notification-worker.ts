@@ -18,6 +18,7 @@ export interface NotificationWorkerDeps {
   reloadRemindersInAllFiles(): Promise<void>;
   getExpiredReminders(): Array<Reminder>;
   checkIntervalSec(): number;
+  isNotificationEnabled(): boolean;
 }
 
 export class NotificationWorker {
@@ -60,6 +61,14 @@ export class NotificationWorker {
     this.deps.saveData(false);
 
     if (this.deps.isEditing()) {
+      return;
+    }
+
+    if (!this.deps.isNotificationEnabled()) {
+      // Notifications are disabled, but the steps above (reloadUI, the
+      // initial scan, and saveData) must still run so the reminder list
+      // view stays up to date even while popups/system notifications are
+      // suppressed.
       return;
     }
     const expired = this.deps.getExpiredReminders();

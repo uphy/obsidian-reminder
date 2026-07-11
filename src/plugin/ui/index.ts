@@ -29,7 +29,10 @@ export class ReminderPluginUI {
       this.plugin,
       // On select a reminder in the list
       (reminder) => {
-        if (reminder.muteNotification) {
+        if (
+          !this.plugin.settings.openNoteOnReminderClick.value &&
+          reminder.muteNotification
+        ) {
           this.showReminder(reminder);
           return;
         }
@@ -46,6 +49,7 @@ export class ReminderPluginUI {
       plugin.app,
       plugin.settings.useSystemNotification,
       plugin.settings.laters,
+      plugin.settings.openNoteOnReminderClick,
     );
   }
 

@@ -29,6 +29,8 @@ export class Settings {
 
   reminderTime: SettingModel<string, Time>;
   reminderTimeStep: SettingModel<number, number>;
+  enableNotification: SettingModel<boolean, boolean>;
+  openNoteOnReminderClick: SettingModel<boolean, boolean>;
   useSystemNotification: SettingModel<boolean, boolean>;
   laters: SettingModel<string, Array<Later>>;
   weekStart: SettingModel<string, string>;
@@ -66,6 +68,26 @@ export class Settings {
       .name("Reminder Time Step (minutes)")
       .desc("Step of time for reminder time (minutes)")
       .number(15)
+      .build(new RawSerde());
+
+    this.enableNotification = this.settings
+      .newSettingBuilder()
+      .key("enableNotification")
+      .name("Enable reminder notifications")
+      .desc(
+        "If disabled, reminder popups and system notifications are not shown. The reminder list view keeps working.",
+      )
+      .toggle(true)
+      .build(new RawSerde());
+
+    this.openNoteOnReminderClick = this.settings
+      .newSettingBuilder()
+      .key("openNoteOnReminderClick")
+      .name("Open note on reminder click")
+      .desc(
+        "When clicking a reminder in the reminder list or a system notification, open the note directly instead of showing the reminder popup.",
+      )
+      .toggle(false)
       .build(new RawSerde());
 
     this.useSystemNotification = this.settings
@@ -287,6 +309,8 @@ export class Settings {
         this.reminderTime,
         this.reminderTimeStep,
         this.laters,
+        this.enableNotification,
+        this.openNoteOnReminderClick,
         this.useSystemNotification,
       );
     this.settings

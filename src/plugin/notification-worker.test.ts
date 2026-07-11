@@ -22,6 +22,7 @@ function createDeps(
     reloadRemindersInAllFiles: async () => {},
     getExpiredReminders: () => [],
     checkIntervalSec: () => 60,
+    isNotificationEnabled: () => true,
     ...overrides,
   };
 }
@@ -86,6 +87,37 @@ describe("NotificationWorker", (): void => {
 
     expect(getExpiredReminders).not.toHaveBeenCalled();
     expect(showReminder).not.toHaveBeenCalled();
+  });
+
+  test("does not show reminders when notifications are disabled", async (): Promise<void> => {
+    const showReminder = jest.fn();
+    const deps = createDeps({
+      isNotificationEnabled: () => false,
+      getExpiredReminders: () => [makeReminder("r1")],
+      showReminder,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+
+    expect(showReminder).not.toHaveBeenCalled();
+  });
+
+  test("still reloads UI and scans when notifications are disabled", async (): Promise<void> => {
+    const reloadUI = jest.fn();
+    const reloadRemindersInAllFiles = jest.fn(async () => {});
+    const deps = createDeps({
+      isNotificationEnabled: () => false,
+      isScanned: () => false,
+      reloadUI,
+      reloadRemindersInAllFiles,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+
+    expect(reloadUI).toHaveBeenCalled();
+    expect(reloadRemindersInAllFiles).toHaveBeenCalled();
   });
 
   test("waits for the previous reminder's beingDisplayed flag before showing the next", async (): Promise<void> => {
