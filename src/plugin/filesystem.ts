@@ -1,5 +1,6 @@
 import type ReminderPlugin from "main";
 import { Content } from "model/content";
+import { isPathExcluded } from "model/exclusion";
 import type { Reminder, Reminders } from "model/reminder";
 import { TAbstractFile, TFile, Vault } from "obsidian";
 
@@ -8,6 +9,7 @@ export class ReminderPluginFileSystem {
     private vault: Vault,
     private reminders: Reminders,
     private onRemindersChanged: () => void,
+    private excludedPaths: () => Array<string>,
   ) {}
 
   onload(plugin: ReminderPlugin) {
@@ -50,6 +52,12 @@ export class ReminderPluginFileSystem {
     if (!this.isMarkdownFile(file)) {
       console.debug("Not a markdown file: file=%o", file);
       return false;
+    }
+    if (isPathExcluded(file.path, this.excludedPaths())) {
+      console.debug("Excluded file: file=%o", file);
+      // The file may have had reminders from before it was excluded; make
+      // sure those are removed so the exclusion actually hides them.
+      return this.reminders.removeByFile(file.path);
     }
     const content = new Content(file.path, await this.vault.cachedRead(file));
     const reminders = content.getReminders();
