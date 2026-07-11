@@ -46,7 +46,7 @@
     "svelte-preprocess": "^6.0.5",
     "ts-jest": "^29.4.11",
     "tslib": "^2.8.1",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "rrule": "^2.8.1",
