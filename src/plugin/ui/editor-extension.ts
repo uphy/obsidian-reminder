@@ -1,8 +1,11 @@
 import { EditorSelection } from "@codemirror/state";
 import { ViewPlugin, ViewUpdate } from "@codemirror/view";
 import type { Reminders } from "model/reminder";
+import type { DateTime } from "model/time";
+import { Platform } from "obsidian";
 import type { App } from "obsidian";
 import type { Settings } from "plugin/settings";
+import { CM6DateTimeChooserPopup } from "./cm6-datetime-chooser";
 import { showDateTimeChooserModal } from "./date-chooser-modal";
 import { showReminderInsertionFailureNotice } from "./util";
 
@@ -13,6 +16,13 @@ export function buildCodeMirrorPlugin(
 ) {
   return ViewPlugin.fromClass(
     class {
+      // The currently open inline popup, if any. Tracked so it can be
+      // cancelled when a new trigger fires or the editor view is destroyed.
+      private activePopup?: CM6DateTimeChooserPopup;
+      // Set by destroy(). Guards the deferred popup opening below so a
+      // popup never opens after the editor view has been torn down.
+      private destroyed = false;
+
       update(update: ViewUpdate) {
         if (!update.docChanged) {
           return;
@@ -26,7 +36,40 @@ export function buildCodeMirrorPlugin(
           const trigger = settings.autoCompleteTrigger.value;
           const timeStep = settings.reminderTimeStep.value;
           if (trigger === text) {
-            showDateTimeChooserModal(app, reminders, timeStep)
+            let result: Promise<DateTime>;
+            if (Platform.isDesktopApp) {
+              // Defer opening the popup out of the CM6 update cycle:
+              // coordsAtPos() (and DOM reads in general) throws
+              // "Reading the editor layout isn't allowed during an update"
+              // when called synchronously inside ViewPlugin.update().
+              result = new Promise<DateTime>((resolve, reject) => {
+                setTimeout(() => {
+                  if (this.destroyed) {
+                    reject();
+                    return;
+                  }
+                  this.activePopup?.cancel();
+                  const popup = new CM6DateTimeChooserPopup(
+                    update.view,
+                    reminders,
+                    timeStep,
+                  );
+                  this.activePopup = popup;
+                  popup
+                    .show(toB)
+                    .finally(() => {
+                      if (this.activePopup === popup) {
+                        this.activePopup = undefined;
+                      }
+                    })
+                    .then(resolve, reject);
+                }, 0);
+              });
+            } else {
+              result = showDateTimeChooserModal(app, reminders, timeStep);
+            }
+
+            result
               .then((value) => {
                 const format = settings.primaryFormat.value.format;
                 try {
@@ -85,6 +128,11 @@ export function buildCodeMirrorPlugin(
               });
           }
         });
+      }
+
+      destroy() {
+        this.destroyed = true;
+        this.activePopup?.cancel();
       }
     },
   );
