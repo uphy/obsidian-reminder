@@ -56,6 +56,60 @@ export class Todo {
   }
 }
 
+/**
+ * Converts a line that isn't a task list item into an unchecked todo line
+ * ("- [ ] ...") so a reminder can be inserted into it.
+ *
+ * Returns the line unchanged if `Todo.parse()` already accepts it.  Returns
+ * `null` when the line shouldn't be converted (heading, numbered list item,
+ * table row, code fence) — converting these would either surprise the user
+ * or produce a line the parser can't read back.
+ *
+ * For every non-null result, `Todo.parse(0, result)` is guaranteed to
+ * succeed.
+ */
+export function convertToTodoLine(line: string): string | null {
+  if (Todo.parse(0, line) !== null) {
+    return line;
+  }
+
+  // Split off the leading block prefix (quote markers + indentation) that
+  // Todo.regexp also allows before the bullet marker, so it survives the
+  // conversion untouched.
+  const match = /^(?<lead>(?:> ?)*\s*)(?<rest>.*)$/.exec(line)!;
+  const lead = match.groups!["lead"]!;
+  const rest = match.groups!["rest"]!;
+
+  if (/^#{1,6}[ ]/.test(rest)) {
+    // Heading
+    return null;
+  }
+  if (/^\d+[.)][ ]/.test(rest)) {
+    // Numbered list item. Converting this to a checkbox would produce a
+    // line the parser can't read back (see #258 for numbered-list task
+    // support).
+    return null;
+  }
+  if (rest.startsWith("|")) {
+    // Table row
+    return null;
+  }
+  if (rest.startsWith("```")) {
+    // Code fence
+    return null;
+  }
+
+  const bulletMatch = /^(?<marker>[-*+])[ ]+(?<content>.*)$/.exec(rest);
+  if (bulletMatch) {
+    const marker = bulletMatch.groups!["marker"]!;
+    const content = bulletMatch.groups!["content"]!;
+    return `${lead}${marker} [ ] ${content}`;
+  }
+
+  // Empty or plain text (including inline markdown like tags/links/bold).
+  return `${lead}- [ ] ${rest}`;
+}
+
 export type TodoEdit = {
   checked?: boolean;
   body?: string;

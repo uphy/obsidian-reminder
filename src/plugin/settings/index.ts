@@ -39,6 +39,7 @@ export class Settings {
   dateTimeFormat: SettingModel<string, string>;
   strictDateFormat: SettingModel<boolean, boolean>;
   autoCompleteTrigger: SettingModel<string, string>;
+  convertNonTaskLines: SettingModel<boolean, boolean>;
   primaryFormat: SettingModel<string, ReminderFormatType>;
   excludedPaths: SettingModel<string, Array<string>>;
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
@@ -201,6 +202,16 @@ export class Settings {
       })
       .build(new RawSerde());
 
+    this.convertNonTaskLines = this.settings
+      .newSettingBuilder()
+      .key("convertNonTaskLines")
+      .name("Convert non-task lines when inserting a reminder")
+      .desc(
+        'When inserting a reminder from the calendar popup on a line that is not a task, convert the line into a task list item ("- [ ] ") automatically. When disabled, a notice is shown instead.',
+      )
+      .toggle(true)
+      .build(new RawSerde());
+
     const primaryFormatBuilder = this.settings
       .newSettingBuilder()
       .key("primaryReminderFormat")
@@ -329,7 +340,11 @@ export class Settings {
       );
     this.settings
       .newGroup("Editor")
-      .addSettings(this.autoCompleteTrigger, this.primaryFormat);
+      .addSettings(
+        this.autoCompleteTrigger,
+        this.convertNonTaskLines,
+        this.primaryFormat,
+      );
     this.settings.newGroup("File Scanning").addSettings(this.excludedPaths);
     this.settings
       .newGroup("Reminder Format - Reminder Plugin")
