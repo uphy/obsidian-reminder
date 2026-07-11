@@ -29,6 +29,10 @@ updates:
       # eslint-plugin-import-x
       - dependency-name: eslint
         versions: [">=10"]
+      # @types/node is kept in sync with the Node major this repo builds
+      # and tests with (see #282); bump manually together with the toolchain
+      - dependency-name: "@types/node"
+        versions: [">=23"]
     groups:
       minor-and-patch:
         applies-to: version-updates
