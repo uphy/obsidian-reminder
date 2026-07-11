@@ -39,6 +39,10 @@ Instead of built-in notification, a system notification is also available by [se
 
 Also, if you are using macOS, you can mark it as done or postpone the reminder with the notification options.
 
+### Showing the popup together with the system notification
+
+If you'd rather not lose the popup's actions, enable [Show popup together with system notification](/setting/#show-popup-together-with-system-notification) alongside `Use system notification`. The built-in reminder popup is then shown at the same time as the system notification, and the popup becomes the surface that handles the reminder actions (mark as done/remind me later/mute/open note). The system notification acts as an alert only: clicking it just closes it, or opens the note directly when [Open note on reminder click](/setting/#open-note-on-reminder-click) is enabled.
+
 ## Mute notification
 
 The reminder will be muted if you do the following:

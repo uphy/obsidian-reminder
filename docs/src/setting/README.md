@@ -146,6 +146,18 @@ Only available on desktop OS.
   - ON: Use system notification. In mobile devices, this setting is ignored and builtin notification is used.
   - OFF: Use builtin notification
 
+## Show popup together with system notification
+
+Show the built-in reminder popup at the same time as the system notification.
+
+Only takes effect while [Use system notification](#use-system-notification) is enabled.
+
+- Type: `boolean`
+- Values:
+  - ON: Both surfaces are shown at once. The popup handles the reminder actions (mark as done/remind me later/mute/open note); the system notification acts as an alert only, so clicking it just closes it, or opens the note when [Open note on reminder click](#open-note-on-reminder-click) is enabled.
+  - OFF: Only the system notification is shown, and it handles the reminder actions itself.
+- Default: OFF
+
 ## Enable Tasks plugin format
 
 Enable support for [Tasks Plugin](https://github.com/schemar/obsidian-tasks)
