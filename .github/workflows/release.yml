@@ -3,9 +3,18 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: "The version of the plugin e.g. 1.0.0"
+      bump:
+        description: "Semver level to bump (next version is computed from manifest.json)"
         required: true
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
 
 env:
   PLUGIN_NAME: obsidian-reminder
@@ -14,8 +23,86 @@ env:
   ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
 
 jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: master
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22"
+
+      - name: Cache dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm run test
+
+      - name: Bump the versions
+        run: |
+          manifest_version=$(jq -r '.version' manifest.json)
+          package_version=$(jq -r '.version' package.json)
+          if [ "$manifest_version" != "$package_version" ]; then
+            echo "manifest.json version ($manifest_version) and package.json version ($package_version) are out of sync. Sync them before releasing."
+            exit 1
+          fi
+
+          npm version "${{ github.event.inputs.bump }}" --no-git-tag-version
+
+          version=$(jq -r '.version' package.json)
+          echo "RELEASE_VERSION=$version" >> $GITHUB_ENV
+
+          min_app_version=$(jq -r '.minAppVersion' manifest.json)
+          jq --tab --arg v "$version" '.version = $v' manifest.json > manifest.json.tmp && mv manifest.json.tmp manifest.json
+          jq --arg v "$version" --arg min "$min_app_version" '. + {($v): $min}' versions.json > versions.json.tmp && mv versions.json.tmp versions.json
+
+      - name: Build
+        id: build
+        run: |
+          npm run build
+          mkdir ${{ env.PLUGIN_NAME }}
+          cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
+          zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
+
+      - name: Commit and tag
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add manifest.json versions.json package.json package-lock.json
+          git commit -m "Update the version to $RELEASE_VERSION"
+          git push origin master
+          git tag "$RELEASE_VERSION"
+          git push --tags
+
+      - name: Create Release
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        with:
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: ${{ env.RELEASE_VERSION }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            ${{ env.PLUGIN_NAME }}.zip
+            main.js
+            manifest.json
+            styles.css
+
   gh-pages:
     runs-on: ubuntu-latest
+    needs: release
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
@@ -47,52 +134,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/src/.vuepress/dist
-
-  release:
-    runs-on: ubuntu-latest
-    needs: gh-pages
-
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: master
-      - name: Update the versions
-        run: |
-          version=${{ github.event.inputs.version }}
-          echo "RELEASE_VERSION=$version" >> $GITHUB_ENV
-
-          # update manifest version
-          sed -i "s/\"version\": \".*\"/\"version\": \"$version\"/" manifest.json
-
-          # commit and push the changes
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add manifest.json
-          git commit -m "Update the version to $version"
-          git push origin master
-          git tag $version
-          git push --tags
-      - name: Use Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: "22"
-      - name: Build
-        id: build
-        run: |
-          npm ci
-          npm run build
-          mkdir ${{ env.PLUGIN_NAME }}
-          cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
-          zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
-      - name: Create Release
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
-        with:
-          tag_name: ${{ env.RELEASE_VERSION }}
-          name: ${{ env.RELEASE_VERSION }}
-          draft: false
-          prerelease: false
-          files: |
-            ${{ env.PLUGIN_NAME }}.zip
-            main.js
-            manifest.json
-            styles.css
