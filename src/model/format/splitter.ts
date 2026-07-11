@@ -210,6 +210,20 @@ export function splitBySymbol(
       currentToken = { symbol: c, text: "" };
       splitted.push(currentToken);
       text = "";
+    } else if (
+      currentToken !== null &&
+      c === "#" &&
+      (text.length === 0 || /\s$/.test(text))
+    ) {
+      // A tag ("#...") that starts a new word inside a symbol token's text
+      // (e.g. the due date "📅 2021-09-08 #mytag") must not be absorbed into
+      // that token: otherwise later edits to the symbol token (e.g. changing
+      // the date) would silently delete the tag. Close the current symbol
+      // token here and start a new plain-text ("") token that the tag (and
+      // anything after it, up to the next symbol) will belong to.
+      fillPreviousToken();
+      currentToken = null;
+      text = c;
     } else {
       text += c;
     }
