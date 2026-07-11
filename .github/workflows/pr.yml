@@ -1,7 +1,14 @@
 name: CI
 
+# Also run on pushes to master: PR checks only validate a branch against the
+# base it was opened against, not the actual merge result, and nothing else
+# verifies master after a merge. That gap let #317 and #318 each pass PR CI
+# individually while their combined merge broke `tsc --noEmit` on master,
+# shipping broken code in release 1.2.0 (hotfixed in #320 / 1.2.1).
 on:
-  - pull_request
+  pull_request:
+  push:
+    branches: [master]
 
 env:
   # The electron package is only used for its TypeScript types; skip the
@@ -34,13 +41,20 @@ jobs:
         run: node scripts/check-versions.mjs
 
       - name: Lint with ESLint
-        continue-on-error: true
+        # On pull_request, let this step pass through failures so reviewdog
+        # (below) reports them as inline PR review comments instead. On
+        # push (master), there is no PR to annotate, so let this step fail
+        # the workflow directly or ESLint errors would go unnoticed.
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         run: |
           npx eslint
 
       - name: Annotate ESLint results
         uses: reviewdog/action-eslint@556a3fdaf8b4201d4d74d406013386aa4f7dab96 # v1.34.0
-        if: always()
+        # reviewdog's github-pr-review reporter only works on pull_request
+        # events; run it regardless of the eslint step's outcome so it still
+        # annotates when ESLint found problems, but skip it entirely on push.
+        if: always() && github.event_name == 'pull_request'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-review
