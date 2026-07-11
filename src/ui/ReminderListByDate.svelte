@@ -5,7 +5,7 @@
 
   export let reminders: Array<Reminder>;
   export let onOpenReminder: (reminder: Reminder) => void = () => {};
-  export let timeToString = (time: DateTime) => time.format("HH:MM");
+  export let timeToString = (time: DateTime) => time.format("HH:mm");
   export let generateLink: (reminder: Reminder) => string = () => "";
 </script>
 
