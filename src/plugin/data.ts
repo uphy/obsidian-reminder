@@ -8,6 +8,7 @@ interface ReminderData {
   title: string;
   time: string;
   rowNumber: number;
+  muted?: boolean;
 }
 
 /**
@@ -92,16 +93,17 @@ export class PluginData {
         }
         this.reminders.replaceFile(
           filePath,
-          remindersInFile.map(
-            (d) =>
-              new Reminder(
-                filePath,
-                d.title,
-                DateTime.parse(d.time),
-                d.rowNumber,
-                false,
-              ),
-          ),
+          remindersInFile.map((d) => {
+            const reminder = new Reminder(
+              filePath,
+              d.title,
+              DateTime.parse(d.time),
+              d.rowNumber,
+              false,
+            );
+            reminder.muteNotification = d.muted ?? false;
+            return reminder;
+          }),
         );
       });
     }
@@ -126,6 +128,7 @@ export class PluginData {
         title: rr.title,
         time: rr.time.toString(),
         rowNumber: rr.rowNumber,
+        muted: rr.muteNotification,
       }));
     });
     const settings: Record<string, unknown> = {};
