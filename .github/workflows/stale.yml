@@ -4,6 +4,19 @@ on:
   schedule:
     - cron: "0 1 * * *"
   workflow_dispatch:
+    inputs:
+      debug-only:
+        description: "Dry run: log what would happen without commenting, labeling, or closing"
+        type: boolean
+        default: true
+      days-before-stale:
+        description: "Override days before marking stale (for testing)"
+        type: number
+        default: 30
+      days-before-close:
+        description: "Override days before closing after stale (for testing)"
+        type: number
+        default: 7
 
 permissions:
   issues: write
@@ -17,8 +30,10 @@ jobs:
         with:
           # Only PRs explicitly labeled by a maintainer are subject to auto-close.
           any-of-pr-labels: awaiting-response
-          days-before-stale: 30
-          days-before-close: 7
+          # Manual runs are dry runs by default; scheduled runs always act.
+          debug-only: ${{ inputs.debug-only == true }}
+          days-before-stale: ${{ inputs.days-before-stale || 30 }}
+          days-before-close: ${{ inputs.days-before-close || 7 }}
           # Issues are out of scope for now.
           days-before-issue-stale: -1
           days-before-issue-close: -1
