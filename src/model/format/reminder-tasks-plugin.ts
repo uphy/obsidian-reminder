@@ -1,8 +1,7 @@
 import type { MarkdownDocument, Todo } from "model/format/markdown";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import moment from "moment";
-import type { Moment } from "moment";
-import { RRule } from "rrule";
+import { nextOccurrence } from "./recurrence";
 import {
   ReminderFormatParameterKey,
   TodoBasedReminderFormat,
@@ -279,18 +278,21 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
             return false;
           }
 
+          const now = this.config.getParameter(ReminderFormatParameterKey.now);
           if (this.useCustomEmoji()) {
             const time = parsed.getTime();
             if (time == null) {
               return false;
             }
-            const nextTime: Date | undefined = this.nextDate(
+            const nextTime: Date | undefined = nextOccurrence(
               recurrence,
               time.moment(),
+              now,
             );
-            const nextDueDate: Date | undefined = this.nextDate(
+            const nextDueDate: Date | undefined = nextOccurrence(
               recurrence,
               dueDate.moment(),
+              now,
             );
             if (nextTime == null || nextDueDate == null) {
               return false;
@@ -300,9 +302,10 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
               new DateTime(moment(nextDueDate), dueDate.hasTimePart),
             );
           } else {
-            const next: Date | undefined = this.nextDate(
+            const next: Date | undefined = nextOccurrence(
               recurrence,
               dueDate.moment(),
+              now,
             );
             if (next == null) {
               return false;
@@ -322,40 +325,6 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
       }
     }
     return true;
-  }
-
-  private nextDate(recurrence: string, dtStart: Moment): Date | undefined {
-    const rruleOptions = RRule.parseText(recurrence);
-    if (!rruleOptions) {
-      return undefined;
-    }
-
-    const today = this.config
-      .getParameter(ReminderFormatParameterKey.now)
-      .moment();
-    today.set("hour", dtStart.get("hour"));
-    today.set("minute", dtStart.get("minute"));
-    today.set("second", dtStart.get("second"));
-    today.set("millisecond", dtStart.get("millisecond"));
-    if (today.isAfter(dtStart)) {
-      dtStart = today;
-    }
-
-    // clone dtStart because dtStart will be modified by utc() call.
-    const base = dtStart.clone();
-
-    // process rrule
-    rruleOptions.dtstart = dtStart.utc(true).toDate();
-    const rrule = new RRule(rruleOptions);
-    const rdate = rrule.after(dtStart.toDate(), false);
-    if (rdate == null) {
-      return undefined;
-    }
-
-    // apply rrule to `base`
-    const diff = rdate.getTime() - rruleOptions.dtstart.getTime();
-    base.add(diff, "millisecond");
-    return base.toDate();
   }
 
   newReminder(
