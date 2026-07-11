@@ -17,6 +17,12 @@ function removeTags(text: string): string {
 }
 export class TasksPluginReminderModel implements ReminderModel {
   private static readonly dateFormat = "YYYY-MM-DD";
+  // The Tasks plugin itself only supports a date-only due date (📅 is
+  // documented/parsed as `YYYY-MM-DD`). This plugin extends the due-date
+  // symbol to optionally also carry a time (`YYYY-MM-DD HH:mm`), which is
+  // why parsing tries this strict datetime format first and falls back to
+  // the date-only format the Tasks plugin expects.
+  private static readonly dueDateTimeFormat = "YYYY-MM-DD HH:mm";
   private static readonly symbolDueDate = Symbol.ofChars([..."📅📆🗓"]);
   private static readonly symbolDoneDate = Symbol.ofChar("✅");
   private static readonly symbolRecurrence = Symbol.ofChar("🔁");
@@ -140,17 +146,29 @@ export class TasksPluginReminderModel implements ReminderModel {
     }
     if (symbol === TasksPluginReminderModel.symbolReminder) {
       return DATE_TIME_FORMATTER.parse(dateText);
-    } else {
-      const date = moment(
-        dateText,
-        TasksPluginReminderModel.dateFormat,
-        this.strictDateFormat,
-      );
-      if (!date.isValid()) {
-        return null;
-      }
-      return new DateTime(date, false);
     }
+    if (symbol === TasksPluginReminderModel.symbolDueDate) {
+      // Optional time-part extension: try the strict datetime format
+      // first, and fall through to the date-only format below when it
+      // doesn't match.
+      const dateTime = moment(
+        dateText,
+        TasksPluginReminderModel.dueDateTimeFormat,
+        true,
+      );
+      if (dateTime.isValid()) {
+        return new DateTime(dateTime, true);
+      }
+    }
+    const date = moment(
+      dateText,
+      TasksPluginReminderModel.dateFormat,
+      this.strictDateFormat,
+    );
+    if (!date.isValid()) {
+      return null;
+    }
+    return new DateTime(date, false);
   }
 
   private setDate(
@@ -166,6 +184,14 @@ export class TasksPluginReminderModel implements ReminderModel {
     if (time instanceof DateTime) {
       if (symbol === TasksPluginReminderModel.symbolReminder) {
         timeStr = DATE_TIME_FORMATTER.toString(time);
+      } else if (
+        symbol === TasksPluginReminderModel.symbolDueDate &&
+        time.hasTimePart
+      ) {
+        // Opt-in extension: only write the time suffix when the caller
+        // explicitly gave us a time-bearing DateTime. Date-only due dates
+        // keep writing the plain Tasks-plugin-compatible format.
+        timeStr = time.format(TasksPluginReminderModel.dueDateTimeFormat);
       } else {
         timeStr = time.format(TasksPluginReminderModel.dateFormat);
       }
@@ -270,7 +296,9 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
               return false;
             }
             nextReminder.setTime(new DateTime(moment(nextTime), true));
-            nextReminder.setDueDate(new DateTime(moment(nextDueDate), true));
+            nextReminder.setDueDate(
+              new DateTime(moment(nextDueDate), dueDate.hasTimePart),
+            );
           } else {
             const next: Date | undefined = this.nextDate(
               recurrence,
@@ -279,7 +307,7 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
             if (next == null) {
               return false;
             }
-            const nextDueDate = new DateTime(moment(next), true);
+            const nextDueDate = new DateTime(moment(next), dueDate.hasTimePart);
             nextReminder.setTime(nextDueDate);
           }
           nextReminderTodo.body = nextReminder.toMarkdown();
