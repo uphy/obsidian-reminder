@@ -15,10 +15,6 @@ updates:
       # obsidian declares an exact peer dependency on @codemirror/state
       # (currently 6.5.0), so newer @codemirror/* versions break npm install
       - dependency-name: "@codemirror/*"
-      # prettier-plugin-svelte v4 requires Svelte 5; drop this once the
-      # project migrates from Svelte 4
-      - dependency-name: prettier-plugin-svelte
-        versions: [">=4"]
     groups:
       minor-and-patch:
         applies-to: version-updates
