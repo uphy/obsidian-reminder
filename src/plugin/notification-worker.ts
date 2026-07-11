@@ -15,7 +15,7 @@ export class NotificationWorker {
     this.plugin.registerInterval(
       window.setInterval(() => {
         if (intervalTaskRunning) {
-          console.log(
+          console.debug(
             "Skip reminder interval task because task is already running.",
           );
           return;
