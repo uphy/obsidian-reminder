@@ -15,6 +15,10 @@ updates:
       # obsidian declares an exact peer dependency on @codemirror/state
       # (currently 6.5.0), so newer @codemirror/* versions break npm install
       - dependency-name: "@codemirror/*"
+      # electron is pinned to the major that current Obsidian installers
+      # embed (see #282); bump manually when Obsidian ships a newer one
+      - dependency-name: electron
+        versions: [">=40"]
     groups:
       minor-and-patch:
         applies-to: version-updates
