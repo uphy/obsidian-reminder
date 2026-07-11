@@ -2,6 +2,7 @@ import type ReminderPlugin from "main";
 import type { ReadOnlyReference } from "model/ref";
 import type { DateTime } from "model/time";
 import type { Reminder } from "model/reminder";
+import type { EditorView } from "@codemirror/view";
 import {
   App,
   MarkdownView,
@@ -21,6 +22,10 @@ import { AutoComplete } from "./autocomplete";
 import type { AutoCompletableEditor } from "./autocomplete";
 import { buildCodeMirrorPlugin } from "./editor-extension";
 import { createReminderPillExtension } from "./editor-reminder-display";
+import {
+  createReminderLineFlashExtension,
+  flashReminderLine,
+} from "./reminder-line-flash";
 import { ReminderModal } from "./reminder";
 
 export class ReminderPluginUI {
@@ -87,6 +92,7 @@ export class ReminderPluginUI {
       this.plugin.registerEditorExtension(
         createReminderPillExtension(this.plugin),
       );
+      this.plugin.registerEditorExtension(createReminderLineFlashExtension());
       // Reconfiguring editor extensions is how CM6 signals every open
       // editor's `StateField` that something changed (`tr.reconfigured`),
       // which is what lets the pill extension re-check the toggle
@@ -188,22 +194,37 @@ export class ReminderPluginUI {
       return;
     }
 
-    // Open the reminder file and select the reminder
+    // Open the reminder file and jump to the reminder's line.
     await leaf.openFile(file);
     if (!(leaf.view instanceof MarkdownView)) {
       return;
     }
-    const line = leaf.view.editor.getLine(reminder.rowNumber);
-    leaf.view.editor.setSelection(
+    const editor = leaf.view.editor;
+    const line = editor.getLine(reminder.rowNumber);
+    // Place the cursor on the line (no selection held) and scroll it into
+    // view, matching Obsidian's own search-result jump behavior rather than
+    // leaving the whole line selected (which risked the user accidentally
+    // overwriting it while typing).
+    editor.setCursor({ line: reminder.rowNumber, ch: 0 });
+    editor.scrollIntoView(
       {
-        line: reminder.rowNumber,
-        ch: 0,
+        from: { line: reminder.rowNumber, ch: 0 },
+        to: { line: reminder.rowNumber, ch: line.length },
       },
-      {
-        line: reminder.rowNumber,
-        ch: line.length,
-      },
+      true,
     );
+
+    // Flash-highlight the line via the CM6 extension registered in
+    // `onload()`. `.cm` is not part of Obsidian's public `Editor` type (see
+    // `autocomplete.ts` for the same cast), and is only present on desktop,
+    // so this is a silent no-op otherwise.
+    const cm = (editor as any).cm as EditorView | undefined;
+    if (cm) {
+      const cmLine = cm.state.doc.line(reminder.rowNumber + 1);
+      cm.dispatch({
+        effects: flashReminderLine.of({ from: cmLine.from, to: cmLine.to }),
+      });
+    }
   }
 
   showReminder(reminder: Reminder) {
