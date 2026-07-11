@@ -11,6 +11,7 @@ export class ReminderModal {
     private useSystemNotification: ReadOnlyReference<boolean>,
     private laters: ReadOnlyReference<Array<Later>>,
     private openNoteOnReminderClick: ReadOnlyReference<boolean>,
+    private showPopupWithSystemNotification: ReadOnlyReference<boolean>,
   ) {}
 
   public show(
@@ -28,19 +29,53 @@ export class ReminderModal {
         onMute,
         onOpenFile,
       );
-    } else {
-      // Show system notification
-      const Notification = (electron as any).remote.Notification;
-      const n = new Notification({
-        title: "Obsidian Reminder",
-        body: reminder.title,
-      });
-      n.on("click", () => {
-        n.close();
-        if (this.openNoteOnReminderClick.value) {
-          onOpenFile();
-          return;
-        }
+      return;
+    }
+
+    const showBothSurfaces = this.showPopupWithSystemNotification.value;
+    if (showBothSurfaces) {
+      // The popup is the single owner of the reminder's lifecycle in this
+      // mode, so the system notification must not also wire up mute/done
+      // actions -- otherwise both surfaces would fire onDone/onMute for the
+      // same reminder. It is shown as an alert only.
+      this.showBuiltinReminder(
+        reminder,
+        onRemindMeLater,
+        onDone,
+        onMute,
+        onOpenFile,
+      );
+    }
+    this.showSystemNotification(
+      reminder,
+      onRemindMeLater,
+      onDone,
+      onMute,
+      onOpenFile,
+      showBothSurfaces,
+    );
+  }
+
+  private showSystemNotification(
+    reminder: Reminder,
+    onRemindMeLater: (time: DateTime) => void,
+    onDone: () => void,
+    onMute: () => void,
+    onOpenFile: () => void,
+    alertOnly: boolean,
+  ) {
+    const Notification = (electron as any).remote.Notification;
+    const n = new Notification({
+      title: "Obsidian Reminder",
+      body: reminder.title,
+    });
+    n.on("click", () => {
+      n.close();
+      if (this.openNoteOnReminderClick.value) {
+        onOpenFile();
+        return;
+      }
+      if (!alertOnly) {
         this.showBuiltinReminder(
           reminder,
           onRemindMeLater,
@@ -48,7 +83,9 @@ export class ReminderModal {
           onMute,
           onOpenFile,
         );
-      });
+      }
+    });
+    if (!alertOnly) {
       n.on("close", () => {
         onMute();
       });
@@ -69,9 +106,9 @@ export class ReminderModal {
         });
         n.actions = actions as any;
       }
-
-      n.show();
     }
+
+    n.show();
   }
 
   private showBuiltinReminder(

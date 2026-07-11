@@ -52,6 +52,7 @@ export class ReminderPluginUI {
       plugin.settings.useSystemNotification,
       plugin.settings.laters,
       plugin.settings.openNoteOnReminderClick,
+      plugin.settings.showPopupWithSystemNotification,
     );
   }
 

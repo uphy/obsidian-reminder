@@ -33,6 +33,7 @@ export class Settings {
   enableNotification: SettingModel<boolean, boolean>;
   openNoteOnReminderClick: SettingModel<boolean, boolean>;
   useSystemNotification: SettingModel<boolean, boolean>;
+  showPopupWithSystemNotification: SettingModel<boolean, boolean>;
   laters: SettingModel<string, Array<Later>>;
   weekStart: SettingModel<string, string>;
   dateFormat: SettingModel<string, string>;
@@ -98,6 +99,16 @@ export class Settings {
       .key("useSystemNotification")
       .name("Use system notification")
       .desc("Use system notification for reminder notifications")
+      .toggle(false)
+      .build(new RawSerde());
+
+    this.showPopupWithSystemNotification = this.settings
+      .newSettingBuilder()
+      .key("showPopupWithSystemNotification")
+      .name("Show popup together with system notification")
+      .desc(
+        "When using system notification, also show the built-in reminder popup at the same time. The popup handles the reminder actions; the system notification acts as an alert only.",
+      )
       .toggle(false)
       .build(new RawSerde());
 
@@ -337,6 +348,7 @@ export class Settings {
         this.enableNotification,
         this.openNoteOnReminderClick,
         this.useSystemNotification,
+        this.showPopupWithSystemNotification,
       );
     this.settings
       .newGroup("Editor")
