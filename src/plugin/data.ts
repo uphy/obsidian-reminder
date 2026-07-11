@@ -1,4 +1,3 @@
-import type ReminderPlugin from "main";
 import { Reference } from "model/ref";
 import { Reminder, Reminders } from "model/reminder";
 import { DateTime } from "model/time";
@@ -11,6 +10,17 @@ interface ReminderData {
   rowNumber: number;
 }
 
+/**
+ * The minimal persistence surface `PluginData` needs. This matches the
+ * signatures of Obsidian's `Plugin.loadData()`/`Plugin.saveData()`, so a
+ * concrete `Plugin` instance is assignable here structurally without
+ * `PluginData` depending on the `obsidian` module.
+ */
+export interface DataStore {
+  loadData(): Promise<unknown>;
+  saveData(data: unknown): Promise<void>;
+}
+
 export class PluginData {
   private restoring = true;
   changed: boolean = false;
@@ -19,7 +29,7 @@ export class PluginData {
   private readonly _settings = new Settings();
 
   constructor(
-    private plugin: ReminderPlugin,
+    private store: DataStore,
     private reminders: Reminders,
   ) {
     this.settings.forEach((setting) => {
@@ -40,7 +50,17 @@ export class PluginData {
 
   async load() {
     console.debug("Load reminder plugin data");
-    const data = await this.plugin.loadData();
+    // `loadData()` returns data of unknown shape (it's whatever was
+    // previously passed to `saveData()`), so this cast is a minimal, trusted
+    // bridge between the untyped persistence API and our persisted data shape.
+    const data = (await this.store.loadData()) as
+      | {
+          scanned: boolean;
+          debug?: boolean;
+          settings?: Record<string, unknown>;
+          reminders?: Record<string, Array<ReminderData>>;
+        }
+      | undefined;
     if (!data) {
       this.scanned.value = false;
       return;
@@ -50,17 +70,14 @@ export class PluginData {
       this.debug.value = data.debug;
     }
 
-    // `loadData()` returns data of unknown shape (it's whatever was
-    // previously passed to `saveData()`), so this cast is a minimal, trusted
-    // bridge between Obsidian's untyped persistence API and our settings model.
-    const loadedSettings = data.settings as Record<string, unknown> | undefined;
     this.settings.forEach((setting) => {
-      setting.load(loadedSettings);
+      setting.load(data.settings);
     });
 
-    if (data.reminders) {
-      Object.keys(data.reminders).forEach((filePath) => {
-        const remindersInFile = data.reminders[filePath] as Array<ReminderData>;
+    const remindersData = data.reminders;
+    if (remindersData) {
+      Object.keys(remindersData).forEach((filePath) => {
+        const remindersInFile = remindersData[filePath];
         if (!remindersInFile) {
           return;
         }
@@ -106,7 +123,7 @@ export class PluginData {
     this.settings.forEach((setting) => {
       setting.store(settings);
     });
-    await this.plugin.saveData({
+    await this.store.saveData({
       scanned: this.scanned.value,
       reminders: remindersData,
       debug: this.debug.value,

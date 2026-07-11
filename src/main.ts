@@ -50,7 +50,25 @@ export default class ReminderPlugin extends Plugin {
         this.ui.reload(true);
       },
     );
-    this._notificationWorker = new NotificationWorker(this);
+    this._notificationWorker = new NotificationWorker({
+      registerInterval: (id) => this.registerInterval(id),
+      isLayoutReady: () => this.app.workspace.layoutReady,
+      reloadUI: (force) => this.ui.reload(force),
+      isEditing: () => this.ui.isEditing(),
+      showReminder: (reminder) => this.ui.showReminder(reminder),
+      isScanned: () => this.data.scanned.value,
+      markScanned: () => {
+        this.data.scanned.value = true;
+      },
+      saveData: (force) => {
+        this.data.save(force);
+      },
+      reloadRemindersInAllFiles: () =>
+        this.fileSystem.reloadRemindersInAllFiles(),
+      getExpiredReminders: () =>
+        this.reminders.getExpiredReminders(this.settings.reminderTime.value),
+      checkIntervalSec: () => this.settings.reminderCheckIntervalSec.value,
+    });
   }
 
   override async onload() {

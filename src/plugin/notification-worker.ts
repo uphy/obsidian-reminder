@@ -1,8 +1,27 @@
-import type ReminderPlugin from "main";
 import type { Reminder } from "model/reminder";
 
+/**
+ * The minimal set of dependencies `NotificationWorker` needs from the rest
+ * of the plugin. Keeping this narrow (rather than depending on the whole
+ * `ReminderPlugin`) lets this file avoid importing `obsidian` entirely, so
+ * it can be unit-tested like the rest of `model/`.
+ */
+export interface NotificationWorkerDeps {
+  registerInterval(id: number): void;
+  isLayoutReady(): boolean;
+  reloadUI(force: boolean): void;
+  isEditing(): boolean;
+  showReminder(reminder: Reminder): void;
+  isScanned(): boolean;
+  markScanned(): void;
+  saveData(force?: boolean): void;
+  reloadRemindersInAllFiles(): Promise<void>;
+  getExpiredReminders(): Array<Reminder>;
+  checkIntervalSec(): number;
+}
+
 export class NotificationWorker {
-  constructor(private plugin: ReminderPlugin) {}
+  constructor(private deps: NotificationWorkerDeps) {}
 
   startPeriodicTask() {
     let intervalTaskRunning = true;
@@ -12,7 +31,7 @@ export class NotificationWorker {
     });
 
     // Set up the recurring check for reminders.
-    this.plugin.registerInterval(
+    this.deps.registerInterval(
       window.setInterval(() => {
         if (intervalTaskRunning) {
           console.debug(
@@ -24,32 +43,30 @@ export class NotificationWorker {
         this.periodicTask().finally(() => {
           intervalTaskRunning = false;
         });
-      }, this.plugin.settings.reminderCheckIntervalSec.value * 1000),
+      }, this.deps.checkIntervalSec() * 1000),
     );
   }
 
   private async periodicTask(): Promise<void> {
-    this.plugin.ui.reload(false);
+    this.deps.reloadUI(false);
 
-    if (!this.plugin.data.scanned.value) {
-      this.plugin.fileSystem.reloadRemindersInAllFiles().then(() => {
-        this.plugin.data.scanned.value = true;
-        this.plugin.data.save();
+    if (!this.deps.isScanned()) {
+      this.deps.reloadRemindersInAllFiles().then(() => {
+        this.deps.markScanned();
+        this.deps.saveData();
       });
     }
 
-    this.plugin.data.save(false);
+    this.deps.saveData(false);
 
-    if (this.plugin.ui.isEditing()) {
+    if (this.deps.isEditing()) {
       return;
     }
-    const expired = this.plugin.reminders.getExpiredReminders(
-      this.plugin.settings.reminderTime.value,
-    );
+    const expired = this.deps.getExpiredReminders();
 
     let previousReminder: Reminder | undefined = undefined;
     for (const reminder of expired) {
-      if (this.plugin.app.workspace.layoutReady) {
+      if (this.deps.isLayoutReady()) {
         if (reminder.muteNotification) {
           // We don't want to set `previousReminder` in this case as the current
           // reminder won't be shown.
@@ -63,7 +80,7 @@ export class NotificationWorker {
             await this.sleep(100);
           }
         }
-        this.plugin.ui.showReminder(reminder);
+        this.deps.showReminder(reminder);
         previousReminder = reminder;
       }
     }
