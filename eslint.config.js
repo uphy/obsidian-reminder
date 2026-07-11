@@ -49,7 +49,8 @@ const config = {
       },
     ],
     'unused-imports/no-unused-imports': 'error',
-    'no-console': 'off',
+    'no-console': ['error', { allow: ['warn', 'error', 'debug'] }],
+    'no-restricted-imports': ['error', { patterns: [{ group: ['../*'], message: 'Use src-rooted import paths (e.g. "model/reminder") instead of parent-relative paths.' }] }],
     'prettier/prettier': 'error',
   },
 };

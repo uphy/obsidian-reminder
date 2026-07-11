@@ -11,7 +11,7 @@ class AbstractCommand {
     }
     const checkResult = this.command.checkCallback(true);
     if (checkResult !== undefined && !checkResult) {
-      console.info(
+      console.debug(
         "The command is not available by checking: %o",
         this.command,
       );
@@ -38,7 +38,7 @@ class AbstractCommand {
     }
     const checkResult = this.command.editorCheckCallback(true, editor, view);
     if (checkResult !== undefined && !checkResult) {
-      console.info(
+      console.debug(
         "The editor command is not available by checking: %o",
         this.command,
       );

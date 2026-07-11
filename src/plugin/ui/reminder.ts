@@ -1,9 +1,8 @@
 import type { ReadOnlyReference } from "model/ref";
-import type { DateTime } from "model/time";
+import type { Reminder } from "model/reminder";
+import type { DateTime, Later } from "model/time";
 import { App, Modal } from "obsidian";
 import ReminderView from "ui/Reminder.svelte";
-import type { Reminder } from "../../model/reminder";
-import type { Later } from "../../model/time";
 const electron = window.require ? window.require("electron") : undefined;
 
 export class ReminderModal {
