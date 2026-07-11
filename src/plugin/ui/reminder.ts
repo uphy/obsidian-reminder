@@ -46,6 +46,7 @@ export class ReminderModal {
         onDone,
         onMute,
         onOpenFile,
+        onPauseAllNotifications,
       );
     }
     this.showSystemNotification(
@@ -54,6 +55,7 @@ export class ReminderModal {
       onDone,
       onMute,
       onOpenFile,
+      onPauseAllNotifications,
       showBothSurfaces,
     );
   }
@@ -64,6 +66,7 @@ export class ReminderModal {
     onDone: () => void,
     onMute: () => void,
     onOpenFile: () => void,
+    onPauseAllNotifications: () => void,
     alertOnly: boolean,
   ) {
     const Notification = (electron as any).remote.Notification;
