@@ -94,6 +94,36 @@ describe("groupReminders()", (): void => {
     expect(group?.name).toBe("Overdue");
     expect(group?.isOverdue).toBe(true);
   });
+
+  test("Overdue timeToString() shows the date only (no time) for a reminder from a previous day", (): void => {
+    // The fixture intentionally has a time component to prove it is dropped.
+    const reminder = makeReminder(
+      DateTime.parse(
+        moment().subtract(3, "days").format("YYYY-MM-DD") + " 10:30",
+      ),
+    );
+
+    const groups = groupReminders([reminder], reminderTime, format);
+
+    const group = groupOf(groups, reminder);
+    expect(group?.name).toBe("Overdue");
+    expect(group?.timeToString(reminder.time)).toBe(
+      moment().subtract(3, "days").format("MM/DD"),
+    );
+  });
+
+  test("Overdue timeToString() shows only the time for a reminder from earlier today", (): void => {
+    const time = DateTime.now().add(-1, "hours");
+    const reminder = makeReminder(time);
+
+    const groups = groupReminders([reminder], reminderTime, format);
+
+    const group = groupOf(groups, reminder);
+    expect(group?.name).toBe("Overdue");
+    // NOTE: like other tests in this suite, this could flake if run exactly
+    // at a day boundary between the reminder's construction and this call.
+    expect(group?.timeToString(reminder.time)).toBe(time.format("HH:mm"));
+  });
 });
 
 describe("Reminders#muteExpiredReminders()", (): void => {

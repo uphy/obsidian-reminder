@@ -349,9 +349,18 @@ export function groupReminders(
     result.push(new GroupedReminder(previousGroup, currentReminders));
   }
   if (overdueReminders.length > 0) {
-    const overdueGroup: Group = new Group("Overdue", (time) =>
-      time.format(format.timeFormat, reminderTime),
-    );
+    const overdueGroup: Group = new Group("Overdue", (time) => {
+      // Overdue reminders can be from a previous day, so a time-only label
+      // like "09:00" would be ambiguous about which day it refers to.
+      // Show the date only (no time) for previous days: once a reminder is
+      // days overdue the exact time matters little, and with the default
+      // formats the date label has the same width as the time label, keeping
+      // the titles within the group aligned.
+      if (time.toYYYYMMDD(reminderTime) === now.toYYYYMMDD(reminderTime)) {
+        return time.format(format.timeFormat, reminderTime);
+      }
+      return time.format(format.monthDayFormat, reminderTime);
+    });
     overdueGroup.isOverdue = true;
     result.splice(0, 0, new GroupedReminder(overdueGroup, overdueReminders));
   }

@@ -7,6 +7,10 @@
   export let onOpenReminder: (reminder: Reminder) => void = () => {};
   export let timeToString = (time: DateTime) => time.format("HH:mm");
   export let generateLink: (reminder: Reminder) => string = () => "";
+
+  function tooltip(reminder: Reminder): string {
+    return `[${reminder.time.toString()}] ${reminder.title} - ${reminder.getFileName()}`;
+  }
 </script>
 
 <div class="reminder-group">
@@ -17,9 +21,8 @@
       {#each reminders as reminder (reminder.key())}
         <button
           class="reminder-list-item hover-highlight"
-          aria-label={`[${reminder.time.toString()}] ${
-            reminder.title
-          } - ${reminder.getFileName()}`}
+          aria-label={tooltip(reminder)}
+          title={tooltip(reminder)}
           draggable="true"
           on:dragstart={(e) => {
             e.dataTransfer?.setData("text/plain", generateLink(reminder));
@@ -65,12 +68,12 @@
   }
   .reminder-list-item:hover {
     color: var(--text-normal);
-    background-color: var(--background-secondary-alt);
+    background-color: var(--background-modifier-hover);
   }
   .reminder-time {
     display: inline-block;
     font-size: 14px;
-    font-family: monospace, serif;
+    font-family: var(--font-monospace);
   }
   .reminder-title-container {
     display: inline-flex;
