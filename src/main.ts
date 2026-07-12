@@ -57,6 +57,11 @@ export default class ReminderPlugin extends Plugin {
       isLayoutReady: () => this.app.workspace.layoutReady,
       reloadUI: (force) => this.ui.reload(force),
       isEditing: () => this.ui.isEditing(),
+      // Deliberately `!== "toast"` rather than `=== "modal"`: any future/
+      // unknown popup style value falls back to the previous, conservative
+      // (intrusive) behavior.
+      isPopupIntrusive: () =>
+        this.settings.notificationPopupStyle.value !== "toast",
       showReminder: (reminder) => this.ui.showReminder(reminder),
       isScanned: () => this.data.scanned.value,
       markScanned: () => {

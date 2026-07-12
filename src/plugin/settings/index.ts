@@ -361,7 +361,7 @@ export class Settings {
       .key("editDetectionSec")
       .name("Edit Detection Time")
       .desc(
-        "The minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable.",
+        "The minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable. Only applies to the Modal popup style; Toast reminders are shown immediately even while typing.",
       )
       .number(10)
       .build(new RawSerde());

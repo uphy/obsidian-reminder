@@ -142,7 +142,7 @@ Choose how the [builtin notification popup](/guide/notification.html#builtin-not
 - Type: `select`
 - Values:
   - Modal (center dialog): a dialog in the center of the window that takes focus.
-  - Toast (corner card): a card stacked in the bottom-right corner of the window that does not take focus or interrupt what you're doing (default). Multiple toasts stack when several reminders fire close together. Keyboard shortcuts apply only to the most recently shown toast; older toasts are mouse/touch only.
+  - Toast (corner card): a card stacked in the bottom-right corner of the window that does not take focus or interrupt what you're doing (default). Multiple toasts stack when several reminders fire close together. Keyboard shortcuts apply only to the most recently shown toast; older toasts are mouse/touch only. Toasts appear immediately, even while you're typing — see [Edit Detection Time](#edit-detection-time).
 - Default: Toast (corner card)
 
 ## Open note on reminder click
@@ -229,6 +229,8 @@ Enable support for [Kanban Plugin](https://github.com/mgmeyers/obsidian-kanban)
 
 In order not to interfere with normal Markdown editing, the Reminder Plugin will not show reminders while the user is editing a file.
 The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable.
+
+This only applies to the [Modal popup style](#reminder-popup-style), which takes focus and would otherwise interrupt typing. The Toast popup style is not focus-stealing, so toasts appear immediately regardless of this setting.
 
 - Type: `number`
 - Value: The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable. If this value is set to 0, the reminder will be displayed even if the file is being edited.

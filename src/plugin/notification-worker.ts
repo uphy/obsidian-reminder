@@ -11,6 +11,12 @@ export interface NotificationWorkerDeps {
   isLayoutReady(): boolean;
   reloadUI(force: boolean): void;
   isEditing(): boolean;
+  /**
+   * True when showing a reminder would open a focus-stealing UI (the modal
+   * popup style). Used to decide whether edit detection should defer the
+   * popup.
+   */
+  isPopupIntrusive(): boolean;
   showReminder(reminder: Reminder): void;
   isScanned(): boolean;
   markScanned(): void;
@@ -67,7 +73,9 @@ export class NotificationWorker {
 
     this.deps.saveData(false);
 
-    if (this.deps.isEditing()) {
+    // Edit detection only defers focus-stealing popups (the modal style);
+    // non-intrusive styles (toast) show immediately even while typing.
+    if (this.deps.isPopupIntrusive() && this.deps.isEditing()) {
       return;
     }
 

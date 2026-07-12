@@ -49,6 +49,8 @@ By default the popup is shown as a small card stacked in the bottom-right corner
 
 Multiple toasts stack when several reminders fire close together. The [keyboard shortcuts](#keyboard-shortcuts) above only apply to the most recently shown toast (the bottom-most card in the stack); older toasts fall back to the buttons on the card (mouse/touch only), since two toasts both reacting to the same keypress would be confusing.
 
+Because toasts don't take focus, they appear immediately even while you're typing — the [Edit Detection Time](/setting/#edit-detection-time) deferral only applies to the modal style.
+
 ## System notification
 
 Instead of built-in notification, a system notification is also available by [setting](/setting/#use-system-notification).
