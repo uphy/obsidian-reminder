@@ -65,7 +65,7 @@ export class Settings {
     this.reminderTime = this.settings
       .newSettingBuilder()
       .key("reminderTime")
-      .name("Reminder Time")
+      .name("Reminder time")
       .desc("Time when a reminder with no time part will show")
       .tag(TAG_RESCAN)
       .text("09:00")
@@ -75,7 +75,7 @@ export class Settings {
     this.reminderTimeStep = this.settings
       .newSettingBuilder()
       .key("reminderTimeStep")
-      .name("Reminder Time Step (minutes)")
+      .name("Reminder time step (minutes)")
       .desc("Step of time for reminder time (minutes)")
       .number(15)
       .build(new RawSerde());
@@ -189,10 +189,15 @@ export class Settings {
     this.strictDateFormat = this.settings
       .newSettingBuilder()
       .key("strictDateFormat")
-      .name("Strict Date format")
+      .name("Strict date format")
       .desc("Strictly parse the date and time")
       .tag(TAG_RESCAN)
       .toggle(false)
+      .onAnyValueChanged((context) => {
+        context.setEnabled(
+          reminderFormatSettings.enableReminderPluginReminderFormat.value,
+        );
+      })
       .build(new RawSerde());
 
     this.dateTimeFormat = this.settings
@@ -337,7 +342,7 @@ export class Settings {
     this.yearMonthDisplayFormat = this.settings
       .newSettingBuilder()
       .key("yearMonthDisplayFormat")
-      .name("Year & Month Format")
+      .name("Year & month format")
       .desc(
         "Moment style year and month format:\nhttps://momentjs.com/docs/#/displaying/format/",
       )
@@ -347,7 +352,7 @@ export class Settings {
     this.monthDayDisplayFormat = this.settings
       .newSettingBuilder()
       .key("monthDayDisplayFormat")
-      .name("Month & Day Format")
+      .name("Month & day format")
       .desc(
         "Moment style month and day format:\nhttps://momentjs.com/docs/#/displaying/format/",
       )
@@ -357,7 +362,7 @@ export class Settings {
     this.shortDateWithWeekdayDisplayFormat = this.settings
       .newSettingBuilder()
       .key("shortDateWithWeekdayDisplayFormat")
-      .name("Short Date with Weekday Format")
+      .name("Short date with weekday format")
       .desc(
         "Moment style short date with weekday format:\nhttps://momentjs.com/docs/#/displaying/format/",
       )
@@ -367,7 +372,7 @@ export class Settings {
     this.timeDisplayFormat = this.settings
       .newSettingBuilder()
       .key("timeDisplayFormat")
-      .name("Time Format")
+      .name("Time format")
       .desc(
         "Moment style time format:\nhttps://momentjs.com/docs/#/displaying/format/",
       )
@@ -378,7 +383,7 @@ export class Settings {
     this.editDetectionSec = this.settings
       .newSettingBuilder()
       .key("editDetectionSec")
-      .name("Edit Detection Time")
+      .name("Edit detection time")
       .desc(
         "The minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable. Only applies to the Modal popup style; Toast reminders are shown immediately even while typing.",
       )
@@ -405,7 +410,8 @@ export class Settings {
       .build(new RawSerde());
 
     this.settings
-      .newGroup("Notification Settings")
+      .newPage("Notifications")
+      .newGroup()
       .addSettings(
         this.reminderTime,
         this.reminderTimeStep,
@@ -419,16 +425,17 @@ export class Settings {
         this.showOverdueCountInStatusBar,
       );
     this.settings
-      .newGroup("Editor")
+      .newPage("Editor")
+      .newGroup()
       .addSettings(
         this.autoCompleteTrigger,
         this.convertNonTaskLines,
         this.primaryFormat,
         this.editorReminderDisplay,
       );
-    this.settings.newGroup("File Scanning").addSettings(this.excludedPaths);
-    this.settings
-      .newGroup("Reminder Format - Reminder Plugin")
+    const reminderFormatsPage = this.settings.newPage("Reminder formats");
+    reminderFormatsPage
+      .newGroup("Reminder plugin format")
       .addSettings(
         reminderFormatSettings.enableReminderPluginReminderFormat,
         this.dateFormat,
@@ -436,36 +443,39 @@ export class Settings {
         this.strictDateFormat,
         this.linkDatesToDailyNotes,
       );
-    this.settings
-      .newGroup("Reminder Format - Tasks Plugin")
+    reminderFormatsPage
+      .newGroup("Tasks plugin format")
       .addSettings(
         reminderFormatSettings.enableTasksPluginReminderFormat,
         this.useCustomEmojiForTasksPlugin,
         this.removeTagsForTasksPlugin,
       );
-    this.settings
-      .newGroup("Reminder Format - Dataview")
+    reminderFormatsPage
+      .newGroup("Dataview format")
       .addSettings(
         reminderFormatSettings.enableDataviewReminderFormat,
         this.dataviewReminderFieldName,
       );
-    this.settings
-      .newGroup("Reminder Format - Kanban Plugin")
+    reminderFormatsPage
+      .newGroup("Kanban plugin format")
       .addSettings(reminderFormatSettings.enableKanbanPluginReminderFormat);
     this.settings
-      .newGroup("Date/Time Display Format")
+      .newPage("Display")
+      .newGroup()
       .addSettings(
         this.yearMonthDisplayFormat,
         this.monthDayDisplayFormat,
         this.shortDateWithWeekdayDisplayFormat,
         this.timeDisplayFormat,
+        this.weekStart,
       );
     this.settings
-      .newGroup("Advanced")
+      .newPage("Advanced")
+      .newGroup()
       .addSettings(
+        this.excludedPaths,
         this.editDetectionSec,
         this.reminderCheckIntervalSec,
-        this.weekStart,
       );
 
     const config = new ReminderFormatConfig();
@@ -525,7 +535,7 @@ class ReminderFormatSettings {
       .newSettingBuilder()
       .key(key)
       .name(`Enable ${format.description}`)
-      .desc(`Enable ${format.description}`)
+      .desc("Recognize reminders written in this format.")
       .tag(TAG_RESCAN)
       .toggle(format.defaultEnabled)
       .onAnyValueChanged((context) => {

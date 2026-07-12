@@ -51,7 +51,7 @@ See following settings.
 
 - [Date Format](/setting/#date-format)
 - [Date and Time Format](/setting/#date-and-time-format)
-- For display formats (how dates/times are shown in the UI), see [Date/Time Display Format](/setting/#date-time-display-format)
+- For display formats (how dates/times are shown in the UI), see the [Display](/setting/#display) settings
 
 ## Reminder date input support
 
@@ -62,7 +62,7 @@ Also, you can set reminder time with time picker.
 ::: tip
 
 - You can change the format by [primary reminder format](/setting/#primary-reminder-format) setting.
-- Time step in time picker is set by [Reminder Time Step](/setting/#reminder-time-step) setting.
+- Time step in time picker is set by [Reminder time step (minutes)](/setting/#reminder-time-step-minutes) setting.
 
 :::
 

@@ -1,0 +1,25 @@
+.reminder-settings-tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: 1rem;
+}
+
+.reminder-settings-tab {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+}
+
+.reminder-settings-tab.is-active {
+  color: var(--text-normal);
+  border-bottom: 2px solid var(--interactive-accent);
+}
+
+.reminder-setting-disabled {
+  opacity: 0.5;
+}
