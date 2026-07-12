@@ -150,6 +150,7 @@ async function openChooserAndApplyEdit(
     plugin.app,
     plugin.reminders,
     plugin.settings.reminderTimeStep.value,
+    Number(plugin.settings.weekStart.value),
     initial.span.reminder.time,
   );
 

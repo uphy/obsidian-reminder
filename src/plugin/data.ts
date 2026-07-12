@@ -39,6 +39,10 @@ export class PluginData {
     private store: DataStore,
     private reminders: Reminders,
   ) {
+    // Install this (the plugin's real) Settings instance as the process-wide
+    // reminder-format config. Must run exactly once, here, for the real
+    // instance only — see `Settings.wireReminderFormatConfig()`.
+    this._settings.wireReminderFormatConfig();
     this.settings.forEach((setting) => {
       // `setting` is type-erased to `SettingModelBase` here; `rawValue.onChanged`
       // only registers a listener and doesn't use the raw value type, so

@@ -57,6 +57,7 @@ export class ReminderPluginUI {
       plugin.settings.reminderTimeStep,
       plugin.settings.primaryFormat,
       plugin.settings.convertNonTaskLines,
+      plugin.settings.weekStart,
     );
     this.editDetector = new EditDetector(plugin.settings.editDetectionSec);
     this.reminderModal = new ReminderModal(

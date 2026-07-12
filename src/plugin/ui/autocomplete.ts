@@ -1,3 +1,4 @@
+import type { EditorView } from "@codemirror/view";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminders } from "model/reminder";
 import type { DateTime } from "model/time";
@@ -5,11 +6,11 @@ import { App, Platform } from "obsidian";
 import type { EditorPosition } from "obsidian";
 import type { ReminderFormatType } from "model/format";
 // obsidian's own type definitions dropped their (unused) re-export of the
-// legacy CodeMirror 5 types in 1.13, so import them directly here for the
-// Live Preview CM5 compatibility workaround below.
+// legacy CodeMirror 5 types in 1.13, so import them directly here for
+// `isTrigger()`'s CM5-era change-detection signature below.
 import type * as CodeMirror from "codemirror";
+import { CM6DateTimeChooserPopup } from "./cm6-datetime-chooser";
 import { showDateTimeChooserModal } from "./date-chooser-modal";
-import { DateTimeChooserView } from "./datetime-chooser";
 import {
   appendReminderOrConvert,
   showReminderInsertionFailureNotice,
@@ -34,6 +35,7 @@ export class AutoComplete {
     private timeStep: ReadOnlyReference<number>,
     private primaryFormat: ReadOnlyReference<ReminderFormatType>,
     private convertNonTaskLines: ReadOnlyReference<boolean>,
+    private weekStart: ReadOnlyReference<string>,
   ) {}
 
   isTrigger(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) {
@@ -59,21 +61,36 @@ export class AutoComplete {
   show(app: App, editor: AutoCompletableEditor, reminders: Reminders): void {
     let result: Promise<DateTime>;
     if (Platform.isDesktopApp) {
-      try {
-        const cm: CodeMirror.Editor = (editor as any).cm;
-        if (cm == null) {
-          console.error("Cannot get codemirror editor.");
-          return;
-        }
-        const v = new DateTimeChooserView(cm, reminders);
-        result = v.show();
-      } catch (e) {
-        // Temporary workaround for Live preview mode
-        console.error(e);
-        result = showDateTimeChooserModal(app, reminders, this.timeStep.value);
+      // `.cm` is not part of Obsidian's public `Editor` type (see
+      // `openReminderFile()` in `plugin/ui/index.ts` for the same cast),
+      // but it's how the CM6 `EditorView` backing the active editor is
+      // reached from here.
+      const view: EditorView | undefined = (editor as any).cm;
+      if (view == null) {
+        console.error("Cannot get CodeMirror 6 editor view.");
+        result = showDateTimeChooserModal(
+          app,
+          reminders,
+          this.timeStep.value,
+          Number(this.weekStart.value),
+        );
+      } else {
+        const pos = view.state.selection.main.head;
+        const popup = new CM6DateTimeChooserPopup(
+          view,
+          reminders,
+          this.timeStep.value,
+          Number(this.weekStart.value),
+        );
+        result = popup.show(pos);
       }
     } else {
-      result = showDateTimeChooserModal(app, reminders, this.timeStep.value);
+      result = showDateTimeChooserModal(
+        app,
+        reminders,
+        this.timeStep.value,
+        Number(this.weekStart.value),
+      );
     }
 
     result

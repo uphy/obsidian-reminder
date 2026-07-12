@@ -38,6 +38,7 @@ export function buildCodeMirrorPlugin(
           }
           const trigger = settings.autoCompleteTrigger.value;
           const timeStep = settings.reminderTimeStep.value;
+          const weekStart = Number(settings.weekStart.value);
           if (trigger === text) {
             let result: Promise<DateTime>;
             if (Platform.isDesktopApp) {
@@ -56,6 +57,7 @@ export function buildCodeMirrorPlugin(
                     update.view,
                     reminders,
                     timeStep,
+                    weekStart,
                   );
                   this.activePopup = popup;
                   popup
@@ -69,7 +71,12 @@ export function buildCodeMirrorPlugin(
                 }, 0);
               });
             } else {
-              result = showDateTimeChooserModal(app, reminders, timeStep);
+              result = showDateTimeChooserModal(
+                app,
+                reminders,
+                timeStep,
+                weekStart,
+              );
             }
 
             result

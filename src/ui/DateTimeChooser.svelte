@@ -11,6 +11,7 @@
   export let reminders: Reminders;
   export let onSelect: (time: DateTime) => void;
   export let timeStep = 15;
+  export let weekStart = 0;
   // When set, pre-initializes the calendar (and, if it has a time part, the
   // time input) from this value instead of the usual "now"/reminder-time
   // defaults. Used when editing an existing reminder (e.g. from the editor
@@ -156,6 +157,7 @@
       <CalendarView
         bind:value={date}
         bind:this={calendarViewComponent}
+        {weekStart}
         on:select={() => handleSelect()}
       >
         <div slot="footer">

@@ -15,9 +15,9 @@ export class Day {
   }
 
   public isHoliday() {
-    const weekStart = moment.localeData().firstDayOfWeek();
-    const weekendDays = [(6 - weekStart + 7) % 7, (0 - weekStart + 7) % 7];
-    return weekendDays.includes(this.date.weekday());
+    // Weekend highlighting is intentionally absolute Saturday/Sunday
+    // (locale- and week-start-independent), using `.day()` (0=Sunday..6=Saturday).
+    return [0, 6].includes(this.date.day());
   }
 }
 
@@ -46,7 +46,7 @@ export class Month {
     this.weekStart = weekStart || 0;
     const current = monthStart
       .clone()
-      .add(-(monthStart.weekday() - this.weekStart + 7) % 7, "day");
+      .add(-(monthStart.day() - this.weekStart + 7) % 7, "day");
     for (let i: number = 0; i < 6; i++) {
       if (i > 0 && !this.isThisMonth(current)) {
         break;
@@ -113,7 +113,7 @@ export class Calendar {
   public calendarString() {
     const daysOfWeek = Array.from({ length: 7 }, (_, i) =>
       moment()
-        .weekday((this.weekStart + i) % 7)
+        .day((this.weekStart + i) % 7)
         .format("ddd"),
     ).join(" ");
     let str = `${this._current.monthStart.format("YYYY, MMM")}\n${daysOfWeek}\n`;
