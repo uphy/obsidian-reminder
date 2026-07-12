@@ -23,9 +23,9 @@ import type { AutoCompletableEditor } from "./autocomplete";
 import { buildCodeMirrorPlugin } from "./editor-extension";
 import { createReminderPillExtension } from "./editor-reminder-display";
 import {
-  createReminderLineFlashExtension,
-  flashReminderLine,
-} from "./reminder-line-flash";
+  createReminderLineHighlightExtension,
+  highlightReminderLine,
+} from "./reminder-line-highlight";
 import { ReminderModal } from "./reminder";
 
 export class ReminderPluginUI {
@@ -92,7 +92,9 @@ export class ReminderPluginUI {
       this.plugin.registerEditorExtension(
         createReminderPillExtension(this.plugin),
       );
-      this.plugin.registerEditorExtension(createReminderLineFlashExtension());
+      this.plugin.registerEditorExtension(
+        createReminderLineHighlightExtension(),
+      );
       // Reconfiguring editor extensions is how CM6 signals every open
       // editor's `StateField` that something changed (`tr.reconfigured`),
       // which is what lets the pill extension re-check the toggle
@@ -214,15 +216,18 @@ export class ReminderPluginUI {
       true,
     );
 
-    // Flash-highlight the line via the CM6 extension registered in
-    // `onload()`. `.cm` is not part of Obsidian's public `Editor` type (see
+    // Highlight the line via the CM6 extension registered in `onload()`.
+    // `.cm` is not part of Obsidian's public `Editor` type (see
     // `autocomplete.ts` for the same cast), and is only present on desktop,
     // so this is a silent no-op otherwise.
     const cm = (editor as any).cm as EditorView | undefined;
     if (cm) {
       const cmLine = cm.state.doc.line(reminder.rowNumber + 1);
       cm.dispatch({
-        effects: flashReminderLine.of({ from: cmLine.from, to: cmLine.to }),
+        effects: highlightReminderLine.of({
+          from: cmLine.from,
+          to: cmLine.to,
+        }),
       });
     }
   }
