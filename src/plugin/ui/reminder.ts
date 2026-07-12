@@ -24,6 +24,11 @@ export class ReminderModal {
     this.toastManager.destroy();
   }
 
+  /** Delegates to the toast manager; a no-op when in modal mode (no toasts exist). */
+  syncToasts(currentKeys: Set<string>) {
+    this.toastManager.sync(currentKeys);
+  }
+
   public show(
     reminder: Reminder,
     onRemindMeLater: (time: DateTime) => void,
