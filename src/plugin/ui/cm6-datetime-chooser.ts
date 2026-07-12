@@ -62,6 +62,7 @@ export class CM6DateTimeChooserPopup {
     private editorView: EditorView,
     private reminders: Reminders,
     private timeStep: number,
+    private weekStart: number,
   ) {
     this.view = document.createElement("div");
     this.view.addClass("date-time-chooser-popup");
@@ -90,6 +91,7 @@ export class CM6DateTimeChooserPopup {
         },
         reminders: this.reminders,
         timeStep: this.timeStep,
+        weekStart: this.weekStart,
         date: moment(),
       },
     });

@@ -35,6 +35,7 @@ export class AutoComplete {
     private timeStep: ReadOnlyReference<number>,
     private primaryFormat: ReadOnlyReference<ReminderFormatType>,
     private convertNonTaskLines: ReadOnlyReference<boolean>,
+    private weekStart: ReadOnlyReference<string>,
   ) {}
 
   isTrigger(cmEditor: CodeMirror.Editor, changeObj: CodeMirror.EditorChange) {
@@ -67,18 +68,29 @@ export class AutoComplete {
       const view: EditorView | undefined = (editor as any).cm;
       if (view == null) {
         console.error("Cannot get CodeMirror 6 editor view.");
-        result = showDateTimeChooserModal(app, reminders, this.timeStep.value);
+        result = showDateTimeChooserModal(
+          app,
+          reminders,
+          this.timeStep.value,
+          Number(this.weekStart.value),
+        );
       } else {
         const pos = view.state.selection.main.head;
         const popup = new CM6DateTimeChooserPopup(
           view,
           reminders,
           this.timeStep.value,
+          Number(this.weekStart.value),
         );
         result = popup.show(pos);
       }
     } else {
-      result = showDateTimeChooserModal(app, reminders, this.timeStep.value);
+      result = showDateTimeChooserModal(
+        app,
+        reminders,
+        this.timeStep.value,
+        Number(this.weekStart.value),
+      );
     }
 
     result

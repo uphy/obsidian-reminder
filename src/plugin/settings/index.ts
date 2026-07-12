@@ -495,7 +495,20 @@ export class Settings {
         this.editDetectionSec,
         this.reminderCheckIntervalSec,
       );
+  }
 
+  /**
+   * Installs this instance's setting values as the process-wide reminder-format
+   * config (via `setReminderFormatConfig()`), rebinding the config used by every
+   * reminder-format singleton (e.g. `TasksPluginFormat.instance`).
+   *
+   * This has a global side effect and must be called exactly once, for the
+   * plugin's real `Settings` instance (see `PluginData`'s constructor). A
+   * stray `new Settings()` elsewhere (e.g. previously in a UI component) must
+   * never call this, or it would silently revert every format setting to its
+   * default value for the whole process (see issue #248).
+   */
+  public wireReminderFormatConfig(): void {
     const config = new ReminderFormatConfig();
     config.setParameterFunc(ReminderFormatParameterKey.now, () =>
       DateTime.now(),
