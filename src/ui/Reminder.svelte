@@ -12,6 +12,12 @@
   export let onMute: () => void;
   export let onPauseAllNotifications: () => void;
   export let onMuteAll: () => void;
+  // "modal": Obsidian's centered dialog (default, unchanged behavior).
+  // "toast": a non-focus-stealing corner card; see the toast-specific
+  // branches below (onMount, svelte:window, close button, styling).
+  export let variant: "modal" | "toast" = "modal";
+  // Only used by the toast variant's close (x) button.
+  export let onClose: (() => void) | undefined = undefined;
   // Whether the Done button should be auto-focused when the popup opens.
   // Off by default so a stray Enter/Space keypress right after the popup
   // appears doesn't accidentally complete a reminder the user hasn't read.
@@ -38,6 +44,12 @@
   // managers, launchers) intercept Option/Alt chords before they reach
   // Obsidian -- common on macOS, where Ctrl+letter is nearly always free.
   function handleKeydown(evt: KeyboardEvent) {
+    if (variant === "toast") {
+      // Multiple toasts can be shown at once; if each registered these
+      // shortcuts, one keypress would trigger all of them. Toasts are
+      // operated with the mouse/touch only.
+      return;
+    }
     const alt = evt.altKey && !evt.ctrlKey;
     const ctrl = evt.ctrlKey && !evt.altKey;
     if ((!alt && !ctrl) || evt.metaKey || evt.shiftKey) {
@@ -68,6 +80,11 @@
   }
 
   onMount(async () => {
+    if (variant === "toast") {
+      // Toasts are non-intrusive corner cards: never steal focus from
+      // whatever the user is doing, unlike the modal below.
+      return;
+    }
     await tick();
     if (focusDone) {
       doneButton.focus();
@@ -82,10 +99,17 @@
 </script>
 
 <!-- Capture phase so the shortcuts run before Obsidian's own keymap/hotkey
-handlers (e.g. Ctrl+O would otherwise also trigger the quick switcher). -->
+handlers (e.g. Ctrl+O would otherwise also trigger the quick switcher).
+`<svelte:window>` can't be placed inside an `{#if}` block, so the toast
+variant is excluded inside `handleKeydown` itself instead. -->
 <svelte:window on:keydown|capture={handleKeydown} />
 
-<main bind:this={containerEl} tabindex="-1">
+<main bind:this={containerEl} tabindex="-1" class:toast={variant === "toast"}>
+  {#if variant === "toast"}
+    <button class="reminder-toast-close" on:click={onClose} aria-label="Close">
+      ×
+    </button>
+  {/if}
   <h3 class="reminder-title" aria-label={reminder.title}>
     <Markdown markdown={reminder.title} sourcePath={reminder.file} />
   </h3>
@@ -211,5 +235,52 @@ handlers (e.g. Ctrl+O would otherwise also trigger the quick switcher). -->
 
   .mnemonic {
     text-decoration: underline;
+  }
+
+  main.toast {
+    position: relative;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m, 8px);
+    box-shadow: var(--shadow-s);
+    padding: 12px 14px;
+  }
+
+  main.toast .reminder-title {
+    margin: 0 1.5rem 0.3rem 0;
+    font-size: 0.95rem;
+  }
+
+  main.toast .reminder-actions {
+    margin-top: 0.5rem;
+  }
+
+  main.toast .reminder-secondary-actions {
+    gap: 0.75rem;
+  }
+
+  main.toast .reminder-footer-action {
+    margin-top: 0.5rem;
+  }
+
+  .reminder-toast-close {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  .reminder-toast-close:hover {
+    color: var(--text-normal);
   }
 </style>

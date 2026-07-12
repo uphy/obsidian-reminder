@@ -17,6 +17,7 @@ import { showPauseDurationChooser } from "plugin/dnd";
 import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { DndStatusBar } from "./dnd-status-bar";
+import { OverdueStatusBar } from "./overdue-status-bar";
 import { ReminderListItemViewProxy } from "./reminder-list";
 import { AutoComplete } from "./autocomplete";
 import type { AutoCompletableEditor } from "./autocomplete";
@@ -34,6 +35,7 @@ export class ReminderPluginUI {
   private reminderModal: ReminderModal;
   private viewProxy: ReminderListItemViewProxy;
   private dndStatusBar: DndStatusBar;
+  private overdueStatusBar: OverdueStatusBar;
   constructor(private plugin: ReminderPlugin) {
     this.viewProxy = new ReminderListItemViewProxy(
       this.plugin,
@@ -64,12 +66,15 @@ export class ReminderPluginUI {
       plugin.settings.openNoteOnReminderClick,
       plugin.settings.showPopupWithSystemNotification,
       plugin.settings.focusDoneButtonOnPopup,
+      plugin.settings.notificationPopupStyle,
     );
     this.dndStatusBar = new DndStatusBar(plugin);
+    this.overdueStatusBar = new OverdueStatusBar(plugin);
   }
 
   onload() {
     this.dndStatusBar.onload();
+    this.overdueStatusBar.onload();
 
     // Reminder List
     this.plugin.registerView(VIEW_TYPE_REMINDER_LIST, (leaf: WorkspaceLeaf) => {
@@ -121,6 +126,7 @@ export class ReminderPluginUI {
 
   onunload() {
     this.detachReminderList();
+    this.reminderModal.destroy();
   }
 
   isEditing(): boolean {
@@ -129,10 +135,12 @@ export class ReminderPluginUI {
 
   invalidate() {
     this.viewProxy.invalidate();
+    this.overdueStatusBar.refresh();
   }
 
   reload(force: boolean = false) {
     this.viewProxy.reload(force);
+    this.overdueStatusBar.refresh();
   }
 
   showAutoComplete(editor: AutoCompletableEditor) {

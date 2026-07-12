@@ -135,6 +135,16 @@ Show reminder popups and system notifications when a reminder is due.
   - OFF: Reminder popups/system notifications are suppressed. The [reminder list view](/guide/list-reminders.html) keeps updating, and expired reminders still move to the [Overdue section](/guide/list-reminders.html#overdue-reminders).
 - Default: ON
 
+## Reminder popup style
+
+Choose how the [builtin notification popup](/guide/notification.html#builtin-notification-modal) is presented.
+
+- Type: `select`
+- Values:
+  - Modal (center dialog): a dialog in the center of the window that takes focus (default)
+  - Toast (corner card): a card stacked in the bottom-right corner of the window that does not take focus or interrupt what you're doing. Multiple toasts stack when several reminders fire close together.
+- Default: Modal (center dialog)
+
 ## Open note on reminder click
 
 Open the note directly instead of showing the reminder popup when you click a reminder.
@@ -295,3 +305,13 @@ You can quickly apply a preset via the command palette:
 Running the command opens a chooser with live examples. Selecting a preset immediately saves settings and refreshes the Reminder List.
 
 - Default: `5`
+
+## Show overdue count in status bar
+
+Show the number of overdue reminders in the status bar (e.g. `⏰ 3`). Muted overdue reminders are still counted. Click the status bar item to open the [reminder list view](/guide/list-reminders.html).
+
+- Type: `boolean`
+- Values:
+  - ON: The status bar item is shown whenever there is at least one overdue reminder (default)
+  - OFF: The status bar item is never shown
+- Default: ON

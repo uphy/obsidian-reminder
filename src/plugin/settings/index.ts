@@ -31,6 +31,7 @@ export class Settings {
   reminderTime: SettingModel<string, Time>;
   reminderTimeStep: SettingModel<number, number>;
   enableNotification: SettingModel<boolean, boolean>;
+  notificationPopupStyle: SettingModel<string, string>;
   openNoteOnReminderClick: SettingModel<boolean, boolean>;
   useSystemNotification: SettingModel<boolean, boolean>;
   showPopupWithSystemNotification: SettingModel<boolean, boolean>;
@@ -54,6 +55,7 @@ export class Settings {
   shortDateWithWeekdayDisplayFormat: SettingModel<string, string>;
   editDetectionSec: SettingModel<number, number>;
   reminderCheckIntervalSec: SettingModel<number, number>;
+  showOverdueCountInStatusBar: SettingModel<boolean, boolean>;
 
   constructor() {
     const reminderFormatSettings = new ReminderFormatSettings(this.settings);
@@ -84,6 +86,18 @@ export class Settings {
         "If disabled, reminder popups and system notifications are not shown. The reminder list view keeps working.",
       )
       .toggle(true)
+      .build(new RawSerde());
+
+    this.notificationPopupStyle = this.settings
+      .newSettingBuilder()
+      .key("notificationPopupStyle")
+      .name("Reminder popup style")
+      .desc(
+        "Modal: a dialog in the center of the window that takes focus. Toast: a card in the corner of the window that does not interrupt your work.",
+      )
+      .dropdown("modal")
+      .addOption("Modal (center dialog)", "modal")
+      .addOption("Toast (corner card)", "toast")
       .build(new RawSerde());
 
     this.openNoteOnReminderClick = this.settings
@@ -361,6 +375,16 @@ export class Settings {
       .number(5)
       .build(new RawSerde());
 
+    this.showOverdueCountInStatusBar = this.settings
+      .newSettingBuilder()
+      .key("showOverdueCountInStatusBar")
+      .name("Show overdue count in status bar")
+      .desc(
+        "Show the number of overdue reminders in the status bar. Click it to open the reminder list.",
+      )
+      .toggle(true)
+      .build(new RawSerde());
+
     this.settings
       .newGroup("Notification Settings")
       .addSettings(
@@ -368,10 +392,12 @@ export class Settings {
         this.reminderTimeStep,
         this.laters,
         this.enableNotification,
+        this.notificationPopupStyle,
         this.openNoteOnReminderClick,
         this.useSystemNotification,
         this.showPopupWithSystemNotification,
         this.focusDoneButtonOnPopup,
+        this.showOverdueCountInStatusBar,
       );
     this.settings
       .newGroup("Editor")
