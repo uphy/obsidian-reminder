@@ -93,11 +93,11 @@ export class Settings {
       .key("notificationPopupStyle")
       .name("Reminder popup style")
       .desc(
-        "Modal: a dialog in the center of the window that takes focus. Toast: a card in the corner of the window that does not interrupt your work.",
+        "Toast: a card in the corner of the window that does not interrupt your work. Modal: a dialog in the center of the window that takes focus.",
       )
       .dropdown("toast")
-      .addOption("Modal (center dialog)", "modal")
       .addOption("Toast (corner card)", "toast")
+      .addOption("Modal (center dialog)", "modal")
       .build(new RawSerde());
 
     this.openNoteOnReminderClick = this.settings
