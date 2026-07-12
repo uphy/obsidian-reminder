@@ -95,7 +95,7 @@ export class Settings {
       .desc(
         "Modal: a dialog in the center of the window that takes focus. Toast: a card in the corner of the window that does not interrupt your work.",
       )
-      .dropdown("modal")
+      .dropdown("toast")
       .addOption("Modal (center dialog)", "modal")
       .addOption("Toast (corner card)", "toast")
       .build(new RawSerde());

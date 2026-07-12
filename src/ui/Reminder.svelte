@@ -22,6 +22,14 @@
   // Off by default so a stray Enter/Space keypress right after the popup
   // appears doesn't accidentally complete a reminder the user hasn't read.
   export let focusDone: boolean = false;
+  // Whether keyboard mnemonics are active for this instance. Only relevant
+  // to the toast variant: multiple toasts can be shown at once, and each one
+  // mounts its own `svelte:window` keydown handler, so if more than one had
+  // shortcuts enabled a single keypress would trigger all of them at once.
+  // `ReminderToastManager` keeps this true for only the most recently shown
+  // toast. The modal variant never passes this prop, so it stays `true` and
+  // its behavior is unchanged.
+  export let shortcutsEnabled: boolean = true;
   // Do not set initial value so that svelte can render the placeholder `Remind Me Later`.
   let selectedIndex: number;
   export let laters: Array<Later> = [];
@@ -44,10 +52,9 @@
   // managers, launchers) intercept Option/Alt chords before they reach
   // Obsidian -- common on macOS, where Ctrl+letter is nearly always free.
   function handleKeydown(evt: KeyboardEvent) {
-    if (variant === "toast") {
-      // Multiple toasts can be shown at once; if each registered these
-      // shortcuts, one keypress would trigger all of them. Toasts are
-      // operated with the mouse/touch only.
+    if (!shortcutsEnabled) {
+      // See the `shortcutsEnabled` prop doc: only the most recently shown
+      // toast has this true. Older toasts fall back to mouse/touch only.
       return;
     }
     const alt = evt.altKey && !evt.ctrlKey;
@@ -100,8 +107,9 @@
 
 <!-- Capture phase so the shortcuts run before Obsidian's own keymap/hotkey
 handlers (e.g. Ctrl+O would otherwise also trigger the quick switcher).
-`<svelte:window>` can't be placed inside an `{#if}` block, so the toast
-variant is excluded inside `handleKeydown` itself instead. -->
+`<svelte:window>` can't be placed inside an `{#if}` block, so disabled
+instances (older toasts; see `shortcutsEnabled`) are excluded inside
+`handleKeydown` itself instead. -->
 <svelte:window on:keydown|capture={handleKeydown} />
 
 <main bind:this={containerEl} tabindex="-1" class:toast={variant === "toast"}>

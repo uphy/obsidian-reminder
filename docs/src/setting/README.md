@@ -141,9 +141,9 @@ Choose how the [builtin notification popup](/guide/notification.html#builtin-not
 
 - Type: `select`
 - Values:
-  - Modal (center dialog): a dialog in the center of the window that takes focus (default)
-  - Toast (corner card): a card stacked in the bottom-right corner of the window that does not take focus or interrupt what you're doing. Multiple toasts stack when several reminders fire close together.
-- Default: Modal (center dialog)
+  - Modal (center dialog): a dialog in the center of the window that takes focus.
+  - Toast (corner card): a card stacked in the bottom-right corner of the window that does not take focus or interrupt what you're doing (default). Multiple toasts stack when several reminders fire close together. Keyboard shortcuts apply only to the most recently shown toast; older toasts are mouse/touch only.
+- Default: Toast (corner card)
 
 ## Open note on reminder click
 

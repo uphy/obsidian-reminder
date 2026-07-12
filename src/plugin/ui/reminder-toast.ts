@@ -39,6 +39,10 @@ export class ReminderToastManager {
         reminder,
         laters,
         variant: "toast",
+        // Set to the right value up front (rather than relying only on the
+        // post-insert `updateShortcutTarget()` call below) to avoid a brief
+        // flicker where two toasts both have shortcuts enabled.
+        shortcutsEnabled: true,
         onRemindMeLater: (time: DateTime) => {
           onRemindMeLater(time);
           this.remove(key);
@@ -75,6 +79,7 @@ export class ReminderToastManager {
     });
 
     this.toasts.set(key, { el: cardEl, component });
+    this.updateShortcutTarget();
   }
 
   /** Unmounts and removes every toast and the container (for plugin unload). */
@@ -93,6 +98,22 @@ export class ReminderToastManager {
     entry.component.$destroy();
     entry.el.remove();
     this.toasts.delete(key);
+    this.updateShortcutTarget();
+  }
+
+  /**
+   * Keeps keyboard mnemonics active on exactly one toast: the most recently
+   * shown one. Each toast mounts its own `svelte:window` keydown handler
+   * (see `Reminder.svelte`), so if more than one had shortcuts enabled, a
+   * single keypress would trigger all of them at once. `this.toasts`
+   * preserves insertion order, so the last entry is the newest toast.
+   */
+  private updateShortcutTarget() {
+    const keys = Array.from(this.toasts.keys());
+    const lastKey = keys[keys.length - 1];
+    this.toasts.forEach(({ component }, key) => {
+      component.$set({ shortcutsEnabled: key === lastKey });
+    });
   }
 
   private getContainer(): HTMLElement {

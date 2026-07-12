@@ -45,7 +45,9 @@ If another app on your system already captures the Option/Alt combination (windo
 
 ### Toast style
 
-By default the popup is a modal dialog centered in the window and takes focus. Set [Reminder popup style](/setting/#reminder-popup-style) to `Toast (corner card)` to show it instead as a small card stacked in the bottom-right corner, which does not take focus or interrupt what you're doing. Multiple toasts stack when several reminders fire close together, and keyboard shortcuts are not available in this mode (use the buttons on the card instead).
+By default the popup is shown as a small card stacked in the bottom-right corner, which does not take focus or interrupt what you're doing. Set [Reminder popup style](/setting/#reminder-popup-style) to `Modal (center dialog)` to show it instead as a modal dialog centered in the window that takes focus.
+
+Multiple toasts stack when several reminders fire close together. The [keyboard shortcuts](#keyboard-shortcuts) above only apply to the most recently shown toast (the bottom-most card in the stack); older toasts fall back to the buttons on the card (mouse/touch only), since two toasts both reacting to the same keypress would be confusing.
 
 ## System notification
 
