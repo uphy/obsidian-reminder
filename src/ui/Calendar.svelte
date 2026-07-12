@@ -25,6 +25,11 @@
   );
   let table: HTMLElement;
   let slot: HTMLElement;
+  let calendarEl: HTMLElement;
+
+  export function focus() {
+    calendarEl.focus();
+  }
 
   function onClick(clicked: moment.Moment) {
     value = clicked;
@@ -116,6 +121,7 @@
   class="reminder-calendar"
   tabindex="0"
   role="grid"
+  bind:this={calendarEl}
   on:focus={() => {
     dispatch("focus");
   }}
