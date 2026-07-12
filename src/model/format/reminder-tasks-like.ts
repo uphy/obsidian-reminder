@@ -65,9 +65,6 @@ export abstract class TasksLikeReminderFormat<
           const nextReminderTodo = todo.clone()!;
           const nextReminder = parsed.clone();
           const dueDate = parsed.getDueDate();
-          if (dueDate == null) {
-            return false;
-          }
 
           const now = this.config.getParameter(ReminderFormatParameterKey.now);
           if (this.usesSeparateReminderDate(parsed)) {
@@ -80,19 +77,35 @@ export abstract class TasksLikeReminderFormat<
               time.moment(),
               now,
             );
-            const nextDueDate: Date | undefined = nextOccurrence(
-              recurrence,
-              dueDate.moment(),
-              now,
-            );
-            if (nextTime == null || nextDueDate == null) {
+            if (nextTime == null) {
               return false;
             }
-            nextReminder.setTime(new DateTime(moment(nextTime), true));
-            nextReminder.setDueDate(
-              new DateTime(moment(nextDueDate), dueDate.hasTimePart),
+            nextReminder.setTime(
+              new DateTime(moment(nextTime), time.hasTimePart),
             );
+            // `dueDate` may legitimately be absent here (an ⏰-only, or
+            // ⏳-only/🛫-only via fallback, line with no 📅): just skip
+            // advancing the due date rather than failing the whole
+            // recurrence.
+            if (dueDate != null) {
+              const nextDueDate: Date | undefined = nextOccurrence(
+                recurrence,
+                dueDate.moment(),
+                now,
+              );
+              if (nextDueDate == null) {
+                return false;
+              }
+              nextReminder.setDueDate(
+                new DateTime(moment(nextDueDate), dueDate.hasTimePart),
+              );
+            }
           } else {
+            // The due date is the only source of the recurrence date in
+            // this branch, so it must be present.
+            if (dueDate == null) {
+              return false;
+            }
             const next: Date | undefined = nextOccurrence(
               recurrence,
               dueDate.moment(),

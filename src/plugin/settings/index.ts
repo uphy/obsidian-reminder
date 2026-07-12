@@ -48,6 +48,7 @@ export class Settings {
   primaryFormat: SettingModel<string, ReminderFormatType>;
   excludedPaths: SettingModel<string, Array<string>>;
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
+  useReminderTimeFallbackForTasksPlugin: SettingModel<boolean, boolean>;
   removeTagsForTasksPlugin: SettingModel<boolean, boolean>;
   dataviewReminderFieldName: SettingModel<string, string>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
@@ -306,6 +307,22 @@ export class Settings {
         );
       })
       .build(new RawSerde());
+    this.useReminderTimeFallbackForTasksPlugin = this.settings
+      .newSettingBuilder()
+      .key("useReminderTimeFallbackForTasksPlugin")
+      .name("Fall back to due, scheduled, or start date")
+      .desc(
+        "When the reminder date (⏰) is missing, use the due date (📅), then the scheduled date (⏳), then the start date (🛫), in that order.",
+      )
+      .tag(TAG_RESCAN)
+      .toggle(false)
+      .onAnyValueChanged((context) => {
+        context.setEnabled(
+          reminderFormatSettings.enableTasksPluginReminderFormat.value &&
+            this.useCustomEmojiForTasksPlugin.value,
+        );
+      })
+      .build(new RawSerde());
     this.removeTagsForTasksPlugin = this.settings
       .newSettingBuilder()
       .key("removeTagsForTasksPlugin")
@@ -448,6 +465,7 @@ export class Settings {
       .addSettings(
         reminderFormatSettings.enableTasksPluginReminderFormat,
         this.useCustomEmojiForTasksPlugin,
+        this.useReminderTimeFallbackForTasksPlugin,
         this.removeTagsForTasksPlugin,
       );
     reminderFormatsPage
@@ -493,6 +511,10 @@ export class Settings {
     config.setParameter(
       ReminderFormatParameterKey.removeTagsForTasksPlugin,
       this.removeTagsForTasksPlugin,
+    );
+    config.setParameter(
+      ReminderFormatParameterKey.useReminderTimeFallbackForTasksPlugin,
+      this.useReminderTimeFallbackForTasksPlugin,
     );
     config.setParameter(
       ReminderFormatParameterKey.dataviewReminderFieldName,

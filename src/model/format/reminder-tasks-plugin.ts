@@ -34,11 +34,13 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
     useCustomEmoji?: boolean,
     removeTags?: boolean,
     strictDateFormat?: boolean,
+    useDueDateFallback?: boolean,
   ): TasksPluginReminderModel {
     return new TasksPluginReminderModel(
       useCustomEmoji ?? false,
       removeTags ?? false,
       strictDateFormat ?? true,
+      useDueDateFallback ?? false,
       new Tokens(splitBySymbol(line, this.allSymbols)),
     );
   }
@@ -47,6 +49,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
     private useCustomEmoji: boolean,
     private removeTags: boolean,
     private strictDateFormat: boolean,
+    private useDueDateFallback: boolean,
     private tokens: Tokens,
   ) {}
 
@@ -58,13 +61,13 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
     return title;
   }
   getTime(): DateTime | null {
-    return this.getDate(this.getReminderSymbol());
+    return this.getDate(this.resolveReminderSymbol());
   }
   setTime(time: DateTime, insertAt?: number): void {
     if (this.useCustomEmoji) {
-      this.setDate(this.getReminderSymbol(), time, 1);
+      this.setDate(this.writeReminderSymbol(), time, 1);
     } else {
-      this.setDate(this.getReminderSymbol(), time, insertAt);
+      this.setDate(this.writeReminderSymbol(), time, insertAt);
     }
   }
   getDueDate(): DateTime | null {
@@ -74,10 +77,46 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
     this.setDate(TasksPluginReminderModel.symbolDueDate, time);
   }
   setRawTime(rawTime: string): boolean {
-    this.setDate(this.getReminderSymbol(), rawTime);
+    this.setDate(this.writeReminderSymbol(), rawTime);
     return true;
   }
-  private getReminderSymbol(): Symbol {
+
+  /**
+   * Symbol used to read the reminder time. Unlike `writeReminderSymbol()`,
+   * this may cascade through 📅/⏳/🛫 when the fallback setting is on, so
+   * reads and writes intentionally use different symbol-resolution rules
+   * (see design doc "Reminder-time resolution rule").
+   */
+  private resolveReminderSymbol(): Symbol {
+    if (!this.useCustomEmoji) {
+      return TasksPluginReminderModel.symbolDueDate;
+    }
+    if (!this.useDueDateFallback) {
+      return TasksPluginReminderModel.symbolReminder;
+    }
+    const chain = [
+      TasksPluginReminderModel.symbolReminder,
+      TasksPluginReminderModel.symbolDueDate,
+      TasksPluginReminderModel.symbolScheduled,
+      TasksPluginReminderModel.symbolStart,
+    ];
+    for (const symbol of chain) {
+      // Fallback is based on token presence, not parse validity: a
+      // malformed higher-priority token still blocks fallback to a
+      // lower-priority one.
+      if (this.tokens.getToken(symbol) != null) {
+        return symbol;
+      }
+    }
+    return TasksPluginReminderModel.symbolReminder;
+  }
+
+  /**
+   * Symbol used to write the reminder time (snooze). Always ⏰ in
+   * custom-emoji mode, independent of the fallback setting, so snoozing
+   * never clobbers 📅/⏳/🛫.
+   */
+  private writeReminderSymbol(): Symbol {
     if (this.useCustomEmoji) {
       return TasksPluginReminderModel.symbolReminder;
     } else {
@@ -87,11 +126,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
 
   getEndOfTimeTextIndex(): number {
     // get the end of the string index of due date or reminder date
-    let timeSymbol = TasksPluginReminderModel.symbolDueDate;
-    if (this.useCustomEmoji) {
-      timeSymbol = TasksPluginReminderModel.symbolReminder;
-    }
-    const token = this.tokens.rangeOfSymbol(timeSymbol);
+    const token = this.tokens.rangeOfSymbol(this.resolveReminderSymbol());
     if (token != null) {
       return token.end;
     }
@@ -99,7 +134,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   }
 
   computeSpan(): { start: number; end: number } {
-    const symbol = this.getReminderSymbol();
+    const symbol = this.resolveReminderSymbol();
     const range = this.tokens.rangeOfSymbol(symbol);
     const token = this.tokens.getToken(symbol);
     if (range == null || token == null) {
@@ -147,6 +182,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
       this.useCustomEmoji,
       this.removeTags,
       this.strictDateFormat,
+      this.useDueDateFallback,
     );
   }
 
@@ -251,9 +287,18 @@ export class TasksPluginFormat extends TasksLikeReminderFormat<TasksPluginRemind
       this.useCustomEmoji(),
       this.removeTagsEnabled(),
       this.isStrictDateFormat(),
+      this.useDueDateFallback(),
     );
-    if (this.useCustomEmoji() && parsed.getDueDate() == null) {
-      return null;
+    if (this.useCustomEmoji()) {
+      if (this.useDueDateFallback()) {
+        if (parsed.getTime() == null) {
+          return null;
+        }
+      } else {
+        if (parsed.getDueDate() == null) {
+          return null;
+        }
+      }
     }
     return parsed;
   }
@@ -267,6 +312,12 @@ export class TasksPluginFormat extends TasksLikeReminderFormat<TasksPluginRemind
   private useCustomEmoji() {
     return this.config.getParameter(
       ReminderFormatParameterKey.useCustomEmojiForTasksPlugin,
+    );
+  }
+
+  private useDueDateFallback() {
+    return this.config.getParameter(
+      ReminderFormatParameterKey.useReminderTimeFallbackForTasksPlugin,
     );
   }
 
@@ -284,6 +335,7 @@ export class TasksPluginFormat extends TasksLikeReminderFormat<TasksPluginRemind
       this.useCustomEmoji(),
       this.removeTagsEnabled(),
       this.isStrictDateFormat(),
+      this.useDueDateFallback(),
     );
     parsed.setTime(time, insertAt);
     if (this.useCustomEmoji() && parsed.getDueDate() == null) {
