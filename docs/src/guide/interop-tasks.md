@@ -68,6 +68,32 @@ You can't insert any characters other than date/time between ⏰ and 📅.
 - (NG) `- [ ] Task ⏰ 2021-09-16 #Tag 📅 2021-09-17`
 :::
 
+### Fall back to due, scheduled, or start date
+
+With "Distinguish between reminder date and due date" enabled, a task
+without ⏰ is normally not treated as a reminder at all. If you enable
+[Fall back to due, scheduled, or start
+date](/setting/#fall-back-to-due-scheduled-or-start-date), the reminder
+date falls back through 📅 (due), then ⏳ (scheduled), then 🛫 (start), in
+that order, whenever ⏰ is missing.
+
+```markdown
+- [ ] Task ⏳ 2021-09-16
+```
+
+Here, the reminder fires on 2021-09-16 even though no ⏰ is present.
+
+::: tip
+When both 📅 and ⏳ are present, 📅 always wins — the fallback order
+mirrors the Tasks Plugin's own specificity (due date is more specific
+than scheduled date). To make a task remind on its scheduled date instead
+of its due date, set an explicit ⏰ equal to the scheduled date.
+:::
+
+Snoozing ("remind me later") always writes ⏰ and never overwrites
+📅/⏳/🛫, so the due/scheduled/start date on the line is preserved even
+after you snooze a fallback-triggered reminder.
+
 ## Using the Tasks plugin's Dataview task format
 
 The Tasks plugin also supports writing task metadata as Dataview inline

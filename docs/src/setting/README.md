@@ -203,6 +203,18 @@ Use custom emoji ⏰ instead of 📅 and distinguish between reminder date/time 
   - ON: Reminder is set using ⏰
   - OFF: Reminder is set using 📅 (default)
 
+### Fall back to due, scheduled, or start date
+
+Only available when [Distinguish between reminder date and due
+date](#distinguish-between-reminder-date-and-due-date) is enabled. When the
+reminder date (⏰) is missing, use the due date (📅), then the scheduled
+date (⏳), then the start date (🛫), in that order.
+
+- Type: `boolean`
+- Values:
+  - ON: Fall back through 📅 → ⏳ → 🛫 when ⏰ is missing
+  - OFF: Only ⏰ is recognized as the reminder date (default)
+
 ### Remove tags from reminder title
 
 If checked, the tags (#xxx) will be removed from the reminder title.

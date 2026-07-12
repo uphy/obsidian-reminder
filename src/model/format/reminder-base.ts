@@ -50,6 +50,11 @@ export class ReminderFormatParameterKey<T> {
     );
   static readonly removeTagsForTasksPlugin =
     new ReminderFormatParameterKey<boolean>("removeTagsForTasksPlugin", false);
+  static readonly useReminderTimeFallbackForTasksPlugin =
+    new ReminderFormatParameterKey<boolean>(
+      "useReminderTimeFallbackForTasksPlugin",
+      false,
+    );
   static readonly dataviewReminderFieldName =
     new ReminderFormatParameterKey<string>(
       "dataviewReminderFieldName",

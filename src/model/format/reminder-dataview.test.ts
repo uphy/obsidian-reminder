@@ -276,6 +276,38 @@ describe("DataviewReminderFormat", (): void => {
         },
       });
     });
+
+    test("recurrence with a reminder-field-only line (no due field at all) recurs correctly (guard-relocation fix)", async () => {
+      await util.testModify({
+        inputMarkdown:
+          "- [ ] Task [repeat:: every day] [reminder:: 2025-05-17T09:00]",
+        edit: { checked: true },
+        expectedMarkdown: `- [ ] Task [repeat:: every day] [reminder:: 2025-05-19T09:00]
+- [x] Task [repeat:: every day] [reminder:: 2025-05-17T09:00] [completion:: 2025-05-18]`,
+        configFunc: (config) => {
+          config.setParameterValue(
+            ReminderFormatParameterKey.now,
+            new DateTime(moment("2025-05-18 08:00"), true),
+          );
+        },
+      });
+    });
+
+    test("recurrence hasTimePart fix: a date-only reminder-field-only line stays date-only (no fabricated 00:00)", async () => {
+      await util.testModify({
+        inputMarkdown:
+          "- [ ] Task [repeat:: every day] [reminder:: 2025-05-17]",
+        edit: { checked: true },
+        expectedMarkdown: `- [ ] Task [repeat:: every day] [reminder:: 2025-05-19]
+- [x] Task [repeat:: every day] [reminder:: 2025-05-17] [completion:: 2025-05-18]`,
+        configFunc: (config) => {
+          config.setParameterValue(
+            ReminderFormatParameterKey.now,
+            new DateTime(moment("2025-05-18"), true),
+          );
+        },
+      });
+    });
   });
 });
 

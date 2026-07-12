@@ -230,14 +230,191 @@ describe("TasksPluginReminderLine", (): void => {
   });
 });
 
+describe("TasksPluginReminderModel - reminder-time fallback (⏰ → 📅 → ⏳ → 🛫)", (): void => {
+  test("fallback off, custom emoji off: reads 📅 regardless of ⏰/⏳/🛫 presence", (): void => {
+    const spans = parseLine(
+      "- [ ] Task ⏰ 2021-09-10 📅 2021-09-08 ⏳ 2021-09-05 🛫 2021-09-01",
+    );
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-08");
+  });
+
+  test("legacy (fallback off, custom emoji on): 📅 without ⏰ is not recognized", (): void => {
+    const spans = parseLine("- [ ] Task 📅 2021-09-08", { customEmoji: true });
+    expect(spans).toHaveLength(0);
+  });
+
+  test("legacy (fallback off, custom emoji on): ⏰ + 📅 both present reads ⏰", (): void => {
+    const spans = parseLine("- [ ] Task ⏰ 2021-09-10 📅 2021-09-08", {
+      customEmoji: true,
+    });
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-10");
+  });
+
+  test("legacy (fallback off, custom emoji on): ⏰ without 📅 is not recognized (unchanged)", (): void => {
+    const spans = parseLine("- [ ] Task ⏰ 2021-09-10", { customEmoji: true });
+    expect(spans).toHaveLength(0);
+  });
+
+  test("fallback on: falls back to 📅 when ⏰ is absent (#67)", (): void => {
+    const spans = parseLine("- [ ] Task 📅 2021-09-08", {
+      customEmoji: true,
+      dueDateFallback: true,
+    });
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-08");
+  });
+
+  test("fallback on: falls back to ⏳ when ⏰ and 📅 are absent (#113, ⏳-only)", (): void => {
+    const spans = parseLine("- [ ] Task ⏳ 2021-09-05", {
+      customEmoji: true,
+      dueDateFallback: true,
+    });
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-05");
+  });
+
+  test("fallback on: falls back to 🛫 when ⏰, 📅, and ⏳ are absent", (): void => {
+    const spans = parseLine("- [ ] Task 🛫 2021-09-01", {
+      customEmoji: true,
+      dueDateFallback: true,
+    });
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-01");
+  });
+
+  test("fallback on: 📅 outranks ⏳ when both are present (intentional priority-ranking gap)", (): void => {
+    const spans = parseLine("- [ ] Task 📅 2021-09-08 ⏳ 2021-09-05", {
+      customEmoji: true,
+      dueDateFallback: true,
+    });
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-08");
+  });
+
+  test("fallback on: a malformed ⏰ blocks fallback to a valid 📅 (presence, not validity)", (): void => {
+    const spans = parseLine("- [ ] Task ⏰ not-a-date 📅 2021-09-08", {
+      customEmoji: true,
+      dueDateFallback: true,
+    });
+    expect(spans).toHaveLength(0);
+  });
+
+  describe("appendReminder() gate parity", (): void => {
+    const line = "- [ ] Task ⏰ 2021-09-13 09:00";
+    const time = new DateTime(moment("2021-09-20 10:00"), true);
+
+    test("fallback on: the ⏰-only line is already tracked, so appendReminder() only calls setTime() and does not back-fill 📅", (): void => {
+      const sut = new TasksPluginFormat();
+      const config = new ReminderFormatConfig();
+      config.setParameterValue(
+        ReminderFormatParameterKey.useCustomEmojiForTasksPlugin,
+        true,
+      );
+      config.setParameterValue(
+        ReminderFormatParameterKey.useReminderTimeFallbackForTasksPlugin,
+        true,
+      );
+      sut.setConfig(config);
+      const inserted = sut.appendReminder(line, time);
+      expect(inserted!.insertedLine).toContain("⏰ 2021-09-20 10:00");
+      expect(inserted!.insertedLine).not.toContain("📅");
+    });
+
+    test("fallback off: the same ⏰-only line is not tracked, so appendReminder() goes through newReminder() and back-fills 📅", (): void => {
+      const sut = new TasksPluginFormat();
+      const config = new ReminderFormatConfig();
+      config.setParameterValue(
+        ReminderFormatParameterKey.useCustomEmojiForTasksPlugin,
+        true,
+      );
+      sut.setConfig(config);
+      const inserted = sut.appendReminder(line, time);
+      expect(inserted!.insertedLine).toContain("📅");
+    });
+  });
+
+  describe("recurrence / #106: ⏰-only recurring line with no 📅", (): void => {
+    test("fallback on: regenerates with an advanced ⏰ and no fabricated 📅", async () => {
+      await testModify({
+        now: "2021-09-13 09:10",
+        customEmoji: true,
+        dueDateFallback: true,
+        inputMarkdown: "- [ ] Task ⏰ 2021-09-13 09:00 🔁 every day",
+        expectedMarkdown: `- [ ] Task ⏰ 2021-09-14 09:00 🔁 every day
+- [x] Task ⏰ 2021-09-13 09:00 🔁 every day ✅ 2021-09-13`,
+      });
+    });
+
+    test("fallback off: the same line never becomes a tracked reminder (gate rejects before recurrence is reachable)", async () => {
+      await testModify({
+        now: "2021-09-13 09:10",
+        customEmoji: true,
+        dueDateFallback: false,
+        inputMarkdown: "- [ ] Task ⏰ 2021-09-13 09:00 🔁 every day",
+        expectedMarkdown: undefined,
+      });
+    });
+  });
+
+  describe("recurrence hasTimePart fix: date-only ⏰ stays date-only (both fallback modes)", (): void => {
+    test("fallback on: date-only ⏰ recurring line (with 📅 present) regenerates without a fabricated 00:00", async () => {
+      await testModify({
+        now: "2021-09-13",
+        customEmoji: true,
+        dueDateFallback: true,
+        inputMarkdown: "- [ ] Task ⏰ 2021-09-12 🔁 every day 📅 2021-09-12",
+        expectedMarkdown: `- [ ] Task ⏰ 2021-09-14 🔁 every day 📅 2021-09-14
+- [x] Task ⏰ 2021-09-12 🔁 every day 📅 2021-09-12 ✅ 2021-09-13`,
+      });
+    });
+
+    test("fallback off: date-only ⏰ recurring line (with 📅 present) regenerates without a fabricated 00:00", async () => {
+      await testModify({
+        now: "2021-09-13",
+        customEmoji: true,
+        dueDateFallback: false,
+        inputMarkdown: "- [ ] Task ⏰ 2021-09-12 🔁 every day 📅 2021-09-12",
+        expectedMarkdown: `- [ ] Task ⏰ 2021-09-14 🔁 every day 📅 2021-09-14
+- [x] Task ⏰ 2021-09-12 🔁 every day 📅 2021-09-12 ✅ 2021-09-13`,
+      });
+    });
+  });
+});
+
+function parseLine(
+  markdown: string,
+  options: { customEmoji?: boolean; dueDateFallback?: boolean } = {},
+) {
+  const sut = new TasksPluginFormat();
+  const config = new ReminderFormatConfig();
+  if (options.customEmoji !== undefined) {
+    config.setParameterValue(
+      ReminderFormatParameterKey.useCustomEmojiForTasksPlugin,
+      options.customEmoji,
+    );
+  }
+  if (options.dueDateFallback !== undefined) {
+    config.setParameterValue(
+      ReminderFormatParameterKey.useReminderTimeFallbackForTasksPlugin,
+      options.dueDateFallback,
+    );
+  }
+  sut.setConfig(config);
+  return sut.parse(new MarkdownDocument("file", markdown));
+}
+
 async function testModify({
   now,
   customEmoji,
+  dueDateFallback = false,
   inputMarkdown,
   expectedMarkdown,
 }: {
   now: string;
   customEmoji: boolean;
+  dueDateFallback?: boolean;
   inputMarkdown: string;
   expectedMarkdown: string | undefined;
 }) {
@@ -251,6 +428,10 @@ async function testModify({
   config.setParameterValue(
     ReminderFormatParameterKey.useCustomEmojiForTasksPlugin,
     customEmoji,
+  );
+  config.setParameterValue(
+    ReminderFormatParameterKey.useReminderTimeFallbackForTasksPlugin,
+    dueDateFallback,
   );
   sut.setConfig(config);
 
