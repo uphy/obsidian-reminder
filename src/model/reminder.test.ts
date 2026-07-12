@@ -95,7 +95,8 @@ describe("groupReminders()", (): void => {
     expect(group?.isOverdue).toBe(true);
   });
 
-  test("Overdue timeToString() includes the date for a reminder from a previous day", (): void => {
+  test("Overdue timeToString() shows the date only (no time) for a reminder from a previous day", (): void => {
+    // The fixture intentionally has a time component to prove it is dropped.
     const reminder = makeReminder(
       DateTime.parse(
         moment().subtract(3, "days").format("YYYY-MM-DD") + " 10:30",
@@ -107,7 +108,7 @@ describe("groupReminders()", (): void => {
     const group = groupOf(groups, reminder);
     expect(group?.name).toBe("Overdue");
     expect(group?.timeToString(reminder.time)).toBe(
-      moment().subtract(3, "days").format("MM/DD") + " 10:30",
+      moment().subtract(3, "days").format("MM/DD"),
     );
   });
 

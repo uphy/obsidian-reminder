@@ -28,6 +28,9 @@
 
 <style>
   .group-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 14px;
     color: var(--text-muted);
     border-bottom: 1px solid var(--background-modifier-border);
@@ -37,12 +40,10 @@
     color: var(--text-error);
   }
   .group-count {
-    display: inline-block;
-    vertical-align: middle;
-    margin-left: 4px;
     padding: 0 6px;
     border-radius: 8px;
     font-size: 11px;
+    line-height: 1.5;
     background-color: var(--background-modifier-border);
     color: var(--text-muted);
   }
