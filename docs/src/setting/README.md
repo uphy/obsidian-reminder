@@ -135,6 +135,16 @@ Show reminder popups and system notifications when a reminder is due.
   - OFF: Reminder popups/system notifications are suppressed. The [reminder list view](/guide/list-reminders.html) keeps updating, and expired reminders still move to the [Overdue section](/guide/list-reminders.html#overdue-reminders).
 - Default: ON
 
+## Reminder popup style
+
+Choose how the [builtin notification popup](/guide/notification.html#builtin-notification-modal) is presented.
+
+- Type: `select`
+- Values:
+  - Toast (corner card): a card stacked in the bottom-right corner of the window that does not take focus or interrupt what you're doing (default). Multiple toasts stack when several reminders fire close together. Keyboard shortcuts apply only to the most recently shown toast; older toasts are mouse/touch only. Toasts appear immediately, even while you're typing — see [Edit Detection Time](#edit-detection-time).
+  - Modal (center dialog): a dialog in the center of the window that takes focus.
+- Default: Toast (corner card)
+
 ## Open note on reminder click
 
 Open the note directly instead of showing the reminder popup when you click a reminder.
@@ -220,6 +230,8 @@ Enable support for [Kanban Plugin](https://github.com/mgmeyers/obsidian-kanban)
 In order not to interfere with normal Markdown editing, the Reminder Plugin will not show reminders while the user is editing a file.
 The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable.
 
+This only applies to the [Modal popup style](#reminder-popup-style), which takes focus and would otherwise interrupt typing. The Toast popup style is not focus-stealing, so toasts appear immediately regardless of this setting.
+
 - Type: `number`
 - Value: The value of this setting is the minimum amount of time (in seconds) after a key is typed that it will be identified as notifiable. If this value is set to 0, the reminder will be displayed even if the file is being edited.
 - Default: `10`
@@ -295,3 +307,13 @@ You can quickly apply a preset via the command palette:
 Running the command opens a chooser with live examples. Selecting a preset immediately saves settings and refreshes the Reminder List.
 
 - Default: `5`
+
+## Show overdue count in status bar
+
+Show the number of overdue reminders in the status bar (e.g. `⏰ 3`). Muted overdue reminders are still counted. Click the status bar item to open the [reminder list view](/guide/list-reminders.html).
+
+- Type: `boolean`
+- Values:
+  - ON: The status bar item is shown whenever there is at least one overdue reminder (default)
+  - OFF: The status bar item is never shown
+- Default: ON

@@ -43,6 +43,14 @@ Instead, the popup supports Alt (Option on macOS) or Ctrl mnemonic shortcuts, wh
 
 If another app on your system already captures the Option/Alt combination (window managers, launchers), use the Ctrl variant instead.
 
+### Toast style
+
+By default the popup is shown as a small card stacked in the bottom-right corner, which does not take focus or interrupt what you're doing. Set [Reminder popup style](/setting/#reminder-popup-style) to `Modal (center dialog)` to show it instead as a modal dialog centered in the window that takes focus.
+
+Multiple toasts stack when several reminders fire close together. The [keyboard shortcuts](#keyboard-shortcuts) above only apply to the most recently shown toast (the bottom-most card in the stack); older toasts fall back to the buttons on the card (mouse/touch only), since two toasts both reacting to the same keypress would be confusing.
+
+Because toasts don't take focus, they appear immediately even while you're typing — the [Edit Detection Time](/setting/#edit-detection-time) deferral only applies to the modal style.
+
 ## System notification
 
 Instead of built-in notification, a system notification is also available by [setting](/setting/#use-system-notification).
@@ -95,3 +103,7 @@ While paused:
 - Reminders are not muted by the pause, so any reminder that's still overdue is notified again shortly after the pause ends.
 
 A status bar item (🔕) shows the time the pause ends; click it to resume notifications immediately. You can also run `Resume reminder notifications` from the command palette, which is only available while paused. The pause is remembered across Obsidian restarts, but it's a transient state rather than a setting, so it doesn't appear in the settings tab.
+
+## Overdue count in the status bar
+
+A status bar item (e.g. `⏰ 3`) shows how many reminders are currently overdue, including muted ones. It's hidden whenever there are none. Click it to open the [reminder list view](/guide/list-reminders.html). Controlled by [Show overdue count in status bar](/setting/#show-overdue-count-in-status-bar), which is on by default.

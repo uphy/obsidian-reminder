@@ -15,6 +15,7 @@ function createDeps(
     isLayoutReady: () => true,
     reloadUI: () => {},
     isEditing: () => false,
+    isPopupIntrusive: () => true,
     showReminder: () => {},
     isScanned: () => true,
     markScanned: () => {},
@@ -74,11 +75,12 @@ describe("NotificationWorker", (): void => {
     expect(shown).toStrictEqual([r2]);
   });
 
-  test("shows nothing while isEditing() is true", async (): Promise<void> => {
+  test("shows nothing while isEditing() is true and the popup is intrusive (modal)", async (): Promise<void> => {
     const showReminder = jest.fn();
     const getExpiredReminders = jest.fn(() => [makeReminder("r1")]);
     const deps = createDeps({
       isEditing: () => true,
+      isPopupIntrusive: () => true,
       getExpiredReminders,
       showReminder,
     });
@@ -88,6 +90,38 @@ describe("NotificationWorker", (): void => {
 
     expect(getExpiredReminders).not.toHaveBeenCalled();
     expect(showReminder).not.toHaveBeenCalled();
+  });
+
+  test("shows reminders while isEditing() is true when the popup is not intrusive (toast)", async (): Promise<void> => {
+    const showReminder = jest.fn();
+    const reminder = makeReminder("r1");
+    const deps = createDeps({
+      isEditing: () => true,
+      isPopupIntrusive: () => false,
+      getExpiredReminders: () => [reminder],
+      showReminder,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+
+    expect(showReminder).toHaveBeenCalledWith(reminder);
+  });
+
+  test("shows reminders when not editing, regardless of popup intrusiveness", async (): Promise<void> => {
+    const showReminder = jest.fn();
+    const reminder = makeReminder("r1");
+    const deps = createDeps({
+      isEditing: () => false,
+      isPopupIntrusive: () => true,
+      getExpiredReminders: () => [reminder],
+      showReminder,
+    });
+    const worker = new NotificationWorker(deps);
+
+    await callPeriodicTask(worker);
+
+    expect(showReminder).toHaveBeenCalledWith(reminder);
   });
 
   test("does not show reminders when notifications are disabled", async (): Promise<void> => {

@@ -3,9 +3,12 @@ import type { Reminder } from "model/reminder";
 import type { DateTime, Later } from "model/time";
 import { App, Modal } from "obsidian";
 import ReminderView from "ui/Reminder.svelte";
+import { ReminderToastManager } from "./reminder-toast";
 const electron = window.require ? window.require("electron") : undefined;
 
 export class ReminderModal {
+  private toastManager: ReminderToastManager = new ReminderToastManager();
+
   constructor(
     private app: App,
     private useSystemNotification: ReadOnlyReference<boolean>,
@@ -13,7 +16,13 @@ export class ReminderModal {
     private openNoteOnReminderClick: ReadOnlyReference<boolean>,
     private showPopupWithSystemNotification: ReadOnlyReference<boolean>,
     private focusDoneButtonOnPopup: ReadOnlyReference<boolean>,
+    private notificationPopupStyle: ReadOnlyReference<string>,
   ) {}
+
+  /** Unmounts every open toast (for plugin unload). */
+  destroy() {
+    this.toastManager.destroy();
+  }
 
   public show(
     reminder: Reminder,
@@ -133,6 +142,19 @@ export class ReminderModal {
     onPauseAllNotifications: () => void,
     onMuteAll: () => void,
   ) {
+    if (this.notificationPopupStyle.value === "toast") {
+      this.toastManager.show(
+        reminder,
+        this.laters.value,
+        onRemindMeLater,
+        onDone,
+        onCancel,
+        onOpenFile,
+        onPauseAllNotifications,
+        onMuteAll,
+      );
+      return;
+    }
     new NotificationModal(
       this.app,
       this.laters.value,
