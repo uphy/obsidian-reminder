@@ -136,6 +136,11 @@ export class ReminderPluginUI {
   invalidate() {
     this.viewProxy.invalidate();
     this.overdueStatusBar.refresh();
+    this.reminderModal.syncToasts(
+      new Set(
+        this.plugin.reminders.reminders.map((reminder) => reminder.key()),
+      ),
+    );
   }
 
   reload(force: boolean = false) {
