@@ -3,6 +3,7 @@ import type { ReadOnlyReference } from "model/ref";
 import { Later, Time, parseLaters } from "model/time";
 import { AbstractTextComponent, Setting } from "obsidian";
 import { ReminderFormatType, ReminderFormatTypes } from "model/format";
+import "./settings-tab.css";
 
 class SettingRegistry {
   private settingContexts: Array<SettingContext> = [];
@@ -33,24 +34,20 @@ class SettingContext {
 
   constructor(private _settingRegistry: SettingRegistry) {}
 
-  init(
-    settingModel: SettingModelBase,
-    setting: Setting,
-    containerEl: HTMLElement,
-  ) {
+  init(settingModel: SettingModelBase, setting: Setting) {
     this.settingModel = settingModel;
     this._setting = setting;
 
-    this.validationEl = containerEl.createDiv("validation", (el) => {
+    // Appended to the setting's description element so validation/info lines
+    // render inside the setting item, under the description text.
+    this.validationEl = setting.descEl.createDiv("validation", (el) => {
       el.style.color = "var(--text-error)";
-      el.style.marginBottom = "1rem";
-      el.style.fontSize = "14px";
+      el.style.marginTop = "0.25rem";
       el.style.display = "none";
     });
-    this.infoEl = containerEl.createDiv("info", (el) => {
+    this.infoEl = setting.descEl.createDiv("info", (el) => {
       el.style.color = "var(--text-faint)";
-      el.style.marginBottom = "1rem";
-      el.style.fontSize = "14px";
+      el.style.marginTop = "0.25rem";
       el.style.display = "none";
     });
   }
@@ -89,6 +86,9 @@ class SettingContext {
   }
 
   update() {
+    if (!this.isInitialized()) {
+      return;
+    }
     if (!this.anyValueChanged) {
       return;
     }
@@ -97,6 +97,7 @@ class SettingContext {
 
   setEnabled(enable: boolean) {
     this.setting!.setDisabled(!enable);
+    this.setting!.settingEl.toggleClass("reminder-setting-disabled", !enable);
   }
 
   findContextByKey(key: string) {
@@ -422,7 +423,7 @@ class SettingModelImpl<R, E> implements SettingModel<R, E> {
     const setting = new Setting(containerEl)
       .setName(this.context.name ?? "")
       .setDesc(this.context.desc ?? "");
-    this.context.init(this, setting, containerEl);
+    this.context.init(this, setting);
     this.settingInitializer({
       setting,
       rawValue: this.rawValue,
@@ -462,42 +463,97 @@ class SettingModelImpl<R, E> implements SettingModel<R, E> {
 
 export class SettingGroup {
   public settings: Array<SettingModelBase> = [];
-  constructor(public name: string) {}
+  constructor(public name?: string) {}
 
   addSettings(...settingModels: Array<SettingModelBase>) {
     this.settings.push(...settingModels);
   }
 }
 
+export class SettingPage {
+  public groups: Array<SettingGroup> = [];
+  constructor(public name: string) {}
+
+  newGroup(name?: string): SettingGroup {
+    const group = new SettingGroup(name);
+    this.groups.push(group);
+    return group;
+  }
+}
+
 export class SettingTabModel {
-  private groups: Array<SettingGroup> = [];
+  private pages: Array<SettingPage> = [];
   private registry: SettingRegistry = new SettingRegistry();
+  // Session-only: which tab is shown. Intentionally not persisted to
+  // data.json (resets to the first tab on every Obsidian restart).
+  private activeTabIndex = 0;
 
   newSettingBuilder(): SettingModelBuilder {
     return new SettingModelBuilder(this.registry);
   }
 
-  newGroup(name: string): SettingGroup {
-    const group = new SettingGroup(name);
-    this.groups.push(group);
-    return group;
+  newPage(name: string): SettingPage {
+    const page = new SettingPage(name);
+    this.pages.push(page);
+    return page;
   }
 
   displayOn(el: HTMLElement) {
     el.empty();
-    this.groups.forEach((group) => {
-      el.createEl("h3", { text: group.name });
+
+    const tabBarEl = el.createDiv("reminder-settings-tab-bar");
+    tabBarEl.setAttribute("role", "tablist");
+    const tabButtons: Array<HTMLElement> = this.pages.map((page, index) => {
+      const tabEl = tabBarEl.createEl("button", {
+        cls: "reminder-settings-tab",
+        text: page.name,
+      });
+      tabEl.setAttribute("role", "tab");
+      tabEl.setAttribute("type", "button");
+      tabEl.addEventListener("click", () => {
+        this.activeTabIndex = index;
+        this.updateTabButtons(tabButtons);
+        this.renderActivePage(contentEl);
+      });
+      return tabEl;
+    });
+    this.updateTabButtons(tabButtons);
+
+    const contentEl = el.createDiv("reminder-settings-tab-content");
+    this.renderActivePage(contentEl);
+  }
+
+  private updateTabButtons(tabButtons: Array<HTMLElement>) {
+    tabButtons.forEach((tabEl, index) => {
+      const active = index === this.activeTabIndex;
+      tabEl.toggleClass("is-active", active);
+      tabEl.setAttribute("aria-selected", active ? "true" : "false");
+    });
+  }
+
+  private renderActivePage(contentEl: HTMLElement) {
+    contentEl.empty();
+    const activePage = this.pages[this.activeTabIndex];
+    if (activePage === undefined) {
+      return;
+    }
+    activePage.groups.forEach((group) => {
+      if (group.name !== undefined) {
+        new Setting(contentEl).setName(group.name).setHeading();
+      }
       group.settings.forEach((settings) => {
-        settings.createSetting(el);
+        settings.createSetting(contentEl);
       });
     });
     this.registry.forEach((context) => context.update());
   }
 
   public forEach(consumer: (setting: SettingModelBase) => void) {
-    this.groups.forEach((group) => {
-      group.settings.forEach((setting) => {
-        consumer(setting);
+    this.pages.forEach((page) => {
+      page.groups.forEach((group) => {
+        group.settings.forEach((setting) => {
+          consumer(setting);
+        });
       });
     });
   }
