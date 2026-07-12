@@ -129,23 +129,42 @@ export class KanbanDateTimeFormat {
     }
     const title = text.trim();
 
-    let parsedTime: DateTime;
-    const strict = strictDateFormat ?? true;
     if (time) {
-      parsedTime = new DateTime(
-        moment(
-          `${date} ${time}`,
-          `${this.setting.dateFormat} ${this.setting.timeFormat}`,
-          strict,
+      // Kanban's time picker can emit either 24-hour times (`HH:mm`) or
+      // 12-hour times (`h:mm A`/`hh:mm A`), and the format we assume here is
+      // read live from the Kanban plugin's settings, which may be stale,
+      // unreadable, or simply not match what the user actually typed.
+      // Non-strict moment parsing silently discards trailing text it can't
+      // match (e.g. it drops " PM" and quietly parses "2:30 PM" as 02:30
+      // AM), turning a format mismatch into a *wrong* reminder time instead
+      // of a missing one. So this path always parses strictly — ignoring
+      // the global strictDateFormat setting, which still governs the
+      // date-only path below — and tries a short list of candidate time
+      // formats, accepting the first one that parses strictly.
+      const candidateTimeFormats = [
+        this.setting.timeFormat,
+        ...["h:mm A", "hh:mm A", "HH:mm"].filter(
+          (format) => format !== this.setting.timeFormat,
         ),
-        true,
-      );
-    } else {
-      parsedTime = new DateTime(
-        moment(date, this.setting.dateFormat, strict),
-        false,
-      );
+      ];
+      for (const timeFormat of candidateTimeFormats) {
+        const candidate = moment(
+          `${date} ${time}`,
+          `${this.setting.dateFormat} ${timeFormat}`,
+          true,
+        );
+        if (candidate.isValid()) {
+          return { title, time: new DateTime(candidate, true) };
+        }
+      }
+      return { title: originalText };
     }
+
+    const strict = strictDateFormat ?? true;
+    const parsedTime = new DateTime(
+      moment(date, this.setting.dateFormat, strict),
+      false,
+    );
     if (parsedTime.isValid()) {
       return { title, time: parsedTime };
     }
