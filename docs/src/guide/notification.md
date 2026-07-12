@@ -32,14 +32,16 @@ The `Remind Me Later`'s option is customizable with [Remind Me Later](/setting/#
 
 Because the popup can appear at any time while you're doing something else, it no longer focuses the `Done` button by default: a keypress you were already mid-typing (like <kbd>Enter</kbd>) could otherwise complete a reminder you never actually read. Enable [Focus Done button on popup](/setting/#focus-done-button-on-popup) to restore the old behavior.
 
-Instead, the popup supports Alt (Option on macOS) mnemonic shortcuts, which can't fire by accident since they require holding a modifier key:
+Instead, the popup supports Alt (Option on macOS) or Ctrl mnemonic shortcuts, which can't fire by accident since they require holding a modifier key:
 
 | Shortcut | Action |
 | --- | --- |
-| <kbd>Alt</kbd>+<kbd>D</kbd> | Mark as done |
-| <kbd>Alt</kbd>+<kbd>M</kbd> | Mute |
-| <kbd>Alt</kbd>+<kbd>S</kbd> | Focus the `Remind Me Later` (snooze) dropdown, then use the arrow keys to choose an option |
-| <kbd>Alt</kbd>+<kbd>O</kbd> | Open the note |
+| <kbd>Alt</kbd>+<kbd>D</kbd> / <kbd>Ctrl</kbd>+<kbd>D</kbd> | Mark as done |
+| <kbd>Alt</kbd>+<kbd>M</kbd> / <kbd>Ctrl</kbd>+<kbd>M</kbd> | Mute |
+| <kbd>Alt</kbd>+<kbd>S</kbd> / <kbd>Ctrl</kbd>+<kbd>S</kbd> | Focus the `Remind Me Later` (snooze) dropdown, then use the arrow keys to choose an option |
+| <kbd>Alt</kbd>+<kbd>O</kbd> / <kbd>Ctrl</kbd>+<kbd>O</kbd> | Open the note |
+
+If another app on your system already captures the Option/Alt combination (window managers, launchers), use the Ctrl variant instead.
 
 ## System notification
 

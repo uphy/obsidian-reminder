@@ -31,11 +31,16 @@
     onRemindMeLater(selected.later());
   }
 
-  // Alt (Option on macOS) mnemonic shortcuts, matched on `evt.code` (not
-  // `evt.key`) because macOS Option+letter produces symbol characters (e.g.
-  // Option+D -> "∂"), while `evt.code` stays the physical key ("KeyD").
+  // Alt (Option on macOS) or Ctrl mnemonic shortcuts, matched on `evt.code`
+  // (not `evt.key`) because macOS Option+letter produces symbol characters
+  // (e.g. Option+D -> "∂"), while `evt.code` stays the physical key ("KeyD").
+  // Ctrl is the fallback for environments where OS-level tools (window
+  // managers, launchers) intercept Option/Alt chords before they reach
+  // Obsidian -- common on macOS, where Ctrl+letter is nearly always free.
   function handleKeydown(evt: KeyboardEvent) {
-    if (!evt.altKey || evt.ctrlKey || evt.metaKey || evt.shiftKey) {
+    const alt = evt.altKey && !evt.ctrlKey;
+    const ctrl = evt.ctrlKey && !evt.altKey;
+    if ((!alt && !ctrl) || evt.metaKey || evt.shiftKey) {
       return;
     }
     switch (evt.code) {
@@ -76,7 +81,9 @@
   });
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<!-- Capture phase so the shortcuts run before Obsidian's own keymap/hotkey
+handlers (e.g. Ctrl+O would otherwise also trigger the quick switcher). -->
+<svelte:window on:keydown|capture={handleKeydown} />
 
 <main bind:this={containerEl} tabindex="-1">
   <h3 class="reminder-title" aria-label={reminder.title}>
@@ -86,8 +93,8 @@
     class="reminder-file"
     on:click={onOpenFile}
     aria-label={reminder.file}
-    title="Alt+O"
-    aria-keyshortcuts="Alt+O"
+    title="Alt+O / Ctrl+O"
+    aria-keyshortcuts="Alt+O Control+O"
   >
     <IconText icon="link" text={reminder.file} />
   </button>
@@ -96,13 +103,18 @@
       class="mod-cta"
       on:click={onDone}
       bind:this={doneButton}
-      aria-keyshortcuts="Alt+D"
+      title="Alt+D / Ctrl+D"
+      aria-keyshortcuts="Alt+D Control+D"
     >
       <IconText icon="check-small" /><span
         ><span class="mnemonic">D</span>one</span
       >
     </button>
-    <button on:click={onMute} aria-keyshortcuts="Alt+M">
+    <button
+      on:click={onMute}
+      title="Alt+M / Ctrl+M"
+      aria-keyshortcuts="Alt+M Control+M"
+    >
       <IconText icon="minus-with-circle" /><span
         ><span class="mnemonic">M</span>ute</span
       >
@@ -112,8 +124,8 @@
       bind:value={selectedIndex}
       bind:this={laterSelect}
       on:change={remindMeLater}
-      title="Alt+S"
-      aria-keyshortcuts="Alt+S"
+      title="Alt+S / Ctrl+S"
+      aria-keyshortcuts="Alt+S Control+S"
     >
       <!-- placeholder -->
       <option selected disabled hidden>Snooze</option>
