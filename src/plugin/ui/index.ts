@@ -63,6 +63,7 @@ export class ReminderPluginUI {
       plugin.settings.laters,
       plugin.settings.openNoteOnReminderClick,
       plugin.settings.showPopupWithSystemNotification,
+      plugin.settings.focusDoneButtonOnPopup,
     );
     this.dndStatusBar = new DndStatusBar(plugin);
   }
