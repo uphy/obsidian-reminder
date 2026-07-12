@@ -61,6 +61,13 @@ const kanbanSetting = new (class KanbanSetting {
 type KanbanSplitResult = {
   title: string;
   time?: DateTime;
+  /**
+   * Range of the matched date/time text in the original input, present
+   * whenever `time` is present. The matched text (e.g. `@@{2:30 PM}`) can be
+   * longer than its canonical re-formatted form (e.g. `@@{14:30}`), so
+   * consumers must not derive this range from the canonical form.
+   */
+  span?: { start: number; end: number };
 };
 
 export class KanbanDateTimeFormat {
@@ -120,12 +127,29 @@ export class KanbanDateTimeFormat {
     } else {
       return { title: originalText };
     }
+    const dateStart = dateMatch.index;
+    const dateEnd = dateStart + dateMatch[0].length;
+    // Range of the matched date/time text in `originalText` coordinates.
+    let span = { start: dateStart, end: dateEnd };
 
     const timeRegExp = this.timeRegExp;
     const timeMatch = timeRegExp.exec(text);
     if (timeMatch) {
       time = timeMatch.groups!["time"]!;
       text = text.replace(timeRegExp, "");
+      // The time regex ran on the text with the date match removed, so map
+      // its index back to `originalText` coordinates: if it points at or
+      // after where the date started, the removed date segment was before
+      // it and its length must be added back.
+      const timeStart =
+        timeMatch.index >= dateStart
+          ? timeMatch.index + dateMatch[0].length
+          : timeMatch.index;
+      const timeEnd = timeStart + timeMatch[0].length;
+      span = {
+        start: Math.min(dateStart, timeStart),
+        end: Math.max(dateEnd, timeEnd),
+      };
     }
     const title = text.trim();
 
@@ -154,7 +178,7 @@ export class KanbanDateTimeFormat {
           true,
         );
         if (candidate.isValid()) {
-          return { title, time: new DateTime(candidate, true) };
+          return { title, time: new DateTime(candidate, true), span };
         }
       }
       return { title: originalText };
@@ -166,7 +190,7 @@ export class KanbanDateTimeFormat {
       false,
     );
     if (parsedTime.isValid()) {
-      return { title, time: parsedTime };
+      return { title, time: parsedTime, span };
     }
     return { title: originalText };
   }
@@ -184,12 +208,19 @@ export class KanbanReminderModel implements ReminderModel {
     if (splitted.time == null) {
       return null;
     }
-    return new KanbanReminderModel(splitted.title, splitted.time);
+    return new KanbanReminderModel(
+      splitted.title,
+      splitted.time,
+      splitted.span,
+    );
   }
 
   constructor(
     public title: string,
     public time: DateTime,
+    // Range of the matched date/time text in the parsed source line. Absent
+    // for models built by newReminder(), which have no source text.
+    private span?: { start: number; end: number },
   ) {}
 
   getTitle(): string {
@@ -205,6 +236,10 @@ export class KanbanReminderModel implements ReminderModel {
 
   setTime(time: DateTime): void {
     this.time = time;
+    // The stored span describes the original source line; after the time is
+    // replaced, the line becomes the canonical toMarkdown() output, so fall
+    // back to the canonical-length computation in computeSpan().
+    this.span = undefined;
   }
 
   setRawTime(): boolean {
@@ -216,6 +251,15 @@ export class KanbanReminderModel implements ReminderModel {
   }
 
   computeSpan(): { start: number; end: number } {
+    // Prefer the range actually matched in the source line: re-formatting
+    // the parsed time can change its length (e.g. `@@{2:30 PM}` parses to a
+    // canonical `@@{14:30}`, 2 chars shorter), so a span derived from the
+    // canonical form would drift from the document text.
+    if (this.span) {
+      return this.span;
+    }
+    // Fallback for models without source text (newReminder(), or after
+    // setTime() replaced the time): the document text is the canonical
     // toMarkdown() = `${title.trim()} ${formatted time}`, so the time text
     // starts right after "title.trim() " (one separating space) and runs to
     // the end of the markdown.

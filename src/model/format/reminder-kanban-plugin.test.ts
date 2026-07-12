@@ -124,6 +124,60 @@ describe("KanbanDateTimeFormat", (): void => {
       expect(res.time!.toString()).toBe("2021-09-12");
     }
   });
+  test("split - span covers the matched text, not its canonical form", (): void => {
+    // Re-formatting a parsed 12-hour time yields a canonical 24-hour string
+    // of a different length (`@@{2:30 PM}` -> `@@{14:30}`), so the span must
+    // be taken from the text actually matched in the input.
+    const sut = new KanbanDateTimeFormat({
+      dateTrigger: "@",
+      dateFormat: "YYYY-MM-DD",
+      timeTrigger: "@@",
+      timeFormat: "HH:mm",
+      linkDateToDailyNote: false,
+    });
+
+    const expectSpanCovers = (
+      res: { span?: { start: number; end: number } },
+      input: string,
+      matchedText: string,
+    ): void => {
+      const start = input.indexOf(matchedText);
+      expect(start).toBeGreaterThanOrEqual(0);
+      expect(res.span).toEqual({ start, end: start + matchedText.length });
+    };
+
+    // 12-hour time (the #108 case).
+    {
+      const input = "a b c @{2021-09-12} @@{2:30 PM}";
+      expectSpanCovers(sut.split(input), input, "@{2021-09-12} @@{2:30 PM}");
+    }
+    // 24-hour time.
+    {
+      const input = "a b c @{2021-09-12} @@{14:30}";
+      expectSpanCovers(sut.split(input), input, "@{2021-09-12} @@{14:30}");
+    }
+    // date only.
+    {
+      const input = "a b c @{2021-09-12}";
+      expectSpanCovers(sut.split(input), input, "@{2021-09-12}");
+    }
+    // daily-note-link form.
+    {
+      const linked = new KanbanDateTimeFormat({
+        dateTrigger: "@",
+        dateFormat: "YYYY-MM-DD",
+        timeTrigger: "@@",
+        timeFormat: "HH:mm",
+        linkDateToDailyNote: true,
+      });
+      const input = "a b c @[[2021-09-12]] @@{2:30 PM}";
+      expectSpanCovers(
+        linked.split(input),
+        input,
+        "@[[2021-09-12]] @@{2:30 PM}",
+      );
+    }
+  });
   test("split - time part uses the configured format first when it is 12-hour", (): void => {
     const sut = new KanbanDateTimeFormat({
       dateTrigger: "@",
@@ -211,6 +265,16 @@ describe("KanbanReminderFormat", (): void => {
     const span = parsed!.computeSpan();
     expect(span.start).toBe(6);
     expect(span.end).toBe(29);
+  });
+  test("parse() with 12-hour time - computeSpan() covers the original text", (): void => {
+    // The matched text is 2 chars longer than its canonical form
+    // (`@@{2:30 PM}` vs `@@{14:30}`); the span must cover the original.
+    const line = "task1 @{2021-09-08} @@{2:30 PM}";
+    const parsed = KanbanReminderModel.parse(line);
+    expect(parsed!.time.toString()).toBe("2021-09-08 14:30");
+    const span = parsed!.computeSpan();
+    expect(line.slice(span.start, span.end)).toBe("@{2021-09-08} @@{2:30 PM}");
+    expect(span.end).toBe(line.length);
   });
   test("setDate() simple", (): void => {
     const parsed = KanbanReminderModel.parse("task1 @{2021-09-07}");
