@@ -157,18 +157,10 @@ export class Settings {
       .desc("Select the first day of the week")
       .dropdown("0");
     Array.from({ length: 7 }, (_, d) => {
-      const dayName = moment().weekday(d).format("dddd");
+      const dayName = moment().day(d).format("dddd");
       weekStartBuilder.addOption(dayName, d.toString());
     });
-    this.weekStart = weekStartBuilder
-      .onAnyValueChanged(() => {
-        moment.updateLocale("en", {
-          week: {
-            dow: Number(this.weekStart.value),
-          },
-        });
-      })
-      .build(new RawSerde());
+    this.weekStart = weekStartBuilder.build(new RawSerde());
 
     this.dateFormat = this.settings
       .newSettingBuilder()

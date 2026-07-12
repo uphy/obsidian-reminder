@@ -18,7 +18,7 @@
   );
   $: daysOfWeek = Array.from({ length: 7 }, (_, i) =>
     moment()
-      .weekday((calendar.weekStart + i) % 7)
+      .day((calendar.weekStart + i) % 7)
       .format("ddd"),
   );
   let table: HTMLElement;
