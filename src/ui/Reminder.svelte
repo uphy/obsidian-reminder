@@ -21,6 +21,7 @@
   export let laters: Array<Later> = [];
   let doneButton: HTMLButtonElement;
   let laterSelect: HTMLSelectElement;
+  let containerEl: HTMLElement;
 
   function remindMeLater() {
     const selected = laters[selectedIndex];
@@ -65,13 +66,19 @@
     await tick();
     if (focusDone) {
       doneButton.focus();
+    } else {
+      // Without an explicit focus target, Obsidian's Modal focuses the first
+      // focusable element in the modal (the file-name button), so a stray
+      // Enter would open the note. Focusing the inert container instead makes
+      // a stray Enter a no-op, while Tab still reaches the buttons.
+      containerEl.focus();
     }
   });
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
 
-<main>
+<main bind:this={containerEl} tabindex="-1">
   <h3 class="reminder-title" aria-label={reminder.title}>
     <Markdown markdown={reminder.title} sourcePath={reminder.file} />
   </h3>
@@ -117,16 +124,28 @@
     </select>
   </div>
   <div class="reminder-secondary-actions">
-    <button class="reminder-footer-action" on:click={onPauseAllNotifications}>
+    <button
+      class="reminder-footer-action"
+      on:click={onPauseAllNotifications}
+      title="Pause all notifications for a chosen duration. Reminders are not muted: anything still overdue notifies you again after the pause ends."
+    >
       Pause all notifications…
     </button>
-    <button class="reminder-footer-action" on:click={onMuteAll}>
+    <button
+      class="reminder-footer-action"
+      on:click={onMuteAll}
+      title="Mute every currently overdue reminder. Muted reminders stay silent (even across restarts) until you snooze them or change their date."
+    >
       Mute all reminders…
     </button>
   </div>
 </main>
 
 <style>
+  main:focus {
+    outline: none;
+  }
+
   .reminder-actions {
     margin-top: 1rem;
     display: flex;
