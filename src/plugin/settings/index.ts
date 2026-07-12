@@ -2,6 +2,7 @@ import {
   ReminderFormatType,
   ReminderFormatTypes,
   changeReminderFormat,
+  dataviewReminderFormat,
   kanbanPluginReminderFormat,
   reminderPluginReminderFormat,
   setReminderFormatConfig,
@@ -48,6 +49,7 @@ export class Settings {
   excludedPaths: SettingModel<string, Array<string>>;
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
   removeTagsForTasksPlugin: SettingModel<boolean, boolean>;
+  dataviewReminderFieldName: SettingModel<string, string>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
   yearMonthDisplayFormat: SettingModel<string, string>;
   monthDayDisplayFormat: SettingModel<string, string>;
@@ -315,6 +317,23 @@ export class Settings {
       })
       .build(new RawSerde());
 
+    this.dataviewReminderFieldName = this.settings
+      .newSettingBuilder()
+      .key("dataviewReminderFieldName")
+      .name("Reminder field name")
+      .desc(
+        "The inline field (e.g. [reminder:: 2021-09-08]) read as the reminder date. On a line that also has a due field, this field takes precedence.",
+      )
+      .tag(TAG_RESCAN)
+      .text("reminder")
+      .placeHolder("reminder")
+      .onAnyValueChanged((context) => {
+        context.setEnabled(
+          reminderFormatSettings.enableDataviewReminderFormat.value,
+        );
+      })
+      .build(new RawSerde());
+
     this.yearMonthDisplayFormat = this.settings
       .newSettingBuilder()
       .key("yearMonthDisplayFormat")
@@ -425,6 +444,12 @@ export class Settings {
         this.removeTagsForTasksPlugin,
       );
     this.settings
+      .newGroup("Reminder Format - Dataview")
+      .addSettings(
+        reminderFormatSettings.enableDataviewReminderFormat,
+        this.dataviewReminderFieldName,
+      );
+    this.settings
       .newGroup("Reminder Format - Kanban Plugin")
       .addSettings(reminderFormatSettings.enableKanbanPluginReminderFormat);
     this.settings
@@ -459,6 +484,10 @@ export class Settings {
       ReminderFormatParameterKey.removeTagsForTasksPlugin,
       this.removeTagsForTasksPlugin,
     );
+    config.setParameter(
+      ReminderFormatParameterKey.dataviewReminderFieldName,
+      this.dataviewReminderFieldName,
+    );
     setReminderFormatConfig(config);
   }
 
@@ -474,6 +503,7 @@ class ReminderFormatSettings {
   enableReminderPluginReminderFormat: SettingModel<boolean, boolean>;
   enableTasksPluginReminderFormat: SettingModel<boolean, boolean>;
   enableKanbanPluginReminderFormat: SettingModel<boolean, boolean>;
+  enableDataviewReminderFormat: SettingModel<boolean, boolean>;
 
   constructor(private settings: SettingTabModel) {
     this.enableReminderPluginReminderFormat =
@@ -483,6 +513,9 @@ class ReminderFormatSettings {
     );
     this.enableKanbanPluginReminderFormat = this.createUseReminderFormatSetting(
       kanbanPluginReminderFormat,
+    );
+    this.enableDataviewReminderFormat = this.createUseReminderFormatSetting(
+      dataviewReminderFormat,
     );
   }
 

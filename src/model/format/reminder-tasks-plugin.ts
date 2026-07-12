@@ -1,20 +1,12 @@
-import type { MarkdownDocument, Todo } from "model/format/markdown";
+import type { Todo } from "model/format/markdown";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import moment from "moment";
-import { nextOccurrence } from "./recurrence";
-import {
-  ReminderFormatParameterKey,
-  TodoBasedReminderFormat,
-} from "./reminder-base";
-import type { ReminderEdit, ReminderModel } from "./reminder-base";
+import { ReminderFormatParameterKey } from "./reminder-base";
+import { TasksLikeReminderFormat, removeTags } from "./reminder-tasks-like";
+import type { TasksLikeReminderModel } from "./reminder-tasks-like";
 import { Symbol, Tokens, splitBySymbol } from "./splitter";
 
-function removeTags(text: string): string {
-  // Obsidian tags may contain any letters and digits (including non-ASCII
-  // characters), plus "-", "_" and "/" for nested tags.
-  return text.replace(/#[\p{L}\p{N}\p{M}_/-]+/gu, "").trim();
-}
-export class TasksPluginReminderModel implements ReminderModel {
+export class TasksPluginReminderModel implements TasksLikeReminderModel {
   private static readonly dateFormat = "YYYY-MM-DD";
   // The Tasks plugin itself only supports a date-only due date (📅 is
   // documented/parsed as `YYYY-MM-DD`). This plugin extends the due-date
@@ -250,7 +242,7 @@ export class TasksPluginReminderModel implements ReminderModel {
   }
 }
 
-export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginReminderModel> {
+export class TasksPluginFormat extends TasksLikeReminderFormat<TasksPluginReminderModel> {
   public static readonly instance = new TasksPluginFormat();
 
   parseReminder(todo: Todo): TasksPluginReminderModel | null {
@@ -278,73 +270,8 @@ export class TasksPluginFormat extends TodoBasedReminderFormat<TasksPluginRemind
     );
   }
 
-  override modifyReminder(
-    doc: MarkdownDocument,
-    todo: Todo,
-    parsed: TasksPluginReminderModel,
-    edit: ReminderEdit,
-  ): boolean {
-    if (!super.modifyReminder(doc, todo, parsed, edit)) {
-      return false;
-    }
-    if (edit.checked !== undefined) {
-      if (edit.checked) {
-        const recurrence = parsed.getRecurrence();
-        if (recurrence !== null) {
-          const nextReminderTodo = todo.clone()!;
-          const nextReminder = parsed.clone();
-          const dueDate = parsed.getDueDate();
-          if (dueDate == null) {
-            return false;
-          }
-
-          const now = this.config.getParameter(ReminderFormatParameterKey.now);
-          if (this.useCustomEmoji()) {
-            const time = parsed.getTime();
-            if (time == null) {
-              return false;
-            }
-            const nextTime: Date | undefined = nextOccurrence(
-              recurrence,
-              time.moment(),
-              now,
-            );
-            const nextDueDate: Date | undefined = nextOccurrence(
-              recurrence,
-              dueDate.moment(),
-              now,
-            );
-            if (nextTime == null || nextDueDate == null) {
-              return false;
-            }
-            nextReminder.setTime(new DateTime(moment(nextTime), true));
-            nextReminder.setDueDate(
-              new DateTime(moment(nextDueDate), dueDate.hasTimePart),
-            );
-          } else {
-            const next: Date | undefined = nextOccurrence(
-              recurrence,
-              dueDate.moment(),
-              now,
-            );
-            if (next == null) {
-              return false;
-            }
-            const nextDueDate = new DateTime(moment(next), dueDate.hasTimePart);
-            nextReminder.setTime(nextDueDate);
-          }
-          nextReminderTodo.body = nextReminder.toMarkdown();
-          nextReminderTodo.setChecked(false);
-          doc.insertTodo(todo.lineIndex, nextReminderTodo);
-        }
-        parsed.setDoneDate(
-          this.config.getParameter(ReminderFormatParameterKey.now),
-        );
-      } else {
-        parsed.setDoneDate(undefined);
-      }
-    }
-    return true;
+  protected override usesSeparateReminderDate(): boolean {
+    return this.useCustomEmoji();
   }
 
   newReminder(

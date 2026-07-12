@@ -62,6 +62,7 @@ Reminder format for generated reminder by calendar popup.
   - [Reminder plugin format](/guide/set-reminders.html#reminder-format)
   - [Tasks plugin format](/guide/interop-tasks.html)
   - [Kanban plugin format](/guide/interop-kanban.html)
+  - [Dataview format](/guide/interop-dataview.html)
 
 ## Show reminder pills in editor
 
@@ -215,6 +216,27 @@ This setting affects only tasks plugin format.
 - Values:
   - ON: Tags are removed
   - OFF: Tags are not removed (default)
+
+## Enable Dataview format
+
+Enable support for the [Dataview format](/guide/interop-dataview.html)
+(`[due:: 2021-09-08]`), including the Tasks plugin's own Dataview task
+format.
+
+- Type: `boolean`
+- Values:
+  - ON: Enable Dataview format
+  - OFF: Disable Dataview format (default)
+
+## Reminder field name
+
+The name of the inline field (e.g. `[reminder:: 2021-09-08]`) read as the
+reminder date. On a line that also has a `due` field, this field takes
+precedence — see [Distinguish due date and reminder
+date](/guide/interop-dataview.html#distinguish-due-date-and-reminder-date).
+
+- Type: `string`
+- Default: `reminder`
 
 ## Enable Kanban plugin format
 
