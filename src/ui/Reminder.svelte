@@ -12,10 +12,15 @@
   export let onMute: () => void;
   export let onPauseAllNotifications: () => void;
   export let onMuteAll: () => void;
+  // Whether the Done button should be auto-focused when the popup opens.
+  // Off by default so a stray Enter/Space keypress right after the popup
+  // appears doesn't accidentally complete a reminder the user hasn't read.
+  export let focusDone: boolean = false;
   // Do not set initial value so that svelte can render the placeholder `Remind Me Later`.
   let selectedIndex: number;
   export let laters: Array<Later> = [];
   let doneButton: HTMLButtonElement;
+  let laterSelect: HTMLSelectElement;
 
   function remindMeLater() {
     const selected = laters[selectedIndex];
@@ -25,11 +30,46 @@
     onRemindMeLater(selected.later());
   }
 
+  // Alt (Option on macOS) mnemonic shortcuts, matched on `evt.code` (not
+  // `evt.key`) because macOS Option+letter produces symbol characters (e.g.
+  // Option+D -> "∂"), while `evt.code` stays the physical key ("KeyD").
+  function handleKeydown(evt: KeyboardEvent) {
+    if (!evt.altKey || evt.ctrlKey || evt.metaKey || evt.shiftKey) {
+      return;
+    }
+    switch (evt.code) {
+      case "KeyD":
+        evt.preventDefault();
+        evt.stopPropagation();
+        onDone();
+        break;
+      case "KeyM":
+        evt.preventDefault();
+        evt.stopPropagation();
+        onMute();
+        break;
+      case "KeyO":
+        evt.preventDefault();
+        evt.stopPropagation();
+        onOpenFile();
+        break;
+      case "KeyS":
+        evt.preventDefault();
+        evt.stopPropagation();
+        laterSelect.focus();
+        break;
+    }
+  }
+
   onMount(async () => {
     await tick();
-    doneButton.focus();
+    if (focusDone) {
+      doneButton.focus();
+    }
   });
 </script>
+
+<svelte:window on:keydown={handleKeydown} />
 
 <main>
   <h3 class="reminder-title" aria-label={reminder.title}>
@@ -39,20 +79,34 @@
     class="reminder-file"
     on:click={onOpenFile}
     aria-label={reminder.file}
+    title="Alt+O"
+    aria-keyshortcuts="Alt+O"
   >
     <IconText icon="link" text={reminder.file} />
   </button>
   <div class="reminder-actions">
-    <button class="mod-cta" on:click={onDone} bind:this={doneButton}>
-      <IconText icon="check-small" /><span>Done</span>
+    <button
+      class="mod-cta"
+      on:click={onDone}
+      bind:this={doneButton}
+      aria-keyshortcuts="Alt+D"
+    >
+      <IconText icon="check-small" /><span
+        ><span class="mnemonic">D</span>one</span
+      >
     </button>
-    <button on:click={onMute}>
-      <IconText icon="minus-with-circle" text="Mute" />
+    <button on:click={onMute} aria-keyshortcuts="Alt+M">
+      <IconText icon="minus-with-circle" /><span
+        ><span class="mnemonic">M</span>ute</span
+      >
     </button>
     <select
       class="dropdown later-select"
       bind:value={selectedIndex}
+      bind:this={laterSelect}
       on:change={remindMeLater}
+      title="Alt+S"
+      aria-keyshortcuts="Alt+S"
     >
       <!-- placeholder -->
       <option selected disabled hidden>Snooze</option>
@@ -122,5 +176,9 @@
 
   .reminder-footer-action:hover {
     color: var(--text-muted);
+  }
+
+  .mnemonic {
+    text-decoration: underline;
   }
 </style>

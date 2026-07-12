@@ -12,6 +12,7 @@ export class ReminderModal {
     private laters: ReadOnlyReference<Array<Later>>,
     private openNoteOnReminderClick: ReadOnlyReference<boolean>,
     private showPopupWithSystemNotification: ReadOnlyReference<boolean>,
+    private focusDoneButtonOnPopup: ReadOnlyReference<boolean>,
   ) {}
 
   public show(
@@ -142,6 +143,7 @@ export class ReminderModal {
       onOpenFile,
       onPauseAllNotifications,
       onMuteAll,
+      this.focusDoneButtonOnPopup.value,
     ).open();
   }
 
@@ -180,6 +182,7 @@ class NotificationModal extends Modal {
     private onOpenFile: () => void,
     private onPauseAllNotifications: () => void,
     private onMuteAll: () => void,
+    private focusDoneButtonOnPopup: boolean,
   ) {
     super(app);
   }
@@ -195,6 +198,7 @@ class NotificationModal extends Modal {
       props: {
         reminder: this.reminder,
         laters: this.laters,
+        focusDone: this.focusDoneButtonOnPopup,
         onRemindMeLater: (time: DateTime) => {
           this.onRemindMeLater(time);
           this.canceled = false;

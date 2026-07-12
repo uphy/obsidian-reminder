@@ -28,6 +28,19 @@ The date and time in the markdown will be updated according to your choice.
 
 The `Remind Me Later`'s option is customizable with [Remind Me Later](/setting/#remind-me-later) setting.
 
+### Keyboard shortcuts
+
+Because the popup can appear at any time while you're doing something else, it no longer focuses the `Done` button by default: a keypress you were already mid-typing (like <kbd>Enter</kbd>) could otherwise complete a reminder you never actually read. Enable [Focus Done button on popup](/setting/#focus-done-button-on-popup) to restore the old behavior.
+
+Instead, the popup supports Alt (Option on macOS) mnemonic shortcuts, which can't fire by accident since they require holding a modifier key:
+
+| Shortcut | Action |
+| --- | --- |
+| <kbd>Alt</kbd>+<kbd>D</kbd> | Mark as done |
+| <kbd>Alt</kbd>+<kbd>M</kbd> | Mute |
+| <kbd>Alt</kbd>+<kbd>S</kbd> | Focus the `Remind Me Later` (snooze) dropdown, then use the arrow keys to choose an option |
+| <kbd>Alt</kbd>+<kbd>O</kbd> | Open the note |
+
 ## System notification
 
 Instead of built-in notification, a system notification is also available by [setting](/setting/#use-system-notification).

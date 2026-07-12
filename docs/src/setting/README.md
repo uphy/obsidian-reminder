@@ -168,6 +168,16 @@ Only takes effect while [Use system notification](#use-system-notification) is e
   - OFF: Only the system notification is shown, and it handles the reminder actions itself.
 - Default: OFF
 
+## Focus Done button on popup
+
+Automatically focus the Done button when a reminder popup opens, so pressing Enter completes the task. Off by default to prevent accidentally completing a reminder you haven't read.
+
+- Type: `boolean`
+- Values:
+  - ON: The Done button is focused when the popup opens; pressing Enter immediately marks the reminder as done.
+  - OFF: Nothing is focused when the popup opens, so a stray Enter/Space keypress does nothing (default). Use the [keyboard shortcuts](/guide/notification.html#builtin-notification-modal) to operate the popup quickly instead.
+- Default: OFF
+
 ## Enable Tasks plugin format
 
 Enable support for [Tasks Plugin](https://github.com/schemar/obsidian-tasks)
