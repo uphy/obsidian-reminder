@@ -67,3 +67,10 @@ You can't insert any characters other than date/time between ⏰ and 📅.
 - (OK) `- [ ] Task ⏰ 2021-09-16 📅 2021-09-17`
 - (NG) `- [ ] Task ⏰ 2021-09-16 #Tag 📅 2021-09-17`
 :::
+
+## Using the Tasks plugin's Dataview task format
+
+The Tasks plugin also supports writing task metadata as Dataview inline
+fields (`[due:: 2021-09-16]`) instead of emoji. This plugin reads that
+syntax through a separate format — see the [Dataview
+format](/guide/interop-dataview.html) guide.
