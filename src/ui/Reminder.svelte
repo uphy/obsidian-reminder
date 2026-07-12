@@ -167,22 +167,24 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
       {/each}
     </select>
   </div>
-  <div class="reminder-secondary-actions">
-    <button
-      class="reminder-footer-action"
-      on:click={onPauseAllNotifications}
-      title="Pause all notifications for a chosen duration. Reminders are not muted: anything still overdue notifies you again after the pause ends."
-    >
-      Pause all notifications…
-    </button>
-    <button
-      class="reminder-footer-action"
-      on:click={onMuteAll}
-      title="Mute every currently overdue reminder. Muted reminders stay silent (even across restarts) until you snooze them or change their date."
-    >
-      Mute all reminders…
-    </button>
-  </div>
+  {#if variant === "modal"}
+    <div class="reminder-secondary-actions">
+      <button
+        class="reminder-footer-action"
+        on:click={onPauseAllNotifications}
+        title="Pause all notifications for a chosen duration. Reminders are not muted: anything still overdue notifies you again after the pause ends."
+      >
+        Pause all notifications…
+      </button>
+      <button
+        class="reminder-footer-action"
+        on:click={onMuteAll}
+        title="Mute every currently overdue reminder. Muted reminders stay silent (even across restarts) until you snooze them or change their date."
+      >
+        Mute all reminders…
+      </button>
+    </div>
+  {/if}
 </main>
 
 <style>
@@ -260,15 +262,45 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
   }
 
   main.toast .reminder-actions {
-    margin-top: 0.5rem;
+    margin-top: 0.4rem;
+    gap: 0.4rem;
   }
 
-  main.toast .reminder-secondary-actions {
-    gap: 0.75rem;
+  main.toast .reminder-actions button,
+  main.toast .later-select {
+    font-size: var(--font-ui-small);
   }
 
-  main.toast .reminder-footer-action {
-    margin-top: 0.5rem;
+  main.toast .reminder-actions button {
+    padding: 2px 10px;
+  }
+
+  main.toast .reminder-file {
+    display: block;
+    width: 100%;
+    text-align: left;
+    text-decoration: none;
+  }
+
+  main.toast .reminder-file:hover {
+    text-decoration: underline;
+  }
+
+  main.toast .reminder-file :global(.icon-text) {
+    display: flex;
+    width: 100%;
+  }
+
+  main.toast .reminder-file :global(.icon) {
+    flex-shrink: 0;
+  }
+
+  main.toast .reminder-file :global(.text) {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .reminder-toast-close {
