@@ -84,6 +84,145 @@ describe("MarkdownDocument", (): void => {
     expect(todos[1]!.isChecked()).toBe(true);
     expect(todos[2]!.isChecked()).toBe(true);
   });
+
+  test("tasks inside a fenced code block are ignored", (): void => {
+    const md = `- [ ] Before
+\`\`\`
+- [ ] Inside fence
+\`\`\`
+- [ ] After`;
+
+    const doc = new MarkdownDocument("file", md);
+    const todos = doc.getTodos();
+    expect(todos).toStrictEqual([
+      new Todo(0, "- [", " ", "] ", "Before"),
+      new Todo(4, "- [", " ", "] ", "After"),
+    ]);
+  });
+
+  test("tasks inside a ~~~ fenced code block are ignored", (): void => {
+    const md = `- [ ] Before
+~~~
+- [ ] Inside fence
+~~~
+- [ ] After`;
+
+    const doc = new MarkdownDocument("file", md);
+    const todos = doc.getTodos();
+    expect(todos).toStrictEqual([
+      new Todo(0, "- [", " ", "] ", "Before"),
+      new Todo(4, "- [", " ", "] ", "After"),
+    ]);
+  });
+
+  test("a fence with an info string is still recognized as a fence", (): void => {
+    const md = `- [ ] Before
+\`\`\`markdown
+- [ ] Inside fence
+\`\`\`
+- [ ] After`;
+
+    const doc = new MarkdownDocument("file", md);
+    const todos = doc.getTodos();
+    expect(todos).toStrictEqual([
+      new Todo(0, "- [", " ", "] ", "Before"),
+      new Todo(4, "- [", " ", "] ", "After"),
+    ]);
+  });
+
+  test("a fence indented inside a list item is recognized", (): void => {
+    const md = `- [ ] Before
+- [ ] List item
+      \`\`\`
+      - [ ] Inside fence
+      \`\`\`
+- [ ] After`;
+
+    const doc = new MarkdownDocument("file", md);
+    const todos = doc.getTodos();
+    expect(todos).toStrictEqual([
+      new Todo(0, "- [", " ", "] ", "Before"),
+      new Todo(1, "- [", " ", "] ", "List item"),
+      new Todo(5, "- [", " ", "] ", "After"),
+    ]);
+  });
+
+  test("a longer fence is not closed by a shorter fence of the same character inside it", (): void => {
+    const md = `- [ ] Before
+\`\`\`\`
+\`\`\`
+- [ ] Inside fence
+\`\`\`\`
+- [ ] After`;
+
+    const doc = new MarkdownDocument("file", md);
+    const todos = doc.getTodos();
+    expect(todos).toStrictEqual([
+      new Todo(0, "- [", " ", "] ", "Before"),
+      new Todo(5, "- [", " ", "] ", "After"),
+    ]);
+  });
+
+  test("an unclosed fence extends to the end of the document", (): void => {
+    const md = `- [ ] Before
+\`\`\`
+- [ ] Inside fence
+- [ ] Also inside fence`;
+
+    const doc = new MarkdownDocument("file", md);
+    const todos = doc.getTodos();
+    expect(todos).toStrictEqual([new Todo(0, "- [", " ", "] ", "Before")]);
+  });
+
+  test("a fence inside a blockquote is recognized", (): void => {
+    const md = `- [ ] Before
+> \`\`\`
+> - [ ] Inside fence
+> \`\`\`
+- [ ] After`;
+
+    const doc = new MarkdownDocument("file", md);
+    const todos = doc.getTodos();
+    expect(todos).toStrictEqual([
+      new Todo(0, "- [", " ", "] ", "Before"),
+      new Todo(4, "- [", " ", "] ", "After"),
+    ]);
+  });
+
+  test("a fence inside an indented blockquote is recognized", (): void => {
+    const md = `- [ ] Before
+  > \`\`\`
+  > - [ ] Inside fence
+  > \`\`\`
+- [ ] After`;
+
+    const doc = new MarkdownDocument("file", md);
+    const todos = doc.getTodos();
+    expect(todos).toStrictEqual([
+      new Todo(0, "- [", " ", "] ", "Before"),
+      new Todo(4, "- [", " ", "] ", "After"),
+    ]);
+  });
+
+  test("a line starting with an inline code span does not open a fence", (): void => {
+    const md = `\`\`\`inline\`\`\` is not a fence
+- [ ] After`;
+
+    const doc = new MarkdownDocument("file", md);
+    const todos = doc.getTodos();
+    expect(todos).toStrictEqual([new Todo(1, "- [", " ", "] ", "After")]);
+  });
+
+  test("toMarkdown() round-trips a document with code blocks unchanged", (): void => {
+    const md = `- [ ] Before
+\`\`\`
+- [ ] Inside fence
+\`\`\`
+- [ ] After`;
+
+    const doc = new MarkdownDocument("file", md);
+    expect(doc.toMarkdown()).toEqual(md);
+  });
 });
 
 describe("convertToTodoLine()", (): void => {
