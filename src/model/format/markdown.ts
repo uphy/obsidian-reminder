@@ -126,10 +126,52 @@ export class MarkdownDocument {
     this.parse(content);
   }
 
+  // Code fence delimiter: 3 or more backticks or tildes, preceded only by
+  // indentation and blockquote markers.  Indentation is accepted regardless of
+  // its width because fences nested in list items are often indented by more
+  // than the 3 spaces CommonMark allows at the top level.  Indented (4-space)
+  // code blocks are deliberately not detected: a 4-space indented "- [ ]" line
+  // is an ordinary nested list item.
+  private static readonly fenceRegexp =
+    /^\s*(?:> ?)*\s*(?<fence>`{3,}|~{3,})(?<info>.*)$/;
+
   private parse(content: string) {
     this.lines = content.split("\n");
     this.todos = [];
+
+    // Fence character ("`" or "~") and length of the currently open fenced
+    // code block, or null when not inside one.
+    let openFenceChar: string | null = null;
+    let openFenceLength = 0;
+
     this.lines.forEach((line, lineIndex) => {
+      const fenceMatch = MarkdownDocument.fenceRegexp.exec(line);
+      const fence = fenceMatch?.groups!["fence"];
+      const info = fenceMatch?.groups!["info"];
+
+      if (openFenceChar === null) {
+        // A backtick fence's info string must not contain a backtick,
+        // otherwise this is an inline code span, not a fence.
+        if (fence !== undefined && (fence[0] !== "`" || !info!.includes("`"))) {
+          openFenceChar = fence[0]!;
+          openFenceLength = fence.length;
+          return;
+        }
+      } else {
+        // A closing fence repeats the opening character at least as many times,
+        // and carries nothing but whitespace after it.
+        if (
+          fence !== undefined &&
+          fence[0] === openFenceChar &&
+          fence.length >= openFenceLength &&
+          info!.trim() === ""
+        ) {
+          openFenceChar = null;
+        }
+        // Lines inside a fenced code block are never treated as todos.
+        return;
+      }
+
       const todo = Todo.parse(lineIndex, line);
       if (todo) {
         this.todos.push(todo);
