@@ -80,6 +80,22 @@ export function computeNtfySyncPlan(
   // same file + title.
   const sequenceIds = assignSequenceIds(reminders);
 
+  // Delivery time (unix seconds) for *every* current reminder, regardless of
+  // whether it's inside the publish horizon/lead window. Deletion decisions
+  // are based on this map, not on `targets` below: `minLeadSeconds` only
+  // constrains whether a reminder can be (re-)published right now (ntfy
+  // can't schedule closer than that), it doesn't mean the reminder — or its
+  // already-published schedule — is no longer wanted. Using `targets` for
+  // deletion would delete a reminder's own pending scheduled message the
+  // moment it slides inside the lead window, seconds before it was due to
+  // fire.
+  const reminderAtSecondsBySequenceId = new Map<string, number>();
+  for (const reminder of reminders) {
+    const atMillis = reminder.time.getTimeInMillis(defaultTime);
+    const sequenceId = sequenceIds.get(reminder)!;
+    reminderAtSecondsBySequenceId.set(sequenceId, Math.floor(atMillis / 1000));
+  }
+
   const targets = new Map<string, NtfyPublishAction>();
   for (const reminder of reminders) {
     const atMillis = reminder.time.getTimeInMillis(defaultTime);
@@ -118,7 +134,27 @@ export function computeNtfySyncPlan(
       // topic.
       continue;
     }
-    if (!targets.has(entry.sequenceId)) {
+    if (targets.has(entry.sequenceId)) {
+      // Still a publish target: if its time changed, `publish` above
+      // already re-sends it under the same sequence ID, which replaces the
+      // pending scheduled message on the server (see `computeSequenceId`).
+      // No separate delete needed.
+      continue;
+    }
+    const currentAtSeconds = reminderAtSecondsBySequenceId.get(
+      entry.sequenceId,
+    );
+    // No matching reminder anymore (done/deleted) -> delete. A matching
+    // reminder that fell out of the publish horizon/lead window because its
+    // delivery time changed -> delete the now-stale schedule. A matching
+    // reminder whose delivery time is unchanged -> leave the pending
+    // schedule alone, even if it's now inside the lead window (this is the
+    // fix: `minLeadSeconds` only limits when a schedule can be *created*,
+    // not whether an already-published one is still wanted).
+    if (
+      currentAtSeconds === undefined ||
+      currentAtSeconds !== entry.atSeconds
+    ) {
       deleteActions.push({ sequenceId: entry.sequenceId });
     }
   }

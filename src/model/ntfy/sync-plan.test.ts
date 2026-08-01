@@ -178,6 +178,46 @@ describe("computeNtfySyncPlan()", (): void => {
     );
   });
 
+  test("does not delete a pending schedule for a reminder that has slid inside the lead window (regression: self-delete right before firing)", (): void => {
+    // Reproduces the bug found in manual verification: a reminder due in
+    // 9 seconds is inside the minimum-lead window (default 10s), so it's no
+    // longer a publish *target* — but its previously-published schedule on
+    // the server still fires at the same time and must not be deleted, or
+    // the notification never gets delivered.
+    const reminder = reminderIn("About to fire", 9);
+    const sequenceId = computeSequenceId("Todo.md", "About to fire", 0);
+    const serverPending: Array<NtfyPendingServerEntry> = [
+      { sequenceId, atSeconds: NOW_SECONDS + 9 },
+    ];
+    const plan = computeNtfySyncPlan({
+      reminders: [reminder],
+      serverPending,
+      now: NOW,
+    });
+
+    expect(plan.publish).toHaveLength(0);
+    expect(plan.delete).toHaveLength(0);
+  });
+
+  test("deletes a pending schedule whose reminder's delivery time changed, even outside the horizon", (): void => {
+    // The reminder still exists (same sequence ID) but was rescheduled to a
+    // time past the 24h horizon, so it's not a publish target either. The
+    // stale server-side schedule for the old time must still be cleaned up.
+    const reminder = reminderIn("Rescheduled", 24 * 60 * 60 + 1);
+    const sequenceId = computeSequenceId("Todo.md", "Rescheduled", 0);
+    const serverPending: Array<NtfyPendingServerEntry> = [
+      { sequenceId, atSeconds: NOW_SECONDS + 60 },
+    ];
+    const plan = computeNtfySyncPlan({
+      reminders: [reminder],
+      serverPending,
+      now: NOW,
+    });
+
+    expect(plan.publish).toHaveLength(0);
+    expect(plan.delete).toStrictEqual([{ sequenceId }]);
+  });
+
   test("uses the default reminder time for date-only reminders", (): void => {
     // A date-only reminder (no time part) falls back to `defaultTime`, same
     // as `Reminder.isExpired()`/`Reminders.getExpiredReminders()`.
