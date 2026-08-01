@@ -60,6 +60,9 @@ export class Settings {
   editDetectionSec: SettingModel<number, number>;
   reminderCheckIntervalSec: SettingModel<number, number>;
   showOverdueCountInStatusBar: SettingModel<boolean, boolean>;
+  ntfyEnabled: SettingModel<boolean, boolean>;
+  ntfyServerUrl: SettingModel<string, string>;
+  ntfyTopic: SettingModel<string, string>;
 
   constructor() {
     const reminderFormatSettings = new ReminderFormatSettings(this.settings);
@@ -435,6 +438,39 @@ export class Settings {
       .toggle(true)
       .build(new RawSerde());
 
+    this.ntfyEnabled = this.settings
+      .newSettingBuilder()
+      .key("ntfyEnabled")
+      .name("Enable ntfy scheduled notifications (experimental)")
+      .desc(
+        "Publish upcoming reminders to the ntfy server below as scheduled push notifications, so you're notified even when Obsidian isn't running (useful on mobile, where plugins can't run in the background). " +
+          "This sends reminder titles to that server, so only enable this if you trust it. " +
+          "Requires an ntfy server running v2.16.0 or later (needed for sequence-ID based scheduled message replacement/deletion). " +
+          "Only reminders due within the next 24 hours are registered — ntfy itself allows scheduling at most 3 days ahead, and this plugin periodically re-registers reminders to roll that 24-hour window forward.",
+      )
+      .toggle(false)
+      .build(new RawSerde());
+
+    this.ntfyServerUrl = this.settings
+      .newSettingBuilder()
+      .key("ntfyServerUrl")
+      .name("ntfy server URL")
+      .desc("The ntfy server to publish scheduled notifications to.")
+      .text("https://ntfy.sh")
+      .placeHolder("https://ntfy.sh")
+      .build(new RawSerde());
+
+    this.ntfyTopic = this.settings
+      .newSettingBuilder()
+      .key("ntfyTopic")
+      .name("ntfy topic")
+      .desc(
+        "Topic to publish reminders to. Anyone who knows this topic name can subscribe to it and read your reminder titles, so use a long, hard-to-guess name rather than something predictable.",
+      )
+      .text("")
+      .placeHolder("a-long-random-topic-name")
+      .build(new RawSerde());
+
     this.settings
       .newPage("Notifications")
       .newGroup()
@@ -505,6 +541,10 @@ export class Settings {
         this.editDetectionSec,
         this.reminderCheckIntervalSec,
       );
+    this.settings
+      .newPage("ntfy")
+      .newGroup()
+      .addSettings(this.ntfyEnabled, this.ntfyServerUrl, this.ntfyTopic);
   }
 
   /**

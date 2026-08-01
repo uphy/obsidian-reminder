@@ -1,5 +1,6 @@
 import {
   NotificationWorker,
+  NtfyController,
   PluginData,
   ReminderPluginFileSystem,
   ReminderPluginUI,
@@ -22,6 +23,7 @@ export default class ReminderPlugin extends Plugin {
   private _reminders: Reminders;
   private _fileSystem: ReminderPluginFileSystem;
   private _notificationWorker: NotificationWorker;
+  private _ntfyController: NtfyController;
   constructor(app: App, manifest: PluginManifest) {
     super(app, manifest);
     this._reminders = new Reminders(() => {
@@ -30,6 +32,9 @@ export default class ReminderPlugin extends Plugin {
         this.ui.invalidate();
       }
       this.data.changed = true;
+      if (this._ntfyController) {
+        this._ntfyController.notifyRemindersChanged();
+      }
     });
     this._data = new PluginData(this, this.reminders);
     // `data.settings` always returns the same `Settings` instance for the
@@ -81,6 +86,29 @@ export default class ReminderPlugin extends Plugin {
       isNotificationPaused: () =>
         isNotificationPaused(this.data.dndUntil.value, DateTime.now()),
     });
+    this._ntfyController = new NtfyController({
+      isEnabled: () => this.settings.ntfyEnabled.value,
+      serverUrl: () => this.settings.ntfyServerUrl.value,
+      topic: () => this.settings.ntfyTopic.value,
+      reminders: () => this.reminders.reminders,
+      defaultTime: () => this.settings.reminderTime.value,
+      vaultName: () => this.app.vault.getName(),
+      registerInterval: (id) => this.registerInterval(id),
+    });
+    // Without this, changing any of the ntfy settings (most importantly,
+    // flipping the toggle back on) would sit inert until the next reminder
+    // edit or the 30-minute interval sync happened to come around. See
+    // `NtfyController.notifySettingsChanged()` for why this is debounced
+    // rather than syncing immediately.
+    for (const setting of [
+      this.settings.ntfyEnabled,
+      this.settings.ntfyServerUrl,
+      this.settings.ntfyTopic,
+    ]) {
+      setting.rawValue.onChanged(() => {
+        this._ntfyController.notifySettingsChanged();
+      });
+    }
   }
 
   override async onload() {
@@ -90,11 +118,13 @@ export default class ReminderPlugin extends Plugin {
       this.ui.onLayoutReady();
       this.fileSystem.onload(this);
       this._notificationWorker.startPeriodicTask();
+      this._ntfyController.start();
     });
   }
 
   override onunload(): void {
     this.ui.onunload();
+    this._ntfyController.stop();
   }
 
   get reminders() {
