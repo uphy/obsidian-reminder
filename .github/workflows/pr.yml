@@ -5,10 +5,16 @@ name: CI
 # verifies master after a merge. That gap let #317 and #318 each pass PR CI
 # individually while their combined merge broke `tsc --noEmit` on master,
 # shipping broken code in release 1.2.0 (hotfixed in #320 / 1.2.1).
+#
+# Also run on pushes to release/**: master's branch protection requires the
+# "test" check to pass on the commit before it can be pushed. The release
+# workflow pushes its version-bump commit to a release/** branch first so
+# this workflow can produce that check, then pushes the already-checked
+# commit to master.
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [master, "release/**"]
 
 env:
   # The electron package is only used for its TypeScript types; skip the

@@ -15,6 +15,9 @@ on:
 
 permissions:
   contents: write
+  # Needed to poll the check-runs API while waiting for the "test" check
+  # (see the "Wait for the test check" step below).
+  checks: read
 
 env:
   PLUGIN_NAME: obsidian-reminder
@@ -81,15 +84,77 @@ jobs:
           cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
           zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
 
-      - name: Commit and tag
+      - name: Push the version bump to a release branch
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add manifest.json versions.json package.json package-lock.json
           git commit -m "Update the version to $RELEASE_VERSION"
-          git push origin master
+
+          RELEASE_BRANCH="release/$RELEASE_VERSION"
+          echo "RELEASE_BRANCH=$RELEASE_BRANCH" >> $GITHUB_ENV
+
+          # master's branch protection requires the "test" status check to
+          # be present and passing on a commit before that commit can be
+          # pushed there, but a direct push carries no check at all, so it
+          # gets rejected ("Required status check \"test\" is expected.").
+          # Status checks are evaluated per commit SHA, not per branch, so
+          # push this commit to a release/** branch first -- pr.yml also
+          # runs "test" on pushes to release/** -- wait for that check to
+          # pass, then push the very same SHA to master below. By then the
+          # commit already carries a passing "test" check, so the protected
+          # push to master succeeds.
+          git push origin "HEAD:refs/heads/$RELEASE_BRANCH"
+
+      - name: Wait for the "test" check on the release branch commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          timeout=600
+          interval=15
+          elapsed=0
+
+          echo "Waiting for the \"test\" check run to complete on $sha..."
+          while true; do
+            check_run=$(gh api "repos/${{ github.repository }}/commits/$sha/check-runs" --jq '[.check_runs[] | select(.name == "test")] | .[0]')
+            status=$(echo "$check_run" | jq -r 'if . == null then "queued" else (.status // "queued") end')
+            conclusion=$(echo "$check_run" | jq -r 'if . == null then "null" else (.conclusion // "null") end')
+
+            echo "elapsed=${elapsed}s status=${status} conclusion=${conclusion}"
+
+            if [ "$status" == "completed" ]; then
+              if [ "$conclusion" == "success" ]; then
+                echo "\"test\" check passed."
+                break
+              fi
+              echo "\"test\" check did not succeed (conclusion: $conclusion)."
+              exit 1
+            fi
+
+            if [ "$elapsed" -ge "$timeout" ]; then
+              echo "Timed out after ${timeout}s waiting for the \"test\" check to complete."
+              exit 1
+            fi
+
+            sleep "$interval"
+            elapsed=$((elapsed + interval))
+          done
+
+      - name: Push the checked commit to master and tag
+        run: |
+          git push origin "HEAD:master"
           git tag "$RELEASE_VERSION"
           git push --tags
+          git push origin --delete "$RELEASE_BRANCH"
+
+      - name: Clean up the release branch if a later step failed
+        # Only reached when a step above failed after the release branch was
+        # pushed. The success path already deletes it in the previous step,
+        # so tolerate a missing branch here instead of failing the job.
+        if: failure() && env.RELEASE_BRANCH != ''
+        run: |
+          git push origin --delete "$RELEASE_BRANCH" || true
 
       - name: Create Release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
