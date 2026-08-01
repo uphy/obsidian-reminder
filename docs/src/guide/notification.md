@@ -62,6 +62,8 @@ Instead of built-in notification, a system notification is also available by [se
 
 Also, if you are using macOS, you can mark it as done or postpone the reminder with the notification options.
 
+If you use the same vault on multiple devices (for example with Obsidian Sync), completing or snoozing a reminder on one device can automatically dismiss its system notification on your other devices. On macOS this already works without any extra setup. On Windows and Linux, the OS only lets the plugin dismiss a notification while it's still on screen, so this also requires enabling [Keep system notification on screen](/setting/#keep-system-notification-on-screen) there -- otherwise the notification may already have moved to the action center/notification tray by the time the dismissal arrives.
+
 ### Showing the popup together with the system notification
 
 If you'd rather not lose the popup's actions, enable [Show popup together with system notification](/setting/#show-popup-together-with-system-notification) alongside `Use system notification`. The built-in reminder popup is then shown at the same time as the system notification, and the popup becomes the surface that handles the reminder actions (mark as done/remind me later/mute/open note). The system notification acts as an alert only: clicking it just closes it, or opens the note directly when [Open note on reminder click](/setting/#open-note-on-reminder-click) is enabled.
