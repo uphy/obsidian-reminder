@@ -1,3 +1,4 @@
+export { noteNameFromPath } from "./note-name";
 export {
   NTFY_SEQUENCE_ID_PREFIX,
   assignSequenceIds,

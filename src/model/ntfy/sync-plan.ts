@@ -12,7 +12,7 @@ export interface NtfyPendingServerEntry {
 /** A reminder that should be (re-)published as a scheduled ntfy message. */
 export interface NtfyPublishAction {
   sequenceId: string;
-  /** Delivery time, in unix seconds (what to send as ntfy's `X-At` header). */
+  /** Delivery time, in unix seconds (what to send as ntfy's `delay` field). */
   atSeconds: number;
   reminder: Reminder;
 }

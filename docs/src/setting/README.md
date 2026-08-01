@@ -382,7 +382,7 @@ Experimental: see [Notifications when Obsidian isn't running](/guide/notificatio
 
 Publish upcoming reminders to the ntfy server below as scheduled push notifications, so you're notified even when Obsidian isn't running (useful on mobile, where plugins can't run in the background).
 
-This sends reminder titles to that server, so only enable it if you trust the server. Requires an ntfy server running v2.16.0 or later (needed for sequence-ID based scheduled message replacement/deletion). Only reminders due within the next 24 hours are registered — ntfy itself allows scheduling at most 3 days ahead, and this plugin periodically re-registers reminders to roll that 24-hour window forward.
+This sends reminder titles and note names to that server, so only enable it if you trust the server. Requires an ntfy server running v2.16.0 or later (needed for sequence-ID based scheduled message replacement/deletion). Only reminders due within the next 24 hours are registered — ntfy itself allows scheduling at most 3 days ahead, and this plugin periodically re-registers reminders to roll that 24-hour window forward.
 
 - Type: `boolean`
 - Default: OFF
@@ -396,7 +396,7 @@ The ntfy server to publish scheduled notifications to.
 
 ### ntfy topic
 
-Topic to publish reminders to. Anyone who knows this topic name can subscribe to it and read your reminder titles, so use a long, hard-to-guess name rather than something predictable.
+Topic to publish reminders to. Anyone who knows this topic name can subscribe to it and read your reminder titles and note names, so use a long, hard-to-guess name rather than something predictable.
 
 - Type: `string`
 - Default: (empty)

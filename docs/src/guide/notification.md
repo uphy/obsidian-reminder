@@ -115,14 +115,14 @@ This is an experimental feature (PoC-level). Enable it under [ntfy settings](/se
 ### Setup
 
 1. Install the [ntfy app](https://ntfy.sh/#step-1-get-the-app) on your phone (available for iOS and Android), or use any other client capable of subscribing to an ntfy topic.
-2. Pick a topic name and subscribe to it in the app. Anyone who knows this topic name can subscribe to it and read your reminder titles, so use a long, hard-to-guess name rather than something predictable (e.g. a random string) — see [ntfy's docs on topics](https://ntfy.sh/docs/publish/#topics) for details.
+2. Pick a topic name and subscribe to it in the app. Anyone who knows this topic name can subscribe to it and read your reminder titles and note names, so use a long, hard-to-guess name rather than something predictable (e.g. a random string) — see [ntfy's docs on topics](https://ntfy.sh/docs/publish/#topics) for details.
 3. In Obsidian, open [ntfy settings](/setting/#ntfy), turn on [Enable ntfy scheduled notifications](/setting/#enable-ntfy-scheduled-notifications-experimental), and set the same [server URL](/setting/#ntfy-server-url) and [topic](/setting/#ntfy-topic) you used in step 2. If you're self-hosting ntfy instead of using `ntfy.sh`, point the server URL at your own instance.
 
-Once configured, the plugin periodically publishes your upcoming reminders (title only) to that topic as scheduled messages. When a reminder's time comes, the ntfy server pushes the notification to every subscribed device — including phones where Obsidian isn't open. Tapping the notification opens the corresponding note in Obsidian.
+Once configured, the plugin periodically publishes your upcoming reminders (each reminder's title and the name of the note it's in) to that topic as scheduled messages. When a reminder's time comes, the ntfy server pushes the notification to every subscribed device — including phones where Obsidian isn't open. Tapping the notification opens the corresponding note in Obsidian.
 
 ### Constraints
 
-- **Titles are sent to the ntfy server.** Only the reminder's title (not the note's content) is sent, but it does leave your device and go to whichever server you configured. Don't enable this with a server you don't trust.
+- **Titles and note names are sent to the ntfy server.** Only the reminder's title and the name of the note it's in (not the note's content or its full path) are sent, but they do leave your device and go to whichever server you configured. Don't enable this with a server you don't trust.
 - **Requires ntfy v2.16.0 or later.** This feature relies on ntfy's sequence-ID based scheduled message replacement/deletion, added in that version. `ntfy.sh` (the public hosted service) already runs a recent enough version; if you self-host, make sure your server is updated.
 - **Only reminders due within the next 24 hours are registered.** ntfy itself allows scheduling a message at most 3 days ahead, but this plugin only ever registers reminders up to 24 hours out, and periodically re-registers reminders as time passes so that window keeps rolling forward. If Obsidian isn't opened for more than a day, reminders due after that point won't have been registered yet and won't notify you via ntfy until Obsidian runs again.
 

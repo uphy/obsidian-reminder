@@ -1,4 +1,4 @@
-import { computeNtfySyncPlan } from "model/ntfy";
+import { computeNtfySyncPlan, noteNameFromPath } from "model/ntfy";
 import type { NtfyPendingServerEntry, NtfyPublishAction } from "model/ntfy";
 import type { Reminder } from "model/reminder";
 import { DateTime } from "model/time";
@@ -11,9 +11,6 @@ const SYNC_INTERVAL_MILLIS = 30 * 60 * 1000;
 // Reminder edits often arrive in bursts (typing, autosave); debounce so we
 // don't hit the ntfy server once per keystroke.
 const DEBOUNCE_MILLIS = 10 * 1000;
-// A fixed, ASCII-only label. The reminder's own (possibly non-ASCII) title
-// is sent as the request body instead of a header — see `publish()`.
-const NTFY_TITLE = "Obsidian Reminder";
 
 export interface NtfyControllerDeps {
   isEnabled(): boolean;
@@ -162,7 +159,7 @@ export class NtfyController {
    * ntfy.sh:
    * - Every publish response and every polled line has a `sequence_id`
    *   field (echoing whatever we sent as `X-Sequence-ID`/left absent) and a
-   *   `time` field: unix seconds, matching the `X-At` we sent.
+   *   `time` field: unix seconds, matching the `delay` we sent.
    * - This endpoint also keeps returning messages whose delivery time has
    *   already passed (they're not purged from the poll cache the moment
    *   they fire), and returns `event: "message_delete"` tombstone entries
@@ -223,16 +220,34 @@ export class NtfyController {
   }
 
   /**
-   * `POST /<topic>` with an `X-At` (unix seconds) header schedules a
-   * delayed message. Publishing again under the same `X-Sequence-ID`
-   * replaces the previous still-pending schedule for that ID rather than
-   * creating a second one — verified: the response gets a new message `id`
-   * each time, but the same `sequence_id`, and the poll endpoint then only
-   * shows the latest one.
+   * Publishes as JSON (`POST /` with `Content-Type: application/json` and
+   * the topic in the body, per ntfy's "Publish as JSON" support) instead of
+   * the plain-text-plus-headers form used by an earlier version of this
+   * PoC. This lets the title and note name travel as JSON string values, so
+   * non-ASCII text never has to survive an HTTP header round-trip.
    *
-   * The reminder's title is sent as the request body rather than a header,
-   * so non-ASCII titles never have to survive an HTTP header round-trip;
-   * `X-Title` is the fixed, ASCII-only `NTFY_TITLE` instead.
+   * All of the following was re-verified by hand against a random ntfy.sh
+   * topic for this JSON form specifically (behavior can differ from the
+   * header form even though both are documented):
+   * - The JSON body's own `sequence_id` field is *not* honored for
+   *   replacement: publishing twice with the same `sequence_id` value in
+   *   the body creates two separate pending scheduled messages, not one.
+   *   The `X-Sequence-ID` header still works as before (same as the
+   *   previous header-based version of this code): publishing again under
+   *   the same header value replaces the previous still-pending schedule
+   *   for that ID (new message `id` each time, same `sequence_id`, poll
+   *   endpoint converges to only the latest one). So `X-Sequence-ID` is
+   *   still sent as a header, while everything else moves into the JSON
+   *   body.
+   * - The JSON body's `at` field is *not* honored as a delay — a message
+   *   sent with `at` set to a future unix timestamp was delivered
+   *   immediately. `delay` is what actually schedules it, and it accepts
+   *   the same unix-seconds value (as a JSON string; a bare JSON number is
+   *   rejected). So `delay` is used here for what was previously sent as
+   *   `X-At`.
+   * - `click` behaves the same as the old `X-Click` header: ntfy echoes it
+   *   back verbatim as the message's `click` field with no server-side
+   *   encoding, so it must already be fully URL-encoded here.
    */
   private async publish(
     serverUrl: string,
@@ -240,15 +255,19 @@ export class NtfyController {
     action: NtfyPublishAction,
   ): Promise<void> {
     const response = await requestUrl({
-      url: `${serverUrl}/${encodeURIComponent(topic)}`,
+      url: `${serverUrl}/`,
       method: "POST",
       headers: {
-        "X-Title": NTFY_TITLE,
-        "X-At": String(action.atSeconds),
+        "Content-Type": "application/json",
         "X-Sequence-ID": action.sequenceId,
-        "X-Click": this.buildClickUrl(action.reminder),
       },
-      body: action.reminder.title,
+      body: JSON.stringify({
+        topic,
+        title: action.reminder.title,
+        message: noteNameFromPath(action.reminder.file),
+        click: this.buildClickUrl(action.reminder),
+        delay: String(action.atSeconds),
+      }),
       throw: false,
     });
     if (response.status >= 400) {
@@ -285,9 +304,9 @@ export class NtfyController {
 
   /**
    * Builds an `obsidian://open` URL for the reminder's note. Verified that
-   * ntfy echoes an `X-Click` header value back verbatim (as the message's
-   * `click` field), so it must be fully URL-encoded here — ntfy itself does
-   * no encoding of it.
+   * ntfy echoes the JSON body's `click` field back verbatim (see
+   * `publish()`), so it must be fully URL-encoded here — ntfy itself does no
+   * encoding of it.
    */
   private buildClickUrl(reminder: Reminder): string {
     const pathWithoutExtension = reminder.file.replace(/\.md$/i, "");
