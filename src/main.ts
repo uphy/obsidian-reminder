@@ -95,6 +95,20 @@ export default class ReminderPlugin extends Plugin {
       vaultName: () => this.app.vault.getName(),
       registerInterval: (id) => this.registerInterval(id),
     });
+    // Without this, changing any of the ntfy settings (most importantly,
+    // flipping the toggle back on) would sit inert until the next reminder
+    // edit or the 30-minute interval sync happened to come around. See
+    // `NtfyController.notifySettingsChanged()` for why this is debounced
+    // rather than syncing immediately.
+    for (const setting of [
+      this.settings.ntfyEnabled,
+      this.settings.ntfyServerUrl,
+      this.settings.ntfyTopic,
+    ]) {
+      setting.rawValue.onChanged(() => {
+        this._ntfyController.notifySettingsChanged();
+      });
+    }
   }
 
   override async onload() {

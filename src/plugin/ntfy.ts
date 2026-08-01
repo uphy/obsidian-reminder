@@ -1,4 +1,8 @@
-import { computeNtfySyncPlan, noteNameFromPath } from "model/ntfy";
+import {
+  computeNtfySyncPlan,
+  noteNameFromPath,
+  selectOwnPendingSequenceIds,
+} from "model/ntfy";
 import type { NtfyPendingServerEntry, NtfyPublishAction } from "model/ntfy";
 import type { Reminder } from "model/reminder";
 import { DateTime } from "model/time";
@@ -48,6 +52,12 @@ export class NtfyController {
   private syncing = false;
   private syncQueued = false;
   private stopped = false;
+  // Tracks `isEnabled()` across calls to `notifySettingsChanged()` so a
+  // true -> false transition can be detected (see `checkEnabledTransition`).
+  // Left `undefined` until `start()` runs, so a settings change that fires
+  // before then (e.g. while persisted settings are being restored) can
+  // never be mistaken for a real transition.
+  private previousEnabled: boolean | undefined;
 
   constructor(private deps: NtfyControllerDeps) {}
 
@@ -57,6 +67,7 @@ export class NtfyController {
    * (e.g. a previous sync failure) get corrected periodically.
    */
   start(): void {
+    this.previousEnabled = this.deps.isEnabled();
     void this.sync();
     this.deps.registerInterval(
       window.setInterval(() => {
@@ -98,6 +109,81 @@ export class NtfyController {
     }, DEBOUNCE_MILLIS);
   }
 
+  /**
+   * Called whenever one of the ntfy-related settings (`ntfyEnabled`,
+   * `ntfyServerUrl`, `ntfyTopic`) changes. Without this, re-enabling the
+   * toggle (or fixing a typo'd server URL/topic) would sit inert for up to
+   * `SYNC_INTERVAL_MILLIS` until the next reminder edit or interval sync
+   * happened to come around.
+   *
+   * Routed through the same debounce as `notifyRemindersChanged()` rather
+   * than syncing immediately: the server URL/topic are free-text fields, so
+   * syncing on every keystroke while the user is typing would hit the ntfy
+   * server far more than necessary.
+   */
+  notifySettingsChanged(): void {
+    if (this.stopped) {
+      return;
+    }
+    this.checkEnabledTransition();
+    this.notifyRemindersChanged();
+  }
+
+  /**
+   * Detects a true -> false transition of `ntfyEnabled` and, when found,
+   * runs a one-time cleanup that deletes this plugin's own pending
+   * schedules from the server, so turning the feature off actually stops
+   * notifications instead of leaving already-registered schedules in place
+   * until they expire (or get cleaned up implicitly, which never happens
+   * for reminders that were already removed from the vault).
+   */
+  private checkEnabledTransition(): void {
+    const enabled = this.deps.isEnabled();
+    const wasEnabled = this.previousEnabled;
+    this.previousEnabled = enabled;
+    if (wasEnabled === true && !enabled) {
+      void this.cleanupAfterDisable();
+    }
+  }
+
+  /**
+   * Deletes every one of our own pending scheduled messages from the
+   * server. Called once, right after `ntfyEnabled` transitions from true to
+   * false (see `checkEnabledTransition`).
+   *
+   * This intentionally does NOT go through `doSync()`, which bails out
+   * immediately whenever `isEnabled()` is false. That guard is correct for
+   * routine syncing (never touch the network while disabled/unconfigured),
+   * but wrong here: this one round of network calls is the direct, expected
+   * consequence of the user's own action (switching the toggle off), not
+   * background polling, so it's fine to make it even though the feature is
+   * now disabled.
+   *
+   * Known limitation: if the user changes the topic name rather than
+   * disabling the feature, this cleanup never runs for the old topic (there
+   * is no way to recover a topic name that's no longer configured), so
+   * schedules registered under a previous topic name are not cleaned up.
+   */
+  private async cleanupAfterDisable(): Promise<void> {
+    const target = this.resolveServerAndTopic();
+    if (target === undefined) {
+      return;
+    }
+    const { serverUrl, topic } = target;
+    try {
+      const serverPending = await this.fetchPending(serverUrl, topic);
+      const ownSequenceIds = selectOwnPendingSequenceIds(serverPending);
+      for (const sequenceId of ownSequenceIds) {
+        await this.deleteScheduled(serverUrl, topic, sequenceId);
+      }
+    } catch (e) {
+      console.error(
+        "[ntfy] Failed to clean up scheduled notifications after disabling: %o",
+        e,
+      );
+    }
+  }
+
   private async sync(): Promise<void> {
     if (this.syncing) {
       this.syncQueued = true;
@@ -119,12 +205,12 @@ export class NtfyController {
     if (!this.deps.isEnabled()) {
       return;
     }
-    const serverUrl = this.deps.serverUrl().trim().replace(/\/+$/, "");
-    const topic = this.deps.topic().trim();
-    if (serverUrl.length === 0 || topic.length === 0) {
-      // Disabled/unconfigured: never touch the network.
+    const target = this.resolveServerAndTopic();
+    if (target === undefined) {
+      // Unconfigured: never touch the network.
       return;
     }
+    const { serverUrl, topic } = target;
 
     try {
       const serverPending = await this.fetchPending(serverUrl, topic);
@@ -150,6 +236,21 @@ export class NtfyController {
       // it and let the next debounce/interval tick retry.
       console.error("[ntfy] Failed to sync scheduled notifications: %o", e);
     }
+  }
+
+  /**
+   * Normalizes the configured server URL/topic, or returns `undefined` if
+   * either is blank (i.e. unconfigured). Shared by `doSync()` and
+   * `cleanupAfterDisable()`.
+   */
+  private resolveServerAndTopic():
+    { serverUrl: string; topic: string } | undefined {
+    const serverUrl = this.deps.serverUrl().trim().replace(/\/+$/, "");
+    const topic = this.deps.topic().trim();
+    if (serverUrl.length === 0 || topic.length === 0) {
+      return undefined;
+    }
+    return { serverUrl, topic };
   }
 
   /**

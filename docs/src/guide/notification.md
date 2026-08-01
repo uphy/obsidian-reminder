@@ -125,6 +125,7 @@ Once configured, the plugin periodically publishes your upcoming reminders (each
 - **Titles and note names are sent to the ntfy server.** Only the reminder's title and the name of the note it's in (not the note's content or its full path) are sent, but they do leave your device and go to whichever server you configured. Don't enable this with a server you don't trust.
 - **Requires ntfy v2.16.0 or later.** This feature relies on ntfy's sequence-ID based scheduled message replacement/deletion, added in that version. `ntfy.sh` (the public hosted service) already runs a recent enough version; if you self-host, make sure your server is updated.
 - **Only reminders due within the next 24 hours are registered.** ntfy itself allows scheduling a message at most 3 days ahead, but this plugin only ever registers reminders up to 24 hours out, and periodically re-registers reminders as time passes so that window keeps rolling forward. If Obsidian isn't opened for more than a day, reminders due after that point won't have been registered yet and won't notify you via ntfy until Obsidian runs again.
+- **Renaming the topic leaves old schedules behind.** Turning the feature off deletes this plugin's own pending schedules from the currently configured topic, but changing the topic name instead has no way to reach the previous topic afterward, so schedules already registered under the old name are not cleaned up.
 
 ## Overdue count in the status bar
 

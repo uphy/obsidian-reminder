@@ -1,7 +1,7 @@
 import { Reminder } from "model/reminder";
 import { DateTime, Time } from "model/time";
 import { computeSequenceId } from "./sequence-id";
-import { computeNtfySyncPlan } from "./sync-plan";
+import { computeNtfySyncPlan, selectOwnPendingSequenceIds } from "./sync-plan";
 import type { NtfyPendingServerEntry } from "./sync-plan";
 
 const NOW = DateTime.parse("2021-09-08 09:00");
@@ -248,5 +248,34 @@ describe("computeNtfySyncPlan()", (): void => {
       defaultTime,
     });
     expect(afterDefaultTime.publish).toHaveLength(0);
+  });
+});
+
+describe("selectOwnPendingSequenceIds()", (): void => {
+  test("returns sequence IDs created by this plugin", (): void => {
+    const ownSequenceId = computeSequenceId("Todo.md", "Task 1", 0);
+    const serverPending: Array<NtfyPendingServerEntry> = [
+      { sequenceId: ownSequenceId, atSeconds: NOW_SECONDS + 60 },
+    ];
+
+    expect(selectOwnPendingSequenceIds(serverPending)).toStrictEqual([
+      ownSequenceId,
+    ]);
+  });
+
+  test("excludes entries created by another app/device on the same topic", (): void => {
+    const ownSequenceId = computeSequenceId("Todo.md", "Task 1", 0);
+    const serverPending: Array<NtfyPendingServerEntry> = [
+      { sequenceId: ownSequenceId, atSeconds: NOW_SECONDS + 60 },
+      { sequenceId: "some-other-app-id", atSeconds: NOW_SECONDS + 120 },
+    ];
+
+    expect(selectOwnPendingSequenceIds(serverPending)).toStrictEqual([
+      ownSequenceId,
+    ]);
+  });
+
+  test("returns an empty array when nothing is pending", (): void => {
+    expect(selectOwnPendingSequenceIds([])).toStrictEqual([]);
   });
 });

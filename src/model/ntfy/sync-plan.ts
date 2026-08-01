@@ -161,3 +161,20 @@ export function computeNtfySyncPlan(
 
   return { publish, delete: deleteActions };
 }
+
+/**
+ * From the server's current pending scheduled messages, returns the
+ * sequence IDs of the ones this plugin created (see
+ * `isObsidianReminderSequenceId`). Used when the user disables ntfy sync
+ * (`ntfyEnabled` going from true to false): every one of our own pending
+ * schedules on the topic should be deleted so disabling the feature
+ * actually stops notifications, while another app/device's schedules on
+ * the same topic are left untouched.
+ */
+export function selectOwnPendingSequenceIds(
+  serverPending: ReadonlyArray<NtfyPendingServerEntry>,
+): Array<string> {
+  return serverPending
+    .map((entry) => entry.sequenceId)
+    .filter(isObsidianReminderSequenceId);
+}

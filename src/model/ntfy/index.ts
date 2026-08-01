@@ -5,7 +5,7 @@ export {
   computeSequenceId,
   isObsidianReminderSequenceId,
 } from "./sequence-id";
-export { computeNtfySyncPlan } from "./sync-plan";
+export { computeNtfySyncPlan, selectOwnPendingSequenceIds } from "./sync-plan";
 export type {
   ComputeNtfySyncPlanParams,
   NtfyDeleteAction,
