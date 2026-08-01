@@ -5,12 +5,23 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    # Actions only support the ecosystem-wide `default-days` (there is no
+    # SemVer-aware cooldown for them), so hold every action update back long
+    # enough that a bad release is usually yanked or patched before it shows
+    # up here. Security updates ignore cooldown, so this doesn't delay those.
+    cooldown:
+      default-days: 14
 
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    # Only majors wait: they are the ones that need the ecosystem to catch up
+    # (see the `ignore` entries below for how often that bites here). Minor
+    # and patch updates keep GitHub's default 3-day cooldown.
+    cooldown:
+      semver-major-days: 14
     ignore:
       # obsidian declares an exact peer dependency on @codemirror/state
       # (currently 6.5.0), so newer @codemirror/* versions break npm install
