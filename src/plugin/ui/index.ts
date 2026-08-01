@@ -66,6 +66,7 @@ export class ReminderPluginUI {
       plugin.settings.laters,
       plugin.settings.openNoteOnReminderClick,
       plugin.settings.showPopupWithSystemNotification,
+      plugin.settings.keepSystemNotificationOnScreen,
       plugin.settings.focusDoneButtonOnPopup,
       plugin.settings.notificationPopupStyle,
     );
@@ -137,7 +138,7 @@ export class ReminderPluginUI {
   invalidate() {
     this.viewProxy.invalidate();
     this.overdueStatusBar.refresh();
-    this.reminderModal.syncToasts(
+    this.reminderModal.sync(
       new Set(
         this.plugin.reminders.reminders.map((reminder) => reminder.key()),
       ),

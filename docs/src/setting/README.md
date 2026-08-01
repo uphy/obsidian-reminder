@@ -84,6 +84,20 @@ Only takes effect while [Use system notification](#use-system-notification) is e
   - OFF: Only the system notification is shown, and it handles the reminder actions itself.
 - Default: OFF
 
+### Keep system notification on screen
+
+Keep the system notification on screen until you interact with it, instead of it disappearing after a few seconds.
+
+Only effective on Windows and Linux; ignored on macOS.
+
+Enable this if you use the same vault on multiple devices (e.g. via Obsidian Sync): it allows the plugin to dismiss the notification when you complete or snooze the reminder on another device.
+
+- Type: `boolean`
+- Values:
+  - ON: The notification stays on screen until dismissed
+  - OFF: The notification disappears on its own after a few seconds (default)
+- Default: OFF
+
 ### Focus Done button on popup
 
 Automatically focus the Done button when a reminder popup opens, so pressing Enter completes the task. Off by default to prevent accidentally completing a reminder you haven't read.

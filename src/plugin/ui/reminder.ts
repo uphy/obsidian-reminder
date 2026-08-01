@@ -6,8 +6,22 @@ import ReminderView from "ui/Reminder.svelte";
 import { ReminderToastManager } from "./reminder-toast";
 const electron = window.require ? window.require("electron") : undefined;
 
+/** A system notification tracked so it can be dismissed programmatically. */
+interface TrackedSystemNotification {
+  notification: { close: () => void };
+  // Set right before we call `notification.close()` ourselves (e.g. from
+  // `sync()`/`destroy()`, or replacing a stale notification for the same
+  // key), so the "close" event handler can tell that apart from the user
+  // dismissing the notification and skip calling `onMute()` again --
+  // `showReminder()` already marks the reminder muted at display time, so a
+  // second `onMute()` call would just trigger a redundant reload()/save().
+  closedByPlugin: boolean;
+}
+
 export class ReminderModal {
   private toastManager: ReminderToastManager = new ReminderToastManager();
+  private systemNotifications: Map<string, TrackedSystemNotification> =
+    new Map();
 
   constructor(
     private app: App,
@@ -15,18 +29,54 @@ export class ReminderModal {
     private laters: ReadOnlyReference<Array<Later>>,
     private openNoteOnReminderClick: ReadOnlyReference<boolean>,
     private showPopupWithSystemNotification: ReadOnlyReference<boolean>,
+    private keepSystemNotificationOnScreen: ReadOnlyReference<boolean>,
     private focusDoneButtonOnPopup: ReadOnlyReference<boolean>,
     private notificationPopupStyle: ReadOnlyReference<string>,
   ) {}
 
-  /** Unmounts every open toast (for plugin unload). */
+  /** Unmounts every open toast and closes every tracked system notification (for plugin unload). */
   destroy() {
     this.toastManager.destroy();
+    for (const key of Array.from(this.systemNotifications.keys())) {
+      this.closeSystemNotification(key);
+    }
+    this.systemNotifications.clear();
   }
 
-  /** Delegates to the toast manager; a no-op when in modal mode (no toasts exist). */
-  syncToasts(currentKeys: Set<string>) {
+  /**
+   * Removes toasts and closes system notifications whose reminder key is no
+   * longer present in the current data -- e.g. the reminder was marked done
+   * or snoozed on another device and synced in, its date was edited into the
+   * future, the line was deleted, or the task was checked off directly in
+   * the file.
+   */
+  sync(currentKeys: Set<string>) {
     this.toastManager.sync(currentKeys);
+    for (const key of Array.from(this.systemNotifications.keys())) {
+      if (!currentKeys.has(key)) {
+        this.closeSystemNotification(key);
+      }
+    }
+  }
+
+  /**
+   * Closes the tracked system notification for `key`, if any, marking it as
+   * closed by the plugin so the "close" event handler doesn't treat it as a
+   * user dismissal.
+   *
+   * Removes the map entry immediately rather than waiting for the "close"
+   * event: on Windows, once a notification has moved from the screen to the
+   * action center, `close()` is a no-op and never fires "close", which would
+   * otherwise leak this entry forever.
+   */
+  private closeSystemNotification(key: string) {
+    const tracked = this.systemNotifications.get(key);
+    if (!tracked) {
+      return;
+    }
+    tracked.closedByPlugin = true;
+    this.systemNotifications.delete(key);
+    tracked.notification.close();
   }
 
   public show(
@@ -89,13 +139,39 @@ export class ReminderModal {
     onMuteAll: () => void,
     alertOnly: boolean,
   ) {
+    const key = reminder.key();
+    // Replace rather than stack a second notification for the same reminder
+    // (e.g. it expires again before the previous notification was
+    // dismissed), mirroring how the toast manager replaces existing toasts
+    // by key.
+    this.closeSystemNotification(key);
+
     const Notification = (electron as any).remote.Notification;
     const n = new Notification({
       title: "Obsidian Reminder",
       body: reminder.title,
+      // "never" keeps the notification on screen (Windows/Linux only, see
+      // Electron docs -- ignored on macOS) until the user interacts with
+      // it, which is required for `notification.close()` to be able to
+      // dismiss it once it has moved to the notification center/action
+      // center. With "default", close() only works while the notification
+      // is still on screen.
+      timeoutType: this.keepSystemNotificationOnScreen.value
+        ? "never"
+        : "default",
     });
+    const tracked: TrackedSystemNotification = {
+      notification: n,
+      closedByPlugin: false,
+    };
+    this.systemNotifications.set(key, tracked);
+
     n.on("click", () => {
-      n.close();
+      // Not a behavior change: `showReminder()` already marks the reminder
+      // muted before displaying it, so routing this through the shared
+      // helper (which skips `onMute()`) matches the previous plain
+      // `n.close()` call.
+      this.closeSystemNotification(key);
       if (this.openNoteOnReminderClick.value) {
         onOpenFile();
         return;
@@ -112,10 +188,19 @@ export class ReminderModal {
         );
       }
     });
+    n.on("close", () => {
+      // For a plugin-initiated close, closeSystemNotification() already
+      // removed the map entry (see its docstring). This only has an effect
+      // for a genuine user dismissal, where the entry is still present.
+      if (this.systemNotifications.get(key) === tracked) {
+        this.systemNotifications.delete(key);
+      }
+      if (alertOnly || tracked.closedByPlugin) {
+        return;
+      }
+      onMute();
+    });
     if (!alertOnly) {
-      n.on("close", () => {
-        onMute();
-      });
       // Only for macOS
       {
         const laters = this.laters.value;
