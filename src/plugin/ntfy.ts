@@ -1,9 +1,14 @@
 import {
   computeNtfySyncPlan,
+  foldNtfyPollResponse,
   noteNameFromPath,
   selectOwnPendingSequenceIds,
 } from "model/ntfy";
-import type { NtfyPendingServerEntry, NtfyPublishAction } from "model/ntfy";
+import type {
+  NtfyPollResponseEntry,
+  NtfyPollResponseState,
+  NtfyPublishAction,
+} from "model/ntfy";
 import type { Reminder } from "model/reminder";
 import { DateTime } from "model/time";
 import type { Time } from "model/time";
@@ -163,6 +168,21 @@ export class NtfyController {
    * disabling the feature, this cleanup never runs for the old topic (there
    * is no way to recover a topic name that's no longer configured), so
    * schedules registered under a previous topic name are not cleaned up.
+   *
+   * Deliberately only deletes *pending* schedules, not already-*delivered*
+   * ones (unlike `doSync()`'s regular sync, which deletes both — see
+   * `computeNtfySyncPlan()`). A pending schedule represents a notification
+   * that hasn't fired yet; deleting it prevents a real future action (an
+   * unwanted push notification) from happening at all, which is squarely
+   * "stop notifications" as promised by turning the toggle off. A delivered
+   * message has already done its job on every subscribed device. Deleting
+   * it now would retroactively cancel a notification the user has already
+   * seen, purely because of a local, per-device settings change that has
+   * nothing to do with whether the underlying reminder is still relevant —
+   * the same reasoning that keeps muting a reminder from propagating to
+   * ntfy (see `NtfyControllerDeps`/`doSync()` callers): a device-local
+   * action shouldn't ripple into canceling notifications elsewhere unless
+   * the reminder itself actually changed.
    */
   private async cleanupAfterDisable(): Promise<void> {
     const target = this.resolveServerAndTopic();
@@ -171,8 +191,8 @@ export class NtfyController {
     }
     const { serverUrl, topic } = target;
     try {
-      const serverPending = await this.fetchPending(serverUrl, topic);
-      const ownSequenceIds = selectOwnPendingSequenceIds(serverPending);
+      const { pending } = await this.fetchServerState(serverUrl, topic);
+      const ownSequenceIds = selectOwnPendingSequenceIds(pending);
       for (const sequenceId of ownSequenceIds) {
         await this.deleteScheduled(serverUrl, topic, sequenceId);
       }
@@ -213,10 +233,14 @@ export class NtfyController {
     const { serverUrl, topic } = target;
 
     try {
-      const serverPending = await this.fetchPending(serverUrl, topic);
+      const { pending, delivered } = await this.fetchServerState(
+        serverUrl,
+        topic,
+      );
       const plan = computeNtfySyncPlan({
         reminders: this.deps.reminders(),
-        serverPending,
+        serverPending: pending,
+        serverDelivered: delivered,
         now: DateTime.now(),
         defaultTime: this.deps.defaultTime(),
       });
@@ -254,47 +278,57 @@ export class NtfyController {
   }
 
   /**
-   * `GET /<topic>/json?poll=1&sched=1` returns the topic's pending scheduled
-   * messages as newline-delimited JSON (`content-type:
-   * application/x-ndjson`), one JSON object per line. Verified against
-   * ntfy.sh:
-   * - Every publish response and every polled line has a `sequence_id`
-   *   field (echoing whatever we sent as `X-Sequence-ID`/left absent) and a
-   *   `time` field: unix seconds, matching the `delay` we sent.
-   * - This endpoint also keeps returning messages whose delivery time has
-   *   already passed (they're not purged from the poll cache the moment
-   *   they fire), and returns `event: "message_delete"` tombstone entries
-   *   for anything that has been explicitly deleted. Both are filtered out
-   *   below (`event !== "message"` or `time` no longer in the future) so
-   *   they aren't mistaken for still-pending schedules.
-   * - Polling a topic with nothing pending returns HTTP 200 with an empty
-   *   body.
+   * `GET /<topic>/json?poll=1&sched=1` returns the topic's scheduled
+   * messages (and their tombstones) as newline-delimited JSON
+   * (`content-type: application/x-ndjson`), one JSON object per line.
+   * Verified against ntfy.sh:
+   * - Every publish response and every polled `"message"` line has a
+   *   `sequence_id` field (echoing whatever we sent as `X-Sequence-ID`/left
+   *   absent) and a `time` field: unix seconds, matching the `delay` we
+   *   sent.
+   * - This endpoint keeps returning `"message"` entries whose delivery time
+   *   has already passed — they're not purged from the poll cache the
+   *   moment they fire — for as long as ntfy's message cache retains them
+   *   (12h by default on ntfy.sh). This is what makes deleting an
+   *   already-fired message possible at all: `DELETE
+   *   /<topic>/<sequence_id>` on one of these entries returns HTTP 200 and
+   *   causes subscribed clients (ntfy's Android app, the Firefox web app —
+   *   see `Supported on:` in ntfy's docs) to cancel the push notification
+   *   they already showed.
+   * - Deleting a message appends an `event: "message_delete"` tombstone
+   *   line to the poll response rather than replacing the original entry:
+   *   ntfy's message history is append-only, so a deleted-then-republished
+   *   sequence ID can accumulate several lines (message, delete, message,
+   *   ...) for the same `sequence_id` across polls. `foldNtfyPollResponse()`
+   *   (in `model/ntfy`) is what resolves that history down to each sequence
+   *   ID's current state by looking only at the chronologically-last entry.
+   * - Polling a topic with nothing pending/delivered returns HTTP 200 with
+   *   an empty body.
    */
-  private async fetchPending(
+  private async fetchServerState(
     serverUrl: string,
     topic: string,
-  ): Promise<Array<NtfyPendingServerEntry>> {
+  ): Promise<NtfyPollResponseState> {
     const response = await requestUrl({
       url: `${serverUrl}/${encodeURIComponent(topic)}/json?poll=1&sched=1`,
       method: "GET",
       throw: false,
     });
     if (response.status >= 400) {
-      // Do NOT return an empty list here: `computeNtfySyncPlan()` would then
-      // read that as "the server has nothing pending" and (re-)publish
-      // every reminder in the 24h window at once. A transient failure (a
-      // 5xx, or the very first request after coming back online) would
-      // otherwise turn into a burst of publish requests — bad for ntfy's
-      // rate limits. Throwing here lets `doSync()`'s catch block abandon
-      // this whole round instead; it's retried on the next debounce/
-      // interval tick.
+      // Do NOT return an empty result here: `computeNtfySyncPlan()` would
+      // then read that as "the server has nothing pending/delivered" and
+      // (re-)publish every reminder in the 24h window at once. A transient
+      // failure (a 5xx, or the very first request after coming back online)
+      // would otherwise turn into a burst of publish requests — bad for
+      // ntfy's rate limits. Throwing here lets `doSync()`'s catch block
+      // abandon this whole round instead; it's retried on the next
+      // debounce/interval tick.
       throw new Error(
-        `ntfy: failed to fetch pending scheduled messages: status=${response.status}`,
+        `ntfy: failed to fetch the topic's scheduled messages: status=${response.status}`,
       );
     }
 
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    const result: Array<NtfyPendingServerEntry> = [];
+    const entries: Array<NtfyPollResponseEntry> = [];
     for (const line of response.text.split("\n")) {
       const trimmed = line.trim();
       if (trimmed.length === 0) {
@@ -308,16 +342,20 @@ export class NtfyController {
         continue;
       }
       if (
-        parsed.event !== "message" ||
+        (parsed.event !== "message" && parsed.event !== "message_delete") ||
         parsed.sequence_id === undefined ||
-        parsed.time === undefined ||
-        parsed.time <= nowSeconds
+        parsed.time === undefined
       ) {
         continue;
       }
-      result.push({ sequenceId: parsed.sequence_id, atSeconds: parsed.time });
+      entries.push({
+        event: parsed.event,
+        sequenceId: parsed.sequence_id,
+        atSeconds: parsed.time,
+      });
     }
-    return result;
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    return foldNtfyPollResponse(entries, nowSeconds);
   }
 
   /**
@@ -380,10 +418,18 @@ export class NtfyController {
   }
 
   /**
-   * `DELETE /<topic>/<sequence_id>` deletes a still-pending schedule.
-   * Verified idempotent: deleting an ID that no longer exists (or never
-   * existed) still returns HTTP 200, so no special "not found" handling is
-   * needed here.
+   * `DELETE /<topic>/<sequence_id>` deletes a schedule, whether it's still
+   * pending or already delivered. Verified against ntfy.sh for both cases:
+   * a pending schedule is removed outright (its `"message"` entry drops out
+   * of the poll response, leaving only the tombstone), while a delivered
+   * one keeps its original `"message"` entry in the poll response (ntfy's
+   * message history is append-only) but gains a `"message_delete"`
+   * tombstone alongside it — and, for a delivered message specifically,
+   * this is also what tells subscribed clients (ntfy's Android app, the
+   * Firefox web app) to cancel the push notification they already showed.
+   * Also verified idempotent: deleting an ID that no longer exists (or
+   * never existed) still returns HTTP 200, so no special "not found"
+   * handling is needed here.
    */
   private async deleteScheduled(
     serverUrl: string,

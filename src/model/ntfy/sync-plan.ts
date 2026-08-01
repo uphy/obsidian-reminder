@@ -41,6 +41,15 @@ export interface ComputeNtfySyncPlanParams {
   reminders: ReadonlyArray<Reminder>;
   /** Scheduled messages ntfy currently has pending for our topic. */
   serverPending: ReadonlyArray<NtfyPendingServerEntry>;
+  /**
+   * Our own messages that have already been delivered (their `time` has
+   * passed) but are still retained in ntfy's poll cache. Optional, and
+   * treated as empty when omitted, so every existing caller/test that only
+   * knows about pending schedules keeps working unchanged: delivered-message
+   * cleanup (see below) is additive on top of the original pending-only
+   * behavior, not a replacement for it.
+   */
+  serverDelivered?: ReadonlyArray<NtfyPendingServerEntry>;
   now: DateTime;
   /** Fallback time-of-day for date-only reminders (the "Reminder Time" setting). */
   defaultTime?: Time;
@@ -50,13 +59,29 @@ export interface ComputeNtfySyncPlanParams {
 
 /**
  * Computes which reminders need to be (re-)published to ntfy as scheduled
- * messages, and which of our own pending scheduled messages are no longer
- * needed and should be deleted.
+ * messages, and which of our own scheduled messages on the server — pending
+ * or already delivered — are no longer wanted and should be deleted.
+ *
+ * Deleting a *delivered* message is what makes ntfy clients (Android, the
+ * Firefox web app — see `Supported on:` in ntfy's docs) cancel the
+ * already-shown push notification on other devices, so this is also how a
+ * reminder completed/snoozed/rescheduled on one device clears the
+ * notification it already fired on another.
  *
  * A pure function: takes the current reminder set and the server's current
- * pending schedules, and returns the diff. This is what keeps ntfy publish
- * calls to a minimum (important for rate limits) — nothing is (re-)sent
- * unless it's actually new or its delivery time actually changed.
+ * pending/delivered schedules, and returns the diff. This is what keeps
+ * ntfy publish/delete calls to a minimum (important for rate limits) —
+ * nothing is (re-)sent or deleted unless it's actually new, actually
+ * changed, or actually gone.
+ *
+ * Deliberately out of scope: `reminder.muteNotification` is never consulted
+ * here (`reminders`/`serverDelivered` entries are matched purely on
+ * sequence ID + delivery time, see `isStaleServerEntry`). Muting is a
+ * device-local "stop bothering me about this one" action, not a statement
+ * that the reminder is done or rescheduled — so it must not delete a
+ * delivered ntfy notification that's still showing on someone else's
+ * device. A muted reminder whose time hasn't changed is therefore left
+ * exactly as if it had never been muted.
  */
 export function computeNtfySyncPlan(
   params: ComputeNtfySyncPlanParams,
@@ -64,6 +89,7 @@ export function computeNtfySyncPlan(
   const {
     reminders,
     serverPending,
+    serverDelivered = [],
     now,
     defaultTime,
     minLeadSeconds = DEFAULT_MIN_LEAD_SECONDS,
@@ -127,7 +153,22 @@ export function computeNtfySyncPlan(
     }
   }
 
+  // Both loops below can independently decide to delete the same sequence
+  // ID (in practice they never see the same one, since `foldNtfyPollResponse`
+  // already classifies each sequence ID as either pending or delivered, not
+  // both — but callers/tests can pass arbitrary `serverPending`/
+  // `serverDelivered` directly, so de-dupe defensively rather than relying
+  // on that invariant here).
   const deleteActions: Array<NtfyDeleteAction> = [];
+  const queuedForDeleteSequenceIds = new Set<string>();
+  function queueDelete(sequenceId: string): void {
+    if (queuedForDeleteSequenceIds.has(sequenceId)) {
+      return;
+    }
+    queuedForDeleteSequenceIds.add(sequenceId);
+    deleteActions.push({ sequenceId });
+  }
+
   for (const entry of serverPending) {
     if (!isObsidianReminderSequenceId(entry.sequenceId)) {
       // Never touch another app/device's scheduled messages on the same
@@ -141,9 +182,6 @@ export function computeNtfySyncPlan(
       // No separate delete needed.
       continue;
     }
-    const currentAtSeconds = reminderAtSecondsBySequenceId.get(
-      entry.sequenceId,
-    );
     // No matching reminder anymore (done/deleted) -> delete. A matching
     // reminder that fell out of the publish horizon/lead window because its
     // delivery time changed -> delete the now-stale schedule. A matching
@@ -151,15 +189,45 @@ export function computeNtfySyncPlan(
     // schedule alone, even if it's now inside the lead window (this is the
     // fix: `minLeadSeconds` only limits when a schedule can be *created*,
     // not whether an already-published one is still wanted).
-    if (
-      currentAtSeconds === undefined ||
-      currentAtSeconds !== entry.atSeconds
-    ) {
-      deleteActions.push({ sequenceId: entry.sequenceId });
+    if (isStaleServerEntry(entry, reminderAtSecondsBySequenceId)) {
+      queueDelete(entry.sequenceId);
+    }
+  }
+
+  for (const entry of serverDelivered) {
+    // Unlike a pending schedule, a *delivered* message can never be
+    // "replaced" by simply republishing under the same sequence ID — by the
+    // time it fired, there was nothing left on the server to replace (see
+    // `X-Sequence-ID` behavior in `NtfyController.publish()`'s docs). So,
+    // unlike the pending loop above, there's no `targets.has()` short
+    // circuit here: even when the reminder still exists and is about to be
+    // republished for its new time, the stale delivered entry for the old
+    // time needs an explicit delete to make already-shown notifications on
+    // other devices go away.
+    if (isStaleServerEntry(entry, reminderAtSecondsBySequenceId)) {
+      queueDelete(entry.sequenceId);
     }
   }
 
   return { publish, delete: deleteActions };
+}
+
+/**
+ * Whether a server-side entry (pending or delivered) no longer matches the
+ * current reminder set and should be deleted: either its reminder is gone
+ * entirely (done/deleted), or the reminder still exists but its delivery
+ * time has changed since this entry was created. Entries not created by
+ * this plugin are never considered stale (see `isObsidianReminderSequenceId`).
+ */
+function isStaleServerEntry(
+  entry: NtfyPendingServerEntry,
+  reminderAtSecondsBySequenceId: ReadonlyMap<string, number>,
+): boolean {
+  if (!isObsidianReminderSequenceId(entry.sequenceId)) {
+    return false;
+  }
+  const currentAtSeconds = reminderAtSecondsBySequenceId.get(entry.sequenceId);
+  return currentAtSeconds === undefined || currentAtSeconds !== entry.atSeconds;
 }
 
 /**
