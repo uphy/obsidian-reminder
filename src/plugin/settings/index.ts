@@ -130,6 +130,9 @@ export class Settings {
         "When using system notification, also show the built-in reminder popup at the same time. The popup handles the reminder actions; the system notification acts as an alert only.",
       )
       .toggle(false)
+      .onAnyValueChanged((context) => {
+        context.setEnabled(this.useSystemNotification.value);
+      })
       .build(new RawSerde());
 
     this.keepSystemNotificationOnScreen = this.settings
@@ -140,6 +143,9 @@ export class Settings {
         "Keep the system notification on screen until you interact with it, instead of it disappearing after a few seconds. Only effective on Windows and Linux; ignored on macOS. Enable this if you use the same vault on multiple devices (e.g. via Obsidian Sync): it allows the plugin to dismiss the notification when you complete or snooze the reminder on another device.",
       )
       .toggle(false)
+      .onAnyValueChanged((context) => {
+        context.setEnabled(this.useSystemNotification.value);
+      })
       .build(new RawSerde());
 
     this.focusDoneButtonOnPopup = this.settings
