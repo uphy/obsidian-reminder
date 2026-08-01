@@ -22,6 +22,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Only used for the "gh pr create" call below. Pushes to develop and
+      # the release-beta-* branch stay on GITHUB_TOKEN, since develop has no
+      # required status checks and a plain branch push doesn't trigger
+      # pr.yml anyway. But a pull request opened with GITHUB_TOKEN doesn't
+      # trigger pull_request workflow runs either, so it would never get a
+      # "test" check and could never satisfy master's required status check.
+      # Open the PR as the uphy-ops GitHub App instead, whose PRs do trigger
+      # workflows.
+      - name: Generate a GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: master
@@ -51,7 +66,7 @@ jobs:
           git checkout -b release-beta-$version origin/master
           git cherry-pick $version
           git push origin release-beta-$version
-          gh pr create -B master -t "Release $version" -b ""
+          GH_TOKEN="${{ steps.app-token.outputs.token }}" gh pr create -B master -t "Release $version" -b ""
 
           # go back to develop
           git checkout develop
