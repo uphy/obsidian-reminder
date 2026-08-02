@@ -86,8 +86,8 @@ export class ReminderToastManager {
    * Removes any toast whose reminder key is no longer present in the
    * current data (e.g. its date was edited into the future, the line was
    * deleted, or the task was checked off directly in the file). Does not
-   * invoke onCancel/onDone -- the reminder simply no longer matches what's
-   * displayed, it wasn't acted on.
+   * invoke `actions.mute()`/`actions.done()` -- the reminder simply no
+   * longer matches what's displayed, it wasn't acted on.
    */
   sync(currentKeys: Set<string>) {
     for (const key of Array.from(this.toasts.keys())) {
