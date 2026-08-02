@@ -62,9 +62,9 @@ export interface ComputeNtfySyncPlanParams {
  * messages, and which of our own scheduled messages on the server — pending
  * or already delivered — are no longer wanted and should be deleted.
  *
- * Deleting a *delivered* message is what makes ntfy clients (Android, the
- * Firefox web app — see `Supported on:` in ntfy's docs) cancel the
- * already-shown push notification on other devices, so this is also how a
+ * Deleting a *delivered* message is what makes ntfy clients (verified with
+ * the Android app and the web app in Chrome) cancel the already-shown push
+ * notification on other devices, so this is also how a
  * reminder completed/snoozed/rescheduled on one device clears the
  * notification it already fired on another.
  *

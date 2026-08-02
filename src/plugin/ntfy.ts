@@ -292,9 +292,10 @@ export class NtfyController {
    *   (12h by default on ntfy.sh). This is what makes deleting an
    *   already-fired message possible at all: `DELETE
    *   /<topic>/<sequence_id>` on one of these entries returns HTTP 200 and
-   *   causes subscribed clients (ntfy's Android app, the Firefox web app —
-   *   see `Supported on:` in ntfy's docs) to cancel the push notification
-   *   they already showed.
+   *   causes subscribed clients to cancel the push notification they
+   *   already showed (verified with ntfy's Android app and the web app in
+   *   Chrome; ntfy's docs list `Supported on:` Android and Firefox, so the
+   *   web app isn't actually Firefox-only).
    * - Deleting a message appends an `event: "message_delete"` tombstone
    *   line to the poll response rather than replacing the original entry:
    *   ntfy's message history is append-only, so a deleted-then-republished
@@ -425,8 +426,8 @@ export class NtfyController {
    * one keeps its original `"message"` entry in the poll response (ntfy's
    * message history is append-only) but gains a `"message_delete"`
    * tombstone alongside it — and, for a delivered message specifically,
-   * this is also what tells subscribed clients (ntfy's Android app, the
-   * Firefox web app) to cancel the push notification they already showed.
+   * this is also what tells subscribed clients (verified: ntfy's Android
+   * app and the web app in Chrome) to cancel the notification they showed.
    * Also verified idempotent: deleting an ID that no longer exists (or
    * never existed) still returns HTTP 200, so no special "not found"
    * handling is needed here.
