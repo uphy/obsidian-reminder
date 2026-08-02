@@ -11,6 +11,11 @@ export class DndDurationModal extends SuggestModal<Later> {
     app: App,
     private laters: Array<Later>,
     private onSelect: (later: Later) => void,
+    // Called once the modal closes, whether the user picked a duration or
+    // dismissed it (e.g. Escape / clicking outside). Callers that need to
+    // know "the chooser is gone now" (as opposed to "a duration was picked")
+    // should use this rather than piggybacking on `onSelect`.
+    private onCloseCallback?: () => void,
   ) {
     super(app);
     this.setPlaceholder("Pause reminder notifications for...");
@@ -28,5 +33,9 @@ export class DndDurationModal extends SuggestModal<Later> {
 
   onChooseSuggestion(later: Later) {
     this.onSelect(later);
+  }
+
+  override onClose() {
+    this.onCloseCallback?.();
   }
 }

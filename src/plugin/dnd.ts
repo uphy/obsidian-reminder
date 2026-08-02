@@ -28,8 +28,20 @@ export function resumeNotifications(plugin: ReminderPlugin): void {
   new Notice("Reminder notifications resumed");
 }
 
-export function showPauseDurationChooser(plugin: ReminderPlugin): void {
-  new DndDurationModal(plugin.app, plugin.settings.laters.value, (later) => {
-    pauseNotifications(plugin, later);
-  }).open();
+export function showPauseDurationChooser(
+  plugin: ReminderPlugin,
+  // Invoked once the chooser modal closes, whether the user picked a
+  // duration or dismissed it without choosing one. Optional because most
+  // callers (the command palette entries, the status bar) don't need to
+  // react to the chooser closing.
+  onClose?: () => void,
+): void {
+  new DndDurationModal(
+    plugin.app,
+    plugin.settings.laters.value,
+    (later) => {
+      pauseNotifications(plugin, later);
+    },
+    onClose,
+  ).open();
 }
