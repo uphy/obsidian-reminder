@@ -263,8 +263,28 @@ export class ReminderPluginUI {
         // Unlike Mute, this must not leave this specific reminder muted:
         // pausing suppresses notifications globally without touching
         // individual reminders, so it re-fires once the pause ends.
-        reminder.muteNotification = false;
-        showPauseDurationChooser(this.plugin);
+        //
+        // However, we must NOT clear the mute flag right here. The duration
+        // chooser (`showPauseDurationChooser`) is opened but DND isn't set
+        // yet -- that only happens once the user actually picks a duration
+        // (see `pauseNotifications()` in `plugin/dnd.ts`). If we cleared
+        // `muteNotification` immediately, this reminder would be
+        // unprotected for however long the chooser stays open: the next
+        // `NotificationWorker` tick (every `reminderCheckIntervalSec`,
+        // default 5s) would see an expired, unmuted reminder with no DND in
+        // effect and pop the same reminder's modal again right on top of
+        // the still-open chooser. So keep `muteNotification` at the `true`
+        // it was set to when this reminder was displayed (top of
+        // `showReminder()`), and only flip it back to `false` in the
+        // chooser's `onClose` callback below, once the chooser is gone --
+        // by then either DND is active (chooser closed via a selected
+        // duration) or the user cancelled and expects normal re-notification
+        // on the next tick. Do not "simplify" this back to an immediate
+        // `reminder.muteNotification = false` without re-reading this
+        // comment; that is the exact regression this code fixes.
+        showPauseDurationChooser(this.plugin, () => {
+          reminder.muteNotification = false;
+        });
       },
       muteAll: () => {
         console.debug("Mute all reminders");
