@@ -5,14 +5,14 @@ import type { ReminderActions } from "./reminder-actions";
 
 /**
  * Manages non-modal "toast" reminder popups stacked in the bottom-right
- * corner of the window. Unlike `NotificationModal` (see reminder.ts), toasts
- * never take focus and multiple toasts can be shown at once, so they don't
- * participate in `reminder.beingDisplayed` serialization: the notification
- * worker fires them all without waiting.
+ * corner of the window. Unlike `NotificationModal` (see reminder-modal.ts),
+ * toasts never take focus and multiple toasts can be shown at once, so they
+ * don't participate in `reminder.beingDisplayed` serialization: the
+ * notification worker fires them all without waiting.
  */
 export class ReminderToastManager {
   // Created lazily on the first `show()` call rather than in the
-  // constructor, mirroring `DndStatusBar`/`ReminderModal` -- this class is
+  // constructor, mirroring `DndStatusBar`/`ReminderNotifier` -- this class is
   // constructed before the plugin (and `document.body`) is guaranteed ready.
   private containerEl?: HTMLElement;
   private toasts: Map<string, { el: HTMLElement; component: ReminderView }> =

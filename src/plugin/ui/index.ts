@@ -26,13 +26,13 @@ import {
   createReminderLineHighlightExtension,
   highlightReminderLine,
 } from "./reminder-line-highlight";
-import { ReminderModal } from "./reminder";
 import type { ReminderActions } from "./reminder-actions";
+import { ReminderNotifier } from "./reminder-notifier";
 
 export class ReminderPluginUI {
   private autoComplete: AutoComplete;
   private editDetector: EditDetector;
-  private reminderModal: ReminderModal;
+  private reminderNotifier: ReminderNotifier;
   private viewProxy: ReminderListItemViewProxy;
   private dndStatusBar: DndStatusBar;
   private overdueStatusBar: OverdueStatusBar;
@@ -60,7 +60,7 @@ export class ReminderPluginUI {
       plugin.settings.weekStart,
     );
     this.editDetector = new EditDetector(plugin.settings.editDetectionSec);
-    this.reminderModal = new ReminderModal(
+    this.reminderNotifier = new ReminderNotifier(
       plugin.app,
       plugin.settings.useSystemNotification,
       plugin.settings.laters,
@@ -128,7 +128,7 @@ export class ReminderPluginUI {
 
   onunload() {
     this.detachReminderList();
-    this.reminderModal.destroy();
+    this.reminderNotifier.destroy();
   }
 
   isEditing(): boolean {
@@ -138,7 +138,7 @@ export class ReminderPluginUI {
   invalidate() {
     this.viewProxy.invalidate();
     this.overdueStatusBar.refresh();
-    this.reminderModal.sync(
+    this.reminderNotifier.sync(
       new Set(
         this.plugin.reminders.reminders.map((reminder) => reminder.key()),
       ),
@@ -285,7 +285,7 @@ export class ReminderPluginUI {
         new Notice(`Muted ${count} reminder${count === 1 ? "" : "s"}`);
       },
     };
-    this.reminderModal.show(reminder, actions);
+    this.reminderNotifier.show(reminder, actions);
   }
 }
 
