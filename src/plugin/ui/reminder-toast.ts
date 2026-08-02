@@ -1,6 +1,7 @@
 import type { Reminder } from "model/reminder";
 import type { DateTime, Later } from "model/time";
 import ReminderView from "ui/Reminder.svelte";
+import type { ReminderActions } from "./reminder-actions";
 
 /**
  * Manages non-modal "toast" reminder popups stacked in the bottom-right
@@ -17,16 +18,7 @@ export class ReminderToastManager {
   private toasts: Map<string, { el: HTMLElement; component: ReminderView }> =
     new Map();
 
-  show(
-    reminder: Reminder,
-    laters: Array<Later>,
-    onRemindMeLater: (time: DateTime) => void,
-    onDone: () => void,
-    onCancel: () => void,
-    onOpenFile: () => void,
-    onPauseAllNotifications: () => void,
-    onMuteAll: () => void,
-  ) {
+  show(reminder: Reminder, laters: Array<Later>, actions: ReminderActions) {
     const key = reminder.key();
     // Replace rather than stack a second toast for the same reminder (e.g.
     // it expires again before the first toast was dismissed).
@@ -44,35 +36,35 @@ export class ReminderToastManager {
         // flicker where two toasts both have shortcuts enabled.
         shortcutsEnabled: true,
         onRemindMeLater: (time: DateTime) => {
-          onRemindMeLater(time);
+          actions.remindMeLater(time);
           this.remove(key);
         },
         onDone: () => {
-          onDone();
+          actions.done();
           this.remove(key);
         },
         onOpenFile: () => {
           // Matches NotificationModal: opening the file also mutes the
           // reminder (closing the modal with `canceled = true` triggers
-          // `onCancel` there).
-          onOpenFile();
-          onCancel();
+          // `actions.mute()` there).
+          actions.openFile();
+          actions.mute();
           this.remove(key);
         },
         onMute: () => {
-          onCancel();
+          actions.mute();
           this.remove(key);
         },
         onClose: () => {
-          onCancel();
+          actions.mute();
           this.remove(key);
         },
         onPauseAllNotifications: () => {
-          onPauseAllNotifications();
+          actions.pauseAll();
           this.remove(key);
         },
         onMuteAll: () => {
-          onMuteAll();
+          actions.muteAll();
           this.remove(key);
         },
       },
