@@ -1,6 +1,5 @@
 import type ReminderPlugin from "main";
 import type { ReadOnlyReference } from "model/ref";
-import type { DateTime } from "model/time";
 import type { Reminder } from "model/reminder";
 import type { EditorView } from "@codemirror/view";
 import {
@@ -27,12 +26,13 @@ import {
   createReminderLineHighlightExtension,
   highlightReminderLine,
 } from "./reminder-line-highlight";
-import { ReminderModal } from "./reminder";
+import type { ReminderActions } from "./reminder-actions";
+import { ReminderNotifier } from "./reminder-notifier";
 
 export class ReminderPluginUI {
   private autoComplete: AutoComplete;
   private editDetector: EditDetector;
-  private reminderModal: ReminderModal;
+  private reminderNotifier: ReminderNotifier;
   private viewProxy: ReminderListItemViewProxy;
   private dndStatusBar: DndStatusBar;
   private overdueStatusBar: OverdueStatusBar;
@@ -60,7 +60,7 @@ export class ReminderPluginUI {
       plugin.settings.weekStart,
     );
     this.editDetector = new EditDetector(plugin.settings.editDetectionSec);
-    this.reminderModal = new ReminderModal(
+    this.reminderNotifier = new ReminderNotifier(
       plugin.app,
       plugin.settings.useSystemNotification,
       plugin.settings.laters,
@@ -128,7 +128,7 @@ export class ReminderPluginUI {
 
   onunload() {
     this.detachReminderList();
-    this.reminderModal.destroy();
+    this.reminderNotifier.destroy();
   }
 
   isEditing(): boolean {
@@ -138,7 +138,7 @@ export class ReminderPluginUI {
   invalidate() {
     this.viewProxy.invalidate();
     this.overdueStatusBar.refresh();
-    this.reminderModal.sync(
+    this.reminderNotifier.sync(
       new Set(
         this.plugin.reminders.reminders.map((reminder) => reminder.key()),
       ),
@@ -156,26 +156,6 @@ export class ReminderPluginUI {
 
   refreshDndStatusBar() {
     this.dndStatusBar.refresh();
-  }
-
-  private showReminderModal(
-    reminder: Reminder,
-    onRemindMeLater: (time: DateTime) => void,
-    onDone: () => void,
-    onMute: () => void,
-    onOpenFile: () => void,
-    onPauseAllNotifications: () => void,
-    onMuteAll: () => void,
-  ) {
-    this.reminderModal.show(
-      reminder,
-      onRemindMeLater,
-      onDone,
-      onMute,
-      onOpenFile,
-      onPauseAllNotifications,
-      onMuteAll,
-    );
   }
 
   async showReminderList() {
@@ -250,9 +230,8 @@ export class ReminderPluginUI {
 
   showReminder(reminder: Reminder) {
     reminder.muteNotification = true;
-    this.showReminderModal(
-      reminder,
-      (time) => {
+    const actions: ReminderActions = {
+      remindMeLater: (time) => {
         console.debug("Remind me later: time=%o", time);
         reminder.time = time;
         reminder.muteNotification = false;
@@ -260,7 +239,7 @@ export class ReminderPluginUI {
         void this.plugin.fileSystem.updateReminder(reminder, false);
         void this.plugin.data.save(true);
       },
-      () => {
+      done: () => {
         console.debug("done");
         reminder.muteNotification = false;
         // Callback is synchronous; both calls are fire-and-forget here.
@@ -268,18 +247,18 @@ export class ReminderPluginUI {
         this.plugin.reminders.removeReminder(reminder);
         void this.plugin.data.save(true);
       },
-      () => {
+      mute: () => {
         console.debug("Mute");
         reminder.muteNotification = true;
         this.reload(true);
         void this.plugin.data.save(true);
       },
-      () => {
+      openFile: () => {
         console.debug("Open");
         // Callback is synchronous; opening the file is fire-and-forget here.
         void this.openReminderFile(reminder);
       },
-      () => {
+      pauseAll: () => {
         console.debug("Pause all notifications");
         // Unlike Mute, this must not leave this specific reminder muted:
         // pausing suppresses notifications globally without touching
@@ -287,7 +266,7 @@ export class ReminderPluginUI {
         reminder.muteNotification = false;
         showPauseDurationChooser(this.plugin);
       },
-      () => {
+      muteAll: () => {
         console.debug("Mute all reminders");
         // +1 for the currently displayed reminder: it was already flagged
         // muted at display time (top of `showReminder()`), so
@@ -305,7 +284,8 @@ export class ReminderPluginUI {
         void this.plugin.data.save(true);
         new Notice(`Muted ${count} reminder${count === 1 ? "" : "s"}`);
       },
-    );
+    };
+    this.reminderNotifier.show(reminder, actions);
   }
 }
 

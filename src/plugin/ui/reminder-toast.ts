@@ -1,32 +1,24 @@
 import type { Reminder } from "model/reminder";
 import type { DateTime, Later } from "model/time";
 import ReminderView from "ui/Reminder.svelte";
+import type { ReminderActions } from "./reminder-actions";
 
 /**
  * Manages non-modal "toast" reminder popups stacked in the bottom-right
- * corner of the window. Unlike `NotificationModal` (see reminder.ts), toasts
- * never take focus and multiple toasts can be shown at once, so they don't
- * participate in `reminder.beingDisplayed` serialization: the notification
- * worker fires them all without waiting.
+ * corner of the window. Unlike `NotificationModal` (see reminder-modal.ts),
+ * toasts never take focus and multiple toasts can be shown at once, so they
+ * don't participate in `reminder.beingDisplayed` serialization: the
+ * notification worker fires them all without waiting.
  */
 export class ReminderToastManager {
   // Created lazily on the first `show()` call rather than in the
-  // constructor, mirroring `DndStatusBar`/`ReminderModal` -- this class is
+  // constructor, mirroring `DndStatusBar`/`ReminderNotifier` -- this class is
   // constructed before the plugin (and `document.body`) is guaranteed ready.
   private containerEl?: HTMLElement;
   private toasts: Map<string, { el: HTMLElement; component: ReminderView }> =
     new Map();
 
-  show(
-    reminder: Reminder,
-    laters: Array<Later>,
-    onRemindMeLater: (time: DateTime) => void,
-    onDone: () => void,
-    onCancel: () => void,
-    onOpenFile: () => void,
-    onPauseAllNotifications: () => void,
-    onMuteAll: () => void,
-  ) {
+  show(reminder: Reminder, laters: Array<Later>, actions: ReminderActions) {
     const key = reminder.key();
     // Replace rather than stack a second toast for the same reminder (e.g.
     // it expires again before the first toast was dismissed).
@@ -44,35 +36,35 @@ export class ReminderToastManager {
         // flicker where two toasts both have shortcuts enabled.
         shortcutsEnabled: true,
         onRemindMeLater: (time: DateTime) => {
-          onRemindMeLater(time);
+          actions.remindMeLater(time);
           this.remove(key);
         },
         onDone: () => {
-          onDone();
+          actions.done();
           this.remove(key);
         },
         onOpenFile: () => {
           // Matches NotificationModal: opening the file also mutes the
           // reminder (closing the modal with `canceled = true` triggers
-          // `onCancel` there).
-          onOpenFile();
-          onCancel();
+          // `actions.mute()` there).
+          actions.openFile();
+          actions.mute();
           this.remove(key);
         },
         onMute: () => {
-          onCancel();
+          actions.mute();
           this.remove(key);
         },
         onClose: () => {
-          onCancel();
+          actions.mute();
           this.remove(key);
         },
         onPauseAllNotifications: () => {
-          onPauseAllNotifications();
+          actions.pauseAll();
           this.remove(key);
         },
         onMuteAll: () => {
-          onMuteAll();
+          actions.muteAll();
           this.remove(key);
         },
       },
@@ -94,8 +86,8 @@ export class ReminderToastManager {
    * Removes any toast whose reminder key is no longer present in the
    * current data (e.g. its date was edited into the future, the line was
    * deleted, or the task was checked off directly in the file). Does not
-   * invoke onCancel/onDone -- the reminder simply no longer matches what's
-   * displayed, it wasn't acted on.
+   * invoke `actions.mute()`/`actions.done()` -- the reminder simply no
+   * longer matches what's displayed, it wasn't acted on.
    */
   sync(currentKeys: Set<string>) {
     for (const key of Array.from(this.toasts.keys())) {

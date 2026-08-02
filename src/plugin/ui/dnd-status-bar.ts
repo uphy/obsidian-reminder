@@ -13,7 +13,7 @@ const REFRESH_INTERVAL_MILLIS = 10 * 1000;
 export class DndStatusBar {
   // Created lazily in `onload()` rather than the constructor, since
   // `addStatusBarItem()` is an Obsidian API call and this class (like
-  // `ReminderModal`) is constructed before the plugin has loaded.
+  // `ReminderNotifier`) is constructed before the plugin has loaded.
   private el?: HTMLElement;
 
   constructor(private plugin: ReminderPlugin) {}
