@@ -251,6 +251,101 @@ describe("computeNtfySyncPlan()", (): void => {
   });
 });
 
+describe("computeNtfySyncPlan() - serverDelivered", (): void => {
+  test("deletes a delivered entry whose reminder no longer exists", (): void => {
+    const sequenceId = computeSequenceId("Todo.md", "Gone", 0);
+    const serverDelivered: Array<NtfyPendingServerEntry> = [
+      { sequenceId, atSeconds: NOW_SECONDS - 60 },
+    ];
+    const plan = computeNtfySyncPlan({
+      reminders: [],
+      serverPending: [],
+      serverDelivered,
+      now: NOW,
+    });
+
+    expect(plan.delete).toStrictEqual([{ sequenceId }]);
+  });
+
+  test("deletes a delivered entry whose reminder's delivery time changed", (): void => {
+    // The reminder still exists (same sequence ID), but was rescheduled, so
+    // it's also a fresh publish target for its new time. Unlike a pending
+    // entry, a delivered one can't be "replaced" by simply republishing
+    // under the same sequence ID (the old message already fired), so this
+    // needs its own explicit delete.
+    const reminder = reminderIn("Rescheduled", 60);
+    const sequenceId = computeSequenceId("Todo.md", "Rescheduled", 0);
+    const serverDelivered: Array<NtfyPendingServerEntry> = [
+      { sequenceId, atSeconds: NOW_SECONDS - 3600 },
+    ];
+    const plan = computeNtfySyncPlan({
+      reminders: [reminder],
+      serverPending: [],
+      serverDelivered,
+      now: NOW,
+    });
+
+    expect(plan.publish).toHaveLength(1);
+    expect(plan.delete).toStrictEqual([{ sequenceId }]);
+  });
+
+  test("does not delete a delivered entry whose reminder still matches (same time)", (): void => {
+    const deliveredAtSeconds = NOW_SECONDS - 60;
+    const reminder = reminderIn("Already fired", -60);
+    const sequenceId = computeSequenceId("Todo.md", "Already fired", 0);
+    const serverDelivered: Array<NtfyPendingServerEntry> = [
+      { sequenceId, atSeconds: deliveredAtSeconds },
+    ];
+    const plan = computeNtfySyncPlan({
+      reminders: [reminder],
+      serverPending: [],
+      serverDelivered,
+      now: NOW,
+    });
+
+    expect(plan.delete).toHaveLength(0);
+  });
+
+  test("does not delete delivered entries not created by this plugin", (): void => {
+    const serverDelivered: Array<NtfyPendingServerEntry> = [
+      { sequenceId: "some-other-app-id", atSeconds: NOW_SECONDS - 60 },
+    ];
+    const plan = computeNtfySyncPlan({
+      reminders: [],
+      serverPending: [],
+      serverDelivered,
+      now: NOW,
+    });
+
+    expect(plan.delete).toHaveLength(0);
+  });
+
+  test("does not duplicate a delete when the same sequence ID appears in both serverPending and serverDelivered", (): void => {
+    // Shouldn't happen in practice (`foldNtfyPollResponse` classifies each
+    // sequence ID as exactly one of pending/delivered/gone), but the plan
+    // must still de-dupe defensively.
+    const sequenceId = computeSequenceId("Todo.md", "Gone", 0);
+    const plan = computeNtfySyncPlan({
+      reminders: [],
+      serverPending: [{ sequenceId, atSeconds: NOW_SECONDS + 60 }],
+      serverDelivered: [{ sequenceId, atSeconds: NOW_SECONDS - 60 }],
+      now: NOW,
+    });
+
+    expect(plan.delete).toStrictEqual([{ sequenceId }]);
+  });
+
+  test("defaults to no delivered entries when serverDelivered is omitted", (): void => {
+    const plan = computeNtfySyncPlan({
+      reminders: [],
+      serverPending: [],
+      now: NOW,
+    });
+
+    expect(plan.delete).toHaveLength(0);
+  });
+});
+
 describe("selectOwnPendingSequenceIds()", (): void => {
   test("returns sequence IDs created by this plugin", (): void => {
     const ownSequenceId = computeSequenceId("Todo.md", "Task 1", 0);

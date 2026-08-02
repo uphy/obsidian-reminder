@@ -120,12 +120,16 @@ This is an experimental feature (PoC-level). Enable it under [ntfy settings](/se
 
 Once configured, the plugin periodically publishes your upcoming reminders (each reminder's title and the name of the note it's in) to that topic as scheduled messages. When a reminder's time comes, the ntfy server pushes the notification to every subscribed device — including phones where Obsidian isn't open. Tapping the notification opens the corresponding note in Obsidian.
 
+Completing, snoozing, or otherwise rescheduling a reminder on one device also clears the ntfy notification that already fired for it on your other devices — so, for example, marking a reminder done on your laptop dismisses the matching push notification still sitting in your phone's notification drawer.
+
 ### Constraints
 
 - **Titles and note names are sent to the ntfy server.** Only the reminder's title and the name of the note it's in (not the note's content or its full path) are sent, but they do leave your device and go to whichever server you configured. Don't enable this with a server you don't trust.
 - **Requires ntfy v2.16.0 or later.** This feature relies on ntfy's sequence-ID based scheduled message replacement/deletion, added in that version. `ntfy.sh` (the public hosted service) already runs a recent enough version; if you self-host, make sure your server is updated.
 - **Only reminders due within the next 24 hours are registered.** ntfy itself allows scheduling a message at most 3 days ahead, but this plugin only ever registers reminders up to 24 hours out, and periodically re-registers reminders as time passes so that window keeps rolling forward. If Obsidian isn't opened for more than a day, reminders due after that point won't have been registered yet and won't notify you via ntfy until Obsidian runs again.
 - **Renaming the topic leaves old schedules behind.** Turning the feature off deletes this plugin's own pending schedules from the currently configured topic, but changing the topic name instead has no way to reach the previous topic afterward, so schedules already registered under the old name are not cleaned up.
+- **Clearing an already-delivered notification on other devices requires client support.** Verified working with ntfy's Android app and with the ntfy web app in Chrome. ntfy's own docs list this (`message_delete` / notification cancellation) under `Supported on:` Android and Firefox, so the web app is not actually limited to Firefox, but treat those docs as the authoritative list. The iOS app isn't listed there and most likely keeps showing the notification until you dismiss it by hand.
+- **Delivered notifications can only be cleared while ntfy still has them cached.** `ntfy.sh` retains messages for 12 hours after delivery by default; once a message ages out of that cache, there's nothing left on the server to delete, so the notification stays on devices that already received it.
 
 ## Overdue count in the status bar
 
