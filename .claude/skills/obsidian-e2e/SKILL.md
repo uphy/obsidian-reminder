@@ -105,11 +105,14 @@ applicable, page-side — see below for why both):
    `OBSIDIAN_TEST_VAULT_PATH/.obsidian/obsidian-e2e-allowed` must exist. This is
    checked with plain `fs`/`test -f`, before any CDP call is made — an unmarked
    vault is rejected before the script even talks to Obsidian.
-4. **CDP target selection.** Among the CDP page targets, exactly one page's title
-   must contain `" - <VAULT_NAME> - "` (the substring Obsidian places between the
-   active note's title and `"Obsidian <version>"`). Zero matches or more than one
-   match both abort the run — see "Known limitations" for a caveat on this
-   substring match.
+4. **CDP target selection.** Among the CDP page targets, the pages whose titles
+   belong to `<VAULT_NAME>` are collected (two title shapes — see "Known
+   limitations"), and exactly one must survive. Zero aborts the run. More than
+   one is legitimate (settings window, popped-out notes), so the candidates are
+   classified by a fixed, read-only DOM probe that runs behind the very same
+   guard as user code, and `--window` picks one; if that still doesn't leave
+   exactly one, the run aborts. A candidate that fails the probe is never used —
+   failing it means the page could not prove which vault it belongs to.
 5. **Re-check from inside the page.** The JS actually evaluated in the page is
    wrapped so that, before any of your code runs, it re-reads
    `app.vault.getName()` **and** re-checks
@@ -119,14 +122,21 @@ applicable, page-side — see below for why both):
    CDP target list, the filesystem); the vault shown in a given window could in
    principle change between that snapshot and the code actually executing.
 
+`obsidian-wait.sh` is a polling loop around `obsidian-eval.mjs`, so it inherits
+every guard above rather than implementing its own.
+
 `obsidian-shot.sh` is the one exception: it never writes into a vault (it only
 reads the on-screen window list and writes a screenshot file wherever you tell it
 to), so it does not check the marker file — but it still requires
-`OBSIDIAN_TEST_VAULT_NAME` and still enforces "exactly one match," cross-checked
+`OBSIDIAN_TEST_VAULT_NAME` and still narrows to exactly one window, cross-checked
 against both the OS window list and the CDP page list independently.
 
-`obsidian-launch.sh` doesn't touch any vault at all (it only starts/stops the
-Obsidian process and polls the CDP HTTP endpoint), so no vault guard applies to it.
+`obsidian-launch.sh` mostly doesn't touch any vault (it starts/stops the Obsidian
+process and polls the CDP HTTP endpoint). The one part that does is opening the
+test vault when it has no window, since that names a specific vault and makes
+Obsidian write its `.obsidian/workspace.json` — so that step runs guards 1–3
+above before it opens anything. Everything else in the script runs without a
+vault configured at all.
 
 ## Environment-specific configuration
 
@@ -142,10 +152,15 @@ offer to record it.
 
 All scripts live in `scripts/` and use only Node's built-ins (`fetch`,
 `WebSocket`, `fs`) plus macOS system tools (`osascript`, `screencapture`, `python3`
-+ PyObjC's `Quartz`) — no `npm install` required, so they work in a worktree before
-`mise run main:init` has ever been run.
++ PyObjC's `Quartz`) — no `npm install` required, so they work in a worktree
+before dependencies have ever been installed.
 
-### `obsidian-launch.sh [--restart]`
+`scripts/lib/` holds the pieces more than one script needs: `vault-window.mjs`
+(which CDP page belongs to which vault, the guard wrapper, the CDP evaluate
+call) and `cdp-pages.mjs`, a tiny CLI over the page list so the bash scripts
+don't each carry their own copy of the title rule.
+
+### `obsidian-launch.sh [--restart] [--no-open-vault]`
 
 Ensures Obsidian is running with `--remote-debugging-port=$OBSIDIAN_CDP_PORT`
 (default port `9333` — `9222` is often already taken by a running Chrome). If CDP
@@ -154,10 +169,41 @@ titles and exits). Otherwise it quits any running Obsidian instance (Electron ap
 can't have `--remote-debugging-port` turned on after the fact) and relaunches it
 with the flag, then polls until CDP responds.
 
-Not vault-specific — it affects every open vault's window (all vaults reopen, no
-data loss, but any unsaved modal/dialog state in another vault's window is lost).
-It only actually restarts when required; running it opportunistically before other
-scripts is safe and usually a no-op.
+Starting the app is not vault-specific — it affects every open vault's window
+(all vaults reopen, no data loss, but any unsaved modal/dialog state in another
+vault's window is lost). It only actually restarts when required; running it
+opportunistically before other scripts is safe and usually a no-op.
+
+**It also makes sure the test vault has a window.** Obsidian only reopens the
+vaults that were open when it was last quit, and the test vault frequently isn't
+one of them — which used to leave every other script failing with "found no page
+target" and nothing explaining why. When `OBSIDIAN_TEST_VAULT_NAME` is set, this
+script waits ~8s for that vault's window to appear on its own and, if it doesn't,
+opens the vault via `obsidian://open?vault=<name>` and waits for it. Opening a
+vault by name is vault-specific, so that step runs the same filesystem-side
+guards as the other scripts (name/path agreement plus the marker file) before it
+names anything — opening a vault makes Obsidian write its own
+`.obsidian/workspace.json`, which is the kind of write the marker authorizes.
+Pass `--no-open-vault` to suppress this.
+
+### `obsidian-wait.sh [--timeout SEC] [--min-reminders N]`
+
+```
+.claude/skills/obsidian-e2e/scripts/obsidian-wait.sh --min-reminders 3
+# => { "ready": true, "reminders": 13, "overdue": 0 }
+```
+
+Blocks until the plugin in the test vault's window is actually ready: the window
+answers CDP, `app.plugins.plugins["obsidian-reminder-plugin"]` exists, and its
+initial full-vault scan has finished (`data.scanned.value === true`). Use this
+instead of `sleep 20` after a launch or restart — it typically returns in well
+under a second, and it can't return too early the way a fixed sleep can.
+
+`--min-reminders N` additionally waits for, and then asserts, a parsed reminder
+count. Always pass it: a settings mismatch makes fixtures parse to *zero*
+reminders with no error anywhere (see "Fixtures depend on settings" below), and
+without this assertion that failure shows up much later as a confusing "the
+reminder never fired."
 
 ### `obsidian-eval.mjs`
 
@@ -176,6 +222,16 @@ node .claude/skills/obsidian-e2e/scripts/obsidian-eval.mjs --file /path/to/scrip
 Evaluates JavaScript inside the matched Obsidian window as the body of an async
 function (`return`/`await` both work). Prints the result as JSON to stdout;
 exceptions go to stderr with a non-zero exit.
+
+**When the vault has several windows** (a popped-out note, or the separate
+window Obsidian 1.13+ uses for settings), the candidates are classified with a
+fixed read-only DOM probe and `--window` picks one: `main` (default) is the
+window with the ribbon and the root split, `any` accepts whichever single window
+can be driven. There is deliberately no `--window settings`: **the settings
+window's JS context has no `app` global**, so it can't prove which vault it
+belongs to, the safety guard can never pass there, and nothing may be evaluated
+in it. To see the settings screen, screenshot it (`obsidian-shot.sh
+--title-contains`).
 
 Because production builds don't mangle property names (esbuild only does that with
 an explicit `mangleProps`, which this project's `esbuild.config.mjs` doesn't set),
@@ -220,11 +276,15 @@ resolves inside the vault root — this is what blocks `../`-style escapes or a
 symlink pointing outside the vault. Obsidian must already be running and watching
 the vault for the external file change to be picked up.
 
-### `obsidian-shot.sh <output-path.png>`
+### `obsidian-shot.sh [--title-contains TEXT] <output-path.png>`
 
 ```
 # (OBSIDIAN_TEST_VAULT_NAME already exported — see above)
 .claude/skills/obsidian-e2e/scripts/obsidian-shot.sh /path/to/scratchpad/shot.png
+
+# when the vault has several windows open, narrow by an extra title substring
+# (the settings window's title starts with the localized name of that screen):
+.claude/skills/obsidian-e2e/scripts/obsidian-shot.sh --title-contains '設定' /path/to/settings.png
 ```
 
 Screenshots the on-screen Obsidian window belonging to the named vault.
@@ -238,10 +298,20 @@ prone to timing out in testing; drive the UI through CDP/DOM instead (see
 
 Window discovery goes through Quartz's `CGWindowListCopyWindowInfo` (via
 `python3` + PyObjC), matching `kCGWindowOwnerName == "Obsidian"` and a
-`kCGWindowName` containing `" - <VAULT_NAME> - "`, then
-`screencapture -x -o -l <windowID>`. Write the output somewhere outside any vault
-(the session scratchpad is the right place) — this script does not stop you from
-pointing the output path inside a vault, so don't.
+`kCGWindowName` that belongs to the vault (same two title shapes as the CDP
+side — see "Known limitations"), then `screencapture -x -o -l <windowID>`. Write
+the output somewhere outside any vault (the session scratchpad is the right
+place) — this script does not stop you from pointing the output path inside a
+vault, so don't.
+
+Exactly one window must survive the filter. If the vault has more than one open,
+narrow it with `--title-contains`; the error message lists the titles it saw.
+The cross-check against the CDP page list still runs, and now requires the two
+sources to agree on *how many* windows the vault has, rather than requiring that
+number to be one.
+
+This is the only way to inspect the settings screen, since CDP can't evaluate
+anything in that window (no `app` global — see `obsidian-eval.mjs` above).
 
 ## What cannot be automated
 
@@ -257,24 +327,94 @@ Be upfront about these with the user rather than trying to fake a check:
 - **Subjective UI/UX judgment** — animation smoothness, whether a layout "looks
   right." This skill can assert DOM state and pixel-diff screenshots at best; it
   can't judge aesthetics.
+- **Clicking anything in the settings window.** Its JS context has no `app`, so
+  the vault guard can't pass and nothing may be evaluated there. You can
+  screenshot it, and you can read and write every setting's value from the main
+  window via `plugin.settings.<key>.rawValue.value` — what you can't do is drive
+  the actual toggles and text fields.
 
 For these, hand off to `manual-verify`.
+
+## Fixtures depend on settings
+
+The plugin's `data.json` does not live in the vault. It lives in the plugin
+directory, which is a symlink to a repository checkout — so **swapping the
+symlink swaps the settings too**, and a fresh worktree that has never been used
+starts with no `data.json` at all, i.e. every setting at its default.
+
+That matters because reminder syntax is only recognized when the matching format
+is enabled. The `⏰ YYYY-MM-DD HH:mm` fixtures under `reminder-test/` need both
+`enableTasksPluginReminderFormat` and `useCustomEmojiForTasksPlugin` on, and
+neither is on by default. With defaults, every fixture parses to **zero
+reminders, with no error anywhere** — nothing fires, and it looks like the
+feature under test is broken.
+
+So set the baseline explicitly at the start of a run and assert it took effect:
+
+```
+# one-time per checkout, from the main window
+node .../obsidian-eval.mjs '
+  const p = app.plugins.plugins["obsidian-reminder-plugin"];
+  p.settings.settings.forEach(s => {
+    if (s.key === "enableTasksPluginReminderFormat") s.rawValue.value = true;
+  });
+  p.settings.useCustomEmojiForTasksPlugin.rawValue.value = true;
+  await p.fileSystem.reloadRemindersInAllFiles();
+  await p.data.save(true);
+  return p._reminders.reminders.length;'
+
+.../obsidian-wait.sh --min-reminders 3   # fails loudly if the fixtures did not parse
+```
+
+Note `p.settings.settings.forEach` for the format toggles: the per-format
+settings aren't exposed as named fields on `Settings`, only through the
+collection.
+
+## Testing startup / restart behavior
+
+Anything about what happens *when Obsidian starts* (mute state surviving a
+restart, do-not-disturb resuming, the initial scan) needs state on disk before
+the restart, and the plugin only writes `data.json` when it considers itself
+changed. Force it rather than hoping a periodic save lands:
+
+```
+# 1. get into the state you want to persist (fire, mute, run a command, ...)
+# 2. force a save and confirm it hit the disk
+node .../obsidian-eval.mjs 'await app.plugins.plugins["obsidian-reminder-plugin"].data.save(true); return "saved";'
+grep -o '"muted":[a-z]*' <checkout>/data.json
+
+# 3. restart, wait properly, then assert
+.../obsidian-launch.sh --restart
+.../obsidian-wait.sh --min-reminders 3
+node .../obsidian-eval.mjs '
+  const p = app.plugins.plugins["obsidian-reminder-plugin"];
+  return { toasts: [...p.ui.reminderNotifier.toastManager.toasts.keys()] };'
+```
+
+Reading `data.json` back between steps 2 and 3 is worth the extra line: it
+separates "the plugin never persisted it" from "the plugin persisted it and
+discarded it on load," which are the two failure modes that look identical from
+the UI.
 
 ## Typical workflow
 
 1. **Build** the checkout under test:
-   `mise exec -- npm run build` (run `mise run main:init` first in a worktree
-   that has no `node_modules` yet).
+   `mise exec -- npm run build` (in a worktree with no `node_modules` yet, run
+   `mise exec -- npm install` first — **not** `mise run main:init`, whose shell
+   picks up a different npm and rewrites `package-lock.json`).
 2. **Point the vault's plugin symlink** at that checkout (same gotcha as
    `manual-verify`: this is disruptive to whoever else might be using the
    symlink, and Obsidian must not be actively writing `data.json` while you swap
    it — quit Obsidian first if you're also touching settings).
-3. **Ensure Obsidian is up with CDP**: `obsidian-launch.sh`.
-4. **Fire** the reminder(s) you need: `reminder-fire.sh`.
-5. **Operate/verify** via `obsidian-eval.mjs` (click buttons, read state) and/or
+3. **Ensure Obsidian is up with CDP and the test vault is open**:
+   `obsidian-launch.sh`.
+4. **Wait for readiness and check the fixtures parsed**:
+   `obsidian-wait.sh --min-reminders <N>`.
+5. **Fire** the reminder(s) you need: `reminder-fire.sh`.
+6. **Operate/verify** via `obsidian-eval.mjs` (click buttons, read state) and/or
    `obsidian-shot.sh` (visual capture for the user to glance at, or for
    comparison).
-6. **Clean up** (see below).
+7. **Clean up** (see below).
 
 ## A concrete, actually-run verification example
 
@@ -332,13 +472,22 @@ The toast DOM shape used above: `.reminder-toast-card` is one toast; inside it,
 
 ## Known limitations
 
-- **The `" - <VAULT_NAME> - "` title substring match isn't airtight.** If the
-  *active note's own title* happens to contain a hyphen-padded segment that matches
-  another vault's name (e.g. a note titled `"Report - otherVault - Draft"` open
-  inside the test vault), a script targeting `otherVault` could match the wrong
-  window. This is why the marker-file check is the real guard and the title match
-  is only used for disambiguating *which already-approved vault's window* to talk
-  to — never treat title matching alone as sufficient permission.
+- **A vault's window is recognized by two title shapes**, because Obsidian uses
+  both: `"<note> - <vault> - Obsidian <version>"` once a note is open, and
+  `"<vault> - Obsidian <version>"` while none is. Matching only the first (which
+  this skill originally did) loses the window during the first seconds after a
+  launch — exactly when a script is polling for it. The rule lives in one place,
+  `scripts/lib/vault-window.mjs`, with a deliberate second copy in Python inside
+  `obsidian-shot.sh`, which can't import it.
+- **Neither title shape is airtight.** If the *active note's own title* happens
+  to contain a hyphen-padded segment that matches another vault's name (e.g. a
+  note titled `"Report - otherVault - Draft"` open inside the test vault), a
+  script targeting `otherVault` could match the wrong window. This is why the
+  marker-file check is the real guard and the title match is only used for
+  disambiguating *which already-approved vault's window* to talk to — never treat
+  title matching alone as sufficient permission.
+- **The settings window can't be driven, only photographed** — no `app` global,
+  so the guard can't pass. See `obsidian-eval.mjs` and `obsidian-shot.sh` above.
 - **Internal state access (`ui.reminderNotifier`, etc.) is refactor-fragile** by
   nature — see the note under `obsidian-eval.mjs` above.
 - **Marker-file existence is checked at two different times** (filesystem-side
