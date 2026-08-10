@@ -76,6 +76,11 @@
     "testMatch": [
       "**/*.test.ts"
     ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1",
+      "^obsidian$": "<rootDir>/src/test/obsidian-mock.ts",
+      "\\.css$": "<rootDir>/src/test/style-mock.ts"
+    },
     "preset": "ts-jest/presets/default-esm"
   },
   "prettier": {

@@ -82,6 +82,7 @@ A muted reminder is remembered across Obsidian restarts, so it stays muted even 
 A muted reminder becomes active again if you:
 - click it in [reminder list view](/guide/list-reminders.html), which opens the reminder popup again so you can mark it done or snooze it
 - change the reminder's date/time in the markdown
+- turn on [Re-notify muted reminders on startup](/setting/#re-notify-muted-reminders-on-startup), which clears every mute flag the next time Obsidian starts
 
 ## Muting all reminders at once
 

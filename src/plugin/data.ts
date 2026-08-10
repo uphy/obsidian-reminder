@@ -109,6 +109,12 @@ export class PluginData {
       setting.load(data.settings);
     });
 
+    // Settings are restored just above, so the toggle already holds the
+    // persisted value here. Dropping the mute flags at restore time (rather
+    // than unmuting later) means a subsequent `Reminders.replaceFile()` has
+    // nothing to carry over.
+    const restoreMuted = !this.settings.reNotifyMutedOnStartup.value;
+
     const remindersData = data.reminders;
     if (remindersData) {
       Object.keys(remindersData).forEach((filePath) => {
@@ -126,7 +132,7 @@ export class PluginData {
               d.rowNumber,
               false,
             );
-            reminder.muteNotification = d.muted ?? false;
+            reminder.muteNotification = restoreMuted && (d.muted ?? false);
             return reminder;
           }),
         );
