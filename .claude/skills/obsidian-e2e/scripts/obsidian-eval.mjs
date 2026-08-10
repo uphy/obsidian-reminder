@@ -17,10 +17,19 @@
 //      is an explicit, physical, per-vault opt-in that has to be placed by a
 //      human who understands "scripts under this skill will rewrite whatever is
 //      in this vault."
-//   3. Among the CDP page targets, exactly one page's title must contain
-//      " - <VAULT_NAME> - " (the substring Obsidian puts between the active
-//      note's title and "Obsidian <version>" in its window/tab title). Zero
-//      matches or more than one match both abort the run.
+//   3. Among the CDP page targets, the pages belonging to <VAULT_NAME> are
+//      selected by title (see lib/vault-window.mjs), and exactly one of them
+//      must survive the --window filter. Zero matches or more than one match
+//      both abort the run.
+//
+//      One vault can legitimately own several windows: Obsidian 1.13+ opens
+//      Settings in its own window, and notes can be popped out. Rather than
+//      refusing outright whenever there is more than one (which is what this
+//      script used to do, and which made anything involving the settings tab
+//      untestable), the candidates are classified with a fixed, read-only DOM
+//      probe and --window picks the one you meant. The probe runs through the
+//      same guard as user code, so a page that isn't the expected vault still
+//      never executes anything.
 //   4. The code that actually runs in the page is wrapped so its first actions
 //      are to re-read app.vault.getName() from inside the page and compare it
 //      again to VAULT_NAME, AND re-check the marker file via
@@ -37,6 +46,7 @@
 // Usage:
 //   node obsidian-eval.mjs '<javascript>'
 //   node obsidian-eval.mjs --file path/to/script.js
+//   node obsidian-eval.mjs --window any '<javascript>'
 //
 // The JavaScript is treated as the body of an async function: `return <value>;`
 // sends a value back, and `await` works. The result is printed to stdout as JSON
@@ -45,8 +55,21 @@
 
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { basename, join } from "node:path";
+import {
+  MARKER_RELATIVE_PATH,
+  WINDOW_KIND_PROBE,
+  allPageTitles,
+  evaluateInPage,
+  fetchTargets,
+  guardExpression,
+  vaultPages,
+} from "./lib/vault-window.mjs";
 
-const MARKER_RELATIVE_PATH = ".obsidian/obsidian-e2e-allowed";
+// "settings" is deliberately absent: Obsidian 1.13+ opens settings in a window
+// whose JS context has no `app`, so the vault guard can never pass there and
+// nothing may be evaluated in it. Screenshot it instead (obsidian-shot.sh
+// --title-contains).
+const WINDOW_KINDS = ["main", "any"];
 
 function usageError(message) {
   console.error(`error: ${message}`);
@@ -54,6 +77,7 @@ function usageError(message) {
   console.error("usage:");
   console.error("  node obsidian-eval.mjs '<javascript>'");
   console.error("  node obsidian-eval.mjs --file path/to/script.js");
+  console.error("  node obsidian-eval.mjs --window <main|any> '<javascript>'");
   console.error("");
   console.error("required env: OBSIDIAN_TEST_VAULT_NAME, OBSIDIAN_TEST_VAULT_PATH");
   console.error("optional env: OBSIDIAN_CDP_PORT (default 9333)");
@@ -61,20 +85,60 @@ function usageError(message) {
 }
 
 function parseArgs(argv) {
-  if (argv.length === 0) {
+  let windowKind = "main";
+  const rest = [];
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--window") {
+      windowKind = argv[++i];
+      if (!WINDOW_KINDS.includes(windowKind)) {
+        usageError(`--window must be one of ${WINDOW_KINDS.join(", ")}`);
+      }
+      continue;
+    }
+    rest.push(argv[i]);
+  }
+  if (rest.length === 0) {
     usageError("missing JavaScript to evaluate");
   }
-  if (argv[0] === "--file") {
-    const path = argv[1];
-    if (!path) {
-      usageError("--file requires a path argument");
-    }
-    return readFileSync(path, "utf8");
-  }
-  if (argv[0] === "-h" || argv[0] === "--help") {
+  if (rest[0] === "-h" || rest[0] === "--help") {
     usageError("help requested");
   }
-  return argv[0];
+  if (rest[0] === "--file") {
+    if (!rest[1]) {
+      usageError("--file requires a path argument");
+    }
+    return { code: readFileSync(rest[1], "utf8"), windowKind };
+  }
+  return { code: rest[0], windowKind };
+}
+
+/**
+ * Narrows several windows of the same vault down to the one the caller means.
+ * Only reached when the title match alone is ambiguous, so the common
+ * single-window case costs no extra CDP round trips.
+ *
+ * A page that fails the probe is recorded as unusable rather than treated as a
+ * candidate: the probe runs behind the vault/marker guard, so failing it means
+ * the page could not prove which vault it belongs to, and running anything
+ * there is exactly what the guard exists to prevent.
+ */
+async function classifyPages(pages, vault) {
+  const probe = guardExpression(WINDOW_KIND_PROBE, vault);
+  const classified = [];
+  for (const page of pages) {
+    try {
+      const info = await evaluateInPage(page.webSocketDebuggerUrl, probe, 10_000);
+      classified.push({ page, kind: info.kind, title: page.title });
+    } catch (e) {
+      classified.push({
+        page,
+        kind: "unusable",
+        title: page.title,
+        reason: e.message.split("\n")[0],
+      });
+    }
+  }
+  return classified;
 }
 
 async function main() {
@@ -88,7 +152,7 @@ async function main() {
     );
   }
   const port = process.env.OBSIDIAN_CDP_PORT || "9333";
-  const code = parseArgs(process.argv.slice(2));
+  const { code, windowKind } = parseArgs(process.argv.slice(2));
 
   // --- Safety guard 1: path and name must agree ------------------------------
   let realVaultPath;
@@ -122,8 +186,7 @@ async function main() {
   // --- Safety guard 3: exactly one matching CDP page target ------------------
   let targets;
   try {
-    const res = await fetch(`http://127.0.0.1:${port}/json/list`);
-    targets = await res.json();
+    targets = await fetchTargets(port);
   } catch (e) {
     console.error(
       `error: could not reach CDP endpoint at http://127.0.0.1:${port}/json/list (${e.message}). ` +
@@ -132,53 +195,49 @@ async function main() {
     process.exit(4);
   }
 
-  const needle = ` - ${vault} - `;
-  const pages = targets.filter(
-    (t) => t.type === "page" && typeof t.title === "string" && t.title.includes(needle),
-  );
+  const pages = vaultPages(targets, vault);
 
-  if (pages.length !== 1) {
-    console.error(
-      `refusing to run: expected exactly 1 page target whose title contains ${JSON.stringify(
-        needle,
-      )}, found ${pages.length}.`,
-    );
-    const allPages = targets.filter((t) => t.type === "page");
-    if (allPages.length === 0) {
+  function abortWithPageList(reason) {
+    console.error(`refusing to run: ${reason}`);
+    const titles = allPageTitles(targets);
+    if (titles.length === 0) {
       console.error("  (no page targets at all)");
     } else {
       console.error("  page titles seen:");
-      for (const t of allPages) {
-        console.error(`    - ${t.title}`);
+      for (const title of titles) {
+        console.error(`    - ${title}`);
       }
     }
     process.exit(3);
   }
 
-  const target = pages[0];
+  if (pages.length === 0) {
+    abortWithPageList(
+      `found no page target belonging to vault ${JSON.stringify(vault)}. ` +
+        "Is that vault open? obsidian-launch.sh opens it for you.",
+    );
+  }
+
+  let target = pages[0];
+  if (pages.length > 1) {
+    const classified = await classifyPages(pages, vault);
+    const usable = classified.filter((c) => c.kind !== "unusable");
+    const wanted = windowKind === "main" ? usable.filter((c) => c.kind === "main") : usable;
+    if (wanted.length !== 1) {
+      console.error(
+        `refusing to run: vault ${JSON.stringify(vault)} has ${pages.length} windows open, ` +
+          `and ${wanted.length} of them match --window ${windowKind} (expected exactly 1).`,
+      );
+      for (const c of classified) {
+        console.error(`    - ${c.title} => ${c.kind}${c.reason ? ` (${c.reason})` : ""}`);
+      }
+      process.exit(3);
+    }
+    target = wanted[0].page;
+  }
 
   // --- Safety guard 4: re-check vault name AND marker file from inside the page
-  const guardedExpression = `(async () => {
-    const __vault = app.vault.getName();
-    if (__vault !== ${JSON.stringify(vault)}) {
-      throw new Error(
-        "obsidian-eval safety guard: expected vault " + ${JSON.stringify(vault)} +
-        " but this page reports vault " + __vault
-      );
-    }
-    const __allowed = await app.vault.adapter.exists(${JSON.stringify(MARKER_RELATIVE_PATH)});
-    if (!__allowed) {
-      throw new Error(
-        "obsidian-eval safety guard: marker file " + ${JSON.stringify(MARKER_RELATIVE_PATH)} +
-        " not found in this vault. Refusing to run user code."
-      );
-    }
-    return await (async () => {
-${code}
-    })();
-  })()`;
-
-  const value = await evaluateInPage(target.webSocketDebuggerUrl, guardedExpression);
+  const value = await evaluateInPage(target.webSocketDebuggerUrl, guardExpression(code, vault));
 
   if (value === undefined) {
     console.log("(undefined)");
@@ -187,63 +246,6 @@ ${code}
   } else {
     console.log(JSON.stringify(value, null, 2));
   }
-}
-
-function evaluateInPage(webSocketDebuggerUrl, expression) {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(webSocketDebuggerUrl);
-    const timeout = setTimeout(() => {
-      ws.close();
-      reject(new Error("timed out waiting for CDP response"));
-    }, 30_000);
-
-    ws.addEventListener("open", () => {
-      ws.send(
-        JSON.stringify({
-          id: 1,
-          method: "Runtime.evaluate",
-          params: {
-            expression,
-            awaitPromise: true,
-            returnByValue: true,
-          },
-        }),
-      );
-    });
-
-    ws.addEventListener("message", (event) => {
-      let msg;
-      try {
-        msg = JSON.parse(event.data.toString());
-      } catch {
-        return;
-      }
-      if (msg.id !== 1) return;
-      clearTimeout(timeout);
-      ws.close();
-
-      if (msg.error) {
-        reject(new Error(`CDP error: ${JSON.stringify(msg.error)}`));
-        return;
-      }
-      const result = msg.result;
-      if (result.exceptionDetails) {
-        reject(
-          new Error(
-            result.exceptionDetails.exception?.description ||
-              JSON.stringify(result.exceptionDetails),
-          ),
-        );
-        return;
-      }
-      resolve(result.result?.value);
-    });
-
-    ws.addEventListener("error", (event) => {
-      clearTimeout(timeout);
-      reject(new Error(`WebSocket error: ${event.message || "unknown"}`));
-    });
-  });
 }
 
 main().catch((e) => {
