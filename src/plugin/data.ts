@@ -24,6 +24,17 @@ export interface DataStore {
 
 export class PluginData {
   private restoring = true;
+  private resolveLoaded: () => void = () => {};
+  /**
+   * Resolves once the first `load()` has finished (or failed). Anything that
+   * reparses the whole vault has to wait for this, because scanning before
+   * the persisted settings and reminders are restored produces reminders
+   * parsed with default settings — and `Reminders.replaceFile()` would then
+   * carry the restored mute flags over onto them.
+   */
+  readonly loaded: Promise<void> = new Promise<void>((resolve) => {
+    this.resolveLoaded = resolve;
+  });
   changed: boolean = false;
   public scanned: Reference<boolean> = new Reference(false);
   public debug: Reference<boolean> = new Reference(false);
@@ -60,6 +71,16 @@ export class PluginData {
   }
 
   async load() {
+    try {
+      await this.doLoad();
+    } finally {
+      // Resolve even when loading failed, so that a scan waiting on
+      // `loaded` isn't blocked forever.
+      this.resolveLoaded();
+    }
+  }
+
+  private async doLoad() {
     console.debug("Load reminder plugin data");
     // `loadData()` returns data of unknown shape (it's whatever was
     // previously passed to `saveData()`), so this cast is a minimal, trusted
@@ -88,6 +109,12 @@ export class PluginData {
       setting.load(data.settings);
     });
 
+    // Settings are restored just above, so the toggle already holds the
+    // persisted value here. Dropping the mute flags at restore time (rather
+    // than unmuting later) means a subsequent `Reminders.replaceFile()` has
+    // nothing to carry over.
+    const restoreMuted = !this.settings.reNotifyMutedOnStartup.value;
+
     const remindersData = data.reminders;
     if (remindersData) {
       Object.keys(remindersData).forEach((filePath) => {
@@ -105,7 +132,7 @@ export class PluginData {
               d.rowNumber,
               false,
             );
-            reminder.muteNotification = d.muted ?? false;
+            reminder.muteNotification = restoreMuted && (d.muted ?? false);
             return reminder;
           }),
         );

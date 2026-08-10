@@ -56,6 +56,7 @@ export default class ReminderPlugin extends Plugin {
         this.ui.reload(true);
       },
       () => this.settings.excludedPaths.value,
+      () => this.data.loaded,
     );
     this._notificationWorker = new NotificationWorker({
       registerInterval: (id) => this.registerInterval(id),

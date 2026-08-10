@@ -41,6 +41,18 @@ Show reminder popups and system notifications when a reminder is due.
   - OFF: Reminder popups/system notifications are suppressed. The [reminder list view](/guide/list-reminders.html) keeps updating, and expired reminders still move to the [Overdue section](/guide/list-reminders.html#overdue-reminders).
 - Default: ON
 
+### Re-notify muted reminders on startup
+
+Clear every [muted](/guide/notification.html#mute-notification) reminder when Obsidian starts, so overdue reminders you muted in an earlier session notify you again.
+
+- Type: `boolean`
+- Values:
+  - ON: All mute flags are dropped on startup. Every overdue reminder is notified again, one after another. Muting is not distinguished by how it happened, so reminders muted via [Mute all current reminders](/guide/notification.html#muting-all-reminders-at-once) are cleared too.
+  - OFF: Muted reminders stay muted across restarts (default)
+- Default: OFF
+
+Turning this on takes effect at the next startup; it does not unmute anything right away.
+
 ### Reminder popup style
 
 Choose how the [builtin notification popup](/guide/notification.html#builtin-notification-modal) is presented.

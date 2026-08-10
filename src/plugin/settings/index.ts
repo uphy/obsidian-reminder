@@ -32,6 +32,7 @@ export class Settings {
   reminderTime: SettingModel<string, Time>;
   reminderTimeStep: SettingModel<number, number>;
   enableNotification: SettingModel<boolean, boolean>;
+  reNotifyMutedOnStartup: SettingModel<boolean, boolean>;
   notificationPopupStyle: SettingModel<string, string>;
   openNoteOnReminderClick: SettingModel<boolean, boolean>;
   useSystemNotification: SettingModel<boolean, boolean>;
@@ -93,6 +94,18 @@ export class Settings {
         "If disabled, reminder popups and system notifications are not shown. The reminder list view keeps working.",
       )
       .toggle(true)
+      .build(new RawSerde());
+
+    this.reNotifyMutedOnStartup = this.settings
+      .newSettingBuilder()
+      .key("reNotifyMutedOnStartup")
+      .name("Re-notify muted reminders on startup")
+      .desc(
+        "When enabled, reminders you previously muted are notified again the next time Obsidian starts. " +
+          "Useful if you rely on startup notifications to review overdue reminders. " +
+          'If many reminders are overdue, they are shown one after another — use the "Mute all current reminders" command to silence them again.',
+      )
+      .toggle(false)
       .build(new RawSerde());
 
     this.notificationPopupStyle = this.settings
@@ -479,6 +492,7 @@ export class Settings {
         this.reminderTimeStep,
         this.laters,
         this.enableNotification,
+        this.reNotifyMutedOnStartup,
         this.notificationPopupStyle,
         this.openNoteOnReminderClick,
         this.useSystemNotification,
