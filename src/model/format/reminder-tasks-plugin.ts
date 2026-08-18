@@ -5,6 +5,7 @@ import { ReminderFormatParameterKey } from "./reminder-base";
 import { TasksLikeReminderFormat, removeTags } from "./reminder-tasks-like";
 import type { TasksLikeReminderModel } from "./reminder-tasks-like";
 import { Symbol, Tokens, splitBySymbol } from "./splitter";
+import type { Token } from "./splitter";
 
 export class TasksPluginReminderModel implements TasksLikeReminderModel {
   private static readonly dateFormat = "YYYY-MM-DD";
@@ -127,7 +128,8 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
 
   getEndOfTimeTextIndex(): number {
     // get the end of the string index of due date or reminder date
-    const token = this.tokens.rangeOfSymbol(this.resolveReminderSymbol());
+    const symbol = this.resolveReminderSymbol();
+    const token = this.tokens.rangeOfSymbol(symbol, this.carriesDate(symbol));
     if (token != null) {
       return token.end;
     }
@@ -136,8 +138,9 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
 
   computeSpan(): { start: number; end: number } {
     const symbol = this.resolveReminderSymbol();
-    const range = this.tokens.rangeOfSymbol(symbol);
-    const token = this.tokens.getToken(symbol);
+    const prefer = this.carriesDate(symbol);
+    const range = this.tokens.rangeOfSymbol(symbol, prefer);
+    const token = this.tokens.getToken(symbol, prefer);
     if (range == null || token == null) {
       return { start: 0, end: 0 };
     }
@@ -224,7 +227,11 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
    * plugin does not know, which is most of them.
    */
   private getDate(symbol: Symbol): DateTime | null {
-    const dateText = this.tokens.getTokenText(symbol, true);
+    const dateText = this.tokens.getTokenText(
+      symbol,
+      true,
+      this.carriesDate(symbol),
+    );
     if (dateText === null) {
       return null;
     }
@@ -237,6 +244,28 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
       }
     }
     return null;
+  }
+
+  /**
+   * Prefer-predicate for token resolution: does this token's text start with
+   * a date this symbol accepts? A symbol that also occurs in prose produces
+   * two tokens, and first-wins used to hand every reader — and the snooze
+   * writer — the prose one, losing (or clobbering) the real date. All
+   * resolution sites share this predicate so read, span and write land on
+   * the same token.
+   */
+  private carriesDate(symbol: Symbol): (token: Token) => boolean {
+    return (token) => {
+      const text = token.text.replace(/^\s*(.*?)\s*$/, "$1");
+      for (const candidate of TasksPluginReminderModel.leadingCandidates(
+        text,
+      )) {
+        if (this.parseExactDate(symbol, candidate) !== null) {
+          return true;
+        }
+      }
+      return false;
+    };
   }
 
   private parseExactDate(symbol: Symbol, text: string): DateTime | null {
@@ -295,6 +324,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
       true,
       this.shouldSplitBetweenSymbolAndText(),
       insertAt,
+      this.carriesDate(symbol),
     );
   }
 

@@ -524,3 +524,48 @@ describe("the date must be the head of the token", (): void => {
     expect(spans[0]!.reminder.time.toString()).toBe("2026-08-25 14:30");
   });
 });
+
+describe("TasksPluginReminderModel - duplicated symbol: the dated token wins", (): void => {
+  test("a symbol in prose does not shadow the real date after it", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "talk about the 📅 emoji 📅 2026-08-20",
+    );
+    expect(parsed.getDueDate()!.toString()).toBe("2026-08-20");
+  });
+  test("two dated tokens: the LAST one wins (Tasks reads from the end)", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "x 📅 2026-08-19 stuff 📅 2026-08-20",
+    );
+    expect(parsed.getDueDate()!.toString()).toBe("2026-08-20");
+  });
+  test("no dated token: falls back to the first match (historical behavior)", (): void => {
+    const parsed = TasksPluginReminderModel.parse("talk about the 📅 emoji");
+    expect(parsed.getDueDate()).toBe(null);
+    parsed.setDueDate(new DateTime(moment("2026-09-01"), false));
+    expect(parsed.toMarkdown()).toBe("talk about the 📅 2026-09-01");
+  });
+  test("rewriting the date targets the dated token, not the prose one", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "talk about the 📅 emoji 📅 2026-08-20",
+    );
+    parsed.setDueDate(new DateTime(moment("2026-09-01"), false));
+    expect(parsed.toMarkdown()).toBe("talk about the 📅 emoji 📅 2026-09-01");
+  });
+  test("computeSpan() covers the dated token", (): void => {
+    const parsed = TasksPluginReminderModel.parse("a 📅 b 📅 2026-08-20");
+    const span = parsed.computeSpan();
+    expect(parsed.toMarkdown().slice(span.start, span.end)).toBe(
+      "📅 2026-08-20",
+    );
+  });
+  test("⏳ via fallback: prose ⏳ does not shadow the scheduled date", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "task ⏳ soon ⏳ 2026-08-20",
+      true,
+      false,
+      true,
+      true,
+    );
+    expect(parsed.getTime()!.toString()).toBe("2026-08-20");
+  });
+});

@@ -45,8 +45,9 @@ export class Tokens {
     create = false,
     separateSymbolAndText = false,
     insertAt?: number,
+    prefer?: (token: Token) => boolean,
   ): Token | null {
-    let token = this.getToken(symbol);
+    let token = this.getToken(symbol, prefer);
     if (token === null) {
       if (!create) {
         return null;
@@ -124,26 +125,44 @@ export class Tokens {
     return token.text.match(/^.*\s$/);
   }
 
-  public getToken(symbol: Symbol | string): Token | null {
+  /**
+   * When a symbol occurs more than once, `prefer` picks among the matches:
+   * the LAST satisfying token wins, because the Tasks plugin reads fields
+   * from the end of the line — so with two candidates the later one is the
+   * real field and the earlier one is description. When no token satisfies
+   * `prefer` (or none is given), this falls back to the first match, which
+   * is the historical behavior for every single-token line.
+   */
+  public getToken(
+    symbol: Symbol | string,
+    prefer?: (token: Token) => boolean,
+  ): Token | null {
+    let first: Token | null = null;
+    let preferred: Token | null = null;
     for (const token of this.tokens) {
-      if (symbol instanceof Symbol) {
-        if (symbol.isSymbol(token.symbol)) {
-          return token;
-        }
-      } else {
-        if (symbol === token.symbol) {
-          return token;
-        }
+      const matches =
+        symbol instanceof Symbol
+          ? symbol.isSymbol(token.symbol)
+          : symbol === token.symbol;
+      if (!matches) {
+        continue;
+      }
+      if (first === null) {
+        first = token;
+      }
+      if (prefer != null && prefer(token)) {
+        preferred = token;
       }
     }
-    return null;
+    return preferred ?? first;
   }
 
   public getTokenText(
     symbol: Symbol | string,
     removeSpace = false,
+    prefer?: (token: Token) => boolean,
   ): string | null {
-    const token = this.getToken(symbol);
+    const token = this.getToken(symbol, prefer);
     if (token === null) {
       return null;
     }
@@ -163,11 +182,16 @@ export class Tokens {
 
   public rangeOfSymbol(
     symbol: Symbol,
+    prefer?: (token: Token) => boolean,
   ): { start: number; end: number } | undefined {
+    const target = this.getToken(symbol, prefer);
+    if (target === null) {
+      return;
+    }
     let index = 0;
     for (const token of this.tokens) {
       const end = index + token.symbol.length + token.text.length;
-      if (symbol.isSymbol(token.symbol)) {
+      if (token === target) {
         return {
           start: index,
           end: end,
