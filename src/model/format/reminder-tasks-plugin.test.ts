@@ -293,6 +293,26 @@ describe("TasksPluginReminderModel - reminder-time fallback (⏰ → 📅 → �
     expect(spans[0]!.reminder.time.toString()).toBe("2021-09-08");
   });
 
+  test("a marker written inside an inline code span does not arm a reminder", (): void => {
+    // #338 taught the same rule for fenced blocks, one layer up in
+    // MarkdownDocument.parse. An inline code span never reaches that guard: the
+    // line is a real task, and the marker is prose *about* a marker.
+    const spans = parseLine(
+      "- [ ] `⏳` this cannot be parsed by reminder plugin ➕ 2026-08-17",
+      { customEmoji: true, dueDateFallback: true },
+    );
+    expect(spans).toHaveLength(0);
+  });
+
+  test("a marker outside a code span still arms when the line also contains one", (): void => {
+    const spans = parseLine("- [ ] `⏳` prose ⏳ 2021-09-05", {
+      customEmoji: true,
+      dueDateFallback: true,
+    });
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-05");
+  });
+
   test("fallback on: a malformed ⏰ blocks fallback to a valid 📅 (presence, not validity)", (): void => {
     const spans = parseLine("- [ ] Task ⏰ not-a-date 📅 2021-09-08", {
       customEmoji: true,

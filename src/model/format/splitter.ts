@@ -183,11 +183,66 @@ export class Tokens {
   }
 }
 
+/**
+ * Marks the characters covered by an inline code span, backticks included.
+ *
+ * CommonMark closes a run of N backticks with the *next* run of exactly N, and
+ * an opening run that is never closed is literal text rather than a span. That
+ * is why this pre-scans the line instead of toggling a flag while walking it: a
+ * toggle would treat "Task ` unclosed 📅 2021-09-08" as being inside a span and
+ * silently drop a real symbol, changing lines that parse correctly today.
+ */
+function inlineCodeSpanMask(chars: Array<string>): Array<boolean> {
+  const masked = new Array<boolean>(chars.length).fill(false);
+  let i = 0;
+  while (i < chars.length) {
+    if (chars[i] !== "`") {
+      i++;
+      continue;
+    }
+    const openStart = i;
+    while (i < chars.length && chars[i] === "`") {
+      i++;
+    }
+    const runLength = i - openStart;
+
+    let j = i;
+    let closed = false;
+    while (j < chars.length) {
+      if (chars[j] !== "`") {
+        j++;
+        continue;
+      }
+      const closeStart = j;
+      while (j < chars.length && chars[j] === "`") {
+        j++;
+      }
+      if (j - closeStart === runLength) {
+        for (let k = openStart; k < j; k++) {
+          masked[k] = true;
+        }
+        closed = true;
+        break;
+      }
+    }
+    // When no closing run exists, `i` already sits just past the opening run,
+    // so scanning resumes there and the backticks stay ordinary text.
+    if (closed) {
+      i = j;
+    }
+  }
+  return masked;
+}
+
 export function splitBySymbol(
   line: string,
   symbols: Array<Symbol>,
 ): Array<Token> {
   const chars = [...line];
+  // A marker written inside an inline code span is prose *about* a marker, not
+  // a marker. #338 established the same rule for fenced blocks in
+  // MarkdownDocument.parse, which skips whole lines and so never sees this case.
+  const inCodeSpan = inlineCodeSpanMask(chars);
   let text: string = "";
   let currentToken: Token | null = null;
   const splitted: Array<Token> = [];
@@ -201,8 +256,9 @@ export function splitBySymbol(
       currentToken.text = text;
     }
   };
-  chars.forEach((c) => {
-    const isSymbol = symbols.filter((s) => s.isSymbol(c)).length > 0;
+  chars.forEach((c, index) => {
+    const isSymbol =
+      !inCodeSpan[index] && symbols.filter((s) => s.isSymbol(c)).length > 0;
     if (isSymbol) {
       fillPreviousToken();
 
@@ -212,6 +268,7 @@ export function splitBySymbol(
       text = "";
     } else if (
       currentToken !== null &&
+      !inCodeSpan[index] &&
       c === "#" &&
       (text.length === 0 || /\s$/.test(text))
     ) {
