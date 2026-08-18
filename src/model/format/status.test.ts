@@ -15,13 +15,19 @@ const STATUSES: Array<TaskStatus> = [
 describe("StatusRegistry", (): void => {
   const registry = new StatusRegistry(STATUSES);
 
-  test("EMPTY reproduces the historical behavior", (): void => {
+  test("EMPTY reproduces the historical x/- behavior", (): void => {
     const empty = StatusRegistry.EMPTY;
     expect(empty.isChecked("x")).toBe(true);
     expect(empty.isChecked("-")).toBe(true);
     expect(empty.isChecked("w")).toBe(false);
     expect(empty.checkSymbol(" ")).toBe("x");
     expect(empty.uncheckSymbol("x")).toBe(" ");
+  });
+
+  test("EMPTY: snoozing a custom status is a no-op, not a reset to [ ] (#269)", (): void => {
+    const empty = StatusRegistry.EMPTY;
+    expect(empty.uncheckSymbol("/")).toBe("/");
+    expect(empty.checkSymbol("-")).toBe("-");
   });
 
   test("DONE, CANCELLED and NON_TASK are checked; the rest are not", (): void => {

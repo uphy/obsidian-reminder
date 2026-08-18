@@ -60,13 +60,19 @@ export class StatusRegistry {
     return this.bySymbol.get(symbol)?.type === "DONE";
   }
 
-  /** The symbol that "check this line" writes, given the current symbol. */
+  /**
+   * The symbol that "check this line" writes, given the current symbol.
+   * Already in the desired state is a no-op in both directions — which is
+   * what keeps a snooze from resetting a custom status like [/] back to
+   * [ ] (uphy/obsidian-reminder#269): the snooze path calls
+   * `setChecked(false)` unconditionally.
+   */
   public checkSymbol(symbol: string): string {
-    if (this.isEmpty()) {
-      return "x";
-    }
     if (this.isChecked(symbol)) {
       return symbol;
+    }
+    if (this.isEmpty()) {
+      return "x";
     }
     const next = this.bySymbol.get(symbol)?.nextStatusSymbol;
     if (next != null && this.isChecked(next)) {
@@ -75,13 +81,13 @@ export class StatusRegistry {
     return "x";
   }
 
-  /** The symbol that "uncheck this line" writes, given the current symbol. */
+  /** See `checkSymbol` — same rules, mirrored. */
   public uncheckSymbol(symbol: string): string {
-    if (this.isEmpty()) {
-      return " ";
-    }
     if (!this.isChecked(symbol)) {
       return symbol;
+    }
+    if (this.isEmpty()) {
+      return " ";
     }
     const next = this.bySymbol.get(symbol)?.nextStatusSymbol;
     if (next != null && !this.isChecked(next)) {
