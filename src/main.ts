@@ -9,6 +9,7 @@ import { isNotificationPaused } from "model/dnd";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
+import { setSeededTaskStatuses } from "plugin/settings";
 import { App, Notice, Plugin, requestUrl } from "obsidian";
 import type { PluginManifest } from "obsidian";
 
@@ -125,11 +126,38 @@ export default class ReminderPlugin extends Plugin {
     this.ui.onload();
     this.app.workspace.onLayoutReady(async () => {
       await this.data.load();
+      await this.seedTaskStatuses();
       this.ui.onLayoutReady();
       this.fileSystem.onload(this);
       this._notificationWorker.startPeriodicTask();
       this._ntfyController.start();
     });
+  }
+
+  /**
+   * Seeds the "Task statuses" fallback from the Tasks plugin's own status
+   * settings, so an empty setting follows the vault's real statuses. Reads
+   * via `loadData()` because the Tasks plugin does not expose its settings
+   * object on the plugin instance.
+   */
+  private async seedTaskStatuses() {
+    try {
+      const tasks = this.app.plugins.plugins["obsidian-tasks-plugin"];
+      if (tasks == null) {
+        return;
+      }
+      const data = await tasks.loadData();
+      const statusSettings = data?.statusSettings;
+      if (statusSettings == null) {
+        return;
+      }
+      setSeededTaskStatuses([
+        ...(statusSettings.coreStatuses ?? []),
+        ...(statusSettings.customStatuses ?? []),
+      ]);
+    } catch (e) {
+      console.warn("Failed to read the Tasks plugin's statuses: %o", e);
+    }
   }
 
   override onunload(): void {

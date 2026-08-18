@@ -118,12 +118,17 @@ export abstract class TasksLikeReminderFormat<
             nextReminder.setTime(nextDueDate);
           }
           nextReminderTodo.body = nextReminder.toMarkdown();
-          nextReminderTodo.setChecked(false);
+          nextReminderTodo.setChecked(false, this.statusRegistry());
           doc.insertTodo(todo.lineIndex, nextReminderTodo);
         }
-        parsed.setDoneDate(
-          this.config.getParameter(ReminderFormatParameterKey.now),
-        );
+        // The Tasks plugin stamps ✅ only on DONE lines — a CANCELLED
+        // landing gets no done date. `todo.check` already carries the
+        // landed symbol (super.modifyReminder ran first).
+        if (this.statusRegistry().isDone(todo.check)) {
+          parsed.setDoneDate(
+            this.config.getParameter(ReminderFormatParameterKey.now),
+          );
+        }
       } else {
         parsed.setDoneDate(undefined);
       }

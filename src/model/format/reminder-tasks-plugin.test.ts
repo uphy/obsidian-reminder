@@ -9,6 +9,8 @@ import {
   ReminderFormatConfig,
   ReminderFormatParameterKey,
 } from "./reminder-base";
+import { StatusRegistry } from "./status";
+import type { TaskStatus } from "./status";
 
 describe("TasksPluginReminderLine", (): void => {
   test("parse()", (): void => {
@@ -385,10 +387,20 @@ describe("TasksPluginReminderModel - reminder-time fallback (⏰ → 📅 → �
 
 function parseLine(
   markdown: string,
-  options: { customEmoji?: boolean; dueDateFallback?: boolean } = {},
+  options: {
+    customEmoji?: boolean;
+    dueDateFallback?: boolean;
+    statuses?: Array<TaskStatus>;
+  } = {},
 ) {
   const sut = new TasksPluginFormat();
   const config = new ReminderFormatConfig();
+  if (options.statuses !== undefined) {
+    config.setParameterValue(
+      ReminderFormatParameterKey.taskStatuses,
+      new StatusRegistry(options.statuses),
+    );
+  }
   if (options.customEmoji !== undefined) {
     config.setParameterValue(
       ReminderFormatParameterKey.useCustomEmojiForTasksPlugin,
@@ -409,18 +421,26 @@ async function testModify({
   now,
   customEmoji,
   dueDateFallback = false,
+  statuses,
   inputMarkdown,
   expectedMarkdown,
 }: {
   now: string;
   customEmoji: boolean;
   dueDateFallback?: boolean;
+  statuses?: Array<TaskStatus>;
   inputMarkdown: string;
   expectedMarkdown: string | undefined;
 }) {
   const doc = new MarkdownDocument("file", inputMarkdown);
   const sut = new TasksPluginFormat();
   const config = new ReminderFormatConfig();
+  if (statuses !== undefined) {
+    config.setParameterValue(
+      ReminderFormatParameterKey.taskStatuses,
+      new StatusRegistry(statuses),
+    );
+  }
   config.setParameterValue(
     ReminderFormatParameterKey.now,
     new DateTime(moment(now), true),
@@ -442,3 +462,72 @@ async function testModify({
   await sut.modify(doc, spans[0]!.reminder, { checked: true });
   expect(doc.toMarkdown()).toBe(expectedMarkdown);
 }
+
+describe("task statuses follow the registry (scenarios 2 and 3)", (): void => {
+  // The fixture vault's registry, trimmed: the two core statuses plus the
+  // custom ones the scenarios exercise.
+  const statuses: Array<TaskStatus> = [
+    { symbol: " ", nextStatusSymbol: "x", type: "TODO" },
+    { symbol: "x", nextStatusSymbol: " ", type: "DONE" },
+    { symbol: "-", nextStatusSymbol: "-", type: "CANCELLED" },
+    { symbol: "v", nextStatusSymbol: " ", type: "DONE" },
+    { symbol: "d", nextStatusSymbol: "d", type: "CANCELLED" },
+    { symbol: "w", nextStatusSymbol: "v", type: "ON_HOLD" },
+  ];
+  const opts = { customEmoji: true, dueDateFallback: true, statuses };
+
+  test("scenario 2: Done on a [w] writes [v], not [x]", async () => {
+    await testModify({
+      now: "2026-08-18",
+      customEmoji: true,
+      dueDateFallback: true,
+      statuses,
+      inputMarkdown: "- [w] waiting task ⏳ 2026-08-17",
+      expectedMarkdown: "- [v] waiting task ⏳ 2026-08-17 ✅ 2026-08-18",
+    });
+  });
+
+  test("scenario 3: a cancelled [-] does not arm", (): void => {
+    const spans = parseLine("- [-] cancelled ⏳ 2026-08-17", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.done).toBe(true);
+  });
+
+  test("[v] and [d] count as done (armed today only by luck of x/-)", (): void => {
+    for (const symbol of ["v", "d"]) {
+      const spans = parseLine(`- [${symbol}] closed ⏳ 2026-08-17`, opts);
+      expect(spans).toHaveLength(1);
+      expect(spans[0]!.reminder.done).toBe(true);
+    }
+  });
+
+  test("[w] is not done — an ON_HOLD line still reminds", (): void => {
+    const spans = parseLine("- [w] waiting ⏳ 2026-08-17", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.done).toBe(false);
+  });
+
+  test("without a registry, Done keeps writing [x] (historical)", async () => {
+    await testModify({
+      now: "2026-08-18",
+      customEmoji: true,
+      dueDateFallback: true,
+      inputMarkdown: "- [ ] plain task ⏳ 2026-08-17",
+      expectedMarkdown: "- [x] plain task ⏳ 2026-08-17 ✅ 2026-08-18",
+    });
+  });
+
+  test("recurrence: completing a [w] leaves a [ ] next occurrence and a [v] done line", async () => {
+    await testModify({
+      now: "2026-08-18",
+      customEmoji: true,
+      dueDateFallback: true,
+      statuses,
+      inputMarkdown: "- [w] chores 🔁 every day ⏳ 2026-08-17",
+      // The ⏰/⏳ handling is the plugin's existing custom-emoji recurrence
+      // semantics; this test pins only the status symbols: [ ] next, [v] done.
+      expectedMarkdown: `- [ ] chores ⏰ 2026-08-19 🔁 every day ⏳ 2026-08-17 
+- [v] chores 🔁 every day ⏳ 2026-08-17 ✅ 2026-08-18`,
+    });
+  });
+});
