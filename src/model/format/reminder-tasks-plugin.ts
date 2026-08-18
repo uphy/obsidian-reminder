@@ -14,6 +14,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   // why parsing tries this strict datetime format first and falls back to
   // the date-only format the Tasks plugin expects.
   private static readonly dueDateTimeFormat = "YYYY-MM-DD HH:mm";
+  private static readonly maxLeadingFields = 4;
   private static readonly symbolDueDate = Symbol.ofChars([..."📅📆🗓"]);
   private static readonly symbolDoneDate = Symbol.ofChar("✅");
   private static readonly symbolRecurrence = Symbol.ofChar("🔁");
@@ -186,20 +187,66 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
     );
   }
 
+  /**
+   * Whitespace-delimited prefixes of `text`, longest first.
+   *
+   * Capped, because each candidate is strict-parsed as a whole: no date format
+   * spans more fields than this, and the cap keeps the scan bounded on the long
+   * prose lines this plugin routinely sees.
+   */
+  private static leadingCandidates(text: string): Array<string> {
+    const out: Array<string> = [];
+    const word = /\S+/g;
+    let match: RegExpExecArray | null;
+    while (
+      out.length < TasksPluginReminderModel.maxLeadingFields &&
+      (match = word.exec(text)) !== null
+    ) {
+      out.push(text.slice(0, match.index + match[0].length));
+    }
+    return out.reverse();
+  }
+
+  /**
+   * The date is the HEAD of the token's text, and only the head.
+   *
+   * A token runs to the next symbol *this plugin* knows, so it routinely
+   * carries what it does not tokenise — the Tasks plugin's own ➕/🆔/⛔, a tag,
+   * prose. moment's lenient mode searches such a string and borrows a date from
+   * anywhere in it, which is how "⏳ no date here ➕ 2026-08-17" acquires a
+   * scheduled date it does not have, and how "⏰ no date here ➕ 2026-08-17"
+   * fabricates a midnight.
+   *
+   * The Tasks plugin anchors the other way — its regexes end in `$` and allow
+   * only spaces between marker and date — so requiring the date at the head of
+   * the token is that same invariant seen from this side. Parsing the whole
+   * token strictly instead would reject every line that carries a marker this
+   * plugin does not know, which is most of them.
+   */
   private getDate(symbol: Symbol): DateTime | null {
     const dateText = this.tokens.getTokenText(symbol, true);
     if (dateText === null) {
       return null;
     }
+    for (const candidate of TasksPluginReminderModel.leadingCandidates(
+      dateText,
+    )) {
+      const parsed = this.parseExactDate(symbol, candidate);
+      if (parsed !== null) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  private parseExactDate(symbol: Symbol, text: string): DateTime | null {
     if (symbol === TasksPluginReminderModel.symbolReminder) {
-      return DATE_TIME_FORMATTER.parse(dateText);
+      return DATE_TIME_FORMATTER.parseExact(text);
     }
     if (symbol === TasksPluginReminderModel.symbolDueDate) {
-      // Optional time-part extension: try the strict datetime format
-      // first, and fall through to the date-only format below when it
-      // doesn't match.
+      // Opt-in extension: 📅 may also carry a time.
       const dateTime = moment(
-        dateText,
+        text,
         TasksPluginReminderModel.dueDateTimeFormat,
         true,
       );
@@ -207,11 +254,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
         return new DateTime(dateTime, true);
       }
     }
-    const date = moment(
-      dateText,
-      TasksPluginReminderModel.dateFormat,
-      this.strictDateFormat,
-    );
+    const date = moment(text, TasksPluginReminderModel.dateFormat, true);
     if (!date.isValid()) {
       return null;
     }

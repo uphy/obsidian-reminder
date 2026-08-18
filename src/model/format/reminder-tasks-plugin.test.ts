@@ -462,3 +462,65 @@ async function testModify({
   await sut.modify(doc, spans[0]!.reminder, { checked: true });
   expect(doc.toMarkdown()).toBe(expectedMarkdown);
 }
+
+describe("the date must be the head of the token", (): void => {
+  const opts = { customEmoji: true, dueDateFallback: true };
+
+  test("a marker with no date of its own borrows none from later in the line", (): void => {
+    expect(
+      parseLine(
+        "- [ ] scenario4 ⏳ without date is parsed? ➕ 2026-08-17",
+        opts,
+      ),
+    ).toHaveLength(0);
+  });
+
+  test("a ⏰ with no date of its own does not fabricate a midnight", (): void => {
+    expect(
+      parseLine("- [ ] x ⏰ no date here ➕ 2026-08-17", opts),
+    ).toHaveLength(0);
+  });
+
+  test("a 📅 with no date of its own borrows none", (): void => {
+    expect(
+      parseLine("- [ ] x 📅 no date here ➕ 2026-08-17", opts),
+    ).toHaveLength(0);
+  });
+
+  test("a date that is not the first field is not the token's date", (): void => {
+    // The miniature of the whole defect: lenient moment finds "2026-08-17"
+    // inside "prose 2026-08-17" and hands it back as the scheduled date. The
+    // Tasks plugin allows only spaces between marker and date, so this line has
+    // no scheduled date at all.
+    expect(parseLine("- [ ] x ⏳ prose 2026-08-17", opts)).toHaveLength(0);
+  });
+
+  test("markers the plugin does not tokenise may follow the date (⏳)", (): void => {
+    // The Tasks plugin's own ➕/🆔 are not symbols here, so the token swallows
+    // them. This is why a strict parse of the whole token text is the wrong fix.
+    const spans = parseLine(
+      "- [v] rule ⏳ 2026-08-23 ➕ 2026-08-09 🆔 an-id",
+      opts,
+    );
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-23");
+  });
+
+  test("markers the plugin does not tokenise may follow the date (📅)", (): void => {
+    const spans = parseLine("- [ ] x 📅 2026-08-25 🆔 an-id", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-25");
+  });
+
+  test("a ⏰ keeps its time part when unknown markers follow", (): void => {
+    const spans = parseLine("- [ ] x ⏰ 2026-08-25 14:30 🆔 an-id", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-25 14:30");
+  });
+
+  test("a 📅 keeps the optional time-part extension", (): void => {
+    const spans = parseLine("- [ ] x 📅 2026-08-25 14:30", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-25 14:30");
+  });
+});
