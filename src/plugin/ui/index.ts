@@ -21,7 +21,10 @@ import { ReminderListItemViewProxy } from "./reminder-list";
 import { AutoComplete } from "./autocomplete";
 import type { AutoCompletableEditor } from "./autocomplete";
 import { buildCodeMirrorPlugin } from "./editor-extension";
-import { createReminderPillExtension } from "./editor-reminder-display";
+import {
+  createReminderPillExtension,
+  createRenderedBlockPillPostProcessor,
+} from "./editor-reminder-display";
 import {
   createReminderLineHighlightExtension,
   highlightReminderLine,
@@ -102,6 +105,14 @@ export class ReminderPluginUI {
       );
       this.plugin.registerEditorExtension(
         createReminderLineHighlightExtension(),
+      );
+      // Live Preview replaces callouts (and other rendered blocks) with a
+      // block widget, which discards the editor extension's decorations
+      // inside them. Those widgets render through the markdown
+      // post-processor pipeline instead, so the pills have to be built
+      // there as well (#359).
+      this.plugin.registerMarkdownPostProcessor(
+        createRenderedBlockPillPostProcessor(this.plugin),
       );
       // Reconfiguring editor extensions is how CM6 signals every open
       // editor's `StateField` that something changed (`tr.reconfigured`),
