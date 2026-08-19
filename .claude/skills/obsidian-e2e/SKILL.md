@@ -151,14 +151,22 @@ offer to record it.
 ## Scripts
 
 All scripts live in `scripts/` and use only Node's built-ins (`fetch`,
-`WebSocket`, `fs`) plus macOS system tools (`osascript`, `screencapture`, `python3`
-+ PyObjC's `Quartz`) — no `npm install` required, so they work in a worktree
-before dependencies have ever been installed.
+`WebSocket`, `fs`) plus macOS system tools (`osascript`, `screencapture`, and
+optionally `python3` + PyObjC's `Quartz`) — no `npm install` required, so they
+work in a worktree before dependencies have ever been installed.
+
+The shell scripts must run under **bash 3.2**, which is what macOS ships as
+`/bin/bash`. Bash 4+ syntax (`${var,,}`, `declare -A`, `mapfile`) aborts there
+with "bad substitution" — and, because that happens mid-substitution, the
+failure surfaces as whatever the surrounding guard was about to say, not as a
+syntax error. Don't reach for it; `tr`, `case`, and plain arrays cover
+everything these scripts need.
 
 `scripts/lib/` holds the pieces more than one script needs: `vault-window.mjs`
 (which CDP page belongs to which vault, the guard wrapper, the CDP evaluate
-call) and `cdp-pages.mjs`, a tiny CLI over the page list so the bash scripts
-don't each carry their own copy of the title rule.
+call), `cdp-pages.mjs`, a tiny CLI over the page list so the bash scripts
+don't each carry their own copy of the title rule, and `cdp-screenshot.mjs`,
+the screenshot path used when PyObjC isn't installed (see `obsidian-shot.sh`).
 
 ### `obsidian-launch.sh [--restart] [--no-open-vault]`
 
@@ -276,7 +284,7 @@ resolves inside the vault root — this is what blocks `../`-style escapes or a
 symlink pointing outside the vault. Obsidian must already be running and watching
 the vault for the external file change to be picked up.
 
-### `obsidian-shot.sh [--title-contains TEXT] <output-path.png>`
+### `obsidian-shot.sh [--title-contains TEXT] [--cdp] <output-path.png>`
 
 ```
 # (OBSIDIAN_TEST_VAULT_NAME already exported — see above)
@@ -286,6 +294,23 @@ the vault for the external file change to be picked up.
 # (the settings window's title starts with the localized name of that screen):
 .claude/skills/obsidian-e2e/scripts/obsidian-shot.sh --title-contains '設定' /path/to/settings.png
 ```
+
+**Two capture paths.** The preferred one turns the window title into a window
+ID and calls `screencapture -l`, which needs PyObjC's `Quartz` — not part of
+the system `python3`, so a machine that never ran
+`python3 -m pip install pyobjc-framework-Quartz` doesn't have it. When the
+import fails the script says so and falls back to capturing the page over CDP
+(`lib/cdp-screenshot.mjs`); `--cdp` takes that path deliberately. The fallback
+image has no native title bar or window shadow, but everything Obsidian draws
+itself is in it. Before this fallback existed, a missing `Quartz` surfaced as
+"expected exactly 1 on-screen Obsidian window", which reads like a guard
+failure and sent you looking in the wrong place entirely.
+
+The fallback keeps the same "exactly one window" rule, and adds a read-only
+`app.vault.getName()` check on the page it picked — the CDP page list is one
+source of truth where the Quartz path had two, so the page is asked to confirm
+its own identity instead. A page that can't answer (the settings window, which
+has no `app`) is captured only when `--title-contains` named it explicitly.
 
 Screenshots the on-screen Obsidian window belonging to the named vault.
 **Do not use `screencapture -R x,y,w,h`** — on Retina/multi-display setups its
