@@ -13,6 +13,7 @@ import {
 } from "obsidian";
 import { registerCommands } from "plugin/commands";
 import { showPauseDurationChooser } from "plugin/dnd";
+import { rebuildMarkdownViews } from "plugin/obsidian-hack/leaf";
 import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { DndStatusBar } from "./dnd-status-bar";
@@ -119,8 +120,12 @@ export class ReminderPluginUI {
       // which is what lets the pill extension re-check the toggle
       // immediately instead of only on the editor's next edit/selection
       // change.
+      // The post-processor's pills live in widgets Obsidian owns, which keep
+      // their DOM until the view is recreated — `updateOptions()` alone would
+      // leave callouts showing the old state until the note is reopened.
       this.plugin.settings.editorReminderDisplay.rawValue.onChanged(() => {
         this.plugin.app.workspace.updateOptions();
+        rebuildMarkdownViews(this.plugin.app);
       });
     }
 
