@@ -1,17 +1,15 @@
 import type ReminderPlugin from "main";
-import { Content } from "model/content";
 import type { Reminder } from "model/reminder";
+import { EditorView } from "@codemirror/view";
 import type {
   MarkdownPostProcessor,
   MarkdownPostProcessorContext,
 } from "obsidian";
-import { MarkdownRenderChild, Notice, TFile } from "obsidian";
-import { showDateTimeChooserModal } from "plugin/ui/date-chooser-modal";
+import { MarkdownRenderChild } from "obsidian";
+import { openChooserAndApplyEdit } from "./edit-reminder";
+import type { ReminderLocation } from "./edit-reminder";
+import { decorateRenderedTaskItem } from "./rendered-pill";
 import ReminderPillComponent from "./ReminderPill.svelte";
-import {
-  decorateRenderedTaskItem,
-  resolveRenderedReminder,
-} from "./rendered-pill";
 
 /**
  * Marks the container Obsidian wraps around a block it renders inside Live
@@ -83,75 +81,58 @@ function buildPill(
   component.$on("activate", () => {
     // Fire-and-forget: this is a user-initiated action from a DOM event
     // handler, there's nothing to await it against.
-    void editReminder(plugin, ctx.sourcePath, reminder);
+    void activate(plugin, container);
   });
   ctx.addChild(new ReminderPillRenderChild(container, component));
   return container;
 }
 
-type ResolvedReminder = {
-  file: TFile;
-  content: Content;
-  reminder: Reminder;
-};
-
-/**
- * Re-reads the note and finds the line the clicked pill stands for.
- *
- * The pill was built from rendered HTML, which carries no line number, so the
- * reminder has to be looked up again in the file — and looked up twice, since
- * the note can change while the chooser modal is open.
- */
-async function resolve(
+async function activate(
   plugin: ReminderPlugin,
-  sourcePath: string,
-  rendered: Reminder,
-): Promise<ResolvedReminder | null> {
-  const file = plugin.app.vault.getAbstractFileByPath(sourcePath);
-  if (!(file instanceof TFile)) {
-    return null;
-  }
-  const content = new Content(file.path, await plugin.app.vault.read(file));
-  const reminder = resolveRenderedReminder(
-    content.getReminders(false),
-    rendered,
-  );
-  if (reminder === null) {
-    return null;
-  }
-  return { file, content, reminder };
-}
-
-async function editReminder(
-  plugin: ReminderPlugin,
-  sourcePath: string,
-  rendered: Reminder,
+  container: HTMLElement,
 ): Promise<void> {
-  const initial = await resolve(plugin, sourcePath, rendered);
-  if (initial === null) {
-    new Notice("Couldn't locate this reminder in the note.");
+  const editorEl = container.closest(".cm-editor");
+  const view =
+    editorEl instanceof HTMLElement ? EditorView.findFromDOM(editorEl) : null;
+  if (view === null) {
     return;
   }
-
-  let chosen;
   try {
-    chosen = await showDateTimeChooserModal(
-      plugin.app,
-      plugin.reminders,
-      plugin.settings.reminderTimeStep.value,
-      Number(plugin.settings.weekStart.value),
-      initial.reminder.time,
+    await openChooserAndApplyEdit(view, plugin, () =>
+      locateRenderedPill(view, container),
     );
   } catch {
-    // The chooser was cancelled; leave the note untouched.
-    return;
+    // The chooser was cancelled (or a genuine failure occurred); either way
+    // there's nothing to recover, leave the document untouched.
   }
+}
 
-  const current = await resolve(plugin, sourcePath, rendered);
-  if (current === null) {
-    new Notice("Couldn't locate this reminder in the note.");
-    return;
+/**
+ * Works out which source line the pill stands for.
+ *
+ * The pill sits inside a block widget that replaces the whole block, so
+ * `posAtDOM()` resolves to the block's *first* line however deep the pill is
+ * — every pill in one callout would otherwise answer with the same position.
+ * Obsidian stamps each rendered task's checkbox with `data-line`, its 0-based
+ * offset within that block, which is exactly what closes the gap.  Nested
+ * task items carry their own offset, so they resolve to their own line.
+ */
+function locateRenderedPill(
+  view: EditorView,
+  container: HTMLElement,
+): ReminderLocation | null {
+  if (!view.dom.contains(container)) {
+    // The block was re-rendered while e.g. the chooser modal was open;
+    // posAtDOM() would throw on a detached node.
+    return null;
   }
-  await current.content.updateReminder(current.reminder, { time: chosen });
-  await plugin.app.vault.modify(current.file, current.content.getContent());
+  const item = container.closest("li.task-list-item");
+  const offset = Number(
+    item?.querySelector("input[data-line]")?.getAttribute("data-line"),
+  );
+  if (!Number.isInteger(offset) || offset < 0) {
+    return null;
+  }
+  const blockStart = view.state.doc.lineAt(view.posAtDOM(container)).number;
+  return { lineNumber: blockStart + offset };
 }

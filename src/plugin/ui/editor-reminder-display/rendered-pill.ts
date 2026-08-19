@@ -116,28 +116,3 @@ export function decorateRenderedTaskItem(
   }
   return false;
 }
-
-/**
- * Picks the reminder in `candidates` (freshly parsed from the file) that the
- * clicked pill stands for.
- *
- * The pill only knows what the rendered HTML said, so the match is made on
- * the time first and the title second — and only when it is unambiguous.
- * Two indistinguishable reminders resolve to nothing rather than to a guess:
- * editing the wrong line is worse than doing nothing.
- */
-export function resolveRenderedReminder(
-  candidates: Array<Reminder>,
-  rendered: Reminder,
-): Reminder | null {
-  const sameTime = candidates.filter((candidate) =>
-    candidate.time.equals(rendered.time),
-  );
-  if (sameTime.length === 1) {
-    return sameTime[0]!;
-  }
-  const sameTitle = sameTime.filter(
-    (candidate) => candidate.title === rendered.title,
-  );
-  return sameTitle.length === 1 ? sameTitle[0]! : null;
-}

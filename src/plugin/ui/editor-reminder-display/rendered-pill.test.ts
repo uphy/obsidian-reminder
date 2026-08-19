@@ -1,9 +1,6 @@
-import { DateTime } from "model/time";
-import { Reminder } from "model/reminder";
 import {
   decorateRenderedTaskItem,
   findReminderInRenderedText,
-  resolveRenderedReminder,
 } from "./rendered-pill";
 
 function taskItem(html: string, task: string = ""): Element {
@@ -72,47 +69,5 @@ describe("decorateRenderedTaskItem", () => {
 
     expect(decorateRenderedTaskItem(item, "note.md", pill)).toBe(false);
     expect(item.querySelectorAll(".reminder-pill")).toHaveLength(0);
-  });
-});
-
-describe("resolveRenderedReminder", () => {
-  const reminder = (title: string, value: string, row: number) =>
-    new Reminder("note.md", title, DateTime.parse(value), row, false);
-
-  test("matches the only reminder with that time", () => {
-    const target = reminder("rendered title", "2026-08-17 10:00", 3);
-    const resolved = resolveRenderedReminder(
-      [reminder("other", "2026-08-18 10:00", 1), target],
-      reminder("title lost to rendering", "2026-08-17 10:00", -1),
-    );
-    expect(resolved).toBe(target);
-  });
-
-  test("falls back to the title when the time is ambiguous", () => {
-    const target = reminder("call Bob", "2026-08-17 10:00", 3);
-    const resolved = resolveRenderedReminder(
-      [reminder("call Alice", "2026-08-17 10:00", 1), target],
-      reminder("call Bob", "2026-08-17 10:00", -1),
-    );
-    expect(resolved).toBe(target);
-  });
-
-  test("gives up rather than guess between indistinguishable reminders", () => {
-    const resolved = resolveRenderedReminder(
-      [
-        reminder("call Bob", "2026-08-17 10:00", 1),
-        reminder("call Bob", "2026-08-17 10:00", 3),
-      ],
-      reminder("call Bob", "2026-08-17 10:00", -1),
-    );
-    expect(resolved).toBeNull();
-  });
-
-  test("gives up when nothing matches", () => {
-    const resolved = resolveRenderedReminder(
-      [reminder("call Bob", "2026-08-17 10:00", 1)],
-      reminder("call Bob", "2026-08-19 10:00", -1),
-    );
-    expect(resolved).toBeNull();
   });
 });
