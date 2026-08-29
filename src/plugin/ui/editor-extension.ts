@@ -52,7 +52,7 @@ export function buildCodeMirrorPlugin(
                 // against a document this editor does not live in.
                 update.view.dom.win.setTimeout(() => {
                   if (this.destroyed) {
-                    reject();
+                    reject(new Error("editor view was destroyed"));
                     return;
                   }
                   this.activePopup?.cancel();

@@ -24,7 +24,7 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
     const container = el.createDiv({ cls: "reminder-preset-suggestion" });
 
     // Title
-    const titleEl = container.createEl("div", {
+    const titleEl = container.createDiv({
       text: preset.name,
       cls: "reminder-preset-title",
     });
@@ -37,25 +37,25 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
     });
 
     // Year & Month example
-    previewsEl.createEl("div", {
+    previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: "Year/Month: " + now.format(preset.format.yearMonthFormat),
     });
 
     // Month & Day example
-    previewsEl.createEl("div", {
+    previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: "Month/Day: " + now.format(preset.format.monthDayFormat),
     });
 
     // Short date with weekday example
-    previewsEl.createEl("div", {
+    previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: "Short: " + now.format(preset.format.shortDateWithWeekdayFormat),
     });
 
     // Time example
-    previewsEl.createEl("div", {
+    previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: "Time: " + now.format(preset.format.timeFormat),
     });

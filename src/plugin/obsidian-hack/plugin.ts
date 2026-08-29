@@ -1,7 +1,7 @@
 import type { App } from "obsidian";
 
 type Plugin = {
-  settings: any;
+  settings: unknown;
 };
 
 export function findPlugin(app: App, pluginId: string): Plugin | null {

@@ -46,7 +46,7 @@ export class AutoComplete {
     if (changeObj.text.contains(trigger.charAt(trigger.length - 1))) {
       const line =
         cmEditor.getLine(changeObj.from.line).substring(0, changeObj.to.ch) +
-        changeObj.text;
+        changeObj.text.join("\n");
       if (!line.match(/^\s*- \[.\]\s.*/)) {
         // is not a TODO line
         return false;

@@ -142,7 +142,7 @@ export class ReminderListItemViewProxy {
       .getLeavesOfType(VIEW_TYPE_REMINDER_LIST)
       .map((leaf) => {
         if (leaf && leaf.view instanceof ReminderListItemView) {
-          return leaf.view as ReminderListItemView;
+          return leaf.view;
         }
         return null;
       })

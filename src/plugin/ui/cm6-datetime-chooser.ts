@@ -64,7 +64,7 @@ export class CM6DateTimeChooserPopup {
     private timeStep: number,
     private weekStart: number,
   ) {
-    this.view = document.createElement("div");
+    this.view = createDiv();
     this.view.addClass("date-time-chooser-popup");
     this.view.style.position = "fixed";
   }

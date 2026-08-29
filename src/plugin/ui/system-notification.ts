@@ -55,7 +55,7 @@ export class SystemNotifier {
     // by key.
     this.close(key);
 
-    const Notification = (electron as any).remote.Notification;
+    const Notification = electron.remote.Notification;
     const n = new Notification({
       title: "Obsidian Reminder",
       body: reminder.title,
@@ -105,7 +105,7 @@ export class SystemNotifier {
       // Only for macOS
       {
         const laters = this.laters.value;
-        n.on("action", (_: any, index: any) => {
+        n.on("action", (_: unknown, index: number) => {
           if (index === 0) {
             actions.done();
             return;
