@@ -14,6 +14,9 @@ import {
 } from "model/format/reminder-base";
 import { DateTime, Later, Time } from "model/time";
 import moment from "moment";
+import { isValidNtfyTopic } from "model/ntfy";
+import { requestUrl } from "obsidian";
+import { testNtfyConnection } from "plugin/ntfy";
 import {
   ExcludedPathsSerde,
   LatersSerde,
@@ -64,6 +67,7 @@ export class Settings {
   ntfyEnabled: SettingModel<boolean, boolean>;
   ntfyServerUrl: SettingModel<string, string>;
   ntfyTopic: SettingModel<string, string>;
+  ntfyAccessToken: SettingModel<string, string>;
 
   constructor() {
     const reminderFormatSettings = new ReminderFormatSettings(this.settings);
@@ -478,10 +482,59 @@ export class Settings {
       .key("ntfyTopic")
       .name("ntfy topic")
       .desc(
-        "Topic to publish reminders to. Anyone who knows this topic name can subscribe to it and read your reminder titles, so use a long, hard-to-guess name rather than something predictable.",
+        "Topic to publish reminders to. Anyone who knows this topic name can subscribe to it and read your reminder titles, so use a long, hard-to-guess name rather than something predictable. " +
+          "May only contain letters, digits, dashes and underscores (1-64 characters).",
       )
       .text("")
       .placeHolder("a-long-random-topic-name")
+      // Validated here rather than in a Serde that throws: a Serde rejection
+      // also makes `value` throw when the *persisted* value is invalid, and
+      // an invalid topic is exactly what someone upgrading from a build
+      // without this check may already have saved. `NtfyController` runs the
+      // same check before sending anything, so a bad name never reaches the
+      // network either way.
+      .onAnyValueChanged((context) => {
+        const topic = this.ntfyTopic.value.trim();
+        context.setValidationError(
+          topic.length === 0 || isValidNtfyTopic(topic)
+            ? null
+            : "A topic may only contain letters, digits, dashes and underscores (1-64 characters).",
+        );
+      })
+      .build(new RawSerde());
+
+    this.ntfyAccessToken = this.settings
+      .newSettingBuilder()
+      .key("ntfyAccessToken")
+      .name("ntfy access token")
+      .desc(
+        "Only needed for a server that requires authentication (a self-hosted instance with access control, for example); leave it empty otherwise. " +
+          "Create one with `ntfy token add <user>` or from the ntfy web app under Account → Access tokens. The token needs read-write access to the topic above, because this plugin reads, publishes and deletes scheduled messages. " +
+          "It is stored in plain text in this plugin's data.json, which is synced along with your vault if you sync the .obsidian folder.",
+      )
+      .text("")
+      .masked()
+      .placeHolder("tk_...")
+      .button("Test", async (context) => {
+        context.setValidationError(null);
+        context.setInfo("Testing…");
+        const result = await testNtfyConnection(
+          async (request) => requestUrl({ ...request, throw: false }),
+          {
+            serverUrl: this.ntfyServerUrl.value,
+            topic: this.ntfyTopic.value,
+            accessToken: this.ntfyAccessToken.value,
+          },
+        );
+        context.setInfo(result.ok ? result.message : null);
+        context.setValidationError(result.ok ? null : result.message);
+      })
+      // Clears a stale test result once any setting is edited, so the line
+      // under this field never describes a configuration that's no longer
+      // the one on screen.
+      .onAnyValueChanged((context) => {
+        context.setInfo(null);
+      })
       .build(new RawSerde());
 
     this.settings
@@ -558,7 +611,12 @@ export class Settings {
     this.settings
       .newPage("ntfy")
       .newGroup()
-      .addSettings(this.ntfyEnabled, this.ntfyServerUrl, this.ntfyTopic);
+      .addSettings(
+        this.ntfyEnabled,
+        this.ntfyServerUrl,
+        this.ntfyTopic,
+        this.ntfyAccessToken,
+      );
   }
 
   /**
