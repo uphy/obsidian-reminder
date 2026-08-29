@@ -270,7 +270,7 @@ describe("NotificationWorker", (): void => {
           // Simulate the modal being displayed, then dismissed shortly
           // after — the worker must not show `r2` until this clears.
           r1.beingDisplayed = true;
-          setTimeout(() => {
+          window.setTimeout(() => {
             r1.beingDisplayed = false;
             events.push("cleared");
           }, 50);

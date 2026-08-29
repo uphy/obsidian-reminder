@@ -140,6 +140,6 @@ export class NotificationWorker {
    * @param milliseconds - The number of milliseconds to wait before resuming.
    */
   private async sleep(milliseconds: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, milliseconds));
+    return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
   }
 }
