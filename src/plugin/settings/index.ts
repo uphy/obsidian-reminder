@@ -601,14 +601,6 @@ export class Settings {
         this.weekStart,
       );
     this.settings
-      .newPage("Advanced")
-      .newGroup()
-      .addSettings(
-        this.excludedPaths,
-        this.editDetectionSec,
-        this.reminderCheckIntervalSec,
-      );
-    this.settings
       .newPage("ntfy")
       .newGroup()
       .addSettings(
@@ -616,6 +608,16 @@ export class Settings {
         this.ntfyServerUrl,
         this.ntfyTopic,
         this.ntfyAccessToken,
+      );
+    // Last: "Advanced" is the catch-all for settings that don't belong to a
+    // feature of their own, so feature pages go in front of it.
+    this.settings
+      .newPage("Advanced")
+      .newGroup()
+      .addSettings(
+        this.excludedPaths,
+        this.editDetectionSec,
+        this.reminderCheckIntervalSec,
       );
   }
 
