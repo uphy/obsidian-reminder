@@ -118,6 +118,16 @@ This is an experimental feature (PoC-level). Enable it under [ntfy settings](/se
 1. Install the [ntfy app](https://ntfy.sh/#step-1-get-the-app) on your phone (available for iOS and Android), or use any other client capable of subscribing to an ntfy topic.
 2. Pick a topic name and subscribe to it in the app. Anyone who knows this topic name can subscribe to it and read your reminder titles and note names, so use a long, hard-to-guess name rather than something predictable (e.g. a random string) — see [ntfy's docs on topics](https://ntfy.sh/docs/publish/#topics) for details.
 3. In Obsidian, open [ntfy settings](/setting/#ntfy), turn on [Enable ntfy scheduled notifications](/setting/#enable-ntfy-scheduled-notifications-experimental), and set the same [server URL](/setting/#ntfy-server-url) and [topic](/setting/#ntfy-topic) you used in step 2. If you're self-hosting ntfy instead of using `ntfy.sh`, point the server URL at your own instance.
+4. If your server requires authentication, paste an access token into [ntfy access token](/setting/#ntfy-access-token) — see below. Leave it empty for a server that doesn't, such as `ntfy.sh`.
+5. Press **Test** next to the token field. It makes the same three requests a real sync does and reports what failed, so a wrong token or an unreachable server shows up here instead of silently in the developer console.
+
+#### Servers that require authentication
+
+`ntfy.sh` and a default self-hosted instance let anyone publish to any topic, so no credentials are needed. A server configured with access control (`auth-default-access: "deny-all"`, for example) refuses every request until you supply a token.
+
+Create one on the server with `ntfy token add <user>`, or from the ntfy web app under Account → Access tokens, then paste it into the access token setting. The plugin sends it as an `Authorization: Bearer` header on every request.
+
+The token needs **read-write access to the topic** — this plugin doesn't only publish. Each sync round first reads the topic's scheduled messages to work out what's already registered, then publishes what's missing and deletes what's stale. A read-only token gets as far as the first step and no further; the **Test** button says so explicitly rather than leaving you to guess.
 
 Once configured, the plugin periodically publishes your upcoming reminders (each reminder's title and the name of the note it's in) to that topic as scheduled messages. When a reminder's time comes, the ntfy server pushes the notification to every subscribed device — including phones where Obsidian isn't open. Tapping the notification opens the corresponding note in Obsidian.
 
@@ -126,6 +136,7 @@ Completing, snoozing, or otherwise rescheduling a reminder on one device also cl
 ### Constraints
 
 - **Titles and note names are sent to the ntfy server.** Only the reminder's title and the name of the note it's in (not the note's content or its full path) are sent, but they do leave your device and go to whichever server you configured. Don't enable this with a server you don't trust.
+- **The access token is stored in plain text.** It lives in this plugin's `data.json` like every other setting, so it's synced along with your vault if you sync the `.obsidian` folder, and readable by anything that can read those files. Prefer a token scoped to just this topic over one with access to your whole ntfy account, so a leak can be revoked without disturbing anything else.
 - **Requires ntfy v2.16.0 or later.** This feature relies on ntfy's sequence-ID based scheduled message replacement/deletion, added in that version. `ntfy.sh` (the public hosted service) already runs a recent enough version; if you self-host, make sure your server is updated.
 - **Only reminders due within the next 24 hours are registered.** ntfy itself allows scheduling a message at most 3 days ahead, but this plugin only ever registers reminders up to 24 hours out, and periodically re-registers reminders as time passes so that window keeps rolling forward. If Obsidian isn't opened for more than a day, reminders due after that point won't have been registered yet and won't notify you via ntfy until Obsidian runs again.
 - **Renaming the topic leaves old schedules behind.** Turning the feature off deletes this plugin's own pending schedules from the currently configured topic, but changing the topic name instead has no way to reach the previous topic afterward, so schedules already registered under the old name are not cleaned up.

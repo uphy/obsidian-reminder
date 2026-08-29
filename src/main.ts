@@ -9,7 +9,7 @@ import { isNotificationPaused } from "model/dnd";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
-import { App, Plugin } from "obsidian";
+import { App, Notice, Plugin, requestUrl } from "obsidian";
 import type { PluginManifest } from "obsidian";
 
 export default class ReminderPlugin extends Plugin {
@@ -91,10 +91,18 @@ export default class ReminderPlugin extends Plugin {
       isEnabled: () => this.settings.ntfyEnabled.value,
       serverUrl: () => this.settings.ntfyServerUrl.value,
       topic: () => this.settings.ntfyTopic.value,
+      accessToken: () => this.settings.ntfyAccessToken.value,
       reminders: () => this.reminders.reminders,
       defaultTime: () => this.settings.reminderTime.value,
       vaultName: () => this.app.vault.getName(),
       registerInterval: (id) => this.registerInterval(id),
+      // `throw: false` so an HTTP error status comes back as a response the
+      // controller can inspect (status *and* body) instead of an exception
+      // that has already thrown away the server's explanation.
+      request: (request) => requestUrl({ ...request, throw: false }),
+      notify: (message) => {
+        new Notice(message);
+      },
     });
     // Without this, changing any of the ntfy settings (most importantly,
     // flipping the toggle back on) would sit inert until the next reminder
@@ -105,6 +113,7 @@ export default class ReminderPlugin extends Plugin {
       this.settings.ntfyEnabled,
       this.settings.ntfyServerUrl,
       this.settings.ntfyTopic,
+      this.settings.ntfyAccessToken,
     ]) {
       setting.rawValue.onChanged(() => {
         this._ntfyController.notifySettingsChanged();

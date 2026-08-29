@@ -30,6 +30,7 @@ class SettingContext {
   public desc?: string;
   public tags: Array<string> = [];
   public settingModel?: SettingModelBase;
+  public buttons: Array<SettingButton> = [];
   anyValueChanged?: AnyValueChanged;
 
   constructor(private _settingRegistry: SettingRegistry) {}
@@ -178,6 +179,17 @@ interface Serde<R, E> {
 
 type AnyValueChanged = (context: SettingContext) => void;
 
+/**
+ * An action button rendered alongside a setting's own input component (see
+ * `AbstractSettingModelBuilder.button()`). The handler receives the same
+ * `SettingContext` as `onAnyValueChanged`, so it can report what it did
+ * through the setting's existing info/validation lines.
+ */
+interface SettingButton {
+  label: string;
+  onClick: (context: SettingContext) => void | Promise<void>;
+}
+
 abstract class AbstractSettingModelBuilder<R> {
   constructor(
     protected context: SettingContext,
@@ -186,6 +198,21 @@ abstract class AbstractSettingModelBuilder<R> {
 
   onAnyValueChanged(anyValueChanged: AnyValueChanged) {
     this.context.anyValueChanged = anyValueChanged;
+    return this;
+  }
+
+  /**
+   * Adds an action button next to this setting's input component. The button
+   * belongs to the setting rather than being a row of its own, so every entry
+   * in a `SettingGroup` stays a real `SettingModel` with a value — which is
+   * what `PluginData`'s constructor assumes when it registers a change
+   * listener on each setting's `rawValue`.
+   */
+  button(
+    label: string,
+    onClick: (context: SettingContext) => void | Promise<void>,
+  ) {
+    this.context.buttons.push({ label, onClick });
     return this;
   }
 
@@ -231,6 +258,7 @@ abstract class AbstractSettingModelBuilder<R> {
 
 class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
   private _placeHolder?: string;
+  private _masked = false;
 
   constructor(
     context: SettingContext,
@@ -242,6 +270,19 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
 
   placeHolder(placeHolder: string) {
     this._placeHolder = placeHolder;
+    return this;
+  }
+
+  /**
+   * Renders the input as a password field, so a secret isn't left readable on
+   * screen while the settings tab is open (screen sharing, screenshots,
+   * anyone standing behind you). It's display only: the value is still stored
+   * in `data.json` in plain text like every other setting.
+   *
+   * Ignored for `textArea()` settings — a `<textarea>` has no masked mode.
+   */
+  masked() {
+    this._masked = true;
     return this;
   }
 
@@ -277,6 +318,9 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
       } else {
         setting.addText((text) => {
           initText(text);
+          if (this._masked) {
+            text.inputEl.type = "password";
+          }
         });
       }
     });
@@ -428,6 +472,23 @@ class SettingModelImpl<R, E> implements SettingModel<R, E> {
       setting,
       rawValue: this.rawValue,
       context: this.context,
+    });
+    // After the initializer, so the button lands to the right of the
+    // setting's own input rather than in front of it.
+    this.context.buttons.forEach((button) => {
+      setting.addButton((b) => {
+        b.setButtonText(button.label).onClick(async () => {
+          // A button's handler is typically a network round-trip; disabling
+          // it for the duration keeps a second click from starting an
+          // overlapping run whose result would race the first one's.
+          b.setDisabled(true);
+          try {
+            await button.onClick(this.context);
+          } finally {
+            b.setDisabled(false);
+          }
+        });
+      });
     });
     return setting;
   }

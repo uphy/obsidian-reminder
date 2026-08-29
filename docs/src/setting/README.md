@@ -410,5 +410,20 @@ The ntfy server to publish scheduled notifications to.
 
 Topic to publish reminders to. Anyone who knows this topic name can subscribe to it and read your reminder titles and note names, so use a long, hard-to-guess name rather than something predictable.
 
+A topic name may only contain letters, digits, dashes and underscores, and be at most 64 characters long — ntfy's own rule. A name that breaks it is rejected in the settings tab, and nothing is published until it's fixed.
+
+- Type: `string`
+- Default: (empty)
+
+### ntfy access token
+
+Only needed for a server that requires authentication (a self-hosted instance with access control, for example); leave it empty otherwise, and requests are sent without credentials exactly as before.
+
+Create a token with `ntfy token add <user>` on the server, or from the ntfy web app under Account → Access tokens. It needs read-write access to the topic above, because this plugin reads the topic's scheduled messages, publishes new ones and deletes them again.
+
+The token is stored in plain text in this plugin's `data.json`, which is synced along with your vault if you sync the `.obsidian` folder. Prefer a token scoped to just this topic over one with access to your whole account.
+
+The **Test** button next to the field checks the settings by making the same three requests a sync does — read the topic, publish a message, delete it again — and reports what failed. Nothing is delivered to your devices: the test message is scheduled a day out and deleted immediately.
+
 - Type: `string`
 - Default: (empty)

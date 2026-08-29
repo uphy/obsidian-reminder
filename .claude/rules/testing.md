@@ -13,8 +13,10 @@ npx jest -t "part of a test name"  # Filter by name
 ## Placement and coverage
 
 - Test files live in the same directory as what they test, named `*.test.ts` (e.g. `src/model/format/reminder-default.ts` → `reminder-default.test.ts`). `testMatch: ["**/*.test.ts"]`.
-- Tests actually exist only for `src/model/` and `src/ui/calendar.ts` (mostly `src/model/format/*.test.ts`). There are no tests for anything under `src/plugin/` or for `.svelte` components — this follows from the `model/` layer being designed with no dependency on the Obsidian API. When writing new domain logic in `model/`, keep it testable the same way (don't import the `obsidian` package).
-- There's no mock for the `obsidian` package. Don't unit-test code that imports `obsidian` (or extract the dependency out into `model/`).
+- Most tests cover `src/model/` (mostly `src/model/format/*.test.ts`) and `src/ui/calendar.ts`, which is where domain logic belongs: that layer has no dependency on the Obsidian API, so it's testable with nothing else in place. When writing new domain logic in `model/`, keep it that way (don't import the `obsidian` package).
+- Parts of `src/plugin/` are tested too — `data.test.ts`, `notification-worker.test.ts`, `ntfy.test.ts`. There are no tests for `.svelte` components.
+- The `obsidian` npm package ships only type definitions (`"main": ""`), so a file importing it can't be loaded by jest as-is. `moduleNameMapper` in `package.json` maps `^obsidian$` to `src/test/obsidian-mock.ts`, which exists to make the module graph load: empty classes, and functions that throw if actually called. Add an export there when a new import path reaches it.
+- Don't give the mock real behavior to test against. Anything a test needs to drive — HTTP, notifications, timers, persistence — is injected through a deps interface instead (`NotificationWorkerDeps`, `NtfyControllerDeps`, `DataStore`), and the test passes a fake. That's what makes a `plugin/` class testable, and it keeps the mock from turning into shared mutable state between test files.
 
 ## Example patterns
 

@@ -1,6 +1,8 @@
 import {
+  NTFY_SEQUENCE_ID_PREFIX,
   computeNtfySyncPlan,
   foldNtfyPollResponse,
+  isValidNtfyTopic,
   noteNameFromPath,
   selectOwnPendingSequenceIds,
 } from "model/ntfy";
@@ -12,7 +14,6 @@ import type {
 import type { Reminder } from "model/reminder";
 import { DateTime } from "model/time";
 import type { Time } from "model/time";
-import { requestUrl } from "obsidian";
 
 // How often to re-run the sync while idle, so the 24h publish horizon keeps
 // rolling forward even if nothing else triggers a sync in the meantime.
@@ -20,16 +21,98 @@ const SYNC_INTERVAL_MILLIS = 30 * 60 * 1000;
 // Reminder edits often arrive in bursts (typing, autosave); debounce so we
 // don't hit the ntfy server once per keystroke.
 const DEBOUNCE_MILLIS = 10 * 1000;
+// ntfy's error bodies are small JSON objects, but a server URL pointing at
+// something that isn't ntfy at all can answer with a whole HTML page. Cap
+// what goes into the log/UI so one bad response can't flood either.
+const MAX_LOGGED_BODY_CHARS = 200;
+
+/**
+ * The subset of Obsidian's `RequestUrlParam`/`RequestUrlResponse` this module
+ * uses, declared here rather than imported so nothing in this file depends on
+ * the `obsidian` module (which ships no runtime JavaScript, and so can't be
+ * loaded under jest). `main.ts` passes a `requestUrl` wrapper that matches
+ * this structurally, the same bridging `DataStore` does in `plugin/data.ts`.
+ */
+export interface NtfyRequest {
+  url: string;
+  method: string;
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+export interface NtfyResponse {
+  status: number;
+  text: string;
+}
+
+export type NtfyRequestFn = (request: NtfyRequest) => Promise<NtfyResponse>;
 
 export interface NtfyControllerDeps {
   isEnabled(): boolean;
   serverUrl(): string;
   topic(): string;
+  /**
+   * The ntfy access token, or an empty string when the server needs no
+   * authentication (see `authHeaders()`).
+   */
+  accessToken(): string;
   /** The current (non-done) reminders across the whole vault. */
   reminders(): Array<Reminder>;
   defaultTime(): Time;
   vaultName(): string;
   registerInterval(id: number): void;
+  /** Must not throw on HTTP error statuses; see `NtfyRequest`. */
+  request: NtfyRequestFn;
+  /** Shows a message to the user (an Obsidian `Notice` in production). */
+  notify(message: string): void;
+}
+
+/**
+ * ntfy authenticates with `Authorization: Bearer <token>` for access tokens.
+ * An empty token means "this server needs no credentials", which has to send
+ * no header at all rather than an empty one: ntfy rejects a malformed
+ * `Authorization` header outright, so sending `Bearer ` would break the
+ * anonymous case that worked before tokens existed.
+ */
+function authHeaders(accessToken: string): Record<string, string> {
+  const token = accessToken.trim();
+  return token.length === 0 ? {} : { Authorization: `Bearer ${token}` };
+}
+
+/** Strips trailing slashes so URL building can always add its own. */
+function normalizeServerUrl(serverUrl: string): string {
+  return serverUrl.trim().replace(/\/+$/, "");
+}
+
+function pollUrl(serverUrl: string, topic: string): string {
+  return `${serverUrl}/${encodeURIComponent(topic)}/json?poll=1&sched=1`;
+}
+
+function scheduleUrl(
+  serverUrl: string,
+  topic: string,
+  sequenceId: string,
+): string {
+  return `${serverUrl}/${encodeURIComponent(topic)}/${encodeURIComponent(sequenceId)}`;
+}
+
+/**
+ * Renders a failed response for a log line or the settings UI. The server's
+ * own body is included because the status code alone doesn't say which of
+ * several unrelated problems occurred: ntfy answers 403 both for "no
+ * credentials were sent" and for "this token may not touch that topic", and
+ * 404 both for "no such topic" and "that isn't an ntfy server".
+ */
+function describeFailure(response: NtfyResponse): string {
+  const body = response.text.trim().slice(0, MAX_LOGGED_BODY_CHARS);
+  return body.length === 0
+    ? `status=${response.status}`
+    : `status=${response.status} body=${body}`;
+}
+
+/** Whether a status means the request was refused for lack of credentials. */
+function isAuthFailure(status: number): boolean {
+  return status === 401 || status === 403;
 }
 
 /**
@@ -63,6 +146,9 @@ export class NtfyController {
   // before then (e.g. while persisted settings are being restored) can
   // never be mistaken for a real transition.
   private previousEnabled: boolean | undefined;
+  // Whether the user has already been told about an authentication failure
+  // (see `noteAuthFailure`). Reset by `notifySettingsChanged()`.
+  private authFailureNotified = false;
 
   constructor(private deps: NtfyControllerDeps) {}
 
@@ -116,22 +202,51 @@ export class NtfyController {
 
   /**
    * Called whenever one of the ntfy-related settings (`ntfyEnabled`,
-   * `ntfyServerUrl`, `ntfyTopic`) changes. Without this, re-enabling the
-   * toggle (or fixing a typo'd server URL/topic) would sit inert for up to
-   * `SYNC_INTERVAL_MILLIS` until the next reminder edit or interval sync
-   * happened to come around.
+   * `ntfyServerUrl`, `ntfyTopic`, `ntfyAccessToken`) changes. Without this,
+   * re-enabling the toggle (or fixing a typo'd server URL/topic/token) would
+   * sit inert for up to `SYNC_INTERVAL_MILLIS` until the next reminder edit
+   * or interval sync happened to come around.
    *
    * Routed through the same debounce as `notifyRemindersChanged()` rather
-   * than syncing immediately: the server URL/topic are free-text fields, so
-   * syncing on every keystroke while the user is typing would hit the ntfy
-   * server far more than necessary.
+   * than syncing immediately: the server URL/topic/token are free-text
+   * fields, so syncing on every keystroke while the user is typing would hit
+   * the ntfy server far more than necessary.
    */
   notifySettingsChanged(): void {
     if (this.stopped) {
       return;
     }
+    // The settings that were rejected have just changed, so the next failure
+    // describes a different configuration and is worth reporting again.
+    this.authFailureNotified = false;
     this.checkEnabledTransition();
     this.notifyRemindersChanged();
+  }
+
+  /**
+   * Tells the user, at most once, that the server is refusing our requests
+   * for lack of valid credentials.
+   *
+   * `doSync()` deliberately swallows sync failures into the console so
+   * transient problems (offline, server down) never turn into a stream of
+   * Notices. An authentication failure is the one case that doesn't fit that
+   * reasoning: it's a configuration error that will keep failing every 30
+   * minutes until the user changes a setting, and the console is effectively
+   * unreachable on mobile — the platform this whole feature exists for. So
+   * it's surfaced, but only once per configuration (see
+   * `notifySettingsChanged()`), which is enough to make a silent failure
+   * visible without nagging.
+   */
+  private noteAuthFailure(status: number): void {
+    if (!isAuthFailure(status) || this.authFailureNotified) {
+      return;
+    }
+    this.authFailureNotified = true;
+    this.deps.notify(
+      `Reminder: the ntfy server rejected the request (${status}). ` +
+        "Scheduled notifications are not being published. Check the ntfy " +
+        "access token in the plugin settings.",
+    );
   }
 
   /**
@@ -263,15 +378,21 @@ export class NtfyController {
   }
 
   /**
-   * Normalizes the configured server URL/topic, or returns `undefined` if
-   * either is blank (i.e. unconfigured). Shared by `doSync()` and
-   * `cleanupAfterDisable()`.
+   * Normalizes the configured server URL/topic, or returns `undefined` when
+   * the pair can't produce a request the server would accept: a blank server
+   * URL or topic (i.e. unconfigured), or a topic ntfy's own name pattern
+   * rejects. Shared by `doSync()` and `cleanupAfterDisable()`.
+   *
+   * Bailing out on an invalid topic rather than sending it anyway keeps a
+   * typo from turning into a request every 30 minutes for a topic that can
+   * never exist; the settings tab shows the reason at the point the name is
+   * typed (see `isValidNtfyTopic`).
    */
   private resolveServerAndTopic():
     { serverUrl: string; topic: string } | undefined {
-    const serverUrl = this.deps.serverUrl().trim().replace(/\/+$/, "");
+    const serverUrl = normalizeServerUrl(this.deps.serverUrl());
     const topic = this.deps.topic().trim();
-    if (serverUrl.length === 0 || topic.length === 0) {
+    if (serverUrl.length === 0 || !isValidNtfyTopic(topic)) {
       return undefined;
     }
     return { serverUrl, topic };
@@ -310,12 +431,13 @@ export class NtfyController {
     serverUrl: string,
     topic: string,
   ): Promise<NtfyPollResponseState> {
-    const response = await requestUrl({
-      url: `${serverUrl}/${encodeURIComponent(topic)}/json?poll=1&sched=1`,
+    const response = await this.deps.request({
+      url: pollUrl(serverUrl, topic),
       method: "GET",
-      throw: false,
+      headers: authHeaders(this.deps.accessToken()),
     });
     if (response.status >= 400) {
+      this.noteAuthFailure(response.status);
       // Do NOT return an empty result here: `computeNtfySyncPlan()` would
       // then read that as "the server has nothing pending/delivered" and
       // (re-)publish every reminder in the 24h window at once. A transient
@@ -325,7 +447,7 @@ export class NtfyController {
       // abandon this whole round instead; it's retried on the next
       // debounce/interval tick.
       throw new Error(
-        `ntfy: failed to fetch the topic's scheduled messages: status=${response.status}`,
+        `ntfy: failed to fetch the topic's scheduled messages: ${describeFailure(response)}`,
       );
     }
 
@@ -394,10 +516,11 @@ export class NtfyController {
     topic: string,
     action: NtfyPublishAction,
   ): Promise<void> {
-    const response = await requestUrl({
+    const response = await this.deps.request({
       url: `${serverUrl}/`,
       method: "POST",
       headers: {
+        ...authHeaders(this.deps.accessToken()),
         "Content-Type": "application/json",
         "X-Sequence-ID": action.sequenceId,
       },
@@ -408,12 +531,12 @@ export class NtfyController {
         click: this.buildClickUrl(action.reminder),
         delay: String(action.atSeconds),
       }),
-      throw: false,
     });
     if (response.status >= 400) {
+      this.noteAuthFailure(response.status);
       console.error(
-        "[ntfy] Failed to publish a scheduled notification: status=%d",
-        response.status,
+        "[ntfy] Failed to publish a scheduled notification: %s",
+        describeFailure(response),
       );
     }
   }
@@ -437,15 +560,16 @@ export class NtfyController {
     topic: string,
     sequenceId: string,
   ): Promise<void> {
-    const response = await requestUrl({
-      url: `${serverUrl}/${encodeURIComponent(topic)}/${encodeURIComponent(sequenceId)}`,
+    const response = await this.deps.request({
+      url: scheduleUrl(serverUrl, topic, sequenceId),
       method: "DELETE",
-      throw: false,
+      headers: authHeaders(this.deps.accessToken()),
     });
     if (response.status >= 400) {
+      this.noteAuthFailure(response.status);
       console.error(
-        "[ntfy] Failed to delete a scheduled notification: status=%d",
-        response.status,
+        "[ntfy] Failed to delete a scheduled notification: %s",
+        describeFailure(response),
       );
     }
   }
@@ -461,5 +585,144 @@ export class NtfyController {
     const vault = encodeURIComponent(this.deps.vaultName());
     const file = encodeURIComponent(pathWithoutExtension);
     return `obsidian://open?vault=${vault}&file=${file}`;
+  }
+}
+
+// The sequence ID the connection test publishes under. It carries
+// `NTFY_SEQUENCE_ID_PREFIX` on purpose: if the delete at the end of the test
+// never lands (the network drops, Obsidian is closed mid-test), the next
+// regular sync sees a pending schedule of ours that matches no reminder and
+// deletes it (`computeNtfySyncPlan()`), so a failed cleanup can't leave a
+// notification to fire a day later.
+const CONNECTION_TEST_SEQUENCE_ID = `${NTFY_SEQUENCE_ID_PREFIX}selftest`;
+// Far enough out that the message is never delivered during the test, well
+// inside ntfy's 3-day scheduling limit.
+const CONNECTION_TEST_DELAY_SECONDS = 24 * 60 * 60;
+
+export interface NtfyConnectionTestConfig {
+  serverUrl: string;
+  topic: string;
+  accessToken: string;
+}
+
+export interface NtfyConnectionTestResult {
+  ok: boolean;
+  message: string;
+}
+
+/**
+ * Turns a failed step of the connection test into a sentence that names the
+ * likeliest cause, since ntfy reuses the same status for unrelated problems
+ * (see `describeFailure`).
+ */
+function describeTestFailure(step: string, response: NtfyResponse): string {
+  const detail = describeFailure(response);
+  if (isAuthFailure(response.status)) {
+    return `${step} was refused (${detail}). Check the access token, and that it has read-write access to this topic.`;
+  }
+  if (response.status === 404) {
+    return `${step} failed (${detail}). Check the server URL.`;
+  }
+  return `${step} failed (${detail}).`;
+}
+
+/**
+ * Checks a set of ntfy settings by making the same three requests a real sync
+ * round makes: read the topic's schedules, publish one, delete it again.
+ *
+ * Deliberately not a method on `NtfyController`: what the user wants to test
+ * is the values currently typed into the settings tab, which is exactly what
+ * the caller passes in — not the controller's own view of the world, and not
+ * something that should require a controller instance to reach.
+ *
+ * Publishing (rather than only polling) is the point of doing three requests:
+ * ntfy's per-topic ACLs can grant read without write, so a read-only token
+ * passes a poll-only check and then silently fails to publish a single
+ * reminder. Nothing is delivered by the test itself — the message is
+ * scheduled a day out and deleted immediately (see
+ * `CONNECTION_TEST_SEQUENCE_ID`).
+ */
+export async function testNtfyConnection(
+  request: NtfyRequestFn,
+  config: NtfyConnectionTestConfig,
+): Promise<NtfyConnectionTestResult> {
+  const serverUrl = normalizeServerUrl(config.serverUrl);
+  const topic = config.topic.trim();
+  if (serverUrl.length === 0) {
+    return { ok: false, message: "Set the ntfy server URL first." };
+  }
+  if (topic.length === 0) {
+    return { ok: false, message: "Set the ntfy topic first." };
+  }
+  if (!isValidNtfyTopic(topic)) {
+    return {
+      ok: false,
+      message:
+        "The ntfy topic is not a valid topic name: use only letters, digits, dashes and underscores (1-64 characters).",
+    };
+  }
+  const headers = authHeaders(config.accessToken);
+
+  try {
+    const read = await request({
+      url: pollUrl(serverUrl, topic),
+      method: "GET",
+      headers,
+    });
+    if (read.status >= 400) {
+      return {
+        ok: false,
+        message: describeTestFailure("Reading the topic", read),
+      };
+    }
+
+    const published = await request({
+      url: `${serverUrl}/`,
+      method: "POST",
+      headers: {
+        ...headers,
+        "Content-Type": "application/json",
+        "X-Sequence-ID": CONNECTION_TEST_SEQUENCE_ID,
+      },
+      body: JSON.stringify({
+        topic,
+        title: "Reminder connection test",
+        message:
+          "Published by the Obsidian Reminder plugin to check the ntfy settings, and deleted again right away.",
+        delay: String(
+          Math.floor(Date.now() / 1000) + CONNECTION_TEST_DELAY_SECONDS,
+        ),
+      }),
+    });
+    if (published.status >= 400) {
+      return {
+        ok: false,
+        message: describeTestFailure("Publishing a test message", published),
+      };
+    }
+
+    const deleted = await request({
+      url: scheduleUrl(serverUrl, topic, CONNECTION_TEST_SEQUENCE_ID),
+      method: "DELETE",
+      headers,
+    });
+    if (deleted.status >= 400) {
+      return {
+        ok: false,
+        message: `${describeTestFailure("Deleting the test message", deleted)} It stays scheduled until the next sync removes it.`,
+      };
+    }
+
+    return {
+      ok: true,
+      message: "Connected. Reading, publishing and deleting all succeeded.",
+    };
+  } catch (e) {
+    // A thrown error here means the request never got an HTTP response at
+    // all: DNS failure, refused connection, TLS problem, offline.
+    return {
+      ok: false,
+      message: `Could not reach ${serverUrl}: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
 }

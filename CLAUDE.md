@@ -32,7 +32,7 @@ npx jest -t "parse - link dates to daily notes"
 
 The entry point is `src/main.ts` (`ReminderPlugin`). `src/` is organized into three layers.
 
-- `src/model/` — Domain logic with no dependency on the Obsidian API: `Reminder`/`Reminders` (`model/reminder.ts`), date/time handling via `DateTime`/`Time` (`model/time.ts`), and the reminder-syntax parsers for Markdown (`model/format/`). This is the only layer with direct jest unit tests (because it never imports the `obsidian` module).
+- `src/model/` — Domain logic with no dependency on the Obsidian API: `Reminder`/`Reminders` (`model/reminder.ts`), date/time handling via `DateTime`/`Time` (`model/time.ts`), and the reminder-syntax parsers for Markdown (`model/format/`). Most jest unit tests live here, because it never imports the `obsidian` module and so needs nothing else in place.
 - `src/plugin/` — The plugin body, which depends on the Obsidian API. Bundles file watching, notifications, settings, and command registration (`plugin/index.ts` is the export entry point).
 - `src/ui/` — Svelte components (`ui/*.svelte`) and the TS that supports them (e.g. calendar calculations). The Obsidian Modal/View code in `src/plugin/ui/` mounts the Svelte components.
 
@@ -52,7 +52,7 @@ Symlink the dev vault's `.obsidian/plugins/obsidian-reminder-plugin` to this rep
 
 With this set up, running `mise run dev` keeps esbuild's watch build resident, so every time you save a source file it automatically rebuilds and reloads in Obsidian. No manual copying or restarting Obsidian is needed.
 
-Automated tests only cover `src/model/`. After implementing a change that affects runtime behavior in Obsidian (anything under `src/plugin/` or `src/ui/`, or parsing behavior visible in the vault), run the `manual-verify` skill to set up the test vault and walk the user through verification before opening a PR. A Stop hook (`.claude/hooks/manual-verify-reminder.sh`) reminds about this once per change state.
+Automated tests cover `src/model/` and the parts of `src/plugin/` whose dependencies are injected (see `.claude/rules/testing.md`), but nothing that renders. After implementing a change that affects runtime behavior in Obsidian (anything under `src/plugin/` or `src/ui/`, or parsing behavior visible in the vault), run the `manual-verify` skill to set up the test vault and walk the user through verification before opening a PR. A Stop hook (`.claude/hooks/manual-verify-reminder.sh`) reminds about this once per change state.
 
 ## Release flow
 
