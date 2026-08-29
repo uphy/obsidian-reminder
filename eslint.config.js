@@ -137,8 +137,6 @@ const scanRatchet = [{
     '@typescript-eslint/no-unsafe-assignment': 'warn', // 18
     '@typescript-eslint/no-unsafe-call': 'warn', // 6
     '@typescript-eslint/no-unsafe-return': 'warn', // 3
-    // `throw "string"` instead of `throw new Error(...)`.
-    '@typescript-eslint/only-throw-error': 'warn', // 11
     '@typescript-eslint/no-unnecessary-type-assertion': 'warn', // 4
     '@typescript-eslint/no-for-in-array': 'warn', // 1
     '@typescript-eslint/restrict-plus-operands': 'warn', // 1

@@ -89,7 +89,7 @@ class RunnableEditorCommand extends AbstractCommand {
   runInLeaf(leaf: WorkspaceLeaf) {
     if (!(leaf.view instanceof MarkdownView)) {
       console.warn(leaf.view);
-      throw "invalid state.  should be markdown view";
+      throw new Error("invalid state.  should be markdown view");
     }
     const markdownView = leaf.view;
     this.run(markdownView.editor, markdownView);

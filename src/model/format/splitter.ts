@@ -12,10 +12,10 @@ export class Symbol {
 
   static ofChars(ch: Array<string>): Symbol {
     if (ch.length === 0) {
-      throw "empty symbol";
+      throw new Error("empty symbol");
     }
     if (ch[0] == null) {
-      throw "ch mustn't be null";
+      throw new Error("ch mustn't be null");
     }
     if (ch.length === 0) {
       return this.ofChar(ch[0]);

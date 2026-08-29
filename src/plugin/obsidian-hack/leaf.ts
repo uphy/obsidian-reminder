@@ -32,7 +32,7 @@ export async function getMarkdownViewFor(
     return null;
   }
   if (!(leaf.view instanceof MarkdownView)) {
-    throw "unexpected view";
+    throw new Error("unexpected view");
   }
   return leaf.view as MarkdownView;
 }
