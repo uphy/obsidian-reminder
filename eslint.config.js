@@ -115,26 +115,6 @@ const debugMobileConfig = {
 };
 
 /**
- * Ratchet for the Obsidian directory scan rules that the codebase does not
- * satisfy yet. Every rule here is downgraded to a warning so `npm run lint`
- * stays green while they are worked through one at a time.
- *
- * Delete an entry once its findings are fixed -- never add one back. The counts
- * are the findings as of the day this ratchet was introduced; they are a rough
- * size estimate, not something to keep in sync.
- */
-/** @type {import("eslint").Linter.Config[]} */
-const scanRatchet = [{
-  // .ts only: the type-aware rules below need projectService, which
-  // typeAwareConfig sets for TS files and cannot set for .svelte files.
-  files: ["src/**/*.ts"],
-  rules: {
-    // Inline styles that belong in styles.css or setCssStyles.
-    'obsidianmd/no-static-styles-assignment': 'warn', // 30
-  },
-}];
-
-/**
  * moment cannot be dropped even though the plugin no longer bundles it:
  * obsidian.d.ts itself does `import * as Moment from 'moment'`, so the package
  * has to be installed for the types to resolve, and the jest mock re-exports
@@ -247,6 +227,5 @@ export default [
   settingsDropdownConfig,
   obsidianMockConfig,
   dependenciesConfig,
-  ...scanRatchet,
   eslintConfigPrettier,
 ];

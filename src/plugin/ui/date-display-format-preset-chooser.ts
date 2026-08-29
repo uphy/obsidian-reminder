@@ -1,3 +1,4 @@
+import "./date-display-format-preset-chooser.css";
 import {
   type DateDisplayFormatPreset,
   dateDisplayFormatPresets,
@@ -24,7 +25,7 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
     const container = el.createDiv({ cls: "reminder-preset-suggestion" });
 
     // Title
-    const titleEl = container.createDiv({
+    container.createDiv({
       text: preset.name,
       cls: "reminder-preset-title",
     });
@@ -59,16 +60,6 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
       cls: "reminder-preset-preview-line",
       text: "Time: " + now.format(preset.format.timeFormat),
     });
-
-    // Basic inline styles added via element classes to avoid global CSS edits.
-    // Obsidian applies its own styling; these classes allow modest spacing.
-    titleEl.style.fontWeight = "600";
-    titleEl.style.marginBottom = "4px";
-    previewsEl.style.opacity = "0.8";
-    previewsEl.style.fontSize = "12px";
-    previewsEl.style.display = "grid";
-    previewsEl.style.gridAutoRows = "min-content";
-    previewsEl.style.rowGap = "2px";
   }
 
   onChooseSuggestion(preset: DateDisplayFormatPreset) {

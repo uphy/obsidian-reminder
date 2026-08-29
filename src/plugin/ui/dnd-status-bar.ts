@@ -1,3 +1,4 @@
+import "./status-bar.css";
 import type ReminderPlugin from "main";
 import { isNotificationPaused } from "model/dnd";
 import { DateTime } from "model/time";
@@ -20,9 +21,11 @@ export class DndStatusBar {
 
   onload() {
     this.el = this.plugin.addStatusBarItem();
-    this.el.addClass("reminder-dnd-status-bar");
-    this.el.style.display = "none";
-    this.el.style.cursor = "pointer";
+    this.el.addClasses([
+      "reminder-status-bar-item",
+      "reminder-dnd-status-bar",
+      "is-hidden",
+    ]);
     this.el.setAttribute(
       "aria-label",
       "Click to resume reminder notifications",
@@ -43,12 +46,12 @@ export class DndStatusBar {
     }
     const dndUntil = this.plugin.data.dndUntil.value;
     if (!isNotificationPaused(dndUntil, DateTime.now())) {
-      this.el.style.display = "none";
+      this.el.addClass("is-hidden");
       return;
     }
     // `isNotificationPaused` returning true guarantees `dndUntil` is set.
     this.el.setText(`🔕 Until ${this.formatUntil(dndUntil!)}`);
-    this.el.style.display = "";
+    this.el.removeClass("is-hidden");
   }
 
   private formatUntil(dndUntil: DateTime): string {
