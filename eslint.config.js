@@ -136,8 +136,6 @@ const scanRatchet = [{
     // `throw "string"` instead of `throw new Error(...)`.
     '@typescript-eslint/only-throw-error': 'warn', // 11
     '@typescript-eslint/no-unnecessary-type-assertion': 'warn', // 4
-    // Obsidian APIs newer than manifest.json's minAppVersion.
-    'obsidianmd/no-unsupported-api': 'warn', // 4
     // console.* left in shipped code.
     'obsidianmd/rule-custom-message': 'warn', // 2
     '@typescript-eslint/no-for-in-array': 'warn', // 1
