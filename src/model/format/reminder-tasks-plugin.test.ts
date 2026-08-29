@@ -4,7 +4,7 @@ import {
   TasksPluginReminderModel,
 } from "model/format/reminder-tasks-plugin";
 import { DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import {
   ReminderFormatConfig,
   ReminderFormatParameterKey,

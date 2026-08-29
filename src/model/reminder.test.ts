@@ -1,4 +1,4 @@
-import moment from "moment";
+import { moment } from "model/moment";
 import { DateTime, Time } from "./time";
 import { Reminder, Reminders, groupReminders } from "./reminder";
 import type { DateDisplayFormat, GroupedReminder } from "./reminder";

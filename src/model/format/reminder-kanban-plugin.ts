@@ -1,5 +1,5 @@
 import { DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import type { Todo } from "./markdown";
 import { TodoBasedReminderFormat } from "./reminder-base";
 import type { ReminderModel } from "./reminder-base";

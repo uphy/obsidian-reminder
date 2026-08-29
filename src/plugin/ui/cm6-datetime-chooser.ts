@@ -1,7 +1,7 @@
 import type { EditorView } from "@codemirror/view";
 import type { Reminders } from "model/reminder";
 import type { DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import DateTimeChooser from "ui/DateTimeChooser.svelte";
 
 /**

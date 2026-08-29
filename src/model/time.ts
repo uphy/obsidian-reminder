@@ -1,6 +1,6 @@
 import { ConstantReference } from "model/ref";
 import type { ReadOnlyReference } from "model/ref";
-import moment from "moment";
+import { moment } from "model/moment";
 
 export class DateTime {
   public static now(): DateTime {

@@ -13,7 +13,7 @@ import {
   ReminderFormatParameterKey,
 } from "model/format/reminder-base";
 import { DateTime, Later, Time } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import { isValidNtfyTopic } from "model/ntfy";
 import { requestUrl } from "obsidian";
 import { testNtfyConnection } from "plugin/ntfy";

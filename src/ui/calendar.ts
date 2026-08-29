@@ -1,4 +1,4 @@
-import moment from "moment";
+import { moment } from "model/moment";
 
 export class Day {
   constructor(public date: moment.Moment) {}

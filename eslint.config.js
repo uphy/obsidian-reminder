@@ -144,13 +144,29 @@ const scanRatchet = [{
     '@typescript-eslint/restrict-plus-operands': 'warn', // 1
     '@typescript-eslint/prefer-promise-reject-errors': 'warn', // 1
   },
-}, {
+}];
+
+/**
+ * moment cannot be dropped even though the plugin no longer bundles it:
+ * obsidian.d.ts itself does `import * as Moment from 'moment'`, so the package
+ * has to be installed for the types to resolve, and the jest mock re-exports
+ * it so date logic under test runs against the real thing. Allow it rather
+ * than carry a finding nothing can act on. The presets are obsidianmd's own --
+ * repeating them here is required, since options replace rather than merge.
+ */
+/** @type {import("eslint").Linter.Config} */
+const dependenciesConfig = {
   files: ['package.json'],
   rules: {
-    // Deprecated/replaceable packages in devDependencies.
-    'depend/ban-dependencies': 'warn', // 2
+    'depend/ban-dependencies': [
+      'error',
+      {
+        presets: ['native', 'microutilities', 'preferred'],
+        allowed: ['moment'],
+      },
+    ],
   },
-}];
+};
 
 /**
  * The build and release scripts run under Node, never inside Obsidian, so the
@@ -212,6 +228,7 @@ export default [
   unusedVarsConfig,
   typeAwareConfig,
   nodeScriptsConfig,
+  dependenciesConfig,
   ...scanRatchet,
   eslintConfigPrettier,
 ];
