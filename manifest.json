@@ -3,8 +3,8 @@
 	"name": "Reminder",
 	"version": "1.4.3",
 	"minAppVersion": "1.0.3",
-	"description": "Reminder plugin for Obsidian. This plugin adds feature to manage TODOs with reminder.",
+	"description": "Manage TODOs with reminders and get notified when they are due.",
 	"author": "uphy",
-	"authorUrl": "https://obsidian.md/about",
+	"authorUrl": "https://github.com/uphy",
 	"isDesktopOnly": false
 }
