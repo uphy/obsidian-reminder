@@ -163,6 +163,34 @@ const dependenciesConfig = {
 };
 
 /**
+ * obsidianmd/ui/sentence-case reads the second argument of `addOption` as the
+ * label, matching Obsidian's own `addOption(value, display)`. This project's
+ * settings builder takes them the other way round -- `addOption(label, value)`
+ * in plugin/settings/helper.ts -- so the rule checks the option's value and
+ * asks for it to be capitalised. Reversing the builder's parameters would let
+ * the rule back on; until then it has nothing correct to say about this file.
+ */
+/** @type {import("eslint").Linter.Config} */
+const settingsDropdownConfig = {
+  files: ['src/plugin/settings/index.ts'],
+  rules: {
+    'obsidianmd/ui/sentence-case': 'off',
+  },
+};
+
+/**
+ * The jest stand-in for `obsidian` is the one place that must import moment
+ * from the package: it exists to supply what Obsidian would have re-exported.
+ */
+/** @type {import("eslint").Linter.Config} */
+const obsidianMockConfig = {
+  files: ['src/test/obsidian-mock.ts'],
+  rules: {
+    '@typescript-eslint/no-restricted-imports': 'off',
+  },
+};
+
+/**
  * The build and release scripts run under Node, never inside Obsidian, so the
  * mobile-safety rule against Node built-ins does not apply to them.
  */
@@ -222,6 +250,8 @@ export default [
   unusedVarsConfig,
   typeAwareConfig,
   nodeScriptsConfig,
+  settingsDropdownConfig,
+  obsidianMockConfig,
   dependenciesConfig,
   ...scanRatchet,
   eslintConfigPrettier,

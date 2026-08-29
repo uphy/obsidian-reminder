@@ -11,7 +11,7 @@ const electron = window.require ? window.require("electron") : undefined;
 
 export function showReminderInsertionFailureNotice() {
   new Notice(
-    'Cannot insert a reminder here.  Reminders can only be added to task lines such as "- [ ] Task".',
+    'Cannot insert a reminder here.  Reminders can only be added to task lines such as "- [ ] task".',
   );
 }
 
