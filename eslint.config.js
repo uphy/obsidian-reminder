@@ -107,6 +107,10 @@ const debugMobileConfig = {
   files: ['src/plugin/obsidian-hack/obsidian-debug-mobile.ts'],
   rules: {
     'no-console': 'off',
+    // obsidianmd re-reports no-console through its own rule, which the
+    // exemption above does not reach. The findings here are the assignments
+    // that install the patch, not logging calls.
+    'obsidianmd/rule-custom-message': 'off',
   },
 };
 
@@ -136,8 +140,6 @@ const scanRatchet = [{
     // `throw "string"` instead of `throw new Error(...)`.
     '@typescript-eslint/only-throw-error': 'warn', // 11
     '@typescript-eslint/no-unnecessary-type-assertion': 'warn', // 4
-    // console.* left in shipped code.
-    'obsidianmd/rule-custom-message': 'warn', // 2
     '@typescript-eslint/no-for-in-array': 'warn', // 1
     '@typescript-eslint/restrict-plus-operands': 'warn', // 1
     '@typescript-eslint/prefer-promise-reject-errors': 'warn', // 1
