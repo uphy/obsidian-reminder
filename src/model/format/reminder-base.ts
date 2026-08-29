@@ -75,7 +75,7 @@ export class ReminderFormatParameterKey<T> {
 type ReminderFormatParameterSource<T> = () => T;
 
 export class ReminderFormatConfig {
-  private parameters: Map<string, ReminderFormatParameterSource<any>> =
+  private parameters: Map<string, ReminderFormatParameterSource<unknown>> =
     new Map();
   constructor() {}
 
@@ -112,7 +112,11 @@ export class ReminderFormatConfig {
     if (value == null) {
       return key.defaultValue;
     }
-    return value();
+    // The map holds sources for every parameter key, so it cannot be typed to
+    // a single T. Every setter above takes a ReminderFormatParameterKey<T>
+    // and stores a source of that same T under `key.key`, so the source found
+    // for this key produces T.
+    return value() as T;
   }
 }
 

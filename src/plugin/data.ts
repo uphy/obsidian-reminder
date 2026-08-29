@@ -153,7 +153,7 @@ export class PluginData {
       force,
       this.changed,
     );
-    const remindersData: any = {};
+    const remindersData: Record<string, Array<ReminderData>> = {};
     this.reminders.fileToReminders.forEach((r, filePath) => {
       remindersData[filePath] = r.map((rr) => ({
         title: rr.title,

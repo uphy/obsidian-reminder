@@ -131,12 +131,6 @@ const scanRatchet = [{
   rules: {
     // Inline styles that belong in styles.css or setCssStyles.
     'obsidianmd/no-static-styles-assignment': 'warn', // 30
-    // All four fall out of the same `any` values, largely in obsidian-hack/
-    // (private Obsidian APIs) and the Electron notification code.
-    '@typescript-eslint/no-unsafe-member-access': 'warn', // 19
-    '@typescript-eslint/no-unsafe-assignment': 'warn', // 18
-    '@typescript-eslint/no-unsafe-call': 'warn', // 6
-    '@typescript-eslint/no-unsafe-return': 'warn', // 3
   },
 }];
 

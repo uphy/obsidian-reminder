@@ -459,7 +459,9 @@ export class NtfyController {
       }
       let parsed: { event?: string; sequence_id?: string; time?: number };
       try {
-        parsed = JSON.parse(trimmed);
+        // JSON.parse returns any. The server's response is untrusted either
+        // way, so narrow it to the fields the checks below read.
+        parsed = JSON.parse(trimmed) as typeof parsed;
       } catch (e) {
         console.error("[ntfy] Failed to parse a poll response line: %o", e);
         continue;

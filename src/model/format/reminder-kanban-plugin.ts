@@ -38,7 +38,7 @@ const kanbanSetting = new (class KanbanSetting {
     if (!window) {
       return defaultValue;
     }
-    const plugins = (window as any)?.app?.plugins?.plugins;
+    const plugins = window.app?.plugins?.plugins;
     if (!plugins) {
       return defaultValue;
     }
@@ -50,7 +50,9 @@ const kanbanSetting = new (class KanbanSetting {
     if (!settings) {
       return defaultValue;
     }
-    const value = plugin.settings[key];
+    // Another plugin's settings; nothing here can know their types, so the
+    // caller's `defaultValue` decides what each key is expected to hold.
+    const value = settings[key] as E | null | undefined;
     if (value === null || value === undefined) {
       return defaultValue;
     }

@@ -27,6 +27,13 @@ export interface AutoCompletableEditor {
     to?: EditorPosition,
     origin?: string,
   ): void;
+
+  /**
+   * The CodeMirror 6 view backing the editor. Mirrors the same member
+   * declared on Obsidian's `Editor` in `global.d.ts`: not public API, and
+   * absent on mobile, so callers have to handle undefined.
+   */
+  cm?: EditorView;
 }
 
 export class AutoComplete {
@@ -61,11 +68,10 @@ export class AutoComplete {
   show(app: App, editor: AutoCompletableEditor, reminders: Reminders): void {
     let result: Promise<DateTime>;
     if (Platform.isDesktopApp) {
-      // `.cm` is not part of Obsidian's public `Editor` type (see
-      // `openReminderFile()` in `plugin/ui/index.ts` for the same cast),
-      // but it's how the CM6 `EditorView` backing the active editor is
-      // reached from here.
-      const view: EditorView | undefined = (editor as any).cm;
+      // `.cm` is declared in `global.d.ts`: it is not part of Obsidian's
+      // public `Editor` type, but it's how the CM6 `EditorView` backing the
+      // active editor is reached from here.
+      const view: EditorView | undefined = editor.cm;
       if (view == null) {
         console.error("Cannot get CodeMirror 6 editor view.");
         result = showDateTimeChooserModal(

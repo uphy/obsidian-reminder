@@ -29,7 +29,7 @@ class ReminderListItemView extends ItemView {
 
   override async onOpen(): Promise<void> {
     this.view = new ReminderListView({
-      target: (this as any).contentEl,
+      target: this.contentEl,
       props: {
         groups: this.remindersForView(),
         onOpenReminder: this.onOpenReminder,
