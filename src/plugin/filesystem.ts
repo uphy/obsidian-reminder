@@ -76,7 +76,7 @@ export class ReminderPluginFileSystem {
 
   async reloadRemindersInAllFiles() {
     // A full rescan can be requested before `PluginData.load()` has restored
-    // the persisted state: the `Scan reminders` command is available as soon
+    // the persisted state: the `Rescan all files` command is available as soon
     // as the plugin registers its commands, and the notification worker runs
     // its initial scan on its first tick. Parsing every file before the
     // settings are restored would use the default reminder formats and
