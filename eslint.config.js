@@ -165,6 +165,55 @@ const obsidianMockConfig = {
 };
 
 /**
+ * Findings held open for a follow-up PR.
+ *
+ * CI fails on any ESLint finding, warnings included -- `pr.yml` runs reviewdog
+ * with `fail_level: any` -- so a rule cannot simply be left reporting while the
+ * work is scheduled. Each entry below is scoped to the files that still trip
+ * it, so the rule keeps working everywhere else, and each names what has to
+ * happen before the entry can go.
+ *
+ * Delete an entry with the PR that fixes it. Nothing here is permanent.
+ */
+/** @type {import("eslint").Linter.Config[]} */
+const deferredFindings = [
+  {
+    // Both need a release note and a migration path for existing users:
+    // renaming a command moves it in the command palette, and dropping the
+    // default hotkeys takes away key bindings people already use.
+    files: ['src/plugin/commands/index.ts'],
+    rules: {
+      'obsidianmd/commands/no-plugin-name-in-command-name': 'off',
+      'obsidianmd/commands/no-default-hotkeys': 'off',
+    },
+  },
+  {
+    // $destroy / $set / $on: Svelte 5 is in use, but these call sites still go
+    // through its legacy class-component compatibility helpers. Migrating them
+    // to mount()/unmount(), $state and callback props is a piece of work on its
+    // own. The rule stays on elsewhere so other deprecations are still caught.
+    files: [
+      'src/plugin/ui/cm6-datetime-chooser.ts',
+      'src/plugin/ui/editor-reminder-display/pill-widget.ts',
+      'src/plugin/ui/reminder-list.ts',
+      'src/plugin/ui/reminder-toast.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-deprecated': 'off',
+    },
+  },
+  {
+    // Adopting the declarative settings API means reworking SettingTabModel to
+    // emit setting definitions. Until then the plugin's settings do not show up
+    // in Obsidian's settings search on 1.13.0 and later.
+    files: ['src/plugin/ui/index.ts'],
+    rules: {
+      'obsidianmd/settings-tab/prefer-setting-definitions': 'off',
+    },
+  },
+];
+
+/**
  * The build and release scripts run under Node, never inside Obsidian, so the
  * mobile-safety rule against Node built-ins does not apply to them.
  */
@@ -224,6 +273,7 @@ export default [
   unusedVarsConfig,
   typeAwareConfig,
   nodeScriptsConfig,
+  ...deferredFindings,
   settingsDropdownConfig,
   obsidianMockConfig,
   dependenciesConfig,
