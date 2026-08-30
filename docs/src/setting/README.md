@@ -47,7 +47,7 @@ Clear every [muted](/guide/notification.html#mute-notification) reminder when Ob
 
 - Type: `boolean`
 - Values:
-  - ON: All mute flags are dropped on startup. Every overdue reminder is notified again, one after another. Muting is not distinguished by how it happened, so reminders muted via [Mute all current reminders](/guide/notification.html#muting-all-reminders-at-once) are cleared too.
+  - ON: All mute flags are dropped on startup. Every overdue reminder is notified again, one after another. Muting is not distinguished by how it happened, so reminders muted via [Mute all current notifications](/guide/notification.html#muting-all-reminders-at-once) are cleared too.
   - OFF: Muted reminders stay muted across restarts (default)
 - Default: OFF
 

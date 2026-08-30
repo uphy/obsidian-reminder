@@ -88,7 +88,7 @@ A muted reminder becomes active again if you:
 
 If notifications have piled up (for example, after a vacation), you can mute every currently overdue reminder in one action:
 - Click `Mute all reminders…` at the bottom of a notification popup.
-- Run `Mute all current reminders` from the command palette.
+- Run `Mute all current notifications` from the command palette.
 
 This mutes every reminder that is currently overdue, the same way [muting a single reminder](#mute-notification) does. Unlike [pausing notifications](#pausing-notifications-temporarily-do-not-disturb), which is temporary and lets overdue reminders notify you again once it ends, mute-all is permanent per reminder: each muted reminder stays muted (and survives restarts) until you interact with it as described above.
 
@@ -97,7 +97,7 @@ This mutes every reminder that is currently overdue, the same way [muting a sing
 Unlike the [Enable reminder notifications](/setting/#enable-reminder-notifications) setting, which turns notifications off permanently until you turn it back on, do-not-disturb lets you pause notifications for a fixed duration and have them resume automatically.
 
 You can start it from either place:
-- Run `Pause reminder notifications` from the command palette. It opens a duration chooser with the same options as the [Remind Me Later](/setting/#remind-me-later) setting.
+- Run `Pause notifications` from the command palette. It opens a duration chooser with the same options as the [Remind Me Later](/setting/#remind-me-later) setting.
 - Click `Pause all notifications…` at the bottom of a notification popup. This closes the popup (without [muting](#mute-notification) that reminder) and opens the same duration chooser.
 
 While paused:
@@ -105,7 +105,7 @@ While paused:
 - The [reminder list view](/guide/list-reminders.html) keeps updating as usual, including moving reminders into [Overdue](/guide/list-reminders.html#overdue-reminders).
 - Reminders are not muted by the pause, so any reminder that's still overdue is notified again shortly after the pause ends.
 
-A status bar item (🔕) shows the time the pause ends; click it to resume notifications immediately. You can also run `Resume reminder notifications` from the command palette, which is only available while paused. The pause is remembered across Obsidian restarts, but it's a transient state rather than a setting, so it doesn't appear in the settings tab.
+A status bar item (🔕) shows the time the pause ends; click it to resume notifications immediately. You can also run `Resume notifications` from the command palette, which is only available while paused. The pause is remembered across Obsidian restarts, but it's a transient state rather than a setting, so it doesn't appear in the settings tab.
 
 ## Notifications when Obsidian isn't running (mobile)
 

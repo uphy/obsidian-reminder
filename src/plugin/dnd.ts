@@ -4,8 +4,8 @@ import { Notice } from "obsidian";
 import { DndDurationModal } from "plugin/ui/dnd-duration-chooser";
 
 /**
- * Do-not-disturb actions shared by the "Pause reminder notifications" /
- * "Resume reminder notifications" commands, the status bar indicator, and
+ * Do-not-disturb actions shared by the "Pause notifications" /
+ * "Resume notifications" commands, the status bar indicator, and
  * the "Pause all notifications..." link in the reminder popup, so all of
  * them stay in sync on how `dndUntil` is set/cleared, persisted, and
  * reported to the user.

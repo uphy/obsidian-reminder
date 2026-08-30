@@ -107,7 +107,7 @@ export class Settings {
       .desc(
         "When enabled, reminders you previously muted are notified again the next time Obsidian starts. " +
           "Useful if you rely on startup notifications to review overdue reminders. " +
-          'If many reminders are overdue, they are shown one after another — use the "Mute all current reminders" command to silence them again.',
+          'If many reminders are overdue, they are shown one after another — use the "Mute all current notifications" command to silence them again.',
       )
       .toggle(false)
       .build(new RawSerde());
