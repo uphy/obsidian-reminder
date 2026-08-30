@@ -13,7 +13,7 @@ import {
   ReminderFormatParameterKey,
 } from "model/format/reminder-base";
 import { DateTime, Later, Time } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import { isValidNtfyTopic } from "model/ntfy";
 import { requestUrl } from "obsidian";
 import { testNtfyConnection } from "plugin/ntfy";
@@ -510,7 +510,7 @@ export class Settings {
       .desc(
         "Only needed for a server that requires authentication (a self-hosted instance with access control, for example); leave it empty otherwise. " +
           "Create one with `ntfy token add <user>` or from the ntfy web app under Account → Access tokens. The token needs read-write access to the topic above, because this plugin reads, publishes and deletes scheduled messages. " +
-          "It is stored in plain text in this plugin's data.json, which is synced along with your vault if you sync the .obsidian folder.",
+          "It is stored in plain text in this plugin's data.json, which is synced along with your vault if you sync your Obsidian configuration folder.",
       )
       .text("")
       .masked()

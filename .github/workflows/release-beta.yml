@@ -9,10 +9,12 @@ on:
 
 permissions:
   contents: write
+  # Both needed to attest the release assets (see the "Attest" step below).
+  attestations: write
+  id-token: write
   pull-requests: write
 
 env:
-  PLUGIN_NAME: obsidian-reminder
   # The electron package is only used for its TypeScript types; skip the
   # ~100MB binary download (electron's install.js honors this variable).
   ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
@@ -81,9 +83,15 @@ jobs:
           npm run build
           # BRAT reads manifest.json from the release assets, so it must carry the beta version
           cp manifest-beta.json manifest.json
-          mkdir ${{ env.PLUGIN_NAME }}
-          cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
-          zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
+
+      # Lets users cryptographically verify that the published main.js and
+      # styles.css were built from this repository by this workflow.
+      - name: Attest the release assets
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            main.js
+            styles.css
       - name: Create Release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
@@ -93,7 +101,6 @@ jobs:
           prerelease: true
           generate_release_notes: true
           files: |
-            ${{ env.PLUGIN_NAME }}.zip
             main.js
             manifest.json
             styles.css

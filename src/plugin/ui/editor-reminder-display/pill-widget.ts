@@ -33,7 +33,7 @@ export class ReminderPillWidget extends WidgetType {
   }
 
   override toDOM(view: EditorView): HTMLElement {
-    const container = document.createElement("span");
+    const container = createSpan();
     this.component = new ReminderPillComponent({
       target: container,
       props: {

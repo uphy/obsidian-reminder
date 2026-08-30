@@ -187,13 +187,12 @@ export class MarkdownDocument {
     todo.lineIndex = lineIndex;
     this.lines.splice(lineIndex, 0, todo.toMarkdown());
     let todoIndex = -1;
-    for (const i in this.todos) {
-      const todo = this.todos[i]!;
-      if (todo.lineIndex >= lineIndex) {
+    for (const [i, existing] of this.todos.entries()) {
+      if (existing.lineIndex >= lineIndex) {
         if (todoIndex < 0) {
-          todoIndex = parseInt(i);
+          todoIndex = i;
         }
-        todo.lineIndex++;
+        existing.lineIndex++;
       }
     }
     if (todoIndex <= 0) {

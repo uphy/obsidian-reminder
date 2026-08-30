@@ -41,15 +41,14 @@ class SettingContext {
 
     // Appended to the setting's description element so validation/info lines
     // render inside the setting item, under the description text.
-    this.validationEl = setting.descEl.createDiv("validation", (el) => {
-      el.style.color = "var(--text-error)";
-      el.style.marginTop = "0.25rem";
-      el.style.display = "none";
-    });
-    this.infoEl = setting.descEl.createDiv("info", (el) => {
-      el.style.color = "var(--text-faint)";
-      el.style.marginTop = "0.25rem";
-      el.style.display = "none";
+    this.validationEl = setting.descEl.createDiv(
+      "reminder-setting-validation",
+      (el) => {
+        el.hidden = true;
+      },
+    );
+    this.infoEl = setting.descEl.createDiv("reminder-setting-info", (el) => {
+      el.hidden = true;
     });
   }
 
@@ -67,9 +66,9 @@ class SettingContext {
       return;
     }
     if (text === null) {
-      el.style.display = "none";
+      el.hidden = true;
     } else {
-      el.style.display = "block";
+      el.hidden = false;
       el.textContent = text;
     }
   }

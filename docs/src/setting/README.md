@@ -290,6 +290,12 @@ You can customize how dates and times are displayed in the Reminder List and rel
 
 Four independent Moment-style display formats are available, plus the first day of the week used by the calendar popup.
 
+::: tip Month and weekday names follow Obsidian's language
+Format tokens that spell out a name — `MMMM` (August / 8月), `ddd` (Sun / 日), `A` (PM / 午後) — are rendered in whatever language Obsidian is set to, matching how Obsidian displays dates elsewhere. Numeric tokens such as `MM`, `DD` and `HH` are unaffected.
+
+Releases up to 1.4.3 always rendered these in English, whatever the app language, so a preset can look different after updating. The examples below are written as they appear in an English Obsidian.
+:::
+
 ### Year & month format
 
 - Type: `string`
@@ -323,6 +329,8 @@ Four independent Moment-style display formats are available, plus the first day 
 You can quickly apply a preset via the command palette:
 
 - Command: “Set date display format”
+Preset names describe the **order** the date parts appear in, not the language they are written in — month and weekday names follow Obsidian's language, as above. `JP Style` additionally uses 年 / 月 / 日 as literal separators.
+
 - Presets include typical regional styles, e.g.:
   - US Style (12h): `MMMM YYYY`, `MM/DD`, `M/DD (ddd)`, `h:mm A`
   - US Style (24h): `MMMM YYYY`, `MM/DD`, `M/DD (ddd)`, `HH:mm`
@@ -421,7 +429,7 @@ Only needed for a server that requires authentication (a self-hosted instance wi
 
 Create a token with `ntfy token add <user>` on the server, or from the ntfy web app under Account → Access tokens. It needs read-write access to the topic above, because this plugin reads the topic's scheduled messages, publishes new ones and deletes them again.
 
-The token is stored in plain text in this plugin's `data.json`, which is synced along with your vault if you sync the `.obsidian` folder. Prefer a token scoped to just this topic over one with access to your whole account.
+The token is stored in plain text in this plugin's `data.json`, which is synced along with your vault if you sync your Obsidian configuration folder (`.obsidian` unless you changed it). Prefer a token scoped to just this topic over one with access to your whole account.
 
 The **Test** button next to the field checks the settings by making the same three requests a sync does — read the topic, publish a message, delete it again — and reports what failed. Nothing is delivered to your devices: the test message is scheduled a day out and deleted immediately.
 

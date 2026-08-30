@@ -1,0 +1,11 @@
+.date-time-chooser-popup {
+  /* Positioned against the viewport: `position()` writes top/left from
+     coordsAtPos(), which returns viewport-relative coordinates. */
+  position: fixed;
+}
+
+/* Set while the popup is in the DOM but not yet measured and placed, so it
+   does not flash at the wrong position before `position()` runs. */
+.date-time-chooser-popup.is-measuring {
+  visibility: hidden;
+}

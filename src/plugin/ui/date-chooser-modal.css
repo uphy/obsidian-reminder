@@ -1,0 +1,8 @@
+/* Obsidian's modal has minimum dimensions sized for full-page content. The
+   date chooser is a small popup, so it drops them and sizes to its content.
+   Desktop only -- on mobile the chooser fills the container instead. */
+.reminder-date-chooser-modal {
+  min-width: 0;
+  min-height: 0;
+  width: auto;
+}

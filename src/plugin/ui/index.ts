@@ -1,7 +1,6 @@
 import type ReminderPlugin from "main";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
-import type { EditorView } from "@codemirror/view";
 import {
   App,
   MarkdownView,
@@ -213,10 +212,10 @@ export class ReminderPluginUI {
     );
 
     // Highlight the line via the CM6 extension registered in `onload()`.
-    // `.cm` is not part of Obsidian's public `Editor` type (see
-    // `autocomplete.ts` for the same cast), and is only present on desktop,
-    // so this is a silent no-op otherwise.
-    const cm = (editor as any).cm as EditorView | undefined;
+    // `.cm` is declared in `global.d.ts`: not part of Obsidian's public
+    // `Editor` type, and only present on desktop, so this is a silent no-op
+    // otherwise.
+    const cm = editor.cm;
     if (cm) {
       const cmLine = cm.state.doc.line(reminder.rowNumber + 1);
       cm.dispatch({

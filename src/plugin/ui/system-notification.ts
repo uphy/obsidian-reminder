@@ -1,8 +1,8 @@
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
 import type { Later } from "model/time";
+import { electron } from "./electron";
 import type { ReminderActions } from "./reminder-actions";
-const electron = window.require ? window.require("electron") : undefined;
 
 /** A system notification tracked so it can be dismissed programmatically. */
 interface TrackedSystemNotification {
@@ -48,6 +48,11 @@ export class SystemNotifier {
   }
 
   show(reminder: Reminder, actions: ReminderActions, alertOnly: boolean) {
+    if (electron === undefined) {
+      // Mobile. Callers go through isAvailable() first, so this is only a
+      // guard for the type system.
+      return;
+    }
     const key = reminder.key();
     // Replace rather than stack a second notification for the same reminder
     // (e.g. it expires again before the previous notification was
@@ -55,7 +60,7 @@ export class SystemNotifier {
     // by key.
     this.close(key);
 
-    const Notification = (electron as any).remote.Notification;
+    const Notification = electron.remote.Notification;
     const n = new Notification({
       title: "Obsidian Reminder",
       body: reminder.title,
@@ -105,7 +110,7 @@ export class SystemNotifier {
       // Only for macOS
       {
         const laters = this.laters.value;
-        n.on("action", (_: any, index: any) => {
+        n.on("action", (_: unknown, index: number) => {
           if (index === 0) {
             actions.done();
             return;
@@ -117,7 +122,7 @@ export class SystemNotifier {
         laters.forEach((later) => {
           notificationActions.push({ type: "button", text: later.label });
         });
-        n.actions = notificationActions as any;
+        n.actions = notificationActions;
       }
     }
 

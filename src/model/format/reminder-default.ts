@@ -1,5 +1,5 @@
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import type { MarkdownDocument, Todo } from "./markdown";
 import { nextOccurrence } from "./recurrence";
 import {

@@ -1,4 +1,3 @@
-import type Electron from "electron";
 import { convertToTodoLine } from "model/format/markdown";
 import type {
   ReminderFormat,
@@ -6,12 +5,11 @@ import type {
 } from "model/format/reminder-base";
 import type { DateTime } from "model/time";
 import { Notice } from "obsidian";
-
-const electron = window.require ? window.require("electron") : undefined;
+import { electron } from "./electron";
 
 export function showReminderInsertionFailureNotice() {
   new Notice(
-    'Cannot insert a reminder here.  Reminders can only be added to task lines such as "- [ ] Task".',
+    'Cannot insert a reminder here.  Reminders can only be added to task lines such as "- [ ] task".',
   );
 }
 
@@ -58,9 +56,7 @@ export async function showOkCancelDialog(
   if (!electron) {
     return OkCancel.CANCEL;
   }
-  const selected: Electron.MessageBoxReturnValue = await (
-    electron as any
-  ).remote.dialog.showMessageBox({
+  const selected = await electron.remote.dialog.showMessageBox({
     type: "question",
     title: "Obsidian Reminder",
     message: title,

@@ -1,10 +1,11 @@
 import prettierPlugin from 'eslint-plugin-prettier';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import typescriptEslintPlugin from '@typescript-eslint/eslint-plugin';
-import importPlugin from 'eslint-plugin-import';
+import importPlugin from 'eslint-plugin-import-x';
 import unusedImportsPlugin from 'eslint-plugin-unused-imports';
 import typescriptEslintParser from '@typescript-eslint/parser';
 import eslintPluginSvelte from 'eslint-plugin-svelte';
+import obsidianmd from 'eslint-plugin-obsidianmd';
 import svelteParser from 'svelte-eslint-parser';
 import js from "@eslint/js";
 import globals from "globals"
@@ -32,7 +33,7 @@ const config = {
   },
   plugins: {
     '@typescript-eslint': typescriptEslintPlugin,
-    import: importPlugin,
+    'import-x': importPlugin,
     'unused-imports': unusedImportsPlugin,
     prettier: prettierPlugin,
   },
@@ -40,7 +41,7 @@ const config = {
     'linebreak-style': ['error', 'unix'],
     quotes: ['error', 'single', { avoidEscape: true }],
     semi: ['error', 'always'],
-    'import/order': 'error',
+    'import-x/order': 'error',
     'sort-imports': [
       'error',
       {
@@ -48,8 +49,6 @@ const config = {
       },
     ],
     'unused-imports/no-unused-imports': 'error',
-    'no-console': ['error', { allow: ['warn', 'error', 'debug'] }],
-    'no-restricted-imports': ['error', { patterns: [{ group: ['../*'], message: 'Use src-rooted import paths (e.g. "model/reminder") instead of parent-relative paths.' }] }],
     'prettier/prettier': 'error',
   },
 };
@@ -64,6 +63,165 @@ const unusedVarsConfig = {
   rules: {
     'no-unused-vars': 'off', // Replaced by @typescript-eslint/no-unused-vars.
     '@typescript-eslint/no-unused-vars': 'error',
+  },
+};
+
+/**
+ * Rules this project sets that obsidianmd's recommended config turns off, so
+ * they live here rather than in `config` above -- placed after that config in
+ * the array below to win. Verify with:
+ *
+ *   npx eslint --print-config src/main.ts
+ *
+ * A severity of 0 for any of these means obsidianmd took the rule over again.
+ */
+/** @type {import("eslint").Linter.Config} */
+const projectRuleOverrides = {
+  files: ["src/**/*.ts", "src/**/*.svelte"],
+  rules: {
+    'no-console': ['error', { allow: ['warn', 'error', 'debug'] }],
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: ['../*'],
+            message:
+              'Use src-rooted import paths (e.g. "model/reminder") instead of parent-relative paths.',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+/**
+ * This file reassigns the global console methods on purpose to redirect mobile
+ * debug output to a log file. Scoping the exemption here instead of using an
+ * inline `eslint-disable` comment keeps `eslint-comments/no-restricted-disable`
+ * satisfied -- the Obsidian directory scan rejects disabling `no-console` by
+ * directive comment.
+ */
+/** @type {import("eslint").Linter.Config} */
+const debugMobileConfig = {
+  files: ['src/plugin/obsidian-hack/obsidian-debug-mobile.ts'],
+  rules: {
+    'no-console': 'off',
+    // obsidianmd re-reports no-console through its own rule, which the
+    // exemption above does not reach. The findings here are the assignments
+    // that install the patch, not logging calls.
+    'obsidianmd/rule-custom-message': 'off',
+  },
+};
+
+/**
+ * moment cannot be dropped even though the plugin no longer bundles it:
+ * obsidian.d.ts itself does `import * as Moment from 'moment'`, so the package
+ * has to be installed for the types to resolve, and the jest mock re-exports
+ * it so date logic under test runs against the real thing. Allow it rather
+ * than carry a finding nothing can act on. The presets are obsidianmd's own --
+ * repeating them here is required, since options replace rather than merge.
+ */
+/** @type {import("eslint").Linter.Config} */
+const dependenciesConfig = {
+  files: ['package.json'],
+  rules: {
+    'depend/ban-dependencies': [
+      'error',
+      {
+        presets: ['native', 'microutilities', 'preferred'],
+        allowed: ['moment'],
+      },
+    ],
+  },
+};
+
+/**
+ * obsidianmd/ui/sentence-case reads the second argument of `addOption` as the
+ * label, matching Obsidian's own `addOption(value, display)`. This project's
+ * settings builder takes them the other way round -- `addOption(label, value)`
+ * in plugin/settings/helper.ts -- so the rule checks the option's value and
+ * asks for it to be capitalised. Reversing the builder's parameters would let
+ * the rule back on; until then it has nothing correct to say about this file.
+ */
+/** @type {import("eslint").Linter.Config} */
+const settingsDropdownConfig = {
+  files: ['src/plugin/settings/index.ts'],
+  rules: {
+    'obsidianmd/ui/sentence-case': 'off',
+  },
+};
+
+/**
+ * The jest stand-in for `obsidian` is the one place that must import moment
+ * from the package: it exists to supply what Obsidian would have re-exported.
+ */
+/** @type {import("eslint").Linter.Config} */
+const obsidianMockConfig = {
+  files: ['src/test/obsidian-mock.ts'],
+  rules: {
+    '@typescript-eslint/no-restricted-imports': 'off',
+  },
+};
+
+/**
+ * Findings held open for a follow-up PR.
+ *
+ * CI fails on any ESLint finding, warnings included -- `pr.yml` runs reviewdog
+ * with `fail_level: any` -- so a rule cannot simply be left reporting while the
+ * work is scheduled. Each entry below is scoped to the files that still trip
+ * it, so the rule keeps working everywhere else, and each names what has to
+ * happen before the entry can go.
+ *
+ * Delete an entry with the PR that fixes it. Nothing here is permanent.
+ */
+/** @type {import("eslint").Linter.Config[]} */
+const deferredFindings = [
+  {
+    // Both need a release note and a migration path for existing users:
+    // renaming a command moves it in the command palette, and dropping the
+    // default hotkeys takes away key bindings people already use.
+    files: ['src/plugin/commands/index.ts'],
+    rules: {
+      'obsidianmd/commands/no-plugin-name-in-command-name': 'off',
+      'obsidianmd/commands/no-default-hotkeys': 'off',
+    },
+  },
+  {
+    // $destroy / $set / $on: Svelte 5 is in use, but these call sites still go
+    // through its legacy class-component compatibility helpers. Migrating them
+    // to mount()/unmount(), $state and callback props is a piece of work on its
+    // own. The rule stays on elsewhere so other deprecations are still caught.
+    files: [
+      'src/plugin/ui/cm6-datetime-chooser.ts',
+      'src/plugin/ui/editor-reminder-display/pill-widget.ts',
+      'src/plugin/ui/reminder-list.ts',
+      'src/plugin/ui/reminder-toast.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-deprecated': 'off',
+    },
+  },
+  {
+    // Adopting the declarative settings API means reworking SettingTabModel to
+    // emit setting definitions. Until then the plugin's settings do not show up
+    // in Obsidian's settings search on 1.13.0 and later.
+    files: ['src/plugin/ui/index.ts'],
+    rules: {
+      'obsidianmd/settings-tab/prefer-setting-definitions': 'off',
+    },
+  },
+];
+
+/**
+ * The build and release scripts run under Node, never inside Obsidian, so the
+ * mobile-safety rule against Node built-ins does not apply to them.
+ */
+/** @type {import("eslint").Linter.Config} */
+const nodeScriptsConfig = {
+  files: ['esbuild.config.mjs', 'scripts/**/*.mjs'],
+  rules: {
+    'obsidianmd/no-nodejs-modules': 'off',
   },
 };
 
@@ -90,7 +248,13 @@ export default [
   },
   config,
   js.configs.recommended,
-  ...eslintPluginSvelte.configs['flat/recommended'],
+  // Some entries of svelte's recommended config carry no `files`, so they apply
+  // to every linted file. That is harmless on its own, but the obsidianmd config
+  // below adds package.json to the lint targets, and svelte's rules crash on a
+  // file the svelte parser never saw. Scope them to .svelte files.
+  ...eslintPluginSvelte.configs['flat/recommended'].map((c) =>
+    c.files ? c : { ...c, files: ['**/*.svelte'] },
+  ),
   {
     files: ["src/**/*.svelte"],
     languageOptions: {
@@ -100,7 +264,18 @@ export default [
       }
     },
   },
+  // The rule set the Obsidian community directory runs its automated release
+  // scan with. Keeping it here means a scan failure shows up in `npm run lint`
+  // instead of only on the plugin's directory dashboard after a release.
+  ...obsidianmd.configs.recommended,
+  projectRuleOverrides,
+  debugMobileConfig,
   unusedVarsConfig,
   typeAwareConfig,
+  nodeScriptsConfig,
+  ...deferredFindings,
+  settingsDropdownConfig,
+  obsidianMockConfig,
+  dependenciesConfig,
   eslintConfigPrettier,
 ];

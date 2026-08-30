@@ -28,7 +28,7 @@ export class DndDurationModal extends SuggestModal<Later> {
   }
 
   renderSuggestion(later: Later, el: HTMLElement) {
-    el.createEl("div", { text: later.label });
+    el.createDiv({ text: later.label });
   }
 
   onChooseSuggestion(later: Later) {

@@ -1,6 +1,6 @@
 import { ConstantReference } from "model/ref";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import { MarkdownDocument } from "./markdown";
 import {
   ReminderFormatConfig,

@@ -18,9 +18,11 @@ permissions:
   # Needed to poll the check-runs API while waiting for the "test" check
   # (see the "Wait for the test check" step below).
   checks: read
+  # Both needed to attest the release assets (see the "Attest" step below).
+  attestations: write
+  id-token: write
 
 env:
-  PLUGIN_NAME: obsidian-reminder
   # The electron package is only used for its TypeScript types; skip the
   # ~100MB binary download (electron's install.js honors this variable).
   ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
@@ -86,11 +88,16 @@ jobs:
 
       - name: Build
         id: build
-        run: |
-          npm run build
-          mkdir ${{ env.PLUGIN_NAME }}
-          cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
-          zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
+        run: npm run build
+
+      # Lets users cryptographically verify that the published main.js and
+      # styles.css were built from this repository by this workflow.
+      - name: Attest the release assets
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            main.js
+            styles.css
 
       - name: Push the version bump to a release branch
         run: |
@@ -186,7 +193,6 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            ${{ env.PLUGIN_NAME }}.zip
             main.js
             manifest.json
             styles.css

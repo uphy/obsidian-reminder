@@ -1,7 +1,8 @@
 // Copied from: https://gist.github.com/liamcain/3f21f1ee820cb30f18050d2f3ad85f3f
 // This file intentionally reassigns the global console methods to redirect
-// mobile debug output to a log file, so the no-console rule is disabled here.
-/* eslint-disable no-console */
+// mobile debug output to a log file. The no-console exemption lives in
+// eslint.config.js: the Obsidian directory scan rejects disabling that rule
+// with an inline directive comment.
 import { Platform, Plugin } from "obsidian";
 
 // Call this method inside your plugin's

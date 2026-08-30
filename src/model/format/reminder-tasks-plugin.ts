@@ -1,6 +1,6 @@
 import type { Todo } from "model/format/markdown";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import { ReminderFormatParameterKey } from "./reminder-base";
 import { TasksLikeReminderFormat, removeTags } from "./reminder-tasks-like";
 import type { TasksLikeReminderModel } from "./reminder-tasks-like";

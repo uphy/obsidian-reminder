@@ -1,6 +1,6 @@
 import type { MarkdownDocument, Todo } from "model/format/markdown";
 import { DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import { nextOccurrence } from "./recurrence";
 import {
   ReminderFormatParameterKey,
