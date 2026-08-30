@@ -13,6 +13,7 @@ import {
 } from "obsidian";
 import { registerCommands } from "plugin/commands";
 import { showPauseDurationChooser } from "plugin/dnd";
+import { rebuildMarkdownViews } from "plugin/obsidian-hack/leaf";
 import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { DndStatusBar } from "./dnd-status-bar";
@@ -21,7 +22,10 @@ import { ReminderListItemViewProxy } from "./reminder-list";
 import { AutoComplete } from "./autocomplete";
 import type { AutoCompletableEditor } from "./autocomplete";
 import { buildCodeMirrorPlugin } from "./editor-extension";
-import { createReminderPillExtension } from "./editor-reminder-display";
+import {
+  createReminderPillExtension,
+  createRenderedBlockPillPostProcessor,
+} from "./editor-reminder-display";
 import {
   createReminderLineHighlightExtension,
   highlightReminderLine,
@@ -103,13 +107,25 @@ export class ReminderPluginUI {
       this.plugin.registerEditorExtension(
         createReminderLineHighlightExtension(),
       );
+      // Live Preview replaces callouts (and other rendered blocks) with a
+      // block widget, which discards the editor extension's decorations
+      // inside them. Those widgets render through the markdown
+      // post-processor pipeline instead, so the pills have to be built
+      // there as well (#359).
+      this.plugin.registerMarkdownPostProcessor(
+        createRenderedBlockPillPostProcessor(this.plugin),
+      );
       // Reconfiguring editor extensions is how CM6 signals every open
       // editor's `StateField` that something changed (`tr.reconfigured`),
       // which is what lets the pill extension re-check the toggle
       // immediately instead of only on the editor's next edit/selection
       // change.
+      // The post-processor's pills live in widgets Obsidian owns, which keep
+      // their DOM until the view is recreated — `updateOptions()` alone would
+      // leave callouts showing the old state until the note is reopened.
       this.plugin.settings.editorReminderDisplay.rawValue.onChanged(() => {
         this.plugin.app.workspace.updateOptions();
+        rebuildMarkdownViews(this.plugin.app);
       });
     }
 

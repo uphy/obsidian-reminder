@@ -128,8 +128,13 @@ cdp_is_obsidian() {
   # The /json/version User-Agent embeds a lowercase "obsidian/<version>" token
   # (e.g. "... obsidian/1.12.7 Chrome/... Electron/..."), not "Obsidian" — match
   # case-insensitively so this doesn't silently fail again.
-  local info="$1"
-  [[ "${info,,}" == *"obsidian/"* ]]
+  #
+  # Lowercased with `tr` rather than `${info,,}`: macOS ships bash 3.2 as
+  # /bin/bash, and `${var,,}` is a bash 4 feature that aborts the script with
+  # "bad substitution" there.
+  local lowered
+  lowered="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  [[ "$lowered" == *"obsidian/"* ]]
 }
 
 if [[ "$FORCE_RESTART" -eq 0 ]]; then
