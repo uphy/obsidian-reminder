@@ -104,6 +104,19 @@ describe("splitBySymbol()", (): void => {
     ]);
   });
 
+  test("a tag inside a code span still closes the symbol token (the mask does not reach the tag branch)", (): void => {
+    // The tag split exists to keep the tag out of the symbol token so a date
+    // edit cannot delete it; that protection must hold whether or not the tag
+    // sits inside a code span, because the edit rewrites the whole token text.
+    expect(
+      splitBySymbol("Task 📅 2021-09-08 ` #mytag ` done", symbolOf("📅📆🗓✅🔁")),
+    ).toStrictEqual([
+      { symbol: "", text: "Task " },
+      { symbol: "📅", text: " 2021-09-08 ` " },
+      { symbol: "", text: "#mytag ` done" },
+    ]);
+  });
+
   test("an unpaired backtick opens nothing, so the symbol after it is real", (): void => {
     expect(
       splitBySymbol("Task ` unclosed 📅 2021-09-08", symbolOf("📅📆🗓✅🔁")),

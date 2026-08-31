@@ -292,7 +292,6 @@ export function splitBySymbol(
       text = "";
     } else if (
       currentToken !== null &&
-      !inCodeSpan[index] &&
       c === "#" &&
       (text.length === 0 || /\s$/.test(text))
     ) {
@@ -302,6 +301,10 @@ export function splitBySymbol(
       // the date) would silently delete the tag. Close the current symbol
       // token here and start a new plain-text ("") token that the tag (and
       // anything after it, up to the next symbol) will belong to.
+      //
+      // The code-span mask deliberately does not reach this branch: a tag is
+      // not a reminder marker, and masking `#` inside a span would re-absorb
+      // the tag into the symbol token — the exact loss this split prevents.
       fillPreviousToken();
       currentToken = null;
       text = c;

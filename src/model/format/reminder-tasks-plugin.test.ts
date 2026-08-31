@@ -47,6 +47,18 @@ describe("TasksPluginReminderLine", (): void => {
     // non-ASCII tag (https://github.com/uphy/obsidian-reminder/issues/169)
     expect(parse("Task1 #zokjfkdsaób 📅 2021-09-08").getTitle()).toBe("Task1");
   });
+  test("setDueDate() - a tag inside a code span survives a date edit", (): void => {
+    // Regression guard for the tag-preservation split (#311): the date edit
+    // rewrites the whole 📅 token text, so the tag must have been split out of
+    // that token even when it sits inside a code span. (The opening backtick
+    // being dropped is a pre-existing replaceTokenText() quirk, not part of
+    // what this test guards.)
+    const parsed = TasksPluginReminderModel.parse(
+      "Task 📅 2021-09-08 ` #mytag ` done",
+    );
+    parsed.setDueDate(new DateTime(moment("2026-09-01"), false));
+    expect(parsed.toMarkdown()).toBe("Task 📅 2026-09-01 #mytag ` done");
+  });
   test("setTitle()", (): void => {
     const parsed = TasksPluginReminderModel.parse(
       "this is a title 🔁 every hour 📅 2021-09-08 ✅ 2021-08-31",
