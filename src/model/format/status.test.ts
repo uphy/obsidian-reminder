@@ -1,4 +1,8 @@
-import { StatusRegistry, parseStatusSetting } from "./status";
+import {
+  DEFAULT_STATUSES_TEXT,
+  StatusRegistry,
+  parseStatusSetting,
+} from "./status";
 import type { TaskStatus } from "./status";
 
 const STATUSES: Array<TaskStatus> = [
@@ -76,6 +80,47 @@ describe("StatusRegistry", (): void => {
 
   test("uncheckSymbol is a no-op on an already-unchecked symbol", (): void => {
     expect(registry.uncheckSymbol("w")).toBe("w");
+  });
+
+  test("checkSymbol never lands on a symbol the registry reads as not checked", (): void => {
+    // A registry that registers "x" as something other than done (or not at
+    // all, next test) must not have Done write "x": the line would re-parse
+    // as an active reminder and re-fire forever.
+    const xIsTodo = new StatusRegistry([
+      { symbol: "x", nextStatusSymbol: " ", type: "TODO" },
+      { symbol: "v", nextStatusSymbol: " ", type: "DONE" },
+    ]);
+    const landed = xIsTodo.checkSymbol(" ");
+    expect(landed).toBe("v");
+    expect(xIsTodo.isChecked(landed)).toBe(true);
+  });
+
+  test("checkSymbol under a registry without x falls back to the first DONE entry", (): void => {
+    const noX = new StatusRegistry([
+      { symbol: "a", nextStatusSymbol: "b", type: "TODO" },
+      { symbol: "v", nextStatusSymbol: " ", type: "DONE" },
+    ]);
+    // "a"'s next ("b") is unregistered, so it reads TODO and is skipped.
+    expect(noX.checkSymbol("a")).toBe("v");
+    // An unregistered symbol takes the same fallback.
+    expect(noX.checkSymbol(" ")).toBe("v");
+  });
+
+  test("the setting merged with the defaults keeps Done working (#361 review)", (): void => {
+    // The exact scenario from the review: a user on the default format adds
+    // only the #269 line. Merged with the built-in defaults (user first, so
+    // the user wins on duplicates), "- [x]" stays done and Done still
+    // converges.
+    const merged = new StatusRegistry(
+      parseStatusSetting("[/] -> [x] IN_PROGRESS\n" + DEFAULT_STATUSES_TEXT),
+    );
+    expect(merged.isChecked("x")).toBe(true);
+    expect(merged.checkSymbol(" ")).toBe("x");
+    expect(merged.checkSymbol("/")).toBe("x");
+    expect(merged.uncheckSymbol("x")).toBe(" ");
+    // And the #269 behavior the user asked for still holds: snoozing an
+    // in-progress line does not reset it.
+    expect(merged.uncheckSymbol("/")).toBe("/");
   });
 
   test("isDone is DONE-only: a CANCELLED landing gets no done date", (): void => {

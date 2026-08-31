@@ -13,6 +13,7 @@ import {
   ReminderFormatParameterKey,
 } from "model/format/reminder-base";
 import {
+  DEFAULT_STATUSES_TEXT,
   StatusRegistry,
   formatStatusSetting,
   parseStatusSetting,
@@ -394,7 +395,8 @@ export class Settings {
       .desc(
         "One status per line: [symbol] -> [next symbol] TYPE, where TYPE is TODO, IN_PROGRESS, DONE, CANCELLED, ON_HOLD or NON_TASK. " +
           "Decides which lines count as done (DONE/CANCELLED/NON_TASK never remind) and which symbol the Done button writes (the next symbol, when it lands on a done status). " +
-          "Leave empty to follow the Tasks plugin's status settings when that plugin is enabled, or the default x/- behavior otherwise.",
+          "Lines here extend the defaults (the Tasks plugin's status settings when that plugin is enabled, the built-in [ ]/[x]/[-] set otherwise) and win over them on a duplicate symbol. " +
+          "Leave empty to follow the defaults alone.",
       )
       .tag(TAG_RESCAN)
       .textArea("")
@@ -696,8 +698,20 @@ export class Settings {
     let lastText: string | null = null;
     let lastRegistry = StatusRegistry.EMPTY;
     config.setParameterFunc(ReminderFormatParameterKey.taskStatuses, () => {
-      const text = this.taskStatuses.value.trim().length
-        ? this.taskStatuses.value
+      // The user's lines EXTEND the defaults rather than replacing them:
+      // someone who adds just "[/] -> [x] IN_PROGRESS" must not turn every
+      // "- [x]" in the vault back into an active reminder. User lines come
+      // first, and the registry keeps the first definition per symbol, so a
+      // user line wins on a duplicate. An empty setting stays the pure
+      // seed/EMPTY path, which is what preserves the historical behavior
+      // when neither the user nor the Tasks plugin defines anything.
+      const userText = this.taskStatuses.value;
+      const text = userText.trim().length
+        ? userText +
+          "\n" +
+          (seededTaskStatusesText.trim().length
+            ? seededTaskStatusesText
+            : DEFAULT_STATUSES_TEXT)
         : seededTaskStatusesText;
       if (text !== lastText) {
         lastText = text;

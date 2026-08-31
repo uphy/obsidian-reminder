@@ -78,6 +78,23 @@ export class StatusRegistry {
     if (next != null && this.isChecked(next)) {
       return next;
     }
+    // The fallback must land on a symbol this registry agrees is checked:
+    // writing a blind "x" under a registry that classifies "x" as not-done
+    // makes Done never converge — the line re-parses as an active reminder
+    // and re-fires every check interval. Unlike uncheckSymbol below, which
+    // can fall back to " " unconditionally (an unregistered symbol is TODO,
+    // so " " always lands unchecked), checkSymbol has to look at where it
+    // is falling back to.
+    if (this.isChecked("x")) {
+      return "x";
+    }
+    for (const status of this.bySymbol.values()) {
+      if (status.type === "DONE") {
+        return status.symbol;
+      }
+    }
+    // A registry with no DONE entry and an unchecked "x" has no symbol that
+    // completes anything; keep the historical write rather than inventing one.
     return "x";
   }
 
@@ -96,6 +113,18 @@ export class StatusRegistry {
     return " ";
   }
 }
+
+/**
+ * The historical x/- behavior written out as statuses: the merge fallback for
+ * the "Task statuses" setting when the Tasks plugin has nothing to seed from.
+ * A user line that redefines one of these symbols wins (the registry keeps
+ * the first definition per symbol, and user lines come first).
+ */
+export const DEFAULT_STATUSES_TEXT = [
+  "[ ] -> [x] TODO",
+  "[x] -> [ ] DONE",
+  "[-] -> [ ] CANCELLED",
+].join("\n");
 
 /**
  * Parses the "Task statuses" setting text, one status per line:
