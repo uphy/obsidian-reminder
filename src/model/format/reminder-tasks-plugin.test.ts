@@ -3,7 +3,8 @@ import {
   TasksPluginFormat,
   TasksPluginReminderModel,
 } from "model/format/reminder-tasks-plugin";
-import { DateTime } from "model/time";
+import { ConstantReference } from "model/ref";
+import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import moment from "moment";
 import {
   ReminderFormatConfig,
@@ -567,5 +568,71 @@ describe("TasksPluginReminderModel - duplicated symbol: the dated token wins", (
       true,
     );
     expect(parsed.getTime()!.toString()).toBe("2026-08-20");
+  });
+});
+
+describe("⏰ honours the Strict date format setting (📅/⏳/🛫 stay strict)", (): void => {
+  // ⏰ is this plugin's own symbol with a user-configurable format, so it
+  // follows the setting; the Tasks plugin's symbols are always YYYY-MM-DD on
+  // their side and stay strict here.
+  const opts = { customEmoji: true, dueDateFallback: true };
+
+  function setFormat(dateFormat: string, dateTimeFormat: string, strict: boolean) {
+    DATE_TIME_FORMATTER.setTimeFormat(
+      new ConstantReference(dateFormat),
+      new ConstantReference(dateTimeFormat),
+      new ConstantReference(strict),
+    );
+  }
+
+  afterEach(() => {
+    // DATE_TIME_FORMATTER is shared module state; restore the lenient
+    // defaults so these tests don't leak into other test files.
+    setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", false);
+  });
+
+  test("lenient: a loosely formatted ⏰ date-time still parses", (): void => {
+    setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", false);
+    const spans = parseLine("- [ ] task ⏰ 2021-9-8 10:00", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-08 10:00");
+  });
+
+  test("strict: the same loosely formatted ⏰ is rejected", (): void => {
+    setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", true);
+    expect(parseLine("- [ ] task ⏰ 2021-9-8 10:00", opts)).toHaveLength(0);
+  });
+
+  test("lenient: prose before the date still yields no date (head rule holds)", (): void => {
+    setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", false);
+    expect(parseLine("- [ ] x ⏰ no date here ➕ 2026-08-17", opts)).toHaveLength(0);
+    expect(parseLine("- [ ] x ⏰ prose 2026-08-17", opts)).toHaveLength(0);
+    expect(parseLine("- [ ] x ⏰ soon 2026-08-17", opts)).toHaveLength(0);
+  });
+
+  test("lenient: 📅 does not follow the setting", (): void => {
+    setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", false);
+    expect(parseLine("- [ ] task 📅 2021-9-8", { customEmoji: false })).toHaveLength(0);
+  });
+
+  test("a custom multi-field format spans more fields than the Tasks formats", (): void => {
+    // "MMM D, YYYY h:mm A" is five whitespace fields; a fixed cap of four
+    // would silently drop the time part and parse the date-only prefix.
+    setFormat("MMM D, YYYY", "MMM D, YYYY h:mm A", true);
+    const spans = parseLine("- [ ] task ⏰ Sep 8, 2021 10:00 AM", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.moment().format("YYYY-MM-DD HH:mm")).toBe(
+      "2021-09-08 10:00",
+    );
+  });
+
+  test("custom format, lenient: trailing prose after the date is still rejected", (): void => {
+    setFormat("MMM D, YYYY", "MMM D, YYYY h:mm A", false);
+    const spans = parseLine("- [ ] task ⏰ Sep 8, 2021 party", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.moment().format("YYYY-MM-DD")).toBe(
+      "2021-09-08",
+    );
+    expect(spans[0]!.reminder.time.hasTimePart).toBe(false);
   });
 });

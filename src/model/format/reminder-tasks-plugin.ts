@@ -15,7 +15,6 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   // why parsing tries this strict datetime format first and falls back to
   // the date-only format the Tasks plugin expects.
   private static readonly dueDateTimeFormat = "YYYY-MM-DD HH:mm";
-  private static readonly maxLeadingFields = 4;
   private static readonly symbolDueDate = Symbol.ofChars([..."📅📆🗓"]);
   private static readonly symbolDoneDate = Symbol.ofChar("✅");
   private static readonly symbolRecurrence = Symbol.ofChar("🔁");
@@ -191,20 +190,34 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   }
 
   /**
+   * Field count of the longest date format any symbol here may carry. ⏰'s
+   * formats are user-configurable via `DATE_TIME_FORMATTER`, so this cannot be
+   * a constant: a cap below the format's own field count would silently
+   * truncate the candidate ("Sep 8, 2021 10:00 AM" parsing as date-only).
+   */
+  private static maxLeadingFields(): number {
+    const fieldCount = (format: string): number =>
+      (format.match(/\S+/g) ?? []).length;
+    return Math.max(
+      fieldCount(TasksPluginReminderModel.dateFormat),
+      fieldCount(TasksPluginReminderModel.dueDateTimeFormat),
+      DATE_TIME_FORMATTER.maxFieldCount(),
+    );
+  }
+
+  /**
    * Whitespace-delimited prefixes of `text`, longest first.
    *
-   * Capped, because each candidate is strict-parsed as a whole: no date format
-   * spans more fields than this, and the cap keeps the scan bounded on the long
-   * prose lines this plugin routinely sees.
+   * Capped, because each candidate is parsed as a whole: no date format in
+   * play spans more fields than `maxLeadingFields()`, and the cap keeps the
+   * scan bounded on the long prose lines this plugin routinely sees.
    */
   private static leadingCandidates(text: string): Array<string> {
     const out: Array<string> = [];
+    const max = TasksPluginReminderModel.maxLeadingFields();
     const word = /\S+/g;
     let match: RegExpExecArray | null;
-    while (
-      out.length < TasksPluginReminderModel.maxLeadingFields &&
-      (match = word.exec(text)) !== null
-    ) {
+    while (out.length < max && (match = word.exec(text)) !== null) {
       out.push(text.slice(0, match.index + match[0].length));
     }
     return out.reverse();
@@ -270,7 +283,11 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
 
   private parseExactDate(symbol: Symbol, text: string): DateTime | null {
     if (symbol === TasksPluginReminderModel.symbolReminder) {
-      return DATE_TIME_FORMATTER.parseExact(text);
+      // ⏰ is this plugin's own symbol and its format is user-configured
+      // (unlike 📅/⏳/🛫, whose format the Tasks plugin owns), so it honours
+      // the "Strict date format" setting; `parseWhole` keeps the head-of-token
+      // guarantee even on the lenient pass.
+      return DATE_TIME_FORMATTER.parseWhole(text);
     }
     if (symbol === TasksPluginReminderModel.symbolDueDate) {
       // Opt-in extension: 📅 may also carry a time.

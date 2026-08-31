@@ -330,13 +330,24 @@ class DateTimeFormatter {
   /**
    * Parses `text` as a whole, never searching inside it.
    *
-   * `parse()` honours the user's "Strict date format" setting and falls back to
-   * a lenient pass, which moment implements by *scanning*: it finds a date
-   * anywhere in the string. A caller that has already isolated a candidate
-   * needs the opposite guarantee — the candidate is exactly a date, or nothing.
+   * Like `parse()`, this honours the user's "Strict date format" setting — the
+   * formats here are user-configured, so a strict-only pass would silently
+   * reject dates the setting promises to accept. The difference is the lenient
+   * fallback: moment's lenient mode *scans*, finding a date anywhere in the
+   * string, so the fallback additionally requires that the whole input was
+   * consumed (`parsingFlags().unusedInput` empty). A caller that has already
+   * isolated a candidate gets "the candidate is exactly a date, or nothing"
+   * without losing the leniency the setting asks for.
    */
-  parseExact(text: string): DateTime | null {
-    return this.doParse(text, true);
+  parseWhole(text: string): DateTime | null {
+    const parsed = this.doParse(text, true);
+    if (parsed != null) {
+      return parsed;
+    }
+    if (this.strict.value) {
+      return null;
+    }
+    return this.doParse(text, false, true);
   }
 
   parse(text: string): DateTime | null {
@@ -350,16 +361,34 @@ class DateTimeFormatter {
     return this.doParse(text, false);
   }
 
-  private doParse(text: string, strict: boolean): DateTime | null {
+  private doParse(
+    text: string,
+    strict: boolean,
+    requireWhole = false,
+  ): DateTime | null {
+    const whole = (m: moment.Moment): boolean =>
+      !requireWhole || m.parsingFlags().unusedInput.length === 0;
     const dateTime = moment(text, this.dateTimeFormat.value, strict);
-    if (dateTime.isValid()) {
+    if (dateTime.isValid() && whole(dateTime)) {
       return new DateTime(dateTime, true);
     }
     const date = moment(text, this.dateFormat.value, strict);
-    if (date.isValid()) {
+    if (date.isValid() && whole(date)) {
       return new DateTime(date, false);
     }
     return null;
+  }
+
+  /**
+   * The larger whitespace-delimited field count of the two configured formats.
+   * Callers that split candidates by whitespace use this to size their scan;
+   * both formats are user-configurable, so the count cannot be a constant.
+   */
+  maxFieldCount(): number {
+    return Math.max(
+      fieldCount(this.dateFormat.value),
+      fieldCount(this.dateTimeFormat.value),
+    );
   }
 
   toString(time: DateTime): string {
@@ -369,6 +398,10 @@ class DateTimeFormatter {
       return time.format(this.dateFormat.value);
     }
   }
+}
+
+function fieldCount(format: string): number {
+  return (format.match(/\S+/g) ?? []).length;
 }
 
 export const DATE_TIME_FORMATTER = new DateTimeFormatter();
