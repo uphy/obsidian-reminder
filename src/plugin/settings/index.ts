@@ -38,10 +38,11 @@ import type { SettingModel, SettingModelBase } from "./helper";
 export const TAG_RESCAN = "re-scan";
 
 /**
- * Fallback for an empty "Task statuses" setting, seeded from the Tasks
- * plugin's own status settings at load time (see `main.ts`). Empty when the
- * Tasks plugin is absent, which keeps `StatusRegistry.EMPTY`'s historical
- * x/- behavior.
+ * The default statuses the "Task statuses" setting extends, seeded from the
+ * Tasks plugin's own status settings at load time (see `main.ts`): the whole
+ * registry when the setting is empty, the merge base under the user's lines
+ * otherwise. Empty when the Tasks plugin is absent, which keeps
+ * `StatusRegistry.EMPTY`'s historical x/- behavior for an empty setting.
  */
 let seededTaskStatusesText = "";
 
