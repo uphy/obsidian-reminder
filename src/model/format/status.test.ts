@@ -2,6 +2,7 @@ import {
   DEFAULT_STATUSES_TEXT,
   StatusRegistry,
   parseStatusSetting,
+  unknownStatusTypes,
 } from "./status";
 import type { TaskStatus } from "./status";
 
@@ -140,5 +141,18 @@ describe("parseStatusSetting", (): void => {
       { symbol: "w", nextStatusSymbol: "v", type: "ON_HOLD" },
       { symbol: " ", nextStatusSymbol: "x", type: "TODO" },
     ]);
+  });
+
+  test("the type is case-normalized: a lowercase done still means DONE", (): void => {
+    const registry = new StatusRegistry(parseStatusSetting("[x] -> [ ] done"));
+    expect(registry.isChecked("x")).toBe(true);
+    expect(registry.isDone("x")).toBe(true);
+  });
+
+  test("unknownStatusTypes surfaces typos, normalized and deduplicated", (): void => {
+    expect(
+      unknownStatusTypes("[x] -> [ ] DOME\n[v] -> [ ] dome\n[ ] -> [x] todo"),
+    ).toEqual(["DOME"]);
+    expect(unknownStatusTypes(DEFAULT_STATUSES_TEXT)).toEqual([]);
   });
 });

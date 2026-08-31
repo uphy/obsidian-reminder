@@ -126,13 +126,26 @@ export const DEFAULT_STATUSES_TEXT = [
   "[-] -> [ ] CANCELLED",
 ].join("\n");
 
+/** The status types the registry understands; anything else reads as TODO. */
+export const STATUS_TYPES = [
+  "TODO",
+  "IN_PROGRESS",
+  "DONE",
+  "CANCELLED",
+  "ON_HOLD",
+  "NON_TASK",
+];
+
 /**
  * Parses the "Task statuses" setting text, one status per line:
  *
  *     [w] -> [v] ON_HOLD
  *
  * Unparseable lines are skipped rather than failing the whole setting, so a
- * half-typed line never silently reverts every status to the defaults.
+ * half-typed line never silently reverts every status to the defaults. The
+ * type is case-normalized ("done" means DONE); an unknown type is kept as
+ * written and reads as TODO — `unknownStatusTypes` exists so the settings UI
+ * can say so, since free text has no dropdown to make the valid set visible.
  */
 export function parseStatusSetting(text: string): Array<TaskStatus> {
   const statuses: Array<TaskStatus> = [];
@@ -142,11 +155,26 @@ export function parseStatusSetting(text: string): Array<TaskStatus> {
       statuses.push({
         symbol: match[1]!,
         nextStatusSymbol: match[2]!,
-        type: match[3]!,
+        type: match[3]!.toUpperCase(),
       });
     }
   }
   return statuses;
+}
+
+/**
+ * The types in `text` that no status semantics back — a typo like "DOME"
+ * silently makes its symbol not-done otherwise. Returned normalized and
+ * deduplicated, for the settings UI to surface.
+ */
+export function unknownStatusTypes(text: string): Array<string> {
+  const unknown = new Set<string>();
+  for (const status of parseStatusSetting(text)) {
+    if (!STATUS_TYPES.includes(status.type)) {
+      unknown.add(status.type);
+    }
+  }
+  return [...unknown];
 }
 
 /** Inverse of `parseStatusSetting`, used to render a seeded registry. */

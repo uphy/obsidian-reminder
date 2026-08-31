@@ -17,6 +17,7 @@ import {
   StatusRegistry,
   formatStatusSetting,
   parseStatusSetting,
+  unknownStatusTypes,
 } from "model/format/status";
 import type { TaskStatus } from "model/format/status";
 import { DateTime, Later, Time } from "model/time";
@@ -401,6 +402,18 @@ export class Settings {
       .tag(TAG_RESCAN)
       .textArea("")
       .placeHolder("[ ] -> [x] TODO\n[x] -> [ ] DONE\n[w] -> [v] ON_HOLD")
+      .onAnyValueChanged((context) => {
+        // Free text where Tasks has a dropdown: a typo like "DOME" parses
+        // happily and quietly reads as TODO, so say so here. Info, not a
+        // validation error — `load()` puts stored values straight into
+        // `rawValue`, and an old data.json must never fail the settings tab.
+        const unknown = unknownStatusTypes(this.taskStatuses.value);
+        context.setInfo(
+          unknown.length
+            ? `Unknown status types (treated as TODO): ${unknown.join(", ")}`
+            : null,
+        );
+      })
       .build(new RawSerde());
 
     this.dataviewReminderFieldName = this.settings
