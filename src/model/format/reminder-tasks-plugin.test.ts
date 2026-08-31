@@ -577,7 +577,6 @@ describe("TasksPluginReminderModel - duplicated symbol: the dated token wins", (
       true,
       false,
       true,
-      true,
     );
     expect(parsed.getTime()!.toString()).toBe("2026-08-20");
   });
@@ -589,7 +588,11 @@ describe("⏰ honours the Strict date format setting (📅/⏳/🛫 stay strict)
   // their side and stay strict here.
   const opts = { customEmoji: true, dueDateFallback: true };
 
-  function setFormat(dateFormat: string, dateTimeFormat: string, strict: boolean) {
+  function setFormat(
+    dateFormat: string,
+    dateTimeFormat: string,
+    strict: boolean,
+  ) {
     DATE_TIME_FORMATTER.setTimeFormat(
       new ConstantReference(dateFormat),
       new ConstantReference(dateTimeFormat),
@@ -617,14 +620,18 @@ describe("⏰ honours the Strict date format setting (📅/⏳/🛫 stay strict)
 
   test("lenient: prose before the date still yields no date (head rule holds)", (): void => {
     setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", false);
-    expect(parseLine("- [ ] x ⏰ no date here ➕ 2026-08-17", opts)).toHaveLength(0);
+    expect(
+      parseLine("- [ ] x ⏰ no date here ➕ 2026-08-17", opts),
+    ).toHaveLength(0);
     expect(parseLine("- [ ] x ⏰ prose 2026-08-17", opts)).toHaveLength(0);
     expect(parseLine("- [ ] x ⏰ soon 2026-08-17", opts)).toHaveLength(0);
   });
 
   test("lenient: 📅 does not follow the setting", (): void => {
     setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", false);
-    expect(parseLine("- [ ] task 📅 2021-9-8", { customEmoji: false })).toHaveLength(0);
+    expect(
+      parseLine("- [ ] task 📅 2021-9-8", { customEmoji: false }),
+    ).toHaveLength(0);
   });
 
   test("a custom multi-field format spans more fields than the Tasks formats", (): void => {

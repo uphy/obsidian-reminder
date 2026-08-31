@@ -34,13 +34,11 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
     line: string,
     useCustomEmoji?: boolean,
     removeTags?: boolean,
-    strictDateFormat?: boolean,
     useDueDateFallback?: boolean,
   ): TasksPluginReminderModel {
     return new TasksPluginReminderModel(
       useCustomEmoji ?? false,
       removeTags ?? false,
-      strictDateFormat ?? true,
       useDueDateFallback ?? false,
       new Tokens(splitBySymbol(line, this.allSymbols)),
     );
@@ -49,7 +47,6 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   private constructor(
     private useCustomEmoji: boolean,
     private removeTags: boolean,
-    private strictDateFormat: boolean,
     private useDueDateFallback: boolean,
     private tokens: Tokens,
   ) {}
@@ -184,7 +181,6 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
       this.toMarkdown(),
       this.useCustomEmoji,
       this.removeTags,
-      this.strictDateFormat,
       this.useDueDateFallback,
     );
   }
@@ -376,7 +372,6 @@ export class TasksPluginFormat extends TasksLikeReminderFormat<TasksPluginRemind
       todo.body,
       this.useCustomEmoji(),
       this.removeTagsEnabled(),
-      this.isStrictDateFormat(),
       this.useDueDateFallback(),
     );
     if (this.useCustomEmoji()) {
@@ -424,7 +419,6 @@ export class TasksPluginFormat extends TasksLikeReminderFormat<TasksPluginRemind
       title,
       this.useCustomEmoji(),
       this.removeTagsEnabled(),
-      this.isStrictDateFormat(),
       this.useDueDateFallback(),
     );
     parsed.setTime(time, insertAt);

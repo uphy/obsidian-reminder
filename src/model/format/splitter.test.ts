@@ -109,7 +109,10 @@ describe("splitBySymbol()", (): void => {
     // edit cannot delete it; that protection must hold whether or not the tag
     // sits inside a code span, because the edit rewrites the whole token text.
     expect(
-      splitBySymbol("Task 📅 2021-09-08 ` #mytag ` done", symbolOf("📅📆🗓✅🔁")),
+      splitBySymbol(
+        "Task 📅 2021-09-08 ` #mytag ` done",
+        symbolOf("📅📆🗓✅🔁"),
+      ),
     ).toStrictEqual([
       { symbol: "", text: "Task " },
       { symbol: "📅", text: " 2021-09-08 ` " },
