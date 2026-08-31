@@ -55,6 +55,7 @@ export abstract class TasksLikeReminderFormat<
     parsed: M,
     edit: ReminderEdit,
   ): boolean {
+    const checkBefore = todo.check;
     if (!super.modifyReminder(doc, todo, parsed, edit)) {
       return false;
     }
@@ -129,7 +130,12 @@ export abstract class TasksLikeReminderFormat<
             this.config.getParameter(ReminderFormatParameterKey.now),
           );
         }
-      } else {
+      } else if (todo.check !== checkBefore) {
+        // Clearing the done date belongs to an actual uncheck. When
+        // `setChecked(false)` was a no-op — the registry left the symbol as
+        // it was, e.g. "Remind me later" on a custom status (#269) or on a
+        // line whose symbol the registry cannot uncheck — stripping ✅ would
+        // leave a line that still reads checked but has lost its done date.
         parsed.setDoneDate(undefined);
       }
     }

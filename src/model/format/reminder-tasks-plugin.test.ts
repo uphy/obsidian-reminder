@@ -531,3 +531,39 @@ describe("task statuses follow the registry (scenarios 2 and 3)", (): void => {
     });
   });
 });
+
+describe("done date on un-check", (): void => {
+  async function modifyUnchecked(inputMarkdown: string): Promise<string> {
+    const doc = new MarkdownDocument("file", inputMarkdown);
+    const sut = new TasksPluginFormat();
+    const config = new ReminderFormatConfig();
+    config.setParameterValue(
+      ReminderFormatParameterKey.now,
+      new DateTime(moment("2021-09-15 10:00"), true),
+    );
+    sut.setConfig(config);
+    const spans = sut.parse(doc);
+    expect(spans).toHaveLength(1);
+    await sut.modify(doc, spans[0]!.reminder, {
+      checked: false,
+      time: new DateTime(moment("2021-09-16"), false),
+    });
+    return doc.toMarkdown();
+  }
+
+  test("a real uncheck clears the done date", async () => {
+    expect(
+      await modifyUnchecked("- [x] Task 📅 2021-09-08 ✅ 2021-09-09"),
+      // The trailing space is the removed token's separator, a pre-existing
+      // removeToken() artifact.
+    ).toBe("- [ ] Task 📅 2021-09-16 ");
+  });
+
+  test("a no-op uncheck (custom status, #269) keeps the done date", async () => {
+    // The registry leaves "/" as it is, so the checkbox still reads the same
+    // state; stripping ✅ here would desynchronize the line from itself.
+    expect(
+      await modifyUnchecked("- [/] Task 📅 2021-09-08 ✅ 2021-09-09"),
+    ).toBe("- [/] Task 📅 2021-09-16 ✅ 2021-09-09");
+  });
+});
