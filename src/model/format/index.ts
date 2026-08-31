@@ -3,10 +3,14 @@ import { MarkdownDocument } from "./markdown";
 import type {
   ReminderEdit,
   ReminderFormat,
-  ReminderFormatConfig,
   ReminderSpan,
 } from "./reminder-base";
-import { CompositeReminderFormat } from "./reminder-base";
+import {
+  CompositeReminderFormat,
+  ReminderFormatConfig,
+  ReminderFormatParameterKey,
+} from "./reminder-base";
+import { StatusRegistry } from "./status";
 import { DataviewReminderFormat } from "./reminder-dataview";
 import { DefaultReminderFormat } from "./reminder-default";
 import { KanbanReminderFormat } from "./reminder-kanban-plugin";
@@ -48,7 +52,20 @@ export function changeReminderFormat(formatTypes: Array<ReminderFormatType>) {
 }
 
 export function setReminderFormatConfig(config: ReminderFormatConfig) {
+  reminderFormatConfig = config;
   REMINDER_FORMAT.setConfig(config);
+}
+
+let reminderFormatConfig: ReminderFormatConfig = new ReminderFormatConfig();
+
+/**
+ * The active status registry, for callers outside the format layer (e.g. the
+ * toggle-checklist-status command) that touch checkbox state directly.
+ */
+export function taskStatusRegistry(): StatusRegistry {
+  return reminderFormatConfig.getParameter(
+    ReminderFormatParameterKey.taskStatuses,
+  );
 }
 
 export const reminderPluginReminderFormat = new ReminderFormatType(

@@ -3,6 +3,7 @@ import type { ReadOnlyReference } from "model/ref";
 import { Reminder } from "model/reminder";
 import { DateTime } from "model/time";
 import { Todo } from "./markdown";
+import { StatusRegistry } from "./status";
 
 export type ReminderEdit = {
   time?: DateTime;
@@ -65,6 +66,10 @@ export class ReminderFormatParameterKey<T> {
   static readonly strictDateFormat = new ReminderFormatParameterKey<boolean>(
     "strictDateFormat",
     false,
+  );
+  static readonly taskStatuses = new ReminderFormatParameterKey<StatusRegistry>(
+    "taskStatuses",
+    StatusRegistry.EMPTY,
   );
   constructor(
     public readonly key: string,
@@ -174,6 +179,10 @@ export abstract class TodoBasedReminderFormat<
     this.config = config;
   }
 
+  protected statusRegistry(): StatusRegistry {
+    return this.config.getParameter(ReminderFormatParameterKey.taskStatuses);
+  }
+
   parse(doc: MarkdownDocument): ReminderSpan[] {
     return doc
       .getTodos()
@@ -195,7 +204,7 @@ export abstract class TodoBasedReminderFormat<
           title,
           time,
           todo.lineIndex,
-          todo.isChecked(),
+          todo.isChecked(this.statusRegistry()),
         );
         const span = parsed.computeSpan();
         const headerLength = todo.getHeaderLength();
@@ -263,7 +272,7 @@ export abstract class TodoBasedReminderFormat<
       parsed.setTime(edit.time);
     }
     if (edit.checked !== undefined) {
-      todo.setChecked(edit.checked);
+      todo.setChecked(edit.checked, this.statusRegistry());
     }
     return true;
   }

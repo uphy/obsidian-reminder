@@ -281,6 +281,54 @@ Enable support for [Kanban Plugin](https://github.com/mgmeyers/obsidian-kanban)
   - ON: Enable Kanban plugin format
   - OFF: Disable Kanban plugin format (default)
 
+### Task statuses
+
+Defines what each checkbox symbol (the character between the brackets)
+means: which lines count as done, and which symbol the Done button writes.
+Although the automatic fallback reads the Tasks plugin's settings, the
+statuses themselves apply to **every** reminder format and to the
+`Toggle checklist status` command.
+
+- Type: `string` (multi-line)
+- Default: empty
+
+One status per line:
+
+```
+[symbol] -> [next symbol] TYPE
+```
+
+- `symbol` — the checkbox character the status describes (a space for `[ ]`).
+- `next symbol` — the character that clicking the checkbox writes next.
+- `TYPE` — one of six types, matching the Tasks plugin's:
+  - `TODO`, `IN_PROGRESS`, `ON_HOLD` — the line is not done and can remind.
+  - `DONE` — the line is done; completing a line onto a `DONE` symbol also
+    stamps its done date.
+  - `CANCELLED` — the line is closed without being done: it never reminds,
+    but gets no done date either.
+  - `NON_TASK` — the line is not a task at all, so it never reminds.
+
+A symbol that appears in no line is treated as `TODO`, like the Tasks
+plugin does. Unparseable lines are skipped, and an unknown type is
+reported under the setting (and treated as `TODO`).
+
+Lines you write here **extend** the defaults and win over them on a
+duplicate symbol. The defaults are:
+
+- the Tasks plugin's own status settings, when that plugin is enabled —
+  so the common case needs no configuration at all;
+- otherwise the built-in set, which reproduces the plugin's historical
+  behavior: `[ ]` TODO, `[x]` DONE, `[-]` CANCELLED.
+
+Leave the setting empty to follow the defaults alone.
+
+Example — keep the defaults, and add an in-progress status that the Done
+button completes to `[x]`:
+
+```
+[/] -> [x] IN_PROGRESS
+```
+
 ## Display
 
 You can customize how dates and times are displayed in the Reminder List and related UI. This affects:

@@ -1,5 +1,6 @@
 import type ReminderPlugin from "main";
 import { Content } from "model/content";
+import { taskStatusRegistry } from "model/format";
 import type { MarkdownView, TFile } from "obsidian";
 
 async function toggleCheck(
@@ -25,7 +26,8 @@ async function toggleCheck(
     if (!todo) {
       return;
     }
-    todo.setChecked(!todo.isChecked());
+    const statuses = taskStatusRegistry();
+    todo.setChecked(!todo.isChecked(statuses), statuses);
   }
   await vault.modify(file, content.getContent());
 }

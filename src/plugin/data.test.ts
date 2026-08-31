@@ -60,6 +60,35 @@ describe("PluginData", (): void => {
     });
   });
 
+  test("a changed Tasks-plugin seed forces a rescan; an unchanged one does not", async (): Promise<void> => {
+    const reminders = new Reminders(() => {});
+    let saved: { scanned: boolean; seededTaskStatuses?: string } | undefined;
+    const store: DataStore = {
+      loadData: async () => ({
+        ...savedData(),
+        seededTaskStatuses: "[ ] -> [x] TODO",
+      }),
+      saveData: async (data) => {
+        saved = data as typeof saved;
+      },
+    };
+    const data = new PluginData(store, reminders);
+    await data.load();
+    expect(data.scanned.value).toBe(true);
+
+    // Same seed as last session: stored reminders are still valid.
+    data.updateSeededTaskStatuses("[ ] -> [x] TODO");
+    expect(data.scanned.value).toBe(true);
+
+    // The Tasks plugin's statuses changed since last session: everything in
+    // data.json was classified under the old ones, so a rescan is due.
+    data.updateSeededTaskStatuses("[ ] -> [x] TODO\n[v] -> [ ] DONE");
+    expect(data.scanned.value).toBe(false);
+
+    await data.save(true);
+    expect(saved?.seededTaskStatuses).toBe("[ ] -> [x] TODO\n[v] -> [ ] DONE");
+  });
+
   test("resolves `loaded` once load() has finished", async (): Promise<void> => {
     const reminders = new Reminders(() => {});
     const data = new PluginData(createStore(savedData()), reminders);

@@ -164,7 +164,7 @@ export class DefaultReminderFormat extends TodoBasedReminderFormat<DefaultRemind
             );
             const nextTodo = todo.clone()!;
             nextTodo.body = nextModel.toMarkdown();
-            nextTodo.setChecked(false);
+            nextTodo.setChecked(false, this.statusRegistry());
             doc.insertTodo(todo.lineIndex, nextTodo);
           }
           // nextOccurrence returning undefined means either the recurrence
