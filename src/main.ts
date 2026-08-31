@@ -10,6 +10,8 @@ import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
 import { setSeededTaskStatuses } from "plugin/settings";
+import { formatStatusSetting } from "model/format/status";
+import type { TaskStatus } from "model/format/status";
 import { App, Notice, Plugin, requestUrl } from "obsidian";
 import type { PluginManifest } from "obsidian";
 
@@ -142,20 +144,40 @@ export default class ReminderPlugin extends Plugin {
    */
   private async seedTaskStatuses() {
     try {
+      let statuses: Array<TaskStatus> = [];
       const tasks = this.app.plugins.plugins["obsidian-tasks-plugin"];
-      if (tasks == null) {
-        return;
+      if (tasks != null) {
+        // `loadData()` returns whatever the Tasks plugin persisted; this cast
+        // is the minimal trusted bridge to the fields read here (same pattern
+        // as `PluginData.doLoad`).
+        const data = (await tasks.loadData()) as
+          | {
+              statusSettings?: {
+                coreStatuses?: Array<TaskStatus>;
+                customStatuses?: Array<TaskStatus>;
+              };
+            }
+          | undefined;
+        const statusSettings = data?.statusSettings;
+        if (statusSettings != null) {
+          statuses = [
+            ...(statusSettings.coreStatuses ?? []),
+            ...(statusSettings.customStatuses ?? []),
+          ];
+        }
       }
-      const data = await tasks.loadData();
-      const statusSettings = data?.statusSettings;
-      if (statusSettings == null) {
-        return;
-      }
-      setSeededTaskStatuses([
-        ...(statusSettings.coreStatuses ?? []),
-        ...(statusSettings.customStatuses ?? []),
-      ]);
+      setSeededTaskStatuses(statuses);
+      // Reminders already stored in data.json were classified under the
+      // PREVIOUS seed and are restored without re-parsing, so a seed that
+      // changed since last session (the Tasks plugin's statuses edited, the
+      // plugin installed or removed) must force a rescan. An empty seed is a
+      // real value here for exactly that reason. Runs after `data.load()`
+      // and before the notification worker starts, so the cleared `scanned`
+      // is acted on this session.
+      this.data.updateSeededTaskStatuses(formatStatusSetting(statuses));
     } catch (e) {
+      // Read failure is not a seed of "no statuses": keep last session's
+      // seed rather than rescanning the vault on a transient error.
       console.warn("Failed to read the Tasks plugin's statuses: %o", e);
     }
   }

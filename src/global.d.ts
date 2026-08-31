@@ -12,7 +12,7 @@ declare module "obsidian" {
     plugins: {
       plugins: {
         "obsidian-reminder-plugin": ReminderPlugin;
-/**
+        /**
          * Read for its date/time format settings so reminders written in
          * Kanban's format round-trip; see `model/format/reminder-kanban-plugin`.
          * Optional because the plugin may not be installed, and the settings
