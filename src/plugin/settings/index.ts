@@ -396,6 +396,7 @@ export class Settings {
       .desc(
         "One status per line: [symbol] -> [next symbol] TYPE, where TYPE is TODO, IN_PROGRESS, DONE, CANCELLED, ON_HOLD or NON_TASK. " +
           "Decides which lines count as done (DONE/CANCELLED/NON_TASK never remind) and which symbol the Done button writes (the next symbol, when it lands on a done status). " +
+          "Applies to every reminder format and to the 'Toggle checklist status' command. " +
           "Lines here extend the defaults (the Tasks plugin's status settings when that plugin is enabled, the built-in [ ]/[x]/[-] set otherwise) and win over them on a duplicate symbol. " +
           "Leave empty to follow the defaults alone.",
       )
@@ -628,8 +629,15 @@ export class Settings {
         this.useCustomEmojiForTasksPlugin,
         this.useReminderTimeFallbackForTasksPlugin,
         this.removeTagsForTasksPlugin,
-        this.taskStatuses,
       );
+    // A group of its own, not a "Tasks plugin format" sibling: the registry
+    // drives isChecked/setChecked for EVERY format plus the
+    // toggle-checklist-status command — only the seed comes from Tasks. It
+    // also must not take that group's setEnabled wiring: users with the
+    // Tasks format turned off are exactly the ones who need to edit this.
+    reminderFormatsPage
+      .newGroup("Task statuses")
+      .addSettings(this.taskStatuses);
     reminderFormatsPage
       .newGroup("Dataview format")
       .addSettings(
