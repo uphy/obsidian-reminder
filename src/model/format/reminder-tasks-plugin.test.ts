@@ -293,6 +293,26 @@ describe("TasksPluginReminderModel - reminder-time fallback (⏰ → 📅 → �
     expect(spans[0]!.reminder.time.toString()).toBe("2021-09-08");
   });
 
+  test("a marker written inside an inline code span does not arm a reminder", (): void => {
+    // #338 taught the same rule for fenced blocks, one layer up in
+    // MarkdownDocument.parse. An inline code span never reaches that guard: the
+    // line is a real task, and the marker is prose *about* a marker.
+    const spans = parseLine(
+      "- [ ] `⏳` this cannot be parsed by reminder plugin ➕ 2026-08-17",
+      { customEmoji: true, dueDateFallback: true },
+    );
+    expect(spans).toHaveLength(0);
+  });
+
+  test("a marker outside a code span still arms when the line also contains one", (): void => {
+    const spans = parseLine("- [ ] `⏳` prose ⏳ 2021-09-05", {
+      customEmoji: true,
+      dueDateFallback: true,
+    });
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-05");
+  });
+
   test("fallback on: a malformed ⏰ blocks fallback to a valid 📅 (presence, not validity)", (): void => {
     const spans = parseLine("- [ ] Task ⏰ not-a-date 📅 2021-09-08", {
       customEmoji: true,
@@ -442,3 +462,110 @@ async function testModify({
   await sut.modify(doc, spans[0]!.reminder, { checked: true });
   expect(doc.toMarkdown()).toBe(expectedMarkdown);
 }
+
+describe("the date must be the head of the token", (): void => {
+  const opts = { customEmoji: true, dueDateFallback: true };
+
+  test("a marker with no date of its own borrows none from later in the line", (): void => {
+    expect(
+      parseLine(
+        "- [ ] scenario4 ⏳ without date is parsed? ➕ 2026-08-17",
+        opts,
+      ),
+    ).toHaveLength(0);
+  });
+
+  test("a ⏰ with no date of its own does not fabricate a midnight", (): void => {
+    expect(
+      parseLine("- [ ] x ⏰ no date here ➕ 2026-08-17", opts),
+    ).toHaveLength(0);
+  });
+
+  test("a 📅 with no date of its own borrows none", (): void => {
+    expect(
+      parseLine("- [ ] x 📅 no date here ➕ 2026-08-17", opts),
+    ).toHaveLength(0);
+  });
+
+  test("a date that is not the first field is not the token's date", (): void => {
+    // The miniature of the whole defect: lenient moment finds "2026-08-17"
+    // inside "prose 2026-08-17" and hands it back as the scheduled date. The
+    // Tasks plugin allows only spaces between marker and date, so this line has
+    // no scheduled date at all.
+    expect(parseLine("- [ ] x ⏳ prose 2026-08-17", opts)).toHaveLength(0);
+  });
+
+  test("markers the plugin does not tokenise may follow the date (⏳)", (): void => {
+    // The Tasks plugin's own ➕/🆔 are not symbols here, so the token swallows
+    // them. This is why a strict parse of the whole token text is the wrong fix.
+    const spans = parseLine(
+      "- [v] rule ⏳ 2026-08-23 ➕ 2026-08-09 🆔 an-id",
+      opts,
+    );
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-23");
+  });
+
+  test("markers the plugin does not tokenise may follow the date (📅)", (): void => {
+    const spans = parseLine("- [ ] x 📅 2026-08-25 🆔 an-id", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-25");
+  });
+
+  test("a ⏰ keeps its time part when unknown markers follow", (): void => {
+    const spans = parseLine("- [ ] x ⏰ 2026-08-25 14:30 🆔 an-id", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-25 14:30");
+  });
+
+  test("a 📅 keeps the optional time-part extension", (): void => {
+    const spans = parseLine("- [ ] x 📅 2026-08-25 14:30", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-25 14:30");
+  });
+});
+
+describe("TasksPluginReminderModel - duplicated symbol: the dated token wins", (): void => {
+  test("a symbol in prose does not shadow the real date after it", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "talk about the 📅 emoji 📅 2026-08-20",
+    );
+    expect(parsed.getDueDate()!.toString()).toBe("2026-08-20");
+  });
+  test("two dated tokens: the LAST one wins (Tasks reads from the end)", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "x 📅 2026-08-19 stuff 📅 2026-08-20",
+    );
+    expect(parsed.getDueDate()!.toString()).toBe("2026-08-20");
+  });
+  test("no dated token: falls back to the first match (historical behavior)", (): void => {
+    const parsed = TasksPluginReminderModel.parse("talk about the 📅 emoji");
+    expect(parsed.getDueDate()).toBe(null);
+    parsed.setDueDate(new DateTime(moment("2026-09-01"), false));
+    expect(parsed.toMarkdown()).toBe("talk about the 📅 2026-09-01");
+  });
+  test("rewriting the date targets the dated token, not the prose one", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "talk about the 📅 emoji 📅 2026-08-20",
+    );
+    parsed.setDueDate(new DateTime(moment("2026-09-01"), false));
+    expect(parsed.toMarkdown()).toBe("talk about the 📅 emoji 📅 2026-09-01");
+  });
+  test("computeSpan() covers the dated token", (): void => {
+    const parsed = TasksPluginReminderModel.parse("a 📅 b 📅 2026-08-20");
+    const span = parsed.computeSpan();
+    expect(parsed.toMarkdown().slice(span.start, span.end)).toBe(
+      "📅 2026-08-20",
+    );
+  });
+  test("⏳ via fallback: prose ⏳ does not shadow the scheduled date", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "task ⏳ soon ⏳ 2026-08-20",
+      true,
+      false,
+      true,
+      true,
+    );
+    expect(parsed.getTime()!.toString()).toBe("2026-08-20");
+  });
+});

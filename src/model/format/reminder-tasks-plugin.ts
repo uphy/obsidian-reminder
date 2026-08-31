@@ -5,6 +5,7 @@ import { ReminderFormatParameterKey } from "./reminder-base";
 import { TasksLikeReminderFormat, removeTags } from "./reminder-tasks-like";
 import type { TasksLikeReminderModel } from "./reminder-tasks-like";
 import { Symbol, Tokens, splitBySymbol } from "./splitter";
+import type { Token } from "./splitter";
 
 export class TasksPluginReminderModel implements TasksLikeReminderModel {
   private static readonly dateFormat = "YYYY-MM-DD";
@@ -14,6 +15,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   // why parsing tries this strict datetime format first and falls back to
   // the date-only format the Tasks plugin expects.
   private static readonly dueDateTimeFormat = "YYYY-MM-DD HH:mm";
+  private static readonly maxLeadingFields = 4;
   private static readonly symbolDueDate = Symbol.ofChars([..."📅📆🗓"]);
   private static readonly symbolDoneDate = Symbol.ofChar("✅");
   private static readonly symbolRecurrence = Symbol.ofChar("🔁");
@@ -126,7 +128,8 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
 
   getEndOfTimeTextIndex(): number {
     // get the end of the string index of due date or reminder date
-    const token = this.tokens.rangeOfSymbol(this.resolveReminderSymbol());
+    const symbol = this.resolveReminderSymbol();
+    const token = this.tokens.rangeOfSymbol(symbol, this.carriesDate(symbol));
     if (token != null) {
       return token.end;
     }
@@ -135,8 +138,9 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
 
   computeSpan(): { start: number; end: number } {
     const symbol = this.resolveReminderSymbol();
-    const range = this.tokens.rangeOfSymbol(symbol);
-    const token = this.tokens.getToken(symbol);
+    const prefer = this.carriesDate(symbol);
+    const range = this.tokens.rangeOfSymbol(symbol, prefer);
+    const token = this.tokens.getToken(symbol, prefer);
     if (range == null || token == null) {
       return { start: 0, end: 0 };
     }
@@ -186,20 +190,92 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
     );
   }
 
+  /**
+   * Whitespace-delimited prefixes of `text`, longest first.
+   *
+   * Capped, because each candidate is strict-parsed as a whole: no date format
+   * spans more fields than this, and the cap keeps the scan bounded on the long
+   * prose lines this plugin routinely sees.
+   */
+  private static leadingCandidates(text: string): Array<string> {
+    const out: Array<string> = [];
+    const word = /\S+/g;
+    let match: RegExpExecArray | null;
+    while (
+      out.length < TasksPluginReminderModel.maxLeadingFields &&
+      (match = word.exec(text)) !== null
+    ) {
+      out.push(text.slice(0, match.index + match[0].length));
+    }
+    return out.reverse();
+  }
+
+  /**
+   * The date is the HEAD of the token's text, and only the head.
+   *
+   * A token runs to the next symbol *this plugin* knows, so it routinely
+   * carries what it does not tokenise — the Tasks plugin's own ➕/🆔/⛔, a tag,
+   * prose. moment's lenient mode searches such a string and borrows a date from
+   * anywhere in it, which is how "⏳ no date here ➕ 2026-08-17" acquires a
+   * scheduled date it does not have, and how "⏰ no date here ➕ 2026-08-17"
+   * fabricates a midnight.
+   *
+   * The Tasks plugin anchors the other way — its regexes end in `$` and allow
+   * only spaces between marker and date — so requiring the date at the head of
+   * the token is that same invariant seen from this side. Parsing the whole
+   * token strictly instead would reject every line that carries a marker this
+   * plugin does not know, which is most of them.
+   */
   private getDate(symbol: Symbol): DateTime | null {
-    const dateText = this.tokens.getTokenText(symbol, true);
+    const dateText = this.tokens.getTokenText(
+      symbol,
+      true,
+      this.carriesDate(symbol),
+    );
     if (dateText === null) {
       return null;
     }
+    for (const candidate of TasksPluginReminderModel.leadingCandidates(
+      dateText,
+    )) {
+      const parsed = this.parseExactDate(symbol, candidate);
+      if (parsed !== null) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Prefer-predicate for token resolution: does this token's text start with
+   * a date this symbol accepts? A symbol that also occurs in prose produces
+   * two tokens, and first-wins used to hand every reader — and the snooze
+   * writer — the prose one, losing (or clobbering) the real date. All
+   * resolution sites share this predicate so read, span and write land on
+   * the same token.
+   */
+  private carriesDate(symbol: Symbol): (token: Token) => boolean {
+    return (token) => {
+      const text = token.text.replace(/^\s*(.*?)\s*$/, "$1");
+      for (const candidate of TasksPluginReminderModel.leadingCandidates(
+        text,
+      )) {
+        if (this.parseExactDate(symbol, candidate) !== null) {
+          return true;
+        }
+      }
+      return false;
+    };
+  }
+
+  private parseExactDate(symbol: Symbol, text: string): DateTime | null {
     if (symbol === TasksPluginReminderModel.symbolReminder) {
-      return DATE_TIME_FORMATTER.parse(dateText);
+      return DATE_TIME_FORMATTER.parseExact(text);
     }
     if (symbol === TasksPluginReminderModel.symbolDueDate) {
-      // Optional time-part extension: try the strict datetime format
-      // first, and fall through to the date-only format below when it
-      // doesn't match.
+      // Opt-in extension: 📅 may also carry a time.
       const dateTime = moment(
-        dateText,
+        text,
         TasksPluginReminderModel.dueDateTimeFormat,
         true,
       );
@@ -207,11 +283,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
         return new DateTime(dateTime, true);
       }
     }
-    const date = moment(
-      dateText,
-      TasksPluginReminderModel.dateFormat,
-      this.strictDateFormat,
-    );
+    const date = moment(text, TasksPluginReminderModel.dateFormat, true);
     if (!date.isValid()) {
       return null;
     }
@@ -252,6 +324,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
       true,
       this.shouldSplitBetweenSymbolAndText(),
       insertAt,
+      this.carriesDate(symbol),
     );
   }
 

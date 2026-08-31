@@ -327,6 +327,18 @@ class DateTimeFormatter {
     this.strict = strict;
   }
 
+  /**
+   * Parses `text` as a whole, never searching inside it.
+   *
+   * `parse()` honours the user's "Strict date format" setting and falls back to
+   * a lenient pass, which moment implements by *scanning*: it finds a date
+   * anywhere in the string. A caller that has already isolated a candidate
+   * needs the opposite guarantee — the candidate is exactly a date, or nothing.
+   */
+  parseExact(text: string): DateTime | null {
+    return this.doParse(text, true);
+  }
+
   parse(text: string): DateTime | null {
     const parsed = this.doParse(text, true);
     if (parsed != null) {
