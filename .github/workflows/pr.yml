@@ -56,7 +56,7 @@ jobs:
           npx eslint
 
       - name: Annotate ESLint results
-        uses: reviewdog/action-eslint@f7eb7e555c4d14324b1827e69cad181d370a173e # v1.35.1
+        uses: reviewdog/action-eslint@b6303df522851d0e9abaea654da0222037d97e75 # v1.36.0
         # reviewdog's github-pr-review reporter only works on pull_request
         # events; run it regardless of the eslint step's outcome so it still
         # annotates when ESLint found problems, but skip it entirely on push.
