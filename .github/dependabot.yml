@@ -35,9 +35,10 @@ updates:
       # esbuild-svelte; revisit once the ecosystem catches up (see #292)
       - dependency-name: typescript
         versions: [">=6"]
-      # eslint 10 and @eslint/js 10 move together (@eslint/js 10 has a peer
-      # on eslint ^10), and eslint-plugin-obsidianmd still declares a peer on
-      # @eslint/js ^9, so npm ci fails with ERESOLVE on either bump (#369).
+      # eslint-plugin-obsidianmd still declares a peer on @eslint/js ^9, so
+      # bumping @eslint/js to 10 fails npm ci with ERESOLVE (#369). eslint 10
+      # alone would resolve, but eslint and @eslint/js are meant to move in
+      # lockstep (@eslint/js 10 has a peer on eslint ^10), so hold both.
       # Remove both once eslint-plugin-obsidianmd accepts @eslint/js 10.
       # (The original blocker, eslint-plugin-import (#293), is gone since
       # the switch to eslint-plugin-import-x, which supports eslint 10.)
