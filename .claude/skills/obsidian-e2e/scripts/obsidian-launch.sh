@@ -127,9 +127,13 @@ ensure_test_vault_open() {
 cdp_is_obsidian() {
   # The /json/version User-Agent embeds a lowercase "obsidian/<version>" token
   # (e.g. "... obsidian/1.12.7 Chrome/... Electron/..."), not "Obsidian" — match
-  # case-insensitively so this doesn't silently fail again.
-  local info="$1"
-  [[ "${info,,}" == *"obsidian/"* ]]
+  # case-insensitively so this doesn't silently fail again. Lowercase with tr
+  # rather than "${info,,}": that expansion needs bash 4+, and macOS's
+  # /bin/bash (what "#!/usr/bin/env bash" resolves to without Homebrew bash)
+  # is 3.2, where it aborts with "bad substitution".
+  local info
+  info="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  [[ "$info" == *"obsidian/"* ]]
 }
 
 if [[ "$FORCE_RESTART" -eq 0 ]]; then
