@@ -1,6 +1,6 @@
 {
   "name": "obsidian-reminder-plugin",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Manage TODOs with reminders and get notified when they are due.",
   "main": "main.js",
   "scripts": {
