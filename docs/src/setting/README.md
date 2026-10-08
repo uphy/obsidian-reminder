@@ -84,6 +84,8 @@ Only available on desktop OS.
   - ON: Use system notification. In mobile devices, this setting is ignored and builtin notification is used.
   - OFF: Use builtin notification
 
+On Windows, a system notification can have at most 5 buttons, so only the first few [Remind me later](#remind-me-later) options appear on it: 4, or 3 when [Keep system notification on screen](#keep-system-notification-on-screen) is enabled, because a close button is added. Clicking the notification opens the builtin popup, which offers every option (unless [Open note on reminder click](#open-note-on-reminder-click) is enabled, in which case it opens the note).
+
 ### Show popup together with system notification
 
 Show the built-in reminder popup at the same time as the system notification.
