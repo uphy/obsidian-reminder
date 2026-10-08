@@ -9,6 +9,7 @@ import { CM6DateTimeChooserPopup } from "./cm6-datetime-chooser";
 import { showDateTimeChooserModal } from "./date-chooser-modal";
 import {
   appendReminderOrConvert,
+  isKanbanCardEditor,
   showReminderInsertionFailureNotice,
 } from "./util";
 
@@ -110,6 +111,7 @@ export function buildCodeMirrorPlugin(
                     value,
                     triggerStart,
                     settings.convertNonTaskLines.value,
+                    isKanbanCardEditor(update.view),
                   );
                   if (reminderInsertion == null) {
                     showReminderInsertionFailureNotice();
