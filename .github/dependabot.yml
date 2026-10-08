@@ -35,10 +35,15 @@ updates:
       # esbuild-svelte; revisit once the ecosystem catches up (see #292)
       - dependency-name: typescript
         versions: [">=6"]
-      # eslint-plugin-import only supports eslint up to ^9 (see #293);
-      # remove once it supports eslint 10 or after migrating to
-      # eslint-plugin-import-x
+      # eslint 10 and @eslint/js 10 move together (@eslint/js 10 has a peer
+      # on eslint ^10), and eslint-plugin-obsidianmd still declares a peer on
+      # @eslint/js ^9, so npm ci fails with ERESOLVE on either bump (#369).
+      # Remove both once eslint-plugin-obsidianmd accepts @eslint/js 10.
+      # (The original blocker, eslint-plugin-import (#293), is gone since
+      # the switch to eslint-plugin-import-x, which supports eslint 10.)
       - dependency-name: eslint
+        versions: [">=10"]
+      - dependency-name: "@eslint/js"
         versions: [">=10"]
       # @types/node is kept in sync with the Node major this repo builds
       # and tests with (see #282); bump manually together with the toolchain
