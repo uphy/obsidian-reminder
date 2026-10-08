@@ -16,6 +16,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   private static readonly dueDateTimeFormat = "YYYY-MM-DD HH:mm";
   private static readonly symbolDueDate = Symbol.ofChars([..."📅📆🗓"]);
   private static readonly symbolDoneDate = Symbol.ofChar("✅");
+  private static readonly symbolCancelledDate = Symbol.ofChar("❌");
   private static readonly symbolRecurrence = Symbol.ofChar("🔁");
   private static readonly symbolReminder = Symbol.ofChar("⏰");
   private static readonly symbolScheduled = Symbol.ofChar("⏳");
@@ -23,6 +24,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   private static readonly allSymbols = [
     TasksPluginReminderModel.symbolDueDate,
     TasksPluginReminderModel.symbolDoneDate,
+    TasksPluginReminderModel.symbolCancelledDate,
     TasksPluginReminderModel.symbolRecurrence,
     TasksPluginReminderModel.symbolReminder,
     TasksPluginReminderModel.symbolStart,
@@ -169,6 +171,10 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
     this.setDate(TasksPluginReminderModel.symbolDoneDate, time);
   }
 
+  getCancelledDate(): DateTime | null {
+    return this.getDate(TasksPluginReminderModel.symbolCancelledDate);
+  }
+
   getRecurrence() {
     return this.tokens.getTokenText(
       TasksPluginReminderModel.symbolRecurrence,
@@ -301,6 +307,24 @@ export class TasksPluginFormat extends TasksLikeReminderFormat<TasksPluginRemind
       }
     }
     return parsed;
+  }
+
+  /**
+   * The Tasks plugin lets users define custom statuses (e.g. `[*]`) whose
+   * type is DONE or CANCELLED, so the checkbox character alone can't tell
+   * whether a task is finished. The Tasks plugin stamps such tasks with ✅
+   * (done date) or ❌ (cancelled date, since Tasks 5.5.0), so treat either
+   * date as done too.
+   */
+  protected override isDone(
+    todo: Todo,
+    parsed: TasksPluginReminderModel,
+  ): boolean {
+    return (
+      super.isDone(todo, parsed) ||
+      parsed.getDoneDate() != null ||
+      parsed.getCancelledDate() != null
+    );
   }
 
   private removeTagsEnabled() {
