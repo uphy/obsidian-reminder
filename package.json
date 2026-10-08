@@ -23,7 +23,7 @@
     "@eslint/js": "^9.39.5",
     "@tsconfig/svelte": "^5.0.8",
     "@types/jest": "^30.0.0",
-    "@types/node": "^22.20.4",
+    "@types/node": "^22.20.5",
     "@typescript-eslint/eslint-plugin": "^8.71.0",
     "cross-env": "^10.1.0",
     "electron": "^39.8.10",
@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "rrule": "^2.8.1",
-    "svelte": "^5.57.1"
+    "svelte": "^5.57.2"
   },
   "engines": {
     "node": ">=22.0.0"
