@@ -72,21 +72,12 @@ export abstract class TasksLikeReminderFormat<
             if (time == null) {
               return false;
             }
-            const nextTime: Date | undefined = nextOccurrence(
-              recurrence,
-              time.moment(),
-              now,
-            );
-            if (nextTime == null) {
-              return false;
-            }
-            nextReminder.setTime(
-              new DateTime(moment(nextTime), time.hasTimePart),
-            );
             // `dueDate` may legitimately be absent here (an ⏰-only, or
-            // ⏳-only/🛫-only via fallback, line with no 📅): just skip
-            // advancing the due date rather than failing the whole
-            // recurrence.
+            // ⏳-only/🛫-only via fallback, line with no 📅): in that case
+            // `time` is the reference date. When `dueDate` is present,
+            // advance `dueDate` once as the reference date and shift `time`
+            // by the same day offset so the two dates keep their relative
+            // offset when completed late or with `when done`.
             if (dueDate != null) {
               const nextDueDate: Date | undefined = nextOccurrence(
                 recurrence,
@@ -96,8 +87,32 @@ export abstract class TasksLikeReminderFormat<
               if (nextDueDate == null) {
                 return false;
               }
+              const nextDueMoment = moment(nextDueDate);
+              const offsetDays = nextDueMoment
+                .clone()
+                .startOf("day")
+                .diff(dueDate.moment().clone().startOf("day"), "days");
+              const nextTimeMoment = time
+                .moment()
+                .clone()
+                .add(offsetDays, "days");
+              nextReminder.setTime(
+                new DateTime(nextTimeMoment, time.hasTimePart),
+              );
               nextReminder.setDueDate(
-                new DateTime(moment(nextDueDate), dueDate.hasTimePart),
+                new DateTime(nextDueMoment, dueDate.hasTimePart),
+              );
+            } else {
+              const nextTime: Date | undefined = nextOccurrence(
+                recurrence,
+                time.moment(),
+                now,
+              );
+              if (nextTime == null) {
+                return false;
+              }
+              nextReminder.setTime(
+                new DateTime(moment(nextTime), time.hasTimePart),
               );
             }
           } else {

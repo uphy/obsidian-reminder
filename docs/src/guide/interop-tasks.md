@@ -42,6 +42,8 @@ Reminder plugin also supports this feature.
 
 When you [toggle checklist status](/guide/set-reminders.html#toggle-checklist-status), next recurring task will be created.
 
+The next occurrence keeps the original weekday or day of the month from the due date (or the reminder date when no due date is present), shifting any separate `⏰` reminder date by the same offset. Append `when done` to the rule (e.g. `🔁 every week when done`) to compute the next occurrence from the completion date instead.
+
 ## Distinguish due date and reminder date
 
 If you want to specify the reminder time separately from the due date in the Tasks Plugin, enable this [setting](/setting/#distinguish-between-reminder-date-and-due-date).

@@ -169,7 +169,7 @@ describe("TasksPluginReminderLine", (): void => {
       customEmoji: true,
       inputMarkdown:
         "- [ ] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12",
-      expectedMarkdown: `- [ ] Task ⏰ 2021-09-14 09:00 🔁 every day 📅 2021-09-14
+      expectedMarkdown: `- [ ] Task ⏰ 2021-09-15 09:00 🔁 every day 📅 2021-09-14
 - [x] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12 ✅ 2021-09-13`,
     });
   });
@@ -179,7 +179,7 @@ describe("TasksPluginReminderLine", (): void => {
       customEmoji: true,
       inputMarkdown:
         "- [ ] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12",
-      expectedMarkdown: `- [ ] Task ⏰ 2021-09-16 09:00 🔁 every day 📅 2021-09-16
+      expectedMarkdown: `- [ ] Task ⏰ 2021-09-17 09:00 🔁 every day 📅 2021-09-16
 - [x] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12 ✅ 2021-09-15`,
     });
   });
@@ -224,8 +224,47 @@ describe("TasksPluginReminderLine", (): void => {
       customEmoji: true,
       inputMarkdown:
         "- [ ] Task ⏰ 2021-09-05 11:00 🔁 every month on the 5th 📅 2021-09-12",
-      expectedMarkdown: `- [ ] Task ⏰ 2021-10-05 11:00 🔁 every month on the 5th 📅 2021-10-05
+      expectedMarkdown: `- [ ] Task ⏰ 2021-09-28 11:00 🔁 every month on the 5th 📅 2021-10-05
 - [x] Task ⏰ 2021-09-05 11:00 🔁 every month on the 5th 📅 2021-09-12 ✅ 2021-09-13`,
+    });
+  });
+  test("modify() - custom emoji - every Year preserves reminder and due dates when resolved later", async () => {
+    await testModify({
+      now: "2026-10-17 12:00",
+      customEmoji: true,
+      inputMarkdown:
+        "- [ ] Valentines 🔁 every Year ⏰ 2026-01-05 📅 2026-02-14",
+      expectedMarkdown: `- [ ] Valentines 🔁 every Year ⏰ 2027-01-05 📅 2027-02-14
+- [x] Valentines 🔁 every Year ⏰ 2026-01-05 📅 2026-02-14 ✅ 2026-10-17`,
+    });
+  });
+  test("modify() - custom emoji - every Year preserves reminder and due dates when resolved on due date", async () => {
+    await testModify({
+      now: "2026-02-14 18:00",
+      customEmoji: true,
+      inputMarkdown:
+        "- [ ] Valentines 🔁 every Year ⏰ 2026-01-05 📅 2026-02-14",
+      expectedMarkdown: `- [ ] Valentines 🔁 every Year ⏰ 2027-01-05 📅 2027-02-14
+- [x] Valentines 🔁 every Year ⏰ 2026-01-05 📅 2026-02-14 ✅ 2026-02-14`,
+    });
+  });
+  test("modify() - custom emoji - late completion keeps reminder before due date when ⏰ and 📅 fall in different periods relative to now", async () => {
+    await testModify({
+      now: "2026-02-08 12:00",
+      customEmoji: true,
+      inputMarkdown: "- [ ] Task ⏰ 2026-01-05 📅 2026-01-20 🔁 every month",
+      expectedMarkdown: `- [ ] Task ⏰ 2026-02-05 📅 2026-02-20 🔁 every month
+- [x] Task ⏰ 2026-01-05 📅 2026-01-20 🔁 every month ✅ 2026-02-08`,
+    });
+  });
+  test("modify() - custom emoji - 'when done' keeps reminder offset relative to due date", async () => {
+    await testModify({
+      now: "2026-02-08 12:00",
+      customEmoji: true,
+      inputMarkdown:
+        "- [ ] Task ⏰ 2026-01-05 📅 2026-01-20 🔁 every month when done",
+      expectedMarkdown: `- [ ] Task ⏰ 2026-02-21 📅 2026-03-08 🔁 every month when done
+- [x] Task ⏰ 2026-01-05 📅 2026-01-20 🔁 every month when done ✅ 2026-02-08`,
     });
   });
 });

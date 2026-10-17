@@ -36,6 +36,8 @@ The recurrence rule uses the same natural-language vocabulary as the [Tasks plug
 
 When a recurring reminder is completed (via the [notification's "Mark as Done"](/guide/notification.html) button, or the `Toggle checklist status` command/hotkey), a new unchecked TODO line for the next occurrence is inserted above the completed line, and the recurrence rule is carried over to it.
 
+The next occurrence keeps the original weekday or day of the month from the current reminder date. Append `when done` to the rule (e.g. `🔁every week when done`) to compute the next occurrence from the completion date instead.
+
 ::: tip
 Snoozing ("Remind me later") re-anchors the series: the next occurrence after completion is computed from the snoozed time, not the original one.
 :::
