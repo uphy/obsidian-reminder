@@ -123,7 +123,8 @@ For mobile users, it would be useful to add a button to the toolbar at the botto
 1. `Options` > `Mobile`
 2. `Configure`
 3. Select the command named `Show calendar popup`
-   :::
+
+:::
 
 ### Using the trigger on a non-task line
 
@@ -142,7 +143,8 @@ If you are using [Tasks Plugin format](/guide/interop-tasks.html), this action d
 
 - Insert done date (`✅ YYYY-MM-DD`)
 - Create next recurring task (if you use `🔁 XXX`)
-  :::
+
+:::
 
 **By keyboard shortcut**
 

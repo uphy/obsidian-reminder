@@ -3,6 +3,7 @@
 When the reminder time comes, you will be notified of the contents of the reminder.
 
 There are 2 types of reminder notification:
+
 - [Builtin notification modal](#builtin-notification-model)
 - [System notification](#system-notification)
 
@@ -34,12 +35,12 @@ Because the popup can appear at any time while you're doing something else, it n
 
 Instead, the popup supports Alt (Option on macOS) or Ctrl mnemonic shortcuts, which can't fire by accident since they require holding a modifier key:
 
-| Shortcut | Action |
-| --- | --- |
-| <kbd>Alt</kbd>+<kbd>D</kbd> / <kbd>Ctrl</kbd>+<kbd>D</kbd> | Mark as done |
-| <kbd>Alt</kbd>+<kbd>M</kbd> / <kbd>Ctrl</kbd>+<kbd>M</kbd> | Mute |
+| Shortcut                                                   | Action                                                                                     |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| <kbd>Alt</kbd>+<kbd>D</kbd> / <kbd>Ctrl</kbd>+<kbd>D</kbd> | Mark as done                                                                               |
+| <kbd>Alt</kbd>+<kbd>M</kbd> / <kbd>Ctrl</kbd>+<kbd>M</kbd> | Mute                                                                                       |
 | <kbd>Alt</kbd>+<kbd>S</kbd> / <kbd>Ctrl</kbd>+<kbd>S</kbd> | Focus the `Remind Me Later` (snooze) dropdown, then use the arrow keys to choose an option |
-| <kbd>Alt</kbd>+<kbd>O</kbd> / <kbd>Ctrl</kbd>+<kbd>O</kbd> | Open the note |
+| <kbd>Alt</kbd>+<kbd>O</kbd> / <kbd>Ctrl</kbd>+<kbd>O</kbd> | Open the note                                                                              |
 
 If another app on your system already captures the Option/Alt combination (window managers, launchers), use the Ctrl variant instead.
 
@@ -73,13 +74,14 @@ If you'd rather not lose the popup's actions, enable [Show popup together with s
 The reminder will be muted if you do the following:
 
 - In builtin notification,
-    - press <kbd>Esc</kbd>
-    - click outside of the notification modal
+  - press <kbd>Esc</kbd>
+  - click outside of the notification modal
 - Close the system notification
 
 A muted reminder is remembered across Obsidian restarts, so it stays muted even after you close and reopen the app (useful on mobile, where the app restarts frequently).
 
 A muted reminder becomes active again if you:
+
 - click it in [reminder list view](/guide/list-reminders.html), which opens the reminder popup again so you can mark it done or snooze it
 - change the reminder's date/time in the markdown
 - turn on [Re-notify muted reminders on startup](/setting/#re-notify-muted-reminders-on-startup), which clears every mute flag the next time Obsidian starts
@@ -87,6 +89,7 @@ A muted reminder becomes active again if you:
 ## Muting all reminders at once
 
 If notifications have piled up (for example, after a vacation), you can mute every currently overdue reminder in one action:
+
 - Click `Mute all reminders…` at the bottom of a notification popup.
 - Run `Mute all current notifications` from the command palette.
 
@@ -97,10 +100,12 @@ This mutes every reminder that is currently overdue, the same way [muting a sing
 Unlike the [Enable reminder notifications](/setting/#enable-reminder-notifications) setting, which turns notifications off permanently until you turn it back on, do-not-disturb lets you pause notifications for a fixed duration and have them resume automatically.
 
 You can start it from either place:
+
 - Run `Pause notifications` from the command palette. It opens a duration chooser with the same options as the [Remind Me Later](/setting/#remind-me-later) setting.
 - Click `Pause all notifications…` at the bottom of a notification popup. This closes the popup (without [muting](#mute-notification) that reminder) and opens the same duration chooser.
 
 While paused:
+
 - No builtin notification popups or system notifications are shown.
 - The [reminder list view](/guide/list-reminders.html) keeps updating as usual, including moving reminders into [Overdue](/guide/list-reminders.html#overdue-reminders).
 - Reminders are not muted by the pause, so any reminder that's still overdue is notified again shortly after the pause ends.
@@ -109,7 +114,7 @@ A status bar item (🔕) shows the time the pause ends; click it to resume notif
 
 ## Notifications when Obsidian isn't running (mobile)
 
-On mobile, Obsidian can't run plugin code in the background, so none of the notification methods above fire unless the app happens to be open at the reminder's time. [ntfy](https://ntfy.sh) scheduled notifications work around this: this plugin registers upcoming reminders with an ntfy server, and the *server* — not Obsidian — delivers the push notification at the right time, whether or not Obsidian is running.
+On mobile, Obsidian can't run plugin code in the background, so none of the notification methods above fire unless the app happens to be open at the reminder's time. [ntfy](https://ntfy.sh) scheduled notifications work around this: this plugin registers upcoming reminders with an ntfy server, and the _server_ — not Obsidian — delivers the push notification at the right time, whether or not Obsidian is running.
 
 This is an experimental feature (PoC-level). Enable it under [ntfy settings](/setting/#ntfy).
 
