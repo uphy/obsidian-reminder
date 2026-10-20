@@ -13,6 +13,7 @@ import { CM6DateTimeChooserPopup } from "./cm6-datetime-chooser";
 import { showDateTimeChooserModal } from "./date-chooser-modal";
 import {
   appendReminderOrConvert,
+  isKanbanCardEditor,
   showReminderInsertionFailureNotice,
 } from "./util";
 
@@ -133,6 +134,7 @@ export class AutoComplete {
         value,
         undefined,
         this.convertNonTaskLines.value,
+        isKanbanCardEditor(editor.cm),
       )?.insertedLine;
       if (appended == null) {
         showReminderInsertionFailureNotice();

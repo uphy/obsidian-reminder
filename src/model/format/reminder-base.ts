@@ -204,7 +204,7 @@ export abstract class TodoBasedReminderFormat<
           title,
           time,
           todo.lineIndex,
-          todo.isChecked(this.statusRegistry()),
+          this.isDone(todo, parsed),
         );
         const span = parsed.computeSpan();
         const headerLength = todo.getHeaderLength();
@@ -248,6 +248,11 @@ export abstract class TodoBasedReminderFormat<
       return null;
     }
     return parsed;
+  }
+
+  /** Whether the reminder parsed from `todo` should be treated as done. */
+  protected isDone(todo: Todo, _parsed: E): boolean {
+    return todo.isChecked(this.statusRegistry());
   }
 
   isValidReminder(reminder: E): boolean {

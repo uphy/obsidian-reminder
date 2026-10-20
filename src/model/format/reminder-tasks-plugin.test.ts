@@ -385,6 +385,42 @@ describe("TasksPluginReminderModel - reminder-time fallback (⏰ → 📅 → �
   });
 });
 
+describe("TasksPluginFormat - done state from Tasks plugin dates (#374)", (): void => {
+  test("unchecked task without done/cancelled date is not done", (): void => {
+    const spans = parseLine("- [ ] Task ⏳ 2026-10-06", {
+      customEmoji: true,
+      dueDateFallback: true,
+    });
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.done).toBe(false);
+  });
+
+  test("custom status with a cancelled date is done", (): void => {
+    const spans = parseLine("- [*] Task ⏳ 2026-10-06 ❌ 2026-10-06", {
+      customEmoji: true,
+      dueDateFallback: true,
+    });
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.title).toBe("Task");
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-10-06");
+    expect(spans[0]!.reminder.done).toBe(true);
+  });
+
+  test("custom status with a done date is done", (): void => {
+    const spans = parseLine("- [d] Task 📅 2026-10-06 ✅ 2026-10-06");
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.done).toBe(true);
+  });
+
+  test("a cancelled date doesn't leak into the preceding date", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "Task 📅 2026-10-06 ❌ 2026-10-07",
+    );
+    expect(parsed.getTime()!.toString()).toBe("2026-10-06");
+    expect(parsed.getCancelledDate()!.toString()).toBe("2026-10-07");
+  });
+});
+
 function parseLine(
   markdown: string,
   options: {
@@ -496,6 +532,17 @@ describe("task statuses follow the registry (scenarios 2 and 3)", (): void => {
   test("[v] and [d] count as done (armed today only by luck of x/-)", (): void => {
     for (const symbol of ["v", "d"]) {
       const spans = parseLine(`- [${symbol}] closed ⏳ 2026-08-17`, opts);
+      expect(spans).toHaveLength(1);
+      expect(spans[0]!.reminder.done).toBe(true);
+    }
+  });
+
+  test("a registry-unchecked symbol with a done or cancelled date is still done (#374)", (): void => {
+    for (const markdown of [
+      "- [w] waiting ⏳ 2026-08-17 ✅ 2026-08-18",
+      "- [w] waiting ⏳ 2026-08-17 ❌ 2026-08-18",
+    ]) {
+      const spans = parseLine(markdown, opts);
       expect(spans).toHaveLength(1);
       expect(spans[0]!.reminder.done).toBe(true);
     }

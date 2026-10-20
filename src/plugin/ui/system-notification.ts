@@ -1,7 +1,9 @@
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
 import type { Later } from "model/time";
+import { Platform } from "obsidian";
 import { electron } from "./electron";
+import { systemNotificationLaters } from "./notification-buttons";
 import type { ReminderActions } from "./reminder-actions";
 
 /** A system notification tracked so it can be dismissed programmatically. */
@@ -107,9 +109,13 @@ export class SystemNotifier {
       actions.mute();
     });
     if (!alertOnly) {
-      // Only for macOS
+      // Rendered on macOS and, since Electron 40, on Windows
       {
-        const laters = this.laters.value;
+        const laters = systemNotificationLaters(
+          this.laters.value,
+          Platform.isWin,
+          this.keepSystemNotificationOnScreen.value,
+        );
         n.on("action", (_: unknown, index: number) => {
           if (index === 0) {
             actions.done();
