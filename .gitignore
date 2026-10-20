@@ -25,3 +25,5 @@ data.json
 .claude/hooks/.manual-verify-state
 .claude/hooks/.docs-update-state
 .claude/worktrees/
+# Scratch tests written by the pre-pr-review verifier (deleted after use)
+*.verify-scratch.test.ts
