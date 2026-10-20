@@ -314,6 +314,10 @@ A symbol that appears in no line is treated as `TODO`, like the Tasks
 plugin does. Unparseable lines are skipped, and an unknown type is
 reported under the setting (and treated as `TODO`).
 
+In the [Tasks plugin format](/guide/interop-tasks.html), a line that
+carries a done date (`✅`) or a cancelled date (`❌`) also counts as done,
+whatever its symbol.
+
 Lines you write here **extend** the defaults and win over them on a
 duplicate symbol. The defaults are:
 
