@@ -383,7 +383,7 @@ Releases up to 1.4.3 always rendered these in English, whatever the app language
 You can quickly apply a preset via the command palette:
 
 - Command: “Set date display format”
-Preset names describe the **order** the date parts appear in, not the language they are written in — month and weekday names follow Obsidian's language, as above. `JP Style` additionally uses 年 / 月 / 日 as literal separators.
+  Preset names describe the **order** the date parts appear in, not the language they are written in — month and weekday names follow Obsidian's language, as above. `JP Style` additionally uses 年 / 月 / 日 as literal separators.
 
 - Presets include typical regional styles, e.g.:
   - US Style (12h): `MMMM YYYY`, `MM/DD`, `M/DD (ddd)`, `h:mm A`

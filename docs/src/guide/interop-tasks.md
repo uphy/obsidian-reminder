@@ -26,11 +26,13 @@ The due date can also carry a time, as an extension beyond what the Tasks Plugin
 ```
 
 ::: warning Note
+
 - You can't customize the due date format (`YYYY-MM-DD`, optionally followed by ` HH:mm`) for interoperability with Tasks Plugin
 - Dates after 📅, ⏳, and 🛫 are always parsed strictly, so `📅 2021-9-8` is not a due date. The [Strict Date format](/setting/#strict-date-format) setting doesn't loosen this, because the Tasks Plugin only accepts `YYYY-MM-DD`.
 - The date must come right after the emoji. In `⏳ someday 2021-09-16`, the date isn't read as the scheduled date.
 - An emoji inside an inline code span (`` `📅` ``) is not treated as a date marker.
 - If you want to specify the reminder time separately from the due date in the Tasks Plugin, you can use [reminder emoji](#distinguish-due-date-and-reminder-date).
+
 :::
 
 ## Recurring tasks
@@ -78,13 +80,15 @@ Also you can specify time:
 Unlike 📅, the ⏰ date follows your [date and time format](/guide/set-reminders.html#date-time-format) and the [Strict Date format](/setting/#strict-date-format) setting.
 
 ::: tip
-You can change date/time format.  See [Date Time Format](/guide/set-reminders.html#date-time-format).
+You can change date/time format. See [Date Time Format](/guide/set-reminders.html#date-time-format).
 :::
 
 ::: warning
 You can't insert any characters other than date/time between ⏰ and 📅.
+
 - (OK) `- [ ] Task ⏰ 2021-09-16 📅 2021-09-17`
 - (NG) `- [ ] Task ⏰ 2021-09-16 #Tag 📅 2021-09-17`
+
 :::
 
 ### Fall back to due, scheduled, or start date
