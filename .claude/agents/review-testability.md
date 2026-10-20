@@ -1,6 +1,6 @@
 ---
 name: review-testability
-description: Reviews a diff of obsidian-reminder for test coverage and testability against .claude/rules/testing.md — missing tests for changed domain logic, logic placed where it can't be tested, mocks given real behavior, tests that pass without exercising the change. Used by the pre-pr-review workflow; read-only.
+description: Reviews a diff of obsidian-reminder for test coverage and testability against .claude/rules/testing.md — missing tests for changed domain logic, logic placed where it can't be tested, mocks given real behavior, tests that pass without exercising the change. Used by the pr-review workflow; read-only.
 tools: Read, Grep, Glob, Bash
 ---
 

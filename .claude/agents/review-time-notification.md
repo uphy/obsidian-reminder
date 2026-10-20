@@ -1,6 +1,6 @@
 ---
 name: review-time-notification
-description: Reviews a diff of obsidian-reminder for date/time and notification bugs — DateTime/Time boundaries, time zones and DST, moment usage, notification timing, snooze/mute/do-not-disturb state, and OS-specific notification limits. Used by the pre-pr-review workflow; read-only.
+description: Reviews a diff of obsidian-reminder for date/time and notification bugs — DateTime/Time boundaries, time zones and DST, moment usage, notification timing, snooze/mute/do-not-disturb state, and OS-specific notification limits. Used by the pr-review workflow; read-only.
 tools: Read, Grep, Glob, Bash
 ---
 

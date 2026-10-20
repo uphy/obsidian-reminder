@@ -1,6 +1,6 @@
 ---
 name: review-obsidian-guidelines
-description: Reviews a diff of obsidian-reminder against Obsidian's community plugin guidelines and directory review rules that ESLint does not already enforce — manifest metadata, command naming, settings UI, styling, mobile compatibility, vault access APIs. Used by the pre-pr-review workflow; read-only.
+description: Reviews a diff of obsidian-reminder against Obsidian's community plugin guidelines and directory review rules that ESLint does not already enforce — manifest metadata, command naming, settings UI, styling, mobile compatibility, vault access APIs. Used by the pr-review workflow; read-only.
 tools: Read, Grep, Glob, Bash
 ---
 

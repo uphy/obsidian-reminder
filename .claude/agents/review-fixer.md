@@ -1,6 +1,6 @@
 ---
 name: review-fixer
-description: Applies verified code-review findings to an obsidian-reminder worktree one at a time — minimal fix, lint and tests, one commit per finding, revert on failure. Used by the pre-pr-review workflow.
+description: Applies verified code-review findings to an obsidian-reminder worktree one at a time — minimal fix, lint and tests, one commit per finding, revert on failure. Used by the pr-review workflow.
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
