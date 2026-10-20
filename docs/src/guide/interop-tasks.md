@@ -42,6 +42,20 @@ Reminder plugin also supports this feature.
 
 When you [toggle checklist status](/guide/set-reminders.html#toggle-checklist-status), next recurring task will be created.
 
+## Custom statuses
+
+The Tasks Plugin lets you define your own checkbox statuses, such as
+`[/]` for in progress or `[-]` for cancelled. This plugin follows them:
+which symbols count as done, and which symbol the Done button (or the
+`Toggle checklist status` command) writes next, come from the Tasks
+Plugin's status settings. You can add or override statuses with the
+[Task statuses](/setting/#task-statuses) setting.
+
+- The done date (`✅ YYYY-MM-DD`) is inserted only when the line lands on a
+  `DONE` status. Landing on a `CANCELLED` status inserts no date.
+- A line that carries a done date (`✅`) or a cancelled date (`❌`) counts
+  as done, whatever its symbol, so it never reminds.
+
 ## Distinguish due date and reminder date
 
 If you want to specify the reminder time separately from the due date in the Tasks Plugin, enable this [setting](/setting/#distinguish-between-reminder-date-and-due-date).

@@ -12,6 +12,14 @@ import {
   ReminderFormatConfig,
   ReminderFormatParameterKey,
 } from "model/format/reminder-base";
+import {
+  DEFAULT_STATUSES_TEXT,
+  StatusRegistry,
+  formatStatusSetting,
+  parseStatusSetting,
+  unknownStatusTypes,
+} from "model/format/status";
+import type { TaskStatus } from "model/format/status";
 import { DateTime, Later, Time } from "model/time";
 import { moment } from "model/moment";
 import { isValidNtfyTopic } from "model/ntfy";
@@ -28,6 +36,19 @@ import {
 import type { SettingModel, SettingModelBase } from "./helper";
 
 export const TAG_RESCAN = "re-scan";
+
+/**
+ * The default statuses the "Task statuses" setting extends, seeded from the
+ * Tasks plugin's own status settings at load time (see `main.ts`): the whole
+ * registry when the setting is empty, the merge base under the user's lines
+ * otherwise. Empty when the Tasks plugin is absent, which keeps
+ * `StatusRegistry.EMPTY`'s historical x/- behavior for an empty setting.
+ */
+let seededTaskStatusesText = "";
+
+export function setSeededTaskStatuses(statuses: Array<TaskStatus>): void {
+  seededTaskStatusesText = formatStatusSetting(statuses);
+}
 
 export class Settings {
   settings: SettingTabModel = new SettingTabModel();
@@ -55,6 +76,7 @@ export class Settings {
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
   useReminderTimeFallbackForTasksPlugin: SettingModel<boolean, boolean>;
   removeTagsForTasksPlugin: SettingModel<boolean, boolean>;
+  taskStatuses: SettingModel<string, string>;
   dataviewReminderFieldName: SettingModel<string, string>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
   yearMonthDisplayFormat: SettingModel<string, string>;
@@ -368,6 +390,34 @@ export class Settings {
       })
       .build(new RawSerde());
 
+    this.taskStatuses = this.settings
+      .newSettingBuilder()
+      .key("taskStatuses")
+      .name("Task statuses")
+      .desc(
+        "One status per line: [symbol] -> [next symbol] TYPE, where TYPE is TODO, IN_PROGRESS, DONE, CANCELLED, ON_HOLD or NON_TASK. " +
+          "Decides which lines count as done (DONE/CANCELLED/NON_TASK never remind) and which symbol the Done button writes (the next symbol, when it lands on a done status). " +
+          "Applies to every reminder format and to the 'Toggle checklist status' command. " +
+          "Lines here extend the defaults (the Tasks plugin's status settings when that plugin is enabled, the built-in [ ]/[x]/[-] set otherwise) and win over them on a duplicate symbol. " +
+          "Leave empty to follow the defaults alone.",
+      )
+      .tag(TAG_RESCAN)
+      .textArea("")
+      .placeHolder("[ ] -> [x] TODO\n[x] -> [ ] DONE\n[w] -> [v] ON_HOLD")
+      .onAnyValueChanged((context) => {
+        // Free text where Tasks has a dropdown: a typo like "DOME" parses
+        // happily and quietly reads as TODO, so say so here. Info, not a
+        // validation error — `load()` puts stored values straight into
+        // `rawValue`, and an old data.json must never fail the settings tab.
+        const unknown = unknownStatusTypes(this.taskStatuses.value);
+        context.setInfo(
+          unknown.length
+            ? `Unknown status types (treated as TODO): ${unknown.join(", ")}`
+            : null,
+        );
+      })
+      .build(new RawSerde());
+
     this.dataviewReminderFieldName = this.settings
       .newSettingBuilder()
       .key("dataviewReminderFieldName")
@@ -581,6 +631,14 @@ export class Settings {
         this.useReminderTimeFallbackForTasksPlugin,
         this.removeTagsForTasksPlugin,
       );
+    // A group of its own, not a "Tasks plugin format" sibling: the registry
+    // drives isChecked/setChecked for EVERY format plus the
+    // toggle-checklist-status command — only the seed comes from Tasks. It
+    // also must not take that group's setEnabled wiring: users with the
+    // Tasks format turned off are exactly the ones who need to edit this.
+    reminderFormatsPage
+      .newGroup("Task statuses")
+      .addSettings(this.taskStatuses);
     reminderFormatsPage
       .newGroup("Dataview format")
       .addSettings(
@@ -657,6 +715,32 @@ export class Settings {
       ReminderFormatParameterKey.dataviewReminderFieldName,
       this.dataviewReminderFieldName,
     );
+    // The registry is rebuilt only when the effective text changes: parsing
+    // runs per keystroke otherwise (every parse() call reads the parameter).
+    let lastText: string | null = null;
+    let lastRegistry = StatusRegistry.EMPTY;
+    config.setParameterFunc(ReminderFormatParameterKey.taskStatuses, () => {
+      // The user's lines EXTEND the defaults rather than replacing them:
+      // someone who adds just "[/] -> [x] IN_PROGRESS" must not turn every
+      // "- [x]" in the vault back into an active reminder. User lines come
+      // first, and the registry keeps the first definition per symbol, so a
+      // user line wins on a duplicate. An empty setting stays the pure
+      // seed/EMPTY path, which is what preserves the historical behavior
+      // when neither the user nor the Tasks plugin defines anything.
+      const userText = this.taskStatuses.value;
+      const text = userText.trim().length
+        ? userText +
+          "\n" +
+          (seededTaskStatusesText.trim().length
+            ? seededTaskStatusesText
+            : DEFAULT_STATUSES_TEXT)
+        : seededTaskStatusesText;
+      if (text !== lastText) {
+        lastText = text;
+        lastRegistry = new StatusRegistry(parseStatusSetting(text));
+      }
+      return lastRegistry;
+    });
     setReminderFormatConfig(config);
   }
 

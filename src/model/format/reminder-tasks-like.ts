@@ -55,6 +55,7 @@ export abstract class TasksLikeReminderFormat<
     parsed: M,
     edit: ReminderEdit,
   ): boolean {
+    const checkBefore = todo.check;
     if (!super.modifyReminder(doc, todo, parsed, edit)) {
       return false;
     }
@@ -118,13 +119,23 @@ export abstract class TasksLikeReminderFormat<
             nextReminder.setTime(nextDueDate);
           }
           nextReminderTodo.body = nextReminder.toMarkdown();
-          nextReminderTodo.setChecked(false);
+          nextReminderTodo.setChecked(false, this.statusRegistry());
           doc.insertTodo(todo.lineIndex, nextReminderTodo);
         }
-        parsed.setDoneDate(
-          this.config.getParameter(ReminderFormatParameterKey.now),
-        );
-      } else {
+        // The Tasks plugin stamps ✅ only on DONE lines — a CANCELLED
+        // landing gets no done date. `todo.check` already carries the
+        // landed symbol (super.modifyReminder ran first).
+        if (this.statusRegistry().isDone(todo.check)) {
+          parsed.setDoneDate(
+            this.config.getParameter(ReminderFormatParameterKey.now),
+          );
+        }
+      } else if (todo.check !== checkBefore) {
+        // Clearing the done date belongs to an actual uncheck. When
+        // `setChecked(false)` was a no-op — the registry left the symbol as
+        // it was, e.g. "Remind me later" on a custom status (#269) or on a
+        // line whose symbol the registry cannot uncheck — stripping ✅ would
+        // leave a line that still reads checked but has lost its done date.
         parsed.setDoneDate(undefined);
       }
     }

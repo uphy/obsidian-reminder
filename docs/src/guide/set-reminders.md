@@ -177,3 +177,8 @@ You can create a TODO item that is not a reminder by formatting it as `- [-] xxx
 ```markdown
 - [-] Task 1 (@2024-12-24)
 ```
+
+::: tip
+Which checkbox symbols count as done or cancelled can be customized with
+the [Task statuses](/setting/#task-statuses) setting.
+:::

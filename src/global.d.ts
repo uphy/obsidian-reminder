@@ -1,6 +1,6 @@
 import type { EditorView } from "@codemirror/view";
 import type ReminderPlugin from "main";
-import type { App as ObsidianApp } from "obsidian";
+import type { App as ObsidianApp, Plugin } from "obsidian";
 
 declare global {
   interface Window {
@@ -19,6 +19,7 @@ declare module "obsidian" {
          * are `unknown` because their shape belongs to that plugin.
          */
         "obsidian-kanban"?: { settings?: Record<string, unknown> };
+        "obsidian-tasks-plugin"?: Plugin;
       };
     };
   }
