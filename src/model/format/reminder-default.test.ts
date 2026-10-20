@@ -81,6 +81,60 @@ describe("DefaultReminderFormat", (): void => {
       },
     });
   });
+  describe("span with trailing title text", (): void => {
+    const withLinkSetting =
+      (enabled: boolean) => (config: ReminderFormatConfig) => {
+        config.setParameterValue(
+          ReminderFormatParameterKey.linkDatesToDailyNotes,
+          enabled,
+        );
+      };
+    test("plain date with link dates to daily notes on", (): void => {
+      // The rendered group would be "(@[[2021-09-14]])", but the span must
+      // cover only the 13-char "(@2021-09-14)" actually in the line.
+      util.testParse({
+        inputMarkdown: "- [ ] Task1 (@2021-09-14) buy milk",
+        expectedTime: "2021-09-14",
+        expectedTitle: "Task1 buy milk",
+        expectedSpan: { start: 12, end: 12 + 13 },
+        configFunc: withLinkSetting(true),
+      });
+    });
+    test("[[date]] in source with link dates to daily notes on", (): void => {
+      util.testParse({
+        inputMarkdown: "- [ ] Task1 (@[[2021-09-14]]) buy milk",
+        expectedTime: "2021-09-14",
+        expectedTitle: "Task1 buy milk",
+        expectedSpan: { start: 12, end: 12 + 17 },
+        configFunc: withLinkSetting(true),
+      });
+    });
+    test("plain date with link dates to daily notes off", (): void => {
+      util.testParse({
+        inputMarkdown: "- [ ] Task1 (@2021-09-14) buy milk",
+        expectedTime: "2021-09-14",
+        expectedTitle: "Task1 buy milk",
+        expectedSpan: { start: 12, end: 12 + 13 },
+        configFunc: withLinkSetting(false),
+      });
+    });
+    test("span follows the rendered text after the time is rewritten", (): void => {
+      const model = DefaultReminderModel.parse(
+        "Task1 (@2021-09-14) buy milk",
+        true,
+      )!;
+      expect(model.computeSpan()).toEqual({ start: 6, end: 19 });
+
+      model.setTime(new DateTime(moment("2021-09-15"), false));
+      // toMarkdown() is now "Task1 (@[[2021-09-15]]) buy milk".
+      expect(model.computeSpan()).toEqual({ start: 6, end: 6 + 17 });
+
+      const raw = DefaultReminderModel.parse("Task1 (@2021-09-14) x", true)!;
+      raw.setRawTime("tomorrow");
+      // toMarkdown() is now "Task1 (@tomorrow) x".
+      expect(raw.computeSpan()).toEqual({ start: 6, end: 6 + 11 });
+    });
+  });
   test("modify", async () => {
     await util.testModify({
       inputMarkdown: "- [ ] Task1 (@2021-09-14)",
