@@ -1,6 +1,6 @@
 ---
 name: review-cm6-obsidian-lifecycle
-description: Reviews a diff of obsidian-reminder for CodeMirror 6 and Obsidian API lifecycle bugs — widget/ViewPlugin/StateField state, register* cleanup, Svelte mount/destroy, leaks across plugin reloads. Used by the pre-pr-review workflow; read-only.
+description: Reviews a diff of obsidian-reminder for CodeMirror 6 and Obsidian API lifecycle bugs — widget/ViewPlugin/StateField state, register* cleanup, Svelte mount/destroy, leaks across plugin reloads. Used by the pr-review workflow; read-only.
 tools: Read, Grep, Glob, Bash
 ---
 

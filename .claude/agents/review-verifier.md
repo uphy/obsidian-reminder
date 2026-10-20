@@ -1,6 +1,6 @@
 ---
 name: review-verifier
-description: Adversarially verifies code-review findings for obsidian-reminder produced by the review-* agents — tries to refute each one against the actual code before anything is auto-fixed. Used by the pre-pr-review workflow; read-only.
+description: Adversarially verifies code-review findings for obsidian-reminder produced by the review-* agents — tries to refute each one against the actual code before anything is auto-fixed. Used by the pr-review workflow; read-only.
 tools: Read, Grep, Glob, Bash
 ---
 

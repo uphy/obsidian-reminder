@@ -1,6 +1,6 @@
 ---
 name: review-reminder-format
-description: Reviews a diff of obsidian-reminder for reminder-syntax correctness — parsing and rewriting in src/model/format, round-trips, compatibility with the Tasks/Kanban/Dataview formats, recurrence, done/cancelled handling. Used by the pre-pr-review workflow; read-only.
+description: Reviews a diff of obsidian-reminder for reminder-syntax correctness — parsing and rewriting in src/model/format, round-trips, compatibility with the Tasks/Kanban/Dataview formats, recurrence, done/cancelled handling. Used by the pr-review workflow; read-only.
 tools: Read, Grep, Glob, Bash
 ---
 
