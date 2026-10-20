@@ -15,6 +15,7 @@ import { showPauseDurationChooser } from "plugin/dnd";
 import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { DndStatusBar } from "./dnd-status-bar";
+import { findLeafShowingFile } from "./find-leaf-showing-file";
 import { OverdueStatusBar } from "./overdue-status-bar";
 import { ReminderListItemViewProxy } from "./reminder-list";
 import { AutoComplete } from "./autocomplete";
@@ -182,7 +183,7 @@ export class ReminderPluginUI {
   }
 
   private async openReminderFile(reminder: Reminder) {
-    const leaf = this.plugin.app.workspace.getLeaf(false);
+    const workspace = this.plugin.app.workspace;
 
     console.debug("Open reminder: ", reminder);
     const file = this.plugin.app.vault.getAbstractFileByPath(reminder.file);
@@ -191,8 +192,29 @@ export class ReminderPluginUI {
       return;
     }
 
-    // Open the reminder file and jump to the reminder's line.
-    await leaf.openFile(file);
+    // Reuse a tab already showing the file. `getLeaf(false)` alone opens a
+    // new tab whenever the current one is pinned, even if that pinned tab
+    // shows this very file (#383). The path is read from the view state
+    // rather than `leaf.view` so deferred (not yet loaded) tabs match too.
+    let leaf = findLeafShowingFile(
+      file.path,
+      workspace.getMostRecentLeaf(),
+      workspace.getLeavesOfType("markdown"),
+      (l) => {
+        const path = l.getViewState().state?.["file"];
+        return typeof path === "string" ? path : undefined;
+      },
+    );
+    if (leaf != null) {
+      // `revealLeaf` also loads a deferred tab, so `leaf.view` below is the
+      // real MarkdownView.
+      await workspace.revealLeaf(leaf);
+      workspace.setActiveLeaf(leaf, { focus: true });
+    } else {
+      // Open the reminder file and jump to the reminder's line.
+      leaf = workspace.getLeaf(false);
+      await leaf.openFile(file);
+    }
     if (!(leaf.view instanceof MarkdownView)) {
       return;
     }

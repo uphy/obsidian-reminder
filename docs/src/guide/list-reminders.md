@@ -12,6 +12,7 @@ Reminders defined in your all of the markdown files are listed like below:
 :::
 
 If you click the reminder, the file in which you defined the reminder will be opened.
+If a tab already shows that file (even a pinned one), that tab is reused instead of opening a new one.
 
 ## Overdue Reminders
 
