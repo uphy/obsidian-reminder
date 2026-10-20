@@ -3,6 +3,7 @@ import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
 import {
   App,
+  Editor,
   MarkdownView,
   Notice,
   Platform,
@@ -206,8 +207,6 @@ export class ReminderPluginUI {
       },
     );
     if (leaf != null) {
-      // `revealLeaf` also loads a deferred tab, so `leaf.view` below is the
-      // real MarkdownView.
       await workspace.revealLeaf(leaf);
       workspace.setActiveLeaf(leaf, { focus: true });
     } else {
@@ -219,6 +218,12 @@ export class ReminderPluginUI {
       return;
     }
     const editor = leaf.view.editor;
+    // A reused tab that was deferred (not yet loaded) gets its content a
+    // moment after `revealLeaf` resolves; until then the editor is empty.
+    if (!(await waitForLine(editor, reminder.rowNumber))) {
+      console.warn("Reminder line is not in the editor: %o", reminder);
+      return;
+    }
     const line = editor.getLine(reminder.rowNumber);
     // Place the cursor on the line (no selection held) and scroll it into
     // view, matching Obsidian's own search-result jump behavior rather than
@@ -365,4 +370,23 @@ export class ReminderSettingTab extends PluginSettingTab {
 
     this.plugin.settings.settings.displayOn(containerEl);
   }
+}
+
+/**
+ * Wait (up to `timeoutMs`) until the editor has a line `row`. Returns whether
+ * it does.
+ */
+async function waitForLine(
+  editor: Editor,
+  row: number,
+  timeoutMs = 2000,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (editor.lineCount() <= row) {
+    if (Date.now() > deadline) {
+      return false;
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+  }
+  return true;
 }
