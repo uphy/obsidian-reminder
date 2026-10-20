@@ -5,6 +5,7 @@ import { ReminderFormatParameterKey } from "./reminder-base";
 import { TasksLikeReminderFormat, removeTags } from "./reminder-tasks-like";
 import type { TasksLikeReminderModel } from "./reminder-tasks-like";
 import { Symbol, Tokens, splitBySymbol } from "./splitter";
+import type { Token } from "./splitter";
 
 export class TasksPluginReminderModel implements TasksLikeReminderModel {
   private static readonly dateFormat = "YYYY-MM-DD";
@@ -35,13 +36,11 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
     line: string,
     useCustomEmoji?: boolean,
     removeTags?: boolean,
-    strictDateFormat?: boolean,
     useDueDateFallback?: boolean,
   ): TasksPluginReminderModel {
     return new TasksPluginReminderModel(
       useCustomEmoji ?? false,
       removeTags ?? false,
-      strictDateFormat ?? true,
       useDueDateFallback ?? false,
       new Tokens(splitBySymbol(line, this.allSymbols)),
     );
@@ -50,7 +49,6 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   private constructor(
     private useCustomEmoji: boolean,
     private removeTags: boolean,
-    private strictDateFormat: boolean,
     private useDueDateFallback: boolean,
     private tokens: Tokens,
   ) {}
@@ -128,7 +126,8 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
 
   getEndOfTimeTextIndex(): number {
     // get the end of the string index of due date or reminder date
-    const token = this.tokens.rangeOfSymbol(this.resolveReminderSymbol());
+    const symbol = this.resolveReminderSymbol();
+    const token = this.tokens.rangeOfSymbol(symbol, this.carriesDate(symbol));
     if (token != null) {
       return token.end;
     }
@@ -137,8 +136,9 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
 
   computeSpan(): { start: number; end: number } {
     const symbol = this.resolveReminderSymbol();
-    const range = this.tokens.rangeOfSymbol(symbol);
-    const token = this.tokens.getToken(symbol);
+    const prefer = this.carriesDate(symbol);
+    const range = this.tokens.rangeOfSymbol(symbol, prefer);
+    const token = this.tokens.getToken(symbol, prefer);
     if (range == null || token == null) {
       return { start: 0, end: 0 };
     }
@@ -187,25 +187,114 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
       this.toMarkdown(),
       this.useCustomEmoji,
       this.removeTags,
-      this.strictDateFormat,
       this.useDueDateFallback,
     );
   }
 
+  /**
+   * Field count of the longest date format any symbol here may carry. ⏰'s
+   * formats are user-configurable via `DATE_TIME_FORMATTER`, so this cannot be
+   * a constant: a cap below the format's own field count would silently
+   * truncate the candidate ("Sep 8, 2021 10:00 AM" parsing as date-only).
+   */
+  private static maxLeadingFields(): number {
+    const fieldCount = (format: string): number =>
+      (format.match(/\S+/g) ?? []).length;
+    return Math.max(
+      fieldCount(TasksPluginReminderModel.dateFormat),
+      fieldCount(TasksPluginReminderModel.dueDateTimeFormat),
+      DATE_TIME_FORMATTER.maxFieldCount(),
+    );
+  }
+
+  /**
+   * Whitespace-delimited prefixes of `text`, longest first.
+   *
+   * Capped, because each candidate is parsed as a whole: no date format in
+   * play spans more fields than `maxLeadingFields()`, and the cap keeps the
+   * scan bounded on the long prose lines this plugin routinely sees.
+   */
+  private static leadingCandidates(text: string): Array<string> {
+    const out: Array<string> = [];
+    const max = TasksPluginReminderModel.maxLeadingFields();
+    const word = /\S+/g;
+    let match: RegExpExecArray | null;
+    while (out.length < max && (match = word.exec(text)) !== null) {
+      out.push(text.slice(0, match.index + match[0].length));
+    }
+    return out.reverse();
+  }
+
+  /**
+   * The date is the HEAD of the token's text, and only the head.
+   *
+   * A token runs to the next symbol *this plugin* knows, so it routinely
+   * carries what it does not tokenise — the Tasks plugin's own ➕/🆔/⛔, a tag,
+   * prose. moment's lenient mode searches such a string and borrows a date from
+   * anywhere in it, which is how "⏳ no date here ➕ 2026-08-17" acquires a
+   * scheduled date it does not have, and how "⏰ no date here ➕ 2026-08-17"
+   * fabricates a midnight.
+   *
+   * The Tasks plugin anchors the other way — its regexes end in `$` and allow
+   * only spaces between marker and date — so requiring the date at the head of
+   * the token is that same invariant seen from this side. Parsing the whole
+   * token strictly instead would reject every line that carries a marker this
+   * plugin does not know, which is most of them.
+   */
   private getDate(symbol: Symbol): DateTime | null {
-    const dateText = this.tokens.getTokenText(symbol, true);
+    const dateText = this.tokens.getTokenText(
+      symbol,
+      true,
+      this.carriesDate(symbol),
+    );
     if (dateText === null) {
       return null;
     }
+    for (const candidate of TasksPluginReminderModel.leadingCandidates(
+      dateText,
+    )) {
+      const parsed = this.parseExactDate(symbol, candidate);
+      if (parsed !== null) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Prefer-predicate for token resolution: does this token's text start with
+   * a date this symbol accepts? A symbol that also occurs in prose produces
+   * two tokens, and first-wins used to hand every reader — and the snooze
+   * writer — the prose one, losing (or clobbering) the real date. All
+   * resolution sites share this predicate so read, span and write land on
+   * the same token.
+   */
+  private carriesDate(symbol: Symbol): (token: Token) => boolean {
+    return (token) => {
+      const text = token.text.replace(/^\s*(.*?)\s*$/, "$1");
+      for (const candidate of TasksPluginReminderModel.leadingCandidates(
+        text,
+      )) {
+        if (this.parseExactDate(symbol, candidate) !== null) {
+          return true;
+        }
+      }
+      return false;
+    };
+  }
+
+  private parseExactDate(symbol: Symbol, text: string): DateTime | null {
     if (symbol === TasksPluginReminderModel.symbolReminder) {
-      return DATE_TIME_FORMATTER.parse(dateText);
+      // ⏰ is this plugin's own symbol and its format is user-configured
+      // (unlike 📅/⏳/🛫, whose format the Tasks plugin owns), so it honours
+      // the "Strict date format" setting; `parseWhole` keeps the head-of-token
+      // guarantee even on the lenient pass.
+      return DATE_TIME_FORMATTER.parseWhole(text);
     }
     if (symbol === TasksPluginReminderModel.symbolDueDate) {
-      // Optional time-part extension: try the strict datetime format
-      // first, and fall through to the date-only format below when it
-      // doesn't match.
+      // Opt-in extension: 📅 may also carry a time.
       const dateTime = moment(
-        dateText,
+        text,
         TasksPluginReminderModel.dueDateTimeFormat,
         true,
       );
@@ -213,11 +302,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
         return new DateTime(dateTime, true);
       }
     }
-    const date = moment(
-      dateText,
-      TasksPluginReminderModel.dateFormat,
-      this.strictDateFormat,
-    );
+    const date = moment(text, TasksPluginReminderModel.dateFormat, true);
     if (!date.isValid()) {
       return null;
     }
@@ -258,6 +343,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
       true,
       this.shouldSplitBetweenSymbolAndText(),
       insertAt,
+      this.carriesDate(symbol),
     );
   }
 
@@ -292,7 +378,6 @@ export class TasksPluginFormat extends TasksLikeReminderFormat<TasksPluginRemind
       todo.body,
       this.useCustomEmoji(),
       this.removeTagsEnabled(),
-      this.isStrictDateFormat(),
       this.useDueDateFallback(),
     );
     if (this.useCustomEmoji()) {
@@ -358,7 +443,6 @@ export class TasksPluginFormat extends TasksLikeReminderFormat<TasksPluginRemind
       title,
       this.useCustomEmoji(),
       this.removeTagsEnabled(),
-      this.isStrictDateFormat(),
       this.useDueDateFallback(),
     );
     parsed.setTime(time, insertAt);
