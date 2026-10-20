@@ -18,3 +18,4 @@ export type {
   NtfyPublishAction,
   NtfySyncPlan,
 } from "./sync-plan";
+export { isValidNtfyTopic } from "./topic";

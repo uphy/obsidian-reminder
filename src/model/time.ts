@@ -1,6 +1,6 @@
 import { ConstantReference } from "model/ref";
 import type { ReadOnlyReference } from "model/ref";
-import moment from "moment";
+import { moment } from "model/moment";
 
 export class DateTime {
   public static now(): DateTime {
@@ -108,19 +108,19 @@ export class DateTime {
 export class Time {
   public static parse(text: string): Time {
     if (!text.match(/^\d{1,2}:\d{1,2}$/)) {
-      throw `Unexpected format time(${text}). Time must be HH:mm.`;
+      throw new Error(`Unexpected format time(${text}). Time must be HH:mm.`);
     }
     const s = text.split(":");
     if (s.length !== 2) {
-      throw `Unexpected format time(${text}).  time must be HH:mm.`;
+      throw new Error(`Unexpected format time(${text}).  time must be HH:mm.`);
     }
     const hour = parseInt(s[0]!);
     const minute = parseInt(s[1]!);
     if (hour > 23 || hour < 0) {
-      throw "hour must be 0~23";
+      throw new Error("hour must be 0~23");
     }
     if (minute > 59 || minute < 0) {
-      throw "minute must be 0~59";
+      throw new Error("minute must be 0~59");
     }
     return new Time(hour, minute);
   }
@@ -230,7 +230,7 @@ export function parseLater(later: string): Later {
   if (later.startsWith("in")) {
     const tokens = later.split(" ");
     if (tokens.length !== 3) {
-      throw "Unsupported format.  Should be 'In N (minutes|hours)'";
+      throw new Error("Unsupported format.  Should be 'In N (minutes|hours)'");
     }
     const n =
       tokens[1] === "a" || tokens[1] === "an" ? 1 : parseInt(tokens[1]!);
@@ -292,12 +292,12 @@ export function parseLater(later: string): Later {
       case "year":
         return new Later("Next year", nextYear());
       default:
-        throw `Unsupported weekday: ${weekday}`;
+        throw new Error(`Unsupported weekday: ${weekday}`);
     }
   } else if (later === "tomorrow") {
     return new Later("Tomorrow", tomorrow());
   }
-  throw `Unsupported format: ${later}`;
+  throw new Error(`Unsupported format: ${later}`);
 }
 
 export const DEFAULT_LATERS: Array<Later> = [

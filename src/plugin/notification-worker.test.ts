@@ -170,7 +170,8 @@ describe("NotificationWorker", (): void => {
   });
 
   test("does not force-reload again for the same expired reminders", async (): Promise<void> => {
-    const reloadUI = jest.fn();
+    // Typed so `mock.calls` below yields the `force` flag rather than any.
+    const reloadUI = jest.fn<void, [force: boolean]>();
     const deps = createDeps({
       isNotificationEnabled: () => false,
       getExpiredReminders: () => [makeReminder("r1")],
@@ -270,7 +271,7 @@ describe("NotificationWorker", (): void => {
           // Simulate the modal being displayed, then dismissed shortly
           // after — the worker must not show `r2` until this clears.
           r1.beingDisplayed = true;
-          setTimeout(() => {
+          window.setTimeout(() => {
             r1.beingDisplayed = false;
             events.push("cleared");
           }, 50);

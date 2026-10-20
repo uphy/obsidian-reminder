@@ -1,5 +1,5 @@
 <script lang="typescript">
-  import moment from "moment";
+  import { moment } from "model/moment";
   import { createEventDispatcher, onMount } from "svelte";
   import { Calendar } from "./calendar";
   import { TimedInputHandler } from "./timed-input-handler";

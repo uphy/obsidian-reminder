@@ -9,10 +9,20 @@ import { forceReminderPillRecompute } from "./state-effects";
 import type { ReminderPillSpan } from "./types";
 import ReminderPillComponent from "./ReminderPill.svelte";
 
+/**
+ * The Svelte component mounted into each pill's DOM, keyed by that DOM.
+ *
+ * CodeMirror can call `toDOM()` on the same widget instance more than once
+ * (e.g. when a line is redrawn as the viewport moves), and hands the DOM to
+ * a different, `eq()`-equal widget instance when decorations are rebuilt.
+ * Keeping the component on the widget instance would make `destroy()` tear
+ * down whichever component was mounted last — possibly one that's still on
+ * screen, leaving an empty pill — so it's tracked per DOM element instead.
+ */
+const mountedComponents = new WeakMap<HTMLElement, ReminderPillComponent>();
+
 /** Renders a single reminder's time text as a clickable "⏰ <time>" pill. */
 export class ReminderPillWidget extends WidgetType {
-  private component?: ReminderPillComponent;
-
   constructor(
     private readonly span: ReminderPillSpan,
     private readonly plugin: ReminderPlugin,
@@ -33,25 +43,26 @@ export class ReminderPillWidget extends WidgetType {
   }
 
   override toDOM(view: EditorView): HTMLElement {
-    const container = document.createElement("span");
-    this.component = new ReminderPillComponent({
+    const container = createSpan();
+    const component = new ReminderPillComponent({
       target: container,
       props: {
         label: `⏰ ${this.span.reminder.time.toString()}`,
         title: `Reminder: ${this.span.reminder.title}`,
       },
     });
-    this.component.$on("activate", () => {
+    component.$on("activate", () => {
       // Fire-and-forget: this is a user-initiated action from a DOM event
       // handler, there's nothing to await it against.
       void this.activate(view, container);
     });
+    mountedComponents.set(container, component);
     return container;
   }
 
-  override destroy(): void {
-    this.component?.$destroy();
-    this.component = undefined;
+  override destroy(dom: HTMLElement): void {
+    mountedComponents.get(dom)?.$destroy();
+    mountedComponents.delete(dom);
   }
 
   override ignoreEvent(): boolean {

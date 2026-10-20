@@ -1,5 +1,5 @@
 <script lang="typescript">
-  import moment from "moment";
+  import { moment } from "model/moment";
   import { setIcon } from "obsidian";
   import { tick } from "svelte";
   import type { Reminders } from "model/reminder";

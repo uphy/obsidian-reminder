@@ -1,9 +1,9 @@
 import type ReminderPlugin from "main";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
-import type { EditorView } from "@codemirror/view";
 import {
   App,
+  Editor,
   MarkdownView,
   Notice,
   Platform,
@@ -16,6 +16,7 @@ import { showPauseDurationChooser } from "plugin/dnd";
 import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { DndStatusBar } from "./dnd-status-bar";
+import { findLeafShowingFile } from "./find-leaf-showing-file";
 import { OverdueStatusBar } from "./overdue-status-bar";
 import { ReminderListItemViewProxy } from "./reminder-list";
 import { AutoComplete } from "./autocomplete";
@@ -183,7 +184,7 @@ export class ReminderPluginUI {
   }
 
   private async openReminderFile(reminder: Reminder) {
-    const leaf = this.plugin.app.workspace.getLeaf(false);
+    const workspace = this.plugin.app.workspace;
 
     console.debug("Open reminder: ", reminder);
     const file = this.plugin.app.vault.getAbstractFileByPath(reminder.file);
@@ -192,12 +193,37 @@ export class ReminderPluginUI {
       return;
     }
 
-    // Open the reminder file and jump to the reminder's line.
-    await leaf.openFile(file);
+    // Reuse a tab already showing the file. `getLeaf(false)` alone opens a
+    // new tab whenever the current one is pinned, even if that pinned tab
+    // shows this very file (#383). The path is read from the view state
+    // rather than `leaf.view` so deferred (not yet loaded) tabs match too.
+    let leaf = findLeafShowingFile(
+      file.path,
+      workspace.getMostRecentLeaf(),
+      workspace.getLeavesOfType("markdown"),
+      (l) => {
+        const path = l.getViewState().state?.["file"];
+        return typeof path === "string" ? path : undefined;
+      },
+    );
+    if (leaf != null) {
+      await workspace.revealLeaf(leaf);
+      workspace.setActiveLeaf(leaf, { focus: true });
+    } else {
+      // Open the reminder file and jump to the reminder's line.
+      leaf = workspace.getLeaf(false);
+      await leaf.openFile(file);
+    }
     if (!(leaf.view instanceof MarkdownView)) {
       return;
     }
     const editor = leaf.view.editor;
+    // A reused tab that was deferred (not yet loaded) gets its content a
+    // moment after `revealLeaf` resolves; until then the editor is empty.
+    if (!(await waitForLine(editor, reminder.rowNumber))) {
+      console.warn("Reminder line is not in the editor: %o", reminder);
+      return;
+    }
     const line = editor.getLine(reminder.rowNumber);
     // Place the cursor on the line (no selection held) and scroll it into
     // view, matching Obsidian's own search-result jump behavior rather than
@@ -213,10 +239,10 @@ export class ReminderPluginUI {
     );
 
     // Highlight the line via the CM6 extension registered in `onload()`.
-    // `.cm` is not part of Obsidian's public `Editor` type (see
-    // `autocomplete.ts` for the same cast), and is only present on desktop,
-    // so this is a silent no-op otherwise.
-    const cm = (editor as any).cm as EditorView | undefined;
+    // `.cm` is declared in `global.d.ts`: not part of Obsidian's public
+    // `Editor` type, and only present on desktop, so this is a silent no-op
+    // otherwise.
+    const cm = editor.cm;
     if (cm) {
       const cmLine = cm.state.doc.line(reminder.rowNumber + 1);
       cm.dispatch({
@@ -344,4 +370,23 @@ export class ReminderSettingTab extends PluginSettingTab {
 
     this.plugin.settings.settings.displayOn(containerEl);
   }
+}
+
+/**
+ * Wait (up to `timeoutMs`) until the editor has a line `row`. Returns whether
+ * it does.
+ */
+async function waitForLine(
+  editor: Editor,
+  row: number,
+  timeoutMs = 2000,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (editor.lineCount() <= row) {
+    if (Date.now() > deadline) {
+      return false;
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+  }
+  return true;
 }

@@ -1,4 +1,5 @@
-import type Electron from "electron";
+import type { EditorView } from "@codemirror/view";
+import { appendReminderToKanbanCardLine } from "model/format/kanban-card";
 import { convertToTodoLine } from "model/format/markdown";
 import type {
   ReminderFormat,
@@ -6,18 +7,30 @@ import type {
 } from "model/format/reminder-base";
 import type { DateTime } from "model/time";
 import { Notice } from "obsidian";
-
-const electron = window.require ? window.require("electron") : undefined;
+import { electron } from "./electron";
 
 export function showReminderInsertionFailureNotice() {
   new Notice(
-    'Cannot insert a reminder here.  Reminders can only be added to task lines such as "- [ ] Task".',
+    'Cannot insert a reminder here.  Reminders can only be added to task lines such as "- [ ] task".',
   );
+}
+
+/**
+ * Whether `view` is the editor of a Kanban plugin card (editing an existing
+ * card or adding a new one).  Such an editor holds only the card's text: the
+ * Kanban plugin writes the card's own "- [ ] " when it saves the board.
+ */
+export function isKanbanCardEditor(view: EditorView | undefined): boolean {
+  return view?.dom.closest(".kanban-plugin__item-input") != null;
 }
 
 /**
  * Appends a reminder to `line`, converting it into a task list item first
  * when it isn't one and `convertNonTaskLines` is enabled.
+ *
+ * In a Kanban card editor (`inKanbanCard`), a non-task line is never
+ * converted: the card already is a task, so the reminder is appended to the
+ * card text as is.
  *
  * `insertAt` (if given) is a string index into `line`.  Since converting a
  * line only ever prepends/replaces characters before the original content
@@ -30,10 +43,14 @@ export function appendReminderOrConvert(
   time: DateTime,
   insertAt: number | undefined,
   convertNonTaskLines: boolean,
+  inKanbanCard: boolean,
 ): ReminderInsertion | null {
   const direct = format.appendReminder(line, time, insertAt);
   if (direct != null) {
     return direct;
+  }
+  if (inKanbanCard) {
+    return appendReminderToKanbanCardLine(format, line, time, insertAt);
   }
   if (!convertNonTaskLines) {
     return null;
@@ -58,9 +75,7 @@ export async function showOkCancelDialog(
   if (!electron) {
     return OkCancel.CANCEL;
   }
-  const selected: Electron.MessageBoxReturnValue = await (
-    electron as any
-  ).remote.dialog.showMessageBox({
+  const selected = await electron.remote.dialog.showMessageBox({
     type: "question",
     title: "Obsidian Reminder",
     message: title,

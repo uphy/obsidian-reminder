@@ -1,0 +1,12 @@
+.reminder-preset-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.reminder-preset-previews {
+  display: grid;
+  grid-auto-rows: min-content;
+  row-gap: 2px;
+  opacity: 0.8;
+  font-size: 12px;
+}

@@ -32,7 +32,7 @@ npx jest -t "parse - link dates to daily notes"
 
 The entry point is `src/main.ts` (`ReminderPlugin`). `src/` is organized into three layers.
 
-- `src/model/` — Domain logic with no dependency on the Obsidian API: `Reminder`/`Reminders` (`model/reminder.ts`), date/time handling via `DateTime`/`Time` (`model/time.ts`), and the reminder-syntax parsers for Markdown (`model/format/`). This is the only layer with direct jest unit tests (because it never imports the `obsidian` module).
+- `src/model/` — Domain logic with no dependency on the Obsidian API: `Reminder`/`Reminders` (`model/reminder.ts`), date/time handling via `DateTime`/`Time` (`model/time.ts`), and the reminder-syntax parsers for Markdown (`model/format/`). Most jest unit tests live here, because it never imports the `obsidian` module and so needs nothing else in place.
 - `src/plugin/` — The plugin body, which depends on the Obsidian API. Bundles file watching, notifications, settings, and command registration (`plugin/index.ts` is the export entry point).
 - `src/ui/` — Svelte components (`ui/*.svelte`) and the TS that supports them (e.g. calendar calculations). The Obsidian Modal/View code in `src/plugin/ui/` mounts the Svelte components.
 
@@ -52,7 +52,15 @@ Symlink the dev vault's `.obsidian/plugins/obsidian-reminder-plugin` to this rep
 
 With this set up, running `mise run dev` keeps esbuild's watch build resident, so every time you save a source file it automatically rebuilds and reloads in Obsidian. No manual copying or restarting Obsidian is needed.
 
-Automated tests only cover `src/model/`. After implementing a change that affects runtime behavior in Obsidian (anything under `src/plugin/` or `src/ui/`, or parsing behavior visible in the vault), run the `manual-verify` skill to set up the test vault and walk the user through verification before opening a PR. A Stop hook (`.claude/hooks/manual-verify-reminder.sh`) reminds about this once per change state.
+Automated tests cover `src/model/` and the parts of `src/plugin/` whose dependencies are injected (see `.claude/rules/testing.md`), but nothing that renders. After implementing a change that affects runtime behavior in Obsidian (anything under `src/plugin/` or `src/ui/`, or parsing behavior visible in the vault), run the `manual-verify` skill to set up the test vault and walk the user through verification before opening a PR. A Stop hook (`.claude/hooks/manual-verify-reminder.sh`) reminds about this once per change state.
+
+## PR review
+
+Before opening a PR, run the `pr-review` skill from the branch's worktree (clean tree, not on master). It runs `.claude/workflows/pr-review.js`: five perspective agents (`.claude/agents/review-*.md` — CodeMirror/Obsidian lifecycle, reminder format, time and notifications, Obsidian plugin guidelines, testability) review `git diff <merge-base>..HEAD` in parallel, `review-verifier` tries to refute each finding, and `review-fixer` commits one fix per confirmed finding (lint + jest must pass, otherwise it reverts). Perspectives whose findings were fixed then re-review the fix commits, for at most 2 rounds. It never pushes or opens a PR. Tune what a perspective looks for by editing its agent file, and add new incidents to its "Past incidents" list when a bug slips through.
+
+`pr-review <PR number>` reviews someone else's PR instead: it checks the PR out into `.claude/worktrees/pr-<N>`, refuses to run anything until the diff has been read for changes to build/test config, `.claude/`, `.github/`, or code doing more than the PR claims, takes the reviewers' instructions from the master checkout rather than the PR, doesn't fix by default, and drafts the confirmed findings as PR review comments that are posted only after you approve.
+
+For a contributor's PR end to end, use the `contributor-pr` skill. Each run reads the PR's state and does the next stage: review (via `pr-review`), follow-up (check every review point against the code, not the replies), or land (merge master into the PR branch, test the combined behavior, check the docs, verify in the test vault with `obsidian-e2e`, approve the fork's CI run, thank the contributor, merge). Posting, pushing, and merging each wait for your go-ahead.
 
 ## Release flow
 

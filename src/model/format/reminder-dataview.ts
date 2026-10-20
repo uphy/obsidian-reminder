@@ -1,6 +1,6 @@
 import type { Todo } from "model/format/markdown";
 import { DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import type { InlineField } from "./inline-field";
 import {
   appendField,

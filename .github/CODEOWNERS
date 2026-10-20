@@ -1,0 +1,5 @@
+# Changes to the agent instructions and automation run on the maintainer's
+# machine and in CI; they always need the maintainer's review.
+/.claude/ @uphy
+/.github/ @uphy
+/CLAUDE.md @uphy

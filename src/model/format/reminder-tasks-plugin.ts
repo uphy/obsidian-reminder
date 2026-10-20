@@ -1,6 +1,6 @@
 import type { Todo } from "model/format/markdown";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import { ReminderFormatParameterKey } from "./reminder-base";
 import { TasksLikeReminderFormat, removeTags } from "./reminder-tasks-like";
 import type { TasksLikeReminderModel } from "./reminder-tasks-like";
@@ -17,6 +17,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   private static readonly dueDateTimeFormat = "YYYY-MM-DD HH:mm";
   private static readonly symbolDueDate = Symbol.ofChars([..."📅📆🗓"]);
   private static readonly symbolDoneDate = Symbol.ofChar("✅");
+  private static readonly symbolCancelledDate = Symbol.ofChar("❌");
   private static readonly symbolRecurrence = Symbol.ofChar("🔁");
   private static readonly symbolReminder = Symbol.ofChar("⏰");
   private static readonly symbolScheduled = Symbol.ofChar("⏳");
@@ -24,6 +25,7 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
   private static readonly allSymbols = [
     TasksPluginReminderModel.symbolDueDate,
     TasksPluginReminderModel.symbolDoneDate,
+    TasksPluginReminderModel.symbolCancelledDate,
     TasksPluginReminderModel.symbolRecurrence,
     TasksPluginReminderModel.symbolReminder,
     TasksPluginReminderModel.symbolStart,
@@ -167,6 +169,10 @@ export class TasksPluginReminderModel implements TasksLikeReminderModel {
 
   setDoneDate(time: DateTime | string | undefined) {
     this.setDate(TasksPluginReminderModel.symbolDoneDate, time);
+  }
+
+  getCancelledDate(): DateTime | null {
+    return this.getDate(TasksPluginReminderModel.symbolCancelledDate);
   }
 
   getRecurrence() {
@@ -386,6 +392,24 @@ export class TasksPluginFormat extends TasksLikeReminderFormat<TasksPluginRemind
       }
     }
     return parsed;
+  }
+
+  /**
+   * The Tasks plugin lets users define custom statuses (e.g. `[*]`) whose
+   * type is DONE or CANCELLED, so the checkbox character alone can't tell
+   * whether a task is finished. The Tasks plugin stamps such tasks with ✅
+   * (done date) or ❌ (cancelled date, since Tasks 5.5.0), so treat either
+   * date as done too.
+   */
+  protected override isDone(
+    todo: Todo,
+    parsed: TasksPluginReminderModel,
+  ): boolean {
+    return (
+      super.isDone(todo, parsed) ||
+      parsed.getDoneDate() != null ||
+      parsed.getCancelledDate() != null
+    );
   }
 
   private removeTagsEnabled() {

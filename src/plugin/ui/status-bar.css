@@ -1,0 +1,10 @@
+.reminder-status-bar-item {
+  cursor: pointer;
+}
+
+/* Obsidian lays out `.status-bar-item` with `display: flex`, which beats the
+   user-agent rule behind the `hidden` attribute, so these items need a class
+   that sets display explicitly. */
+.reminder-status-bar-item.is-hidden {
+  display: none;
+}

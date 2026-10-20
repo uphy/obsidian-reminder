@@ -3,6 +3,7 @@ import type { ReadOnlyReference } from "model/ref";
 import { Reminder } from "model/reminder";
 import { DateTime } from "model/time";
 import { Todo } from "./markdown";
+import { StatusRegistry } from "./status";
 
 export type ReminderEdit = {
   time?: DateTime;
@@ -66,6 +67,10 @@ export class ReminderFormatParameterKey<T> {
     "strictDateFormat",
     false,
   );
+  static readonly taskStatuses = new ReminderFormatParameterKey<StatusRegistry>(
+    "taskStatuses",
+    StatusRegistry.EMPTY,
+  );
   constructor(
     public readonly key: string,
     public readonly defaultValue: T,
@@ -75,7 +80,7 @@ export class ReminderFormatParameterKey<T> {
 type ReminderFormatParameterSource<T> = () => T;
 
 export class ReminderFormatConfig {
-  private parameters: Map<string, ReminderFormatParameterSource<any>> =
+  private parameters: Map<string, ReminderFormatParameterSource<unknown>> =
     new Map();
   constructor() {}
 
@@ -112,7 +117,11 @@ export class ReminderFormatConfig {
     if (value == null) {
       return key.defaultValue;
     }
-    return value();
+    // The map holds sources for every parameter key, so it cannot be typed to
+    // a single T. Every setter above takes a ReminderFormatParameterKey<T>
+    // and stores a source of that same T under `key.key`, so the source found
+    // for this key produces T.
+    return value() as T;
   }
 }
 
@@ -170,6 +179,10 @@ export abstract class TodoBasedReminderFormat<
     this.config = config;
   }
 
+  protected statusRegistry(): StatusRegistry {
+    return this.config.getParameter(ReminderFormatParameterKey.taskStatuses);
+  }
+
   parse(doc: MarkdownDocument): ReminderSpan[] {
     return doc
       .getTodos()
@@ -191,7 +204,7 @@ export abstract class TodoBasedReminderFormat<
           title,
           time,
           todo.lineIndex,
-          todo.isChecked(),
+          this.isDone(todo, parsed),
         );
         const span = parsed.computeSpan();
         const headerLength = todo.getHeaderLength();
@@ -237,6 +250,11 @@ export abstract class TodoBasedReminderFormat<
     return parsed;
   }
 
+  /** Whether the reminder parsed from `todo` should be treated as done. */
+  protected isDone(todo: Todo, _parsed: E): boolean {
+    return todo.isChecked(this.statusRegistry());
+  }
+
   isValidReminder(reminder: E): boolean {
     return reminder.getTime() !== null;
   }
@@ -259,7 +277,7 @@ export abstract class TodoBasedReminderFormat<
       parsed.setTime(edit.time);
     }
     if (edit.checked !== undefined) {
-      todo.setChecked(edit.checked);
+      todo.setChecked(edit.checked, this.statusRegistry());
     }
     return true;
   }

@@ -115,6 +115,8 @@ It will open the calendar popup.
 
 Unlike the inline popup shown when typing the trigger, this always opens as a dialog — this is also how the calendar popup is shown on mobile.
 
+No shortcut is assigned to it by default; you can assign one from `Obsidian > Settings > Hotkeys > Reminder: Show calendar popup`.
+
 ::: tip
 For mobile users, it would be useful to add a button to the toolbar at the bottom of the markdown editor to show the calendar popup.
 
@@ -142,10 +144,10 @@ If you are using [Tasks Plugin format](/guide/interop-tasks.html), this action d
 - Create next recurring task (if you use `🔁 XXX`)
   :::
 
-**By keyboad shortcut**
+**By keyboard shortcut**
 
-By default, <kbd>Meta</kbd> + <kbd>Shift</kbd> + <kbd>Enter</kbd> to toggle checklist status.  
-You can change it from `Obsidian > Settings > Hotkeys > Reminder: Toggle checklist status`.
+No shortcut is assigned by default.  
+You can assign one from `Obsidian > Settings > Hotkeys > Reminder: Toggle checklist status`.
 
 **From reminder notification**
 
@@ -175,3 +177,8 @@ You can create a TODO item that is not a reminder by formatting it as `- [-] xxx
 ```markdown
 - [-] Task 1 (@2024-12-24)
 ```
+
+::: tip
+Which checkbox symbols count as done or cancelled can be customized with
+the [Task statuses](/setting/#task-statuses) setting.
+:::

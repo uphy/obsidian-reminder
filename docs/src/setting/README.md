@@ -47,7 +47,7 @@ Clear every [muted](/guide/notification.html#mute-notification) reminder when Ob
 
 - Type: `boolean`
 - Values:
-  - ON: All mute flags are dropped on startup. Every overdue reminder is notified again, one after another. Muting is not distinguished by how it happened, so reminders muted via [Mute all current reminders](/guide/notification.html#muting-all-reminders-at-once) are cleared too.
+  - ON: All mute flags are dropped on startup. Every overdue reminder is notified again, one after another. Muting is not distinguished by how it happened, so reminders muted via [Mute all current notifications](/guide/notification.html#muting-all-reminders-at-once) are cleared too.
   - OFF: Muted reminders stay muted across restarts (default)
 - Default: OFF
 
@@ -83,6 +83,8 @@ Only available on desktop OS.
 - Values:
   - ON: Use system notification. In mobile devices, this setting is ignored and builtin notification is used.
   - OFF: Use builtin notification
+
+On Windows, a system notification can have at most 5 buttons, so only the first few [Remind me later](#remind-me-later) options appear on it: 4, or 3 when [Keep system notification on screen](#keep-system-notification-on-screen) is enabled, because a close button is added. Clicking the notification opens the builtin popup, which offers every option (unless [Open note on reminder click](#open-note-on-reminder-click) is enabled, in which case it opens the note).
 
 ### Show popup together with system notification
 
@@ -281,6 +283,58 @@ Enable support for [Kanban Plugin](https://github.com/mgmeyers/obsidian-kanban)
   - ON: Enable Kanban plugin format
   - OFF: Disable Kanban plugin format (default)
 
+### Task statuses
+
+Defines what each checkbox symbol (the character between the brackets)
+means: which lines count as done, and which symbol the Done button writes.
+Although the automatic fallback reads the Tasks plugin's settings, the
+statuses themselves apply to **every** reminder format and to the
+`Toggle checklist status` command.
+
+- Type: `string` (multi-line)
+- Default: empty
+
+One status per line:
+
+```
+[symbol] -> [next symbol] TYPE
+```
+
+- `symbol` — the checkbox character the status describes (a space for `[ ]`).
+- `next symbol` — the character that clicking the checkbox writes next.
+- `TYPE` — one of six types, matching the Tasks plugin's:
+  - `TODO`, `IN_PROGRESS`, `ON_HOLD` — the line is not done and can remind.
+  - `DONE` — the line is done; completing a line onto a `DONE` symbol also
+    stamps its done date.
+  - `CANCELLED` — the line is closed without being done: it never reminds,
+    but gets no done date either.
+  - `NON_TASK` — the line is not a task at all, so it never reminds.
+
+A symbol that appears in no line is treated as `TODO`, like the Tasks
+plugin does. Unparseable lines are skipped, and an unknown type is
+reported under the setting (and treated as `TODO`).
+
+In the [Tasks plugin format](/guide/interop-tasks.html), a line that
+carries a done date (`✅`) or a cancelled date (`❌`) also counts as done,
+whatever its symbol.
+
+Lines you write here **extend** the defaults and win over them on a
+duplicate symbol. The defaults are:
+
+- the Tasks plugin's own status settings, when that plugin is enabled —
+  so the common case needs no configuration at all;
+- otherwise the built-in set, which reproduces the plugin's historical
+  behavior: `[ ]` TODO, `[x]` DONE, `[-]` CANCELLED.
+
+Leave the setting empty to follow the defaults alone.
+
+Example — keep the defaults, and add an in-progress status that the Done
+button completes to `[x]`:
+
+```
+[/] -> [x] IN_PROGRESS
+```
+
 ## Display
 
 You can customize how dates and times are displayed in the Reminder List and related UI. This affects:
@@ -289,6 +343,12 @@ You can customize how dates and times are displayed in the Reminder List and rel
 - Time display for each reminder item
 
 Four independent Moment-style display formats are available, plus the first day of the week used by the calendar popup.
+
+::: tip Month and weekday names follow Obsidian's language
+Format tokens that spell out a name — `MMMM` (August / 8月), `ddd` (Sun / 日), `A` (PM / 午後) — are rendered in whatever language Obsidian is set to, matching how Obsidian displays dates elsewhere. Numeric tokens such as `MM`, `DD` and `HH` are unaffected.
+
+Releases up to 1.4.3 always rendered these in English, whatever the app language, so a preset can look different after updating. The examples below are written as they appear in an English Obsidian.
+:::
 
 ### Year & month format
 
@@ -323,6 +383,8 @@ Four independent Moment-style display formats are available, plus the first day 
 You can quickly apply a preset via the command palette:
 
 - Command: “Set date display format”
+Preset names describe the **order** the date parts appear in, not the language they are written in — month and weekday names follow Obsidian's language, as above. `JP Style` additionally uses 年 / 月 / 日 as literal separators.
+
 - Presets include typical regional styles, e.g.:
   - US Style (12h): `MMMM YYYY`, `MM/DD`, `M/DD (ddd)`, `h:mm A`
   - US Style (24h): `MMMM YYYY`, `MM/DD`, `M/DD (ddd)`, `HH:mm`
@@ -409,6 +471,21 @@ The ntfy server to publish scheduled notifications to.
 ### ntfy topic
 
 Topic to publish reminders to. Anyone who knows this topic name can subscribe to it and read your reminder titles and note names, so use a long, hard-to-guess name rather than something predictable.
+
+A topic name may only contain letters, digits, dashes and underscores, and be at most 64 characters long — ntfy's own rule. A name that breaks it is rejected in the settings tab, and nothing is published until it's fixed.
+
+- Type: `string`
+- Default: (empty)
+
+### ntfy access token
+
+Only needed for a server that requires authentication (a self-hosted instance with access control, for example); leave it empty otherwise, and requests are sent without credentials exactly as before.
+
+Create a token with `ntfy token add <user>` on the server, or from the ntfy web app under Account → Access tokens. It needs read-write access to the topic above, because this plugin reads the topic's scheduled messages, publishes new ones and deletes them again.
+
+The token is stored in plain text in this plugin's `data.json`, which is synced along with your vault if you sync your Obsidian configuration folder (`.obsidian` unless you changed it). Prefer a token scoped to just this topic over one with access to your whole account.
+
+The **Test** button next to the field checks the settings by making the same three requests a sync does — read the topic, publish a message, delete it again — and reports what failed. Nothing is delivered to your devices: the test message is scheduled a day out and deleted immediately.
 
 - Type: `string`
 - Default: (empty)

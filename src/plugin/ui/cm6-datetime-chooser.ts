@@ -1,7 +1,8 @@
+import "./cm6-datetime-chooser.css";
 import type { EditorView } from "@codemirror/view";
 import type { Reminders } from "model/reminder";
 import type { DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import DateTimeChooser from "ui/DateTimeChooser.svelte";
 
 /**
@@ -64,9 +65,8 @@ export class CM6DateTimeChooserPopup {
     private timeStep: number,
     private weekStart: number,
   ) {
-    this.view = document.createElement("div");
+    this.view = createDiv();
     this.view.addClass("date-time-chooser-popup");
-    this.view.style.position = "fixed";
   }
 
   /** Show the popup near the given document position and wait for a result. */
@@ -80,7 +80,7 @@ export class CM6DateTimeChooserPopup {
     // needs the popup's own size, known only after mounting — so keep it
     // invisible until it has been measured and placed, to avoid a visible
     // jump.
-    this.view.style.visibility = "hidden";
+    this.view.addClass("is-measuring");
     document.body.appendChild(this.view);
     this.dateTimeChooser = new DateTimeChooser({
       target: this.view,
@@ -96,7 +96,7 @@ export class CM6DateTimeChooserPopup {
       },
     });
     this.position(pos);
-    this.view.style.visibility = "visible";
+    this.view.removeClass("is-measuring");
 
     document.addEventListener("mousedown", this.onDocumentMouseDown, true);
     this.view.addEventListener("keydown", this.onKeyDown);
