@@ -54,6 +54,10 @@ With this set up, running `mise run dev` keeps esbuild's watch build resident, s
 
 Automated tests cover `src/model/` and the parts of `src/plugin/` whose dependencies are injected (see `.claude/rules/testing.md`), but nothing that renders. After implementing a change that affects runtime behavior in Obsidian (anything under `src/plugin/` or `src/ui/`, or parsing behavior visible in the vault), run the `manual-verify` skill to set up the test vault and walk the user through verification before opening a PR. A Stop hook (`.claude/hooks/manual-verify-reminder.sh`) reminds about this once per change state.
 
+## Pre-PR review
+
+Before opening a PR, run the `pre-pr-review` skill from the branch's worktree (clean tree, not on master). It runs `.claude/workflows/pre-pr-review.js`: five perspective agents (`.claude/agents/review-*.md` — CodeMirror/Obsidian lifecycle, reminder format, time and notifications, Obsidian plugin guidelines, testability) review `git diff <merge-base>..HEAD` in parallel, `review-verifier` tries to refute each finding, and `review-fixer` commits one fix per confirmed finding (lint + jest must pass, otherwise it reverts). Perspectives whose findings were fixed then re-review the fix commits, for at most 2 rounds. It never pushes or opens a PR. Tune what a perspective looks for by editing its agent file, and add new incidents to its "Past incidents" list when a bug slips through.
+
 ## Release flow
 
 `release.sh` has been removed. Releases are done exclusively via `.github/workflows/release.yml` and `release-beta.yml`, both triggered manually via `workflow_dispatch`.
