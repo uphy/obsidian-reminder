@@ -184,7 +184,7 @@ describe("TasksPluginReminderLine", (): void => {
       customEmoji: true,
       inputMarkdown:
         "- [ ] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12",
-      expectedMarkdown: `- [ ] Task ⏰ 2021-09-14 09:00 🔁 every day 📅 2021-09-14
+      expectedMarkdown: `- [ ] Task ⏰ 2021-09-15 09:00 🔁 every day 📅 2021-09-14
 - [x] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12 ✅ 2021-09-13`,
     });
   });
@@ -194,7 +194,7 @@ describe("TasksPluginReminderLine", (): void => {
       customEmoji: true,
       inputMarkdown:
         "- [ ] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12",
-      expectedMarkdown: `- [ ] Task ⏰ 2021-09-16 09:00 🔁 every day 📅 2021-09-16
+      expectedMarkdown: `- [ ] Task ⏰ 2021-09-17 09:00 🔁 every day 📅 2021-09-16
 - [x] Task ⏰ 2021-09-13 09:00 🔁 every day 📅 2021-09-12 ✅ 2021-09-15`,
     });
   });
@@ -239,8 +239,47 @@ describe("TasksPluginReminderLine", (): void => {
       customEmoji: true,
       inputMarkdown:
         "- [ ] Task ⏰ 2021-09-05 11:00 🔁 every month on the 5th 📅 2021-09-12",
-      expectedMarkdown: `- [ ] Task ⏰ 2021-10-05 11:00 🔁 every month on the 5th 📅 2021-10-05
+      expectedMarkdown: `- [ ] Task ⏰ 2021-09-28 11:00 🔁 every month on the 5th 📅 2021-10-05
 - [x] Task ⏰ 2021-09-05 11:00 🔁 every month on the 5th 📅 2021-09-12 ✅ 2021-09-13`,
+    });
+  });
+  test("modify() - custom emoji - every Year preserves reminder and due dates when resolved later", async () => {
+    await testModify({
+      now: "2026-10-17 12:00",
+      customEmoji: true,
+      inputMarkdown:
+        "- [ ] Valentines 🔁 every Year ⏰ 2026-01-05 📅 2026-02-14",
+      expectedMarkdown: `- [ ] Valentines 🔁 every Year ⏰ 2027-01-05 📅 2027-02-14
+- [x] Valentines 🔁 every Year ⏰ 2026-01-05 📅 2026-02-14 ✅ 2026-10-17`,
+    });
+  });
+  test("modify() - custom emoji - every Year preserves reminder and due dates when resolved on due date", async () => {
+    await testModify({
+      now: "2026-02-14 18:00",
+      customEmoji: true,
+      inputMarkdown:
+        "- [ ] Valentines 🔁 every Year ⏰ 2026-01-05 📅 2026-02-14",
+      expectedMarkdown: `- [ ] Valentines 🔁 every Year ⏰ 2027-01-05 📅 2027-02-14
+- [x] Valentines 🔁 every Year ⏰ 2026-01-05 📅 2026-02-14 ✅ 2026-02-14`,
+    });
+  });
+  test("modify() - custom emoji - late completion keeps reminder before due date when ⏰ and 📅 fall in different periods relative to now", async () => {
+    await testModify({
+      now: "2026-02-08 12:00",
+      customEmoji: true,
+      inputMarkdown: "- [ ] Task ⏰ 2026-01-05 📅 2026-01-20 🔁 every month",
+      expectedMarkdown: `- [ ] Task ⏰ 2026-02-05 📅 2026-02-20 🔁 every month
+- [x] Task ⏰ 2026-01-05 📅 2026-01-20 🔁 every month ✅ 2026-02-08`,
+    });
+  });
+  test("modify() - custom emoji - 'when done' keeps reminder offset relative to due date", async () => {
+    await testModify({
+      now: "2026-02-08 12:00",
+      customEmoji: true,
+      inputMarkdown:
+        "- [ ] Task ⏰ 2026-01-05 📅 2026-01-20 🔁 every month when done",
+      expectedMarkdown: `- [ ] Task ⏰ 2026-02-21 📅 2026-03-08 🔁 every month when done
+- [x] Task ⏰ 2026-01-05 📅 2026-01-20 🔁 every month when done ✅ 2026-02-08`,
     });
   });
 });
@@ -802,6 +841,21 @@ describe("task statuses follow the registry (scenarios 2 and 3)", (): void => {
       // semantics; this test pins only the status symbols: [ ] next, [v] done.
       expectedMarkdown: `- [ ] chores ⏰ 2026-08-19 🔁 every day ⏳ 2026-08-17 
 - [v] chores 🔁 every day ⏳ 2026-08-17 ✅ 2026-08-18`,
+    });
+  });
+
+  test("recurrence: completing a late [w] with ⏰ and 📅 keeps their offset (#384)", async () => {
+    // Combines the registry (#361: [w] completes to [v], the next occurrence
+    // starts at [ ]) with #384's anchored recurrence: 📅 advances to the next
+    // Monday after now, and ⏰ moves by the same number of days. Without #361
+    // the lines read [x]/[ ]; without #384 both dates jump to now + 1 week.
+    await testModify({
+      now: "2026-08-18",
+      customEmoji: true,
+      statuses,
+      inputMarkdown: "- [w] chores ⏰ 2026-08-03 📅 2026-08-10 🔁 every week",
+      expectedMarkdown: `- [ ] chores ⏰ 2026-08-17 📅 2026-08-24 🔁 every week
+- [v] chores ⏰ 2026-08-03 📅 2026-08-10 🔁 every week ✅ 2026-08-18`,
     });
   });
 });
