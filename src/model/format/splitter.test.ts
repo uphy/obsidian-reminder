@@ -83,6 +83,61 @@ describe("splitBySymbol()", (): void => {
     ]);
   });
 
+  test("a symbol inside an inline code span is text, not a symbol", (): void => {
+    expect(
+      splitBySymbol(
+        "Task `📅 2021-09-08` prose ✅ 2021-08-31",
+        symbolOf("📅📆🗓✅🔁"),
+      ),
+    ).toStrictEqual([
+      { symbol: "", text: "Task `📅 2021-09-08` prose " },
+      { symbol: "✅", text: " 2021-08-31" },
+    ]);
+  });
+
+  test("a tag inside an inline code span is text, not a tag", (): void => {
+    expect(
+      splitBySymbol("Task 📅 2021-09-08 `#mytag` done", symbolOf("#📅📆🗓✅🔁")),
+    ).toStrictEqual([
+      { symbol: "", text: "Task " },
+      { symbol: "📅", text: " 2021-09-08 `#mytag` done" },
+    ]);
+  });
+
+  test("a tag inside a code span still closes the symbol token (the mask does not reach the tag branch)", (): void => {
+    // The tag split exists to keep the tag out of the symbol token so a date
+    // edit cannot delete it; that protection must hold whether or not the tag
+    // sits inside a code span, because the edit rewrites the whole token text.
+    expect(
+      splitBySymbol(
+        "Task 📅 2021-09-08 ` #mytag ` done",
+        symbolOf("📅📆🗓✅🔁"),
+      ),
+    ).toStrictEqual([
+      { symbol: "", text: "Task " },
+      { symbol: "📅", text: " 2021-09-08 ` " },
+      { symbol: "", text: "#mytag ` done" },
+    ]);
+  });
+
+  test("an unpaired backtick opens nothing, so the symbol after it is real", (): void => {
+    expect(
+      splitBySymbol("Task ` unclosed 📅 2021-09-08", symbolOf("📅📆🗓✅🔁")),
+    ).toStrictEqual([
+      { symbol: "", text: "Task ` unclosed " },
+      { symbol: "📅", text: " 2021-09-08" },
+    ]);
+  });
+
+  test("a run of N backticks is only closed by a run of exactly N", (): void => {
+    expect(
+      splitBySymbol("Task ``a ` b 📅 c`` ✅ 2021-08-31", symbolOf("📅📆🗓✅🔁")),
+    ).toStrictEqual([
+      { symbol: "", text: "Task ``a ` b 📅 c`` " },
+      { symbol: "✅", text: " 2021-08-31" },
+    ]);
+  });
+
   test("round-trip: join() reproduces the original line", (): void => {
     const symbols = symbolOf("📅📆🗓✅🔁");
     const lines = [
@@ -94,6 +149,9 @@ describe("splitBySymbol()", (): void => {
       "Task #mytag 📅 2021-09-08",
       "#mytag",
       "📅#mytag",
+      "Task `📅 2021-09-08` prose ✅ 2021-08-31",
+      "Task ` unclosed 📅 2021-09-08",
+      "Task ``a ` b 📅 c`` ✅ 2021-08-31",
     ];
     for (const line of lines) {
       expect(new Tokens(splitBySymbol(line, symbols)).join()).toBe(line);

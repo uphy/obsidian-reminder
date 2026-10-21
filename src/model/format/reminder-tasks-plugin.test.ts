@@ -3,12 +3,15 @@ import {
   TasksPluginFormat,
   TasksPluginReminderModel,
 } from "model/format/reminder-tasks-plugin";
-import { DateTime } from "model/time";
+import { ConstantReference } from "model/ref";
+import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import { moment } from "model/moment";
 import {
   ReminderFormatConfig,
   ReminderFormatParameterKey,
 } from "./reminder-base";
+import { StatusRegistry } from "./status";
+import type { TaskStatus } from "./status";
 
 describe("TasksPluginReminderLine", (): void => {
   test("parse()", (): void => {
@@ -45,6 +48,18 @@ describe("TasksPluginReminderLine", (): void => {
     expect(parse("Task1 #task/sub 📅 2021-09-08").getTitle()).toBe("Task1");
     // non-ASCII tag (https://github.com/uphy/obsidian-reminder/issues/169)
     expect(parse("Task1 #zokjfkdsaób 📅 2021-09-08").getTitle()).toBe("Task1");
+  });
+  test("setDueDate() - a tag inside a code span survives a date edit", (): void => {
+    // Regression guard for the tag-preservation split (#311): the date edit
+    // rewrites the whole 📅 token text, so the tag must have been split out of
+    // that token even when it sits inside a code span. (The opening backtick
+    // being dropped is a pre-existing replaceTokenText() quirk, not part of
+    // what this test guards.)
+    const parsed = TasksPluginReminderModel.parse(
+      "Task 📅 2021-09-08 ` #mytag ` done",
+    );
+    parsed.setDueDate(new DateTime(moment("2026-09-01"), false));
+    expect(parsed.toMarkdown()).toBe("Task 📅 2026-09-01 #mytag ` done");
   });
   test("setTitle()", (): void => {
     const parsed = TasksPluginReminderModel.parse(
@@ -332,6 +347,26 @@ describe("TasksPluginReminderModel - reminder-time fallback (⏰ → 📅 → �
     expect(spans[0]!.reminder.time.toString()).toBe("2021-09-08");
   });
 
+  test("a marker written inside an inline code span does not arm a reminder", (): void => {
+    // #338 taught the same rule for fenced blocks, one layer up in
+    // MarkdownDocument.parse. An inline code span never reaches that guard: the
+    // line is a real task, and the marker is prose *about* a marker.
+    const spans = parseLine(
+      "- [ ] `⏳` this cannot be parsed by reminder plugin ➕ 2026-08-17",
+      { customEmoji: true, dueDateFallback: true },
+    );
+    expect(spans).toHaveLength(0);
+  });
+
+  test("a marker outside a code span still arms when the line also contains one", (): void => {
+    const spans = parseLine("- [ ] `⏳` prose ⏳ 2021-09-05", {
+      customEmoji: true,
+      dueDateFallback: true,
+    });
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-05");
+  });
+
   test("fallback on: a malformed ⏰ blocks fallback to a valid 📅 (presence, not validity)", (): void => {
     const spans = parseLine("- [ ] Task ⏰ not-a-date 📅 2021-09-08", {
       customEmoji: true,
@@ -460,10 +495,20 @@ describe("TasksPluginFormat - done state from Tasks plugin dates (#374)", (): vo
 
 function parseLine(
   markdown: string,
-  options: { customEmoji?: boolean; dueDateFallback?: boolean } = {},
+  options: {
+    customEmoji?: boolean;
+    dueDateFallback?: boolean;
+    statuses?: Array<TaskStatus>;
+  } = {},
 ) {
   const sut = new TasksPluginFormat();
   const config = new ReminderFormatConfig();
+  if (options.statuses !== undefined) {
+    config.setParameterValue(
+      ReminderFormatParameterKey.taskStatuses,
+      new StatusRegistry(options.statuses),
+    );
+  }
   if (options.customEmoji !== undefined) {
     config.setParameterValue(
       ReminderFormatParameterKey.useCustomEmojiForTasksPlugin,
@@ -484,18 +529,26 @@ async function testModify({
   now,
   customEmoji,
   dueDateFallback = false,
+  statuses,
   inputMarkdown,
   expectedMarkdown,
 }: {
   now: string;
   customEmoji: boolean;
   dueDateFallback?: boolean;
+  statuses?: Array<TaskStatus>;
   inputMarkdown: string;
   expectedMarkdown: string | undefined;
 }) {
   const doc = new MarkdownDocument("file", inputMarkdown);
   const sut = new TasksPluginFormat();
   const config = new ReminderFormatConfig();
+  if (statuses !== undefined) {
+    config.setParameterValue(
+      ReminderFormatParameterKey.taskStatuses,
+      new StatusRegistry(statuses),
+    );
+  }
   config.setParameterValue(
     ReminderFormatParameterKey.now,
     new DateTime(moment(now), true),
@@ -517,3 +570,328 @@ async function testModify({
   await sut.modify(doc, spans[0]!.reminder, { checked: true });
   expect(doc.toMarkdown()).toBe(expectedMarkdown);
 }
+
+describe("the date must be the head of the token", (): void => {
+  const opts = { customEmoji: true, dueDateFallback: true };
+
+  test("a marker with no date of its own borrows none from later in the line", (): void => {
+    expect(
+      parseLine(
+        "- [ ] scenario4 ⏳ without date is parsed? ➕ 2026-08-17",
+        opts,
+      ),
+    ).toHaveLength(0);
+  });
+
+  test("a ⏰ with no date of its own does not fabricate a midnight", (): void => {
+    expect(
+      parseLine("- [ ] x ⏰ no date here ➕ 2026-08-17", opts),
+    ).toHaveLength(0);
+  });
+
+  test("a 📅 with no date of its own borrows none", (): void => {
+    expect(
+      parseLine("- [ ] x 📅 no date here ➕ 2026-08-17", opts),
+    ).toHaveLength(0);
+  });
+
+  test("a date that is not the first field is not the token's date", (): void => {
+    // The miniature of the whole defect: lenient moment finds "2026-08-17"
+    // inside "prose 2026-08-17" and hands it back as the scheduled date. The
+    // Tasks plugin allows only spaces between marker and date, so this line has
+    // no scheduled date at all.
+    expect(parseLine("- [ ] x ⏳ prose 2026-08-17", opts)).toHaveLength(0);
+  });
+
+  test("markers the plugin does not tokenise may follow the date (⏳)", (): void => {
+    // The Tasks plugin's own ➕/🆔 are not symbols here, so the token swallows
+    // them. This is why a strict parse of the whole token text is the wrong fix.
+    const spans = parseLine(
+      "- [v] rule ⏳ 2026-08-23 ➕ 2026-08-09 🆔 an-id",
+      opts,
+    );
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-23");
+  });
+
+  test("markers the plugin does not tokenise may follow the date (📅)", (): void => {
+    const spans = parseLine("- [ ] x 📅 2026-08-25 🆔 an-id", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-25");
+  });
+
+  test("a ⏰ keeps its time part when unknown markers follow", (): void => {
+    const spans = parseLine("- [ ] x ⏰ 2026-08-25 14:30 🆔 an-id", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-25 14:30");
+  });
+
+  test("a 📅 keeps the optional time-part extension", (): void => {
+    const spans = parseLine("- [ ] x 📅 2026-08-25 14:30", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2026-08-25 14:30");
+  });
+});
+
+describe("TasksPluginReminderModel - duplicated symbol: the dated token wins", (): void => {
+  test("a symbol in prose does not shadow the real date after it", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "talk about the 📅 emoji 📅 2026-08-20",
+    );
+    expect(parsed.getDueDate()!.toString()).toBe("2026-08-20");
+  });
+  test("two dated tokens: the LAST one wins (Tasks reads from the end)", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "x 📅 2026-08-19 stuff 📅 2026-08-20",
+    );
+    expect(parsed.getDueDate()!.toString()).toBe("2026-08-20");
+  });
+  test("no dated token: falls back to the first match (historical behavior)", (): void => {
+    const parsed = TasksPluginReminderModel.parse("talk about the 📅 emoji");
+    expect(parsed.getDueDate()).toBe(null);
+    parsed.setDueDate(new DateTime(moment("2026-09-01"), false));
+    expect(parsed.toMarkdown()).toBe("talk about the 📅 2026-09-01");
+  });
+  test("rewriting the date targets the dated token, not the prose one", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "talk about the 📅 emoji 📅 2026-08-20",
+    );
+    parsed.setDueDate(new DateTime(moment("2026-09-01"), false));
+    expect(parsed.toMarkdown()).toBe("talk about the 📅 emoji 📅 2026-09-01");
+  });
+  test("computeSpan() covers the dated token", (): void => {
+    const parsed = TasksPluginReminderModel.parse("a 📅 b 📅 2026-08-20");
+    const span = parsed.computeSpan();
+    expect(parsed.toMarkdown().slice(span.start, span.end)).toBe(
+      "📅 2026-08-20",
+    );
+  });
+  test("⏳ via fallback: prose ⏳ does not shadow the scheduled date", (): void => {
+    const parsed = TasksPluginReminderModel.parse(
+      "task ⏳ soon ⏳ 2026-08-20",
+      true,
+      false,
+      true,
+    );
+    expect(parsed.getTime()!.toString()).toBe("2026-08-20");
+  });
+});
+
+describe("⏰ honours the Strict date format setting (📅/⏳/🛫 stay strict)", (): void => {
+  // ⏰ is this plugin's own symbol with a user-configurable format, so it
+  // follows the setting; the Tasks plugin's symbols are always YYYY-MM-DD on
+  // their side and stay strict here.
+  const opts = { customEmoji: true, dueDateFallback: true };
+
+  function setFormat(
+    dateFormat: string,
+    dateTimeFormat: string,
+    strict: boolean,
+  ) {
+    DATE_TIME_FORMATTER.setTimeFormat(
+      new ConstantReference(dateFormat),
+      new ConstantReference(dateTimeFormat),
+      new ConstantReference(strict),
+    );
+  }
+
+  afterEach(() => {
+    // DATE_TIME_FORMATTER is shared module state; restore the lenient
+    // defaults so these tests don't leak into other test files.
+    setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", false);
+  });
+
+  test("lenient: a loosely formatted ⏰ date-time still parses", (): void => {
+    setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", false);
+    const spans = parseLine("- [ ] task ⏰ 2021-9-8 10:00", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.toString()).toBe("2021-09-08 10:00");
+  });
+
+  test("strict: the same loosely formatted ⏰ is rejected", (): void => {
+    setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", true);
+    expect(parseLine("- [ ] task ⏰ 2021-9-8 10:00", opts)).toHaveLength(0);
+  });
+
+  test("lenient: prose before the date still yields no date (head rule holds)", (): void => {
+    setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", false);
+    expect(
+      parseLine("- [ ] x ⏰ no date here ➕ 2026-08-17", opts),
+    ).toHaveLength(0);
+    expect(parseLine("- [ ] x ⏰ prose 2026-08-17", opts)).toHaveLength(0);
+    expect(parseLine("- [ ] x ⏰ soon 2026-08-17", opts)).toHaveLength(0);
+  });
+
+  test("lenient: 📅 does not follow the setting", (): void => {
+    setFormat("YYYY-MM-DD", "YYYY-MM-DD HH:mm", false);
+    expect(
+      parseLine("- [ ] task 📅 2021-9-8", { customEmoji: false }),
+    ).toHaveLength(0);
+  });
+
+  test("a custom multi-field format spans more fields than the Tasks formats", (): void => {
+    // "MMM D, YYYY h:mm A" is five whitespace fields; a fixed cap of four
+    // would silently drop the time part and parse the date-only prefix.
+    setFormat("MMM D, YYYY", "MMM D, YYYY h:mm A", true);
+    const spans = parseLine("- [ ] task ⏰ Sep 8, 2021 10:00 AM", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.moment().format("YYYY-MM-DD HH:mm")).toBe(
+      "2021-09-08 10:00",
+    );
+  });
+
+  test("custom format, lenient: trailing prose after the date is still rejected", (): void => {
+    setFormat("MMM D, YYYY", "MMM D, YYYY h:mm A", false);
+    const spans = parseLine("- [ ] task ⏰ Sep 8, 2021 party", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.time.moment().format("YYYY-MM-DD")).toBe(
+      "2021-09-08",
+    );
+    expect(spans[0]!.reminder.time.hasTimePart).toBe(false);
+  });
+});
+
+describe("task statuses follow the registry (scenarios 2 and 3)", (): void => {
+  // The fixture vault's registry, trimmed: the two core statuses plus the
+  // custom ones the scenarios exercise.
+  const statuses: Array<TaskStatus> = [
+    { symbol: " ", nextStatusSymbol: "x", type: "TODO" },
+    { symbol: "x", nextStatusSymbol: " ", type: "DONE" },
+    { symbol: "-", nextStatusSymbol: "-", type: "CANCELLED" },
+    { symbol: "v", nextStatusSymbol: " ", type: "DONE" },
+    { symbol: "d", nextStatusSymbol: "d", type: "CANCELLED" },
+    { symbol: "w", nextStatusSymbol: "v", type: "ON_HOLD" },
+  ];
+  const opts = { customEmoji: true, dueDateFallback: true, statuses };
+
+  test("scenario 2: Done on a [w] writes [v], not [x]", async () => {
+    await testModify({
+      now: "2026-08-18",
+      customEmoji: true,
+      dueDateFallback: true,
+      statuses,
+      inputMarkdown: "- [w] waiting task ⏳ 2026-08-17",
+      expectedMarkdown: "- [v] waiting task ⏳ 2026-08-17 ✅ 2026-08-18",
+    });
+  });
+
+  test("scenario 3: a cancelled [-] does not arm", (): void => {
+    const spans = parseLine("- [-] cancelled ⏳ 2026-08-17", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.done).toBe(true);
+  });
+
+  test("[v] and [d] count as done (armed today only by luck of x/-)", (): void => {
+    for (const symbol of ["v", "d"]) {
+      const spans = parseLine(`- [${symbol}] closed ⏳ 2026-08-17`, opts);
+      expect(spans).toHaveLength(1);
+      expect(spans[0]!.reminder.done).toBe(true);
+    }
+  });
+
+  test("a registry-unchecked symbol with a done or cancelled date is still done (#374)", (): void => {
+    for (const markdown of [
+      "- [w] waiting ⏳ 2026-08-17 ✅ 2026-08-18",
+      "- [w] waiting ⏳ 2026-08-17 ❌ 2026-08-18",
+    ]) {
+      const spans = parseLine(markdown, opts);
+      expect(spans).toHaveLength(1);
+      expect(spans[0]!.reminder.done).toBe(true);
+    }
+  });
+
+  test("[w] is not done — an ON_HOLD line still reminds", (): void => {
+    const spans = parseLine("- [w] waiting ⏳ 2026-08-17", opts);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.reminder.done).toBe(false);
+  });
+
+  test("Done on a [w] whose prose repeats ⏳ writes [v] after the dated token (#360)", async () => {
+    // Combines the registry (#361: [w] completes to [v]) with the dated token
+    // winning over a prose one (#360). Without #360 the prose ⏳ shadows the
+    // date and the line never parses; without #361 Done writes [x].
+    await testModify({
+      now: "2026-08-18",
+      customEmoji: true,
+      dueDateFallback: true,
+      statuses,
+      inputMarkdown: "- [w] waiting ⏳ soon ⏳ 2026-08-17",
+      expectedMarkdown: "- [v] waiting ⏳ soon ⏳ 2026-08-17 ✅ 2026-08-18",
+    });
+  });
+
+  test("without a registry, Done keeps writing [x] (historical)", async () => {
+    await testModify({
+      now: "2026-08-18",
+      customEmoji: true,
+      dueDateFallback: true,
+      inputMarkdown: "- [ ] plain task ⏳ 2026-08-17",
+      expectedMarkdown: "- [x] plain task ⏳ 2026-08-17 ✅ 2026-08-18",
+    });
+  });
+
+  test("recurrence: completing a [w] leaves a [ ] next occurrence and a [v] done line", async () => {
+    await testModify({
+      now: "2026-08-18",
+      customEmoji: true,
+      dueDateFallback: true,
+      statuses,
+      inputMarkdown: "- [w] chores 🔁 every day ⏳ 2026-08-17",
+      // The ⏰/⏳ handling is the plugin's existing custom-emoji recurrence
+      // semantics; this test pins only the status symbols: [ ] next, [v] done.
+      expectedMarkdown: `- [ ] chores ⏰ 2026-08-19 🔁 every day ⏳ 2026-08-17 
+- [v] chores 🔁 every day ⏳ 2026-08-17 ✅ 2026-08-18`,
+    });
+  });
+
+  test("recurrence: completing a late [w] with ⏰ and 📅 keeps their offset (#384)", async () => {
+    // Combines the registry (#361: [w] completes to [v], the next occurrence
+    // starts at [ ]) with #384's anchored recurrence: 📅 advances to the next
+    // Monday after now, and ⏰ moves by the same number of days. Without #361
+    // the lines read [x]/[ ]; without #384 both dates jump to now + 1 week.
+    await testModify({
+      now: "2026-08-18",
+      customEmoji: true,
+      statuses,
+      inputMarkdown: "- [w] chores ⏰ 2026-08-03 📅 2026-08-10 🔁 every week",
+      expectedMarkdown: `- [ ] chores ⏰ 2026-08-17 📅 2026-08-24 🔁 every week
+- [v] chores ⏰ 2026-08-03 📅 2026-08-10 🔁 every week ✅ 2026-08-18`,
+    });
+  });
+});
+
+describe("done date on un-check", (): void => {
+  async function modifyUnchecked(inputMarkdown: string): Promise<string> {
+    const doc = new MarkdownDocument("file", inputMarkdown);
+    const sut = new TasksPluginFormat();
+    const config = new ReminderFormatConfig();
+    config.setParameterValue(
+      ReminderFormatParameterKey.now,
+      new DateTime(moment("2021-09-15 10:00"), true),
+    );
+    sut.setConfig(config);
+    const spans = sut.parse(doc);
+    expect(spans).toHaveLength(1);
+    await sut.modify(doc, spans[0]!.reminder, {
+      checked: false,
+      time: new DateTime(moment("2021-09-16"), false),
+    });
+    return doc.toMarkdown();
+  }
+
+  test("a real uncheck clears the done date", async () => {
+    expect(
+      await modifyUnchecked("- [x] Task 📅 2021-09-08 ✅ 2021-09-09"),
+      // The trailing space is the removed token's separator, a pre-existing
+      // removeToken() artifact.
+    ).toBe("- [ ] Task 📅 2021-09-16 ");
+  });
+
+  test("a no-op uncheck (custom status, #269) keeps the done date", async () => {
+    // The registry leaves "/" as it is, so the checkbox still reads the same
+    // state; stripping ✅ here would desynchronize the line from itself.
+    expect(
+      await modifyUnchecked("- [/] Task 📅 2021-09-08 ✅ 2021-09-09"),
+    ).toBe("- [/] Task 📅 2021-09-16 ✅ 2021-09-09");
+  });
+});

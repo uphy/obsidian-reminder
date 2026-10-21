@@ -19,13 +19,13 @@ never depends on any other plugin.
 
 ## Field table
 
-| Field | Meaning |
-| --- | --- |
-| `due` | Due date. Used as the reminder date when no reminder field (below) is present. |
+| Field                                                                     | Meaning                                                                                                                                                                        |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `due`                                                                     | Due date. Used as the reminder date when no reminder field (below) is present.                                                                                                 |
 | [reminder field name](/setting/#reminder-field-name) (default `reminder`) | A reminder date/time distinct from `due`. When present on a line, it wins over `due` for that line — no global toggle needed, unlike the Tasks plugin's own ⏰/📅 distinction. |
-| `completion` | Written automatically when the task is marked done. |
-| `repeat` | Recurrence text (e.g. `every week`), same syntax as the Tasks plugin's 🔁. |
-| `scheduled`, `start` | Recognized so they're stripped from the notification title, but otherwise unused. |
+| `completion`                                                              | Written automatically when the task is marked done.                                                                                                                            |
+| `repeat`                                                                  | Recurrence text (e.g. `every week`), same syntax as the Tasks plugin's 🔁.                                                                                                     |
+| `scheduled`, `start`                                                      | Recognized so they're stripped from the notification title, but otherwise unused.                                                                                              |
 
 Fields can be written with either delimiter style:
 

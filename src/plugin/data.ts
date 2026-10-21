@@ -37,6 +37,10 @@ export class PluginData {
   });
   changed: boolean = false;
   public scanned: Reference<boolean> = new Reference(false);
+  // The "Task statuses" text last seeded from the Tasks plugin, persisted so
+  // a seed that CHANGED between sessions can be told apart from one that was
+  // merely re-read. See `updateSeededTaskStatuses`.
+  private seededTaskStatusesText = "";
   public debug: Reference<boolean> = new Reference(false);
   // Do-not-disturb end time, or `null` while do-not-disturb is inactive.
   // Transient state (not a setting): not exposed in the settings tab, but
@@ -70,6 +74,26 @@ export class PluginData {
     });
   }
 
+  /**
+   * Records the "Task statuses" text seeded from the Tasks plugin this
+   * session, and forces a rescan when it differs from the previous session's.
+   *
+   * The seed lands in a module variable rather than a `SettingModel`, so it
+   * never takes the TAG_RESCAN path — and `doLoad` restores stored reminders
+   * with `done` hardcoded to `false` instead of re-parsing. Without this, a
+   * reminder classified under the OLD statuses (say a `[v]` line stored as
+   * active before `[v]` meant DONE) survives in data.json and pops up once
+   * per session until a manual Scan.
+   */
+  updateSeededTaskStatuses(text: string) {
+    if (this.seededTaskStatusesText === text) {
+      return;
+    }
+    this.seededTaskStatusesText = text;
+    this.scanned.value = false;
+    this.changed = true;
+  }
+
   async load() {
     try {
       await this.doLoad();
@@ -88,6 +112,7 @@ export class PluginData {
     const data = (await this.store.loadData()) as
       | {
           scanned: boolean;
+          seededTaskStatuses?: string;
           debug?: boolean;
           dndUntil?: number | null;
           settings?: Record<string, unknown>;
@@ -99,6 +124,7 @@ export class PluginData {
       return;
     }
     this.scanned.value = data.scanned;
+    this.seededTaskStatusesText = data.seededTaskStatuses ?? "";
     if (data.debug != null) {
       this.debug.value = data.debug;
     }
@@ -168,6 +194,7 @@ export class PluginData {
     });
     await this.store.saveData({
       scanned: this.scanned.value,
+      seededTaskStatuses: this.seededTaskStatusesText,
       reminders: remindersData,
       debug: this.debug.value,
       dndUntil: this.dndUntil.value?.getTimeInMillis() ?? null,

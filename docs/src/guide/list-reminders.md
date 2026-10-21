@@ -7,11 +7,14 @@ Reminders defined in your all of the markdown files are listed like below:
 <img :src="$withBase('/images/reminder-list-view.png')" width="500px">
 
 ::: tip
+
 - By default, reminder list view is displayed in the right pane of Obsidian app. You can move it by DnD.
 - If you can't find the view, run `Open list view` from Obsidian's command palette
+
 :::
 
 If you click the reminder, the file in which you defined the reminder will be opened.
+If a tab already shows that file (even a pinned one), that tab is reused instead of opening a new one.
 
 ## Overdue Reminders
 

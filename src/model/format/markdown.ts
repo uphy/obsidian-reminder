@@ -1,3 +1,5 @@
+import { StatusRegistry } from "model/format/status";
+
 /**
  * Represents TODO items in Markdown.
  *
@@ -11,7 +13,6 @@ export class Todo {
   // body: hello
   private static readonly regexp =
     /^(?<prefix>((> ?)*)?\s*[-*+][ ]+\[)(?<check>.)(?<suffix>\]\s+)(?<body>.*)$/;
-  private static readonly checkedStatuses = ["x", "-"];
 
   static parse(lineIndex: number, line: string): Todo | null {
     const match = Todo.regexp.exec(line);
@@ -39,12 +40,17 @@ export class Todo {
     return `${this.prefix}${this.check}${this.suffix}${this.body}`;
   }
 
-  public isChecked() {
-    return Todo.checkedStatuses.some((status) => status === this.check);
+  public isChecked(statuses: StatusRegistry = StatusRegistry.EMPTY) {
+    return statuses.isChecked(this.check);
   }
 
-  public setChecked(checked: boolean) {
-    this.check = checked ? "x" : " ";
+  public setChecked(
+    checked: boolean,
+    statuses: StatusRegistry = StatusRegistry.EMPTY,
+  ) {
+    this.check = checked
+      ? statuses.checkSymbol(this.check)
+      : statuses.uncheckSymbol(this.check);
   }
 
   public getHeaderLength() {

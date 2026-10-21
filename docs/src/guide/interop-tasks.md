@@ -26,8 +26,13 @@ The due date can also carry a time, as an extension beyond what the Tasks Plugin
 ```
 
 ::: warning Note
+
 - You can't customize the due date format (`YYYY-MM-DD`, optionally followed by ` HH:mm`) for interoperability with Tasks Plugin
+- Dates after 📅, ⏳, and 🛫 are always parsed strictly, so `📅 2021-9-8` is not a due date. The [Strict Date format](/setting/#strict-date-format) setting doesn't loosen this, because the Tasks Plugin only accepts `YYYY-MM-DD`.
+- The date must come right after the emoji. In `⏳ someday 2021-09-16`, the date isn't read as the scheduled date.
+- An emoji inside an inline code span (`` `📅` ``) is not treated as a date marker.
 - If you want to specify the reminder time separately from the due date in the Tasks Plugin, you can use [reminder emoji](#distinguish-due-date-and-reminder-date).
+
 :::
 
 ## Recurring tasks
@@ -43,6 +48,20 @@ Reminder plugin also supports this feature.
 When you [toggle checklist status](/guide/set-reminders.html#toggle-checklist-status), next recurring task will be created.
 
 The next occurrence keeps the original weekday or day of the month from the due date (or the reminder date when no due date is present), shifting any separate `⏰` reminder date by the same offset. Append `when done` to the rule (e.g. `🔁 every week when done`) to compute the next occurrence from the completion date instead.
+
+## Custom statuses
+
+The Tasks Plugin lets you define your own checkbox statuses, such as
+`[/]` for in progress or `[-]` for cancelled. This plugin follows them:
+which symbols count as done, and which symbol the Done button (or the
+`Toggle checklist status` command) writes next, come from the Tasks
+Plugin's status settings. You can add or override statuses with the
+[Task statuses](/setting/#task-statuses) setting.
+
+- The done date (`✅ YYYY-MM-DD`) is inserted only when the line lands on a
+  `DONE` status. Landing on a `CANCELLED` status inserts no date.
+- A line that carries a done date (`✅`) or a cancelled date (`❌`) counts
+  as done, whatever its symbol, so it never reminds.
 
 ## Distinguish due date and reminder date
 
@@ -60,14 +79,18 @@ Also you can specify time:
 - [ ] Task ⏰ 2021-09-16 10:00 📅 2021-09-17
 ```
 
+Unlike 📅, the ⏰ date follows your [date and time format](/guide/set-reminders.html#date-time-format) and the [Strict Date format](/setting/#strict-date-format) setting.
+
 ::: tip
-You can change date/time format.  See [Date Time Format](/guide/set-reminders.html#date-time-format).
+You can change date/time format. See [Date Time Format](/guide/set-reminders.html#date-time-format).
 :::
 
 ::: warning
 You can't insert any characters other than date/time between ⏰ and 📅.
+
 - (OK) `- [ ] Task ⏰ 2021-09-16 📅 2021-09-17`
 - (NG) `- [ ] Task ⏰ 2021-09-16 #Tag 📅 2021-09-17`
+
 :::
 
 ### Fall back to due, scheduled, or start date
