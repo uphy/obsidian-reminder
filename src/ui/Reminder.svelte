@@ -124,8 +124,7 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
   <button
     class="reminder-file"
     on:click={onOpenFile}
-    aria-label={reminder.file}
-    title="Alt+O / Ctrl+O"
+    aria-label={`${reminder.file} (Alt+O / Ctrl+O)`}
     aria-keyshortcuts="Alt+O Control+O"
   >
     <IconText icon="link" text={reminder.file} />
