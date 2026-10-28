@@ -14,13 +14,13 @@ You can [set reminders](https://uphy.github.io/obsidian-reminder/guide/set-remin
 - [x] You will not be notified about the reminders you have already checked. (@2021-08-14)
 ```
 
-<img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/input-reminder-time.gif" width="600" />
+<img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/main/images/input-reminder-time.gif" width="600" />
 
 #### List Reminders
 
 You can [view the list of reminders](https://uphy.github.io/obsidian-reminder/guide/list-reminders.html) contained in all files.
 
-<img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/reminder-list.png" width="600" />
+<img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/main/images/reminder-list.png" width="600" />
 
 If you click the reminder list item, the source markdown file will be appeared.
 
@@ -28,12 +28,12 @@ If you click the reminder list item, the source markdown file will be appeared.
 
 Reminder will be [notified](https://uphy.github.io/obsidian-reminder/guide/notification.html) on Obsidian when the time comes.
 
-<img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/reminder-notification1.png" width="600" />
+<img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/main/images/reminder-notification1.png" width="600" />
 
 If you click `Mark as Done`, your check list item will be checked.
 Alternatively, you can postpone the reminder by selecting `Remind Me Later`.
 
-<img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/master/images/reminder-notification2.png" width="600" />
+<img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/main/images/reminder-notification2.png" width="600" />
 
 
 #### Interoperability with other plugins

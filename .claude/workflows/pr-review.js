@@ -18,7 +18,7 @@ export const meta = {
 //         working directory (a PR checked out by the skill, or past commits
 //         replayed as an eval),
 //   trustedDir?: absolute path of a checkout whose .claude/ and CLAUDE.md are
-//         trusted (normally the master checkout). Required when reviewing
+//         trusted (normally the main checkout). Required when reviewing
 //         someone else's PR: the PR may edit .claude/ itself, and reviewers
 //         must never take their instructions from the code under review.
 // }

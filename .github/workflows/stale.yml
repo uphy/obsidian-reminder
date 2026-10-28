@@ -52,7 +52,7 @@ jobs:
             Closing this pull request because there was no response from the
             author after the stale notice. Thank you for the contribution — if
             you would like to continue, feel free to reopen it or submit a new
-            pull request against the latest master.
+            pull request against the latest main.
           stale-issue-message: >
             This issue has been marked as stale because it has been awaiting a
             response for 30 days. It will be closed in 7 days if there is no

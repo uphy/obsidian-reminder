@@ -1,6 +1,6 @@
 ---
 name: contributor-pr
-description: Take a pull request someone else opened against obsidian-reminder from review to merge — review it with pr-review, check later whether the review was addressed, then merge master in, verify it in a real Obsidian vault, thank the contributor, and merge. Each invocation looks at the PR's state and does the next stage. Use when the user says "#123 見て", "PR #123 を進めて", "PRへのコメント対応状況確認して", "指摘対応されてたらマージして", "コンフリクト直してマージまで持っていって", "contributor-pr", "/contributor-pr 123". Pass `--status-only` to stop after reporting the state.
+description: Take a pull request someone else opened against obsidian-reminder from review to merge — review it with pr-review, check later whether the review was addressed, then merge main in, verify it in a real Obsidian vault, thank the contributor, and merge. Each invocation looks at the PR's state and does the next stage. Use when the user says "#123 見て", "PR #123 を進めて", "PRへのコメント対応状況確認して", "指摘対応されてたらマージして", "コンフリクト直してマージまで持っていって", "contributor-pr", "/contributor-pr 123". Pass `--status-only` to stop after reporting the state.
 ---
 
 # Contributor PR: review → follow-up → land
@@ -92,7 +92,7 @@ After a merge or close:
 
 - `git worktree remove .claude/worktrees/pr-<N>`, delete `review/pr-<N>` and
   any `land/pr-<N>` branch, and `git update-ref -d refs/remotes/origin/pr-<N>`.
-- In the main checkout: `git pull --ff-only` on master and rebuild
+- In the main checkout: `git pull --ff-only` on main and rebuild
   (`mise run main:build`) if the test vault's plugin symlink points there, so
   the vault runs the merged code.
 - Leave the test notes under the vault's `reminder-test/` in place.

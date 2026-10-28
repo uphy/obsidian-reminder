@@ -76,10 +76,10 @@ branch_files=""
 current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
 if [ -n "$current_branch" ] && [ "$current_branch" != "HEAD" ] && [ "$current_branch" != "master" ] && [ "$current_branch" != "main" ]; then
   base_ref=""
-  if git rev-parse --verify -q origin/master >/dev/null; then
-    base_ref="origin/master"
-  elif git rev-parse --verify -q master >/dev/null; then
-    base_ref="master"
+  if git rev-parse --verify -q origin/main >/dev/null; then
+    base_ref="origin/main"
+  elif git rev-parse --verify -q main >/dev/null; then
+    base_ref="main"
   fi
   if [ -n "$base_ref" ]; then
     merge_base="$(git merge-base HEAD "$base_ref" 2>/dev/null)"

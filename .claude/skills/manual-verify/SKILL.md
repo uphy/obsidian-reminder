@@ -117,6 +117,6 @@ NG ask what was observed.
 - Offer to record the verification results as a PR comment (English, factual, one
   line per verified fix).
 - Offer cleanup: restore the vault symlink to the main repository checkout (rebuild
-  master first so the vault serves the merged code), remove the worktree/branch.
+  main first so the vault serves the merged code), remove the worktree/branch.
   Test notes and companion plugins can stay in the vault for next time — mention it
   and let the user decide.
