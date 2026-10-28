@@ -1,20 +1,20 @@
 name: CI
 
-# Also run on pushes to master: PR checks only validate a branch against the
+# Also run on pushes to main: PR checks only validate a branch against the
 # base it was opened against, not the actual merge result, and nothing else
-# verifies master after a merge. That gap let #317 and #318 each pass PR CI
-# individually while their combined merge broke `tsc --noEmit` on master,
+# verifies main after a merge. That gap let #317 and #318 each pass PR CI
+# individually while their combined merge broke `tsc --noEmit` on master (now main),
 # shipping broken code in release 1.2.0 (hotfixed in #320 / 1.2.1).
 #
-# Also run on pushes to release/**: master's branch protection requires the
+# Also run on pushes to release/**: main's branch protection requires the
 # "test" check to pass on the commit before it can be pushed. The release
 # workflow pushes its version-bump commit to a release/** branch first so
 # this workflow can produce that check, then pushes the already-checked
-# commit to master.
+# commit to main.
 on:
   pull_request:
   push:
-    branches: [master, "release/**"]
+    branches: [main, "release/**"]
 
 env:
   # The electron package is only used for its TypeScript types; skip the
@@ -49,7 +49,7 @@ jobs:
       - name: Lint with ESLint
         # On pull_request, let this step pass through failures so reviewdog
         # (below) reports them as inline PR review comments instead. On
-        # push (master), there is no PR to annotate, so let this step fail
+        # push (main), there is no PR to annotate, so let this step fail
         # the workflow directly or ESLint errors would go unnoticed.
         continue-on-error: ${{ github.event_name == 'pull_request' }}
         run: |

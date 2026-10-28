@@ -1,7 +1,7 @@
-# Land: merge master in, verify, thank, merge
+# Land: merge main in, verify, thank, merge
 
 Goal: the PR merges with its number and its author's credit intact, on top
-of current master, after you've seen it work in a real vault.
+of current main, after you've seen it work in a real vault.
 
 ## 1. Preconditions
 
@@ -13,13 +13,13 @@ of current master, after you've seen it work in a real vault.
 - The PR head has passed the `pr-review` gate, including any commits pushed
   since.
 
-## 2. Merge master into the PR branch
+## 2. Merge main into the PR branch
 
 In the worktree, on a branch for the landing work:
 
 ```
 git -C .claude/worktrees/pr-<N> checkout -B land/pr-<N> origin/pr-<N>
-git -C .claude/worktrees/pr-<N> merge --no-ff origin/master
+git -C .claude/worktrees/pr-<N> merge --no-ff origin/main
 ```
 
 Merge, don't rebase: rebasing rewrites the contributor's commits and needs a
@@ -28,12 +28,12 @@ force-push to their branch.
 For each conflict:
 
 - Work out what each side meant, not just which lines it touched. The usual
-  shape is that master added a hook or a rule and the PR changed the code
+  shape is that main added a hook or a rule and the PR changed the code
   the hook replaced — #361 vs #377 was `todo.isChecked(registry)` (PR) vs
-  `this.isDone(todo, parsed)` (master), resolved by keeping master's call and
+  `this.isDone(todo, parsed)` (main), resolved by keeping main's call and
   making the base `isDone()` use the registry.
 - **Add a test for the combination** — one that would fail if you had
-  taken either side alone. The PR's tests and master's tests each pass on
+  taken either side alone. The PR's tests and main's tests each pass on
   their own side; nothing covers the two together until you write it.
 - Write the resolution into the merge commit message (what conflicted, how,
   and why).
@@ -43,7 +43,7 @@ Then `mise run main:lint:fix` (zero ESLint warnings) and
 
 ## 3. Check the docs against the merged behavior
 
-The PR's docs describe the PR's behavior; master's docs describe master's.
+The PR's docs describe the PR's behavior; main's docs describe main's.
 After a merge that combines them, read the docs that touch the feature and
 the conflict area:
 
@@ -54,7 +54,7 @@ grep -rn -i "<feature words>" docs/src README.md
 Look for statements the combination made wrong or incomplete, and for guide
 pages that should point to a new setting. Commit doc fixes separately from
 the merge (`docs: …`). In #361 the settings page was right for the PR alone,
-but said nothing about the done/cancelled-date rule master had added, and
+but said nothing about the done/cancelled-date rule main had added, and
 neither guide mentioned the new setting.
 
 ## 4. Verify in Obsidian
@@ -103,7 +103,7 @@ Fork PR runs of `pr.yml` (workflow "CI", job `test`) wait for approval:
 - Approve: `gh api -X POST repos/{owner}/{repo}/actions/runs/<id>/approve`,
   then `gh run watch <id> --exit-status`.
 
-master's branch protection requires the `test` check; nothing merges
+main's branch protection requires the `test` check; nothing merges
 without it.
 
 ## 7. Label, comment, merge — confirm first

@@ -29,7 +29,7 @@ jobs:
       # required status checks and a plain branch push doesn't trigger
       # pr.yml anyway. But a pull request opened with GITHUB_TOKEN doesn't
       # trigger pull_request workflow runs either, so it would never get a
-      # "test" check and could never satisfy master's required status check.
+      # "test" check and could never satisfy main's required status check.
       # Open the PR as the uphy-ops GitHub App instead, whose PRs do trigger
       # workflows.
       - name: Generate a GitHub App installation token
@@ -41,7 +41,7 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: master
+          ref: main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: develop
@@ -64,11 +64,11 @@ jobs:
           git tag $version
           git push --tags
 
-          # cherry pick the manifest change to master
-          git checkout -b release-beta-$version origin/master
+          # cherry pick the manifest change to main
+          git checkout -b release-beta-$version origin/main
           git cherry-pick $version
           git push origin release-beta-$version
-          GH_TOKEN="${{ steps.app-token.outputs.token }}" gh pr create -B master -t "Release $version" -b ""
+          GH_TOKEN="${{ steps.app-token.outputs.token }}" gh pr create -B main -t "Release $version" -b ""
 
           # go back to develop
           git checkout develop

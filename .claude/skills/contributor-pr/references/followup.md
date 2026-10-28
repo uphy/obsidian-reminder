@@ -20,14 +20,14 @@ Make one list. Each item: where you raised it, what you asked for.
 ## 2. Bring the PR head in
 
 ```
-git fetch -q origin master +pull/<N>/head:refs/remotes/origin/pr-<N>
+git fetch -q origin main +pull/<N>/head:refs/remotes/origin/pr-<N>
 git log --oneline <your latest review's commit_id>..origin/pr-<N>
 ```
 
 Use the worktree `.claude/worktrees/pr-<N>` as described in `pr-review`'s PR
 mode (create it, or reset it if it's clean). If the contributor rebased,
 `<commit_id>..origin/pr-<N>` is meaningless — compare against
-`git merge-base origin/master origin/pr-<N>` and treat the whole PR as new
+`git merge-base origin/main origin/pr-<N>` and treat the whole PR as new
 code for the gate.
 
 Run the `pr-review` gate (step 3 of its PR mode) on the commits added since
@@ -57,7 +57,7 @@ yourself is enough.
 
 ## 5. Find what blocks merging
 
-- Conflicts with master: `git merge-tree --write-tree --name-only origin/master origin/pr-<N>`.
+- Conflicts with main: `git merge-tree --write-tree --name-only origin/main origin/pr-<N>`.
 - CI: `gh pr checks <N>`. A run that "failed" with zero jobs, or a run in
   `action_required`, is a fork run waiting for approval, not a code failure
   (see `land.md`).

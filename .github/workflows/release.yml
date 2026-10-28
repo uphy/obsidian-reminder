@@ -28,11 +28,11 @@ env:
   ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
 
 jobs:
-  # Bumps the version, waits for its "test" check, and pushes it to master
+  # Bumps the version, waits for its "test" check, and pushes it to main
   # with a tag. Everything after the tag push lives in the `publish` job, so
   # a failure there can be retried with "Re-run failed jobs" -- re-running
   # this job (or dispatching the workflow again) would bump to the *next*
-  # version instead, since master already carries this one.
+  # version instead, since main already carries this one.
   release:
     runs-on: ubuntu-latest
     outputs:
@@ -41,7 +41,7 @@ jobs:
     steps:
       # Must be the very first step: pushes made with GITHUB_TOKEN don't
       # trigger other workflows, which breaks the "push to release/**, wait
-      # for its check, then push to master" flow below (see the "Push the
+      # for its check, then push to main" flow below (see the "Push the
       # version bump to a release branch" step) -- release/** would never
       # get a "test" check run. Push as the uphy-ops GitHub App instead,
       # whose pushes do trigger workflows. Kept as the first step so a
@@ -56,7 +56,7 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: master
+          ref: main
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup Node
@@ -105,16 +105,16 @@ jobs:
           RELEASE_BRANCH="release/$RELEASE_VERSION"
           echo "RELEASE_BRANCH=$RELEASE_BRANCH" >> "$GITHUB_ENV"
 
-          # master's branch protection requires the "test" status check to
+          # main's branch protection requires the "test" status check to
           # be present and passing on a commit before that commit can be
           # pushed there, but a direct push carries no check at all, so it
           # gets rejected ("Required status check \"test\" is expected.").
           # Status checks are evaluated per commit SHA, not per branch, so
           # push this commit to a release/** branch first -- pr.yml also
           # runs "test" on pushes to release/** -- wait for that check to
-          # pass, then push the very same SHA to master below. By then the
+          # pass, then push the very same SHA to main below. By then the
           # commit already carries a passing "test" check, so the protected
-          # push to master succeeds.
+          # push to main succeeds.
           #
           # Force the push: a previously failed run may have left the same
           # release/<version> branch behind (e.g. it failed before deleting
@@ -165,9 +165,9 @@ jobs:
             elapsed=$((elapsed + interval))
           done
 
-      - name: Push the checked commit to master and tag
+      - name: Push the checked commit to main and tag
         run: |
-          git push origin "HEAD:master"
+          git push origin "HEAD:main"
           git tag "$RELEASE_VERSION"
           git push --tags
           git push origin --delete "$RELEASE_BRANCH"
