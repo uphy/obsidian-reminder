@@ -1,3 +1,4 @@
+import "./status-bar.css";
 import type ReminderPlugin from "main";
 
 const REFRESH_INTERVAL_MILLIS = 10 * 1000;
@@ -18,9 +19,11 @@ export class OverdueStatusBar {
 
   onload() {
     this.el = this.plugin.addStatusBarItem();
-    this.el.addClass("reminder-overdue-status-bar");
-    this.el.style.display = "none";
-    this.el.style.cursor = "pointer";
+    this.el.addClasses([
+      "reminder-status-bar-item",
+      "reminder-overdue-status-bar",
+      "is-hidden",
+    ]);
     this.el.setAttribute(
       "aria-label",
       "Overdue reminders — click to open the reminder list",
@@ -44,17 +47,17 @@ export class OverdueStatusBar {
       return;
     }
     if (!this.plugin.settings.showOverdueCountInStatusBar.value) {
-      this.el.style.display = "none";
+      this.el.addClass("is-hidden");
       return;
     }
     const count = this.plugin.reminders.getExpiredReminders(
       this.plugin.settings.reminderTime.value,
     ).length;
     if (count === 0) {
-      this.el.style.display = "none";
+      this.el.addClass("is-hidden");
       return;
     }
     this.el.setText(`⏰ ${count}`);
-    this.el.style.display = "";
+    this.el.removeClass("is-hidden");
   }
 }

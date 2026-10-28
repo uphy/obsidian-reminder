@@ -13,7 +13,7 @@ import { setDateDisplayFormat } from "./set-date-display-format";
 export function registerCommands(plugin: ReminderPlugin) {
   plugin.addCommand({
     id: "scan-reminders",
-    name: "Scan reminders",
+    name: "Rescan all files",
     checkCallback: (checking: boolean) => {
       return scanReminders(checking, plugin);
     },
@@ -21,7 +21,7 @@ export function registerCommands(plugin: ReminderPlugin) {
 
   plugin.addCommand({
     id: "show-reminders",
-    name: "Show reminders",
+    name: "Open list view",
     checkCallback: (checking: boolean) => {
       return showReminderList(checking, plugin.ui);
     },
@@ -29,7 +29,7 @@ export function registerCommands(plugin: ReminderPlugin) {
 
   plugin.addCommand({
     id: "convert-reminder-time-format",
-    name: "Convert reminder time format",
+    name: "Convert time format",
     checkCallback: (checking: boolean) => {
       return convertReminderTimeFormat(checking, plugin);
     },
@@ -39,12 +39,6 @@ export function registerCommands(plugin: ReminderPlugin) {
     id: "show-date-chooser",
     name: "Show calendar popup",
     icon: "calendar-with-checkmark",
-    hotkeys: [
-      {
-        modifiers: ["Meta", "Shift"],
-        key: "2", // Shift + 2 = `@`
-      },
-    ],
     editorCheckCallback: (checking, editor): boolean | void => {
       return showDateChooser(checking, editor, plugin.ui);
     },
@@ -53,12 +47,6 @@ export function registerCommands(plugin: ReminderPlugin) {
   plugin.addCommand({
     id: "toggle-checklist-status",
     name: "Toggle checklist status",
-    hotkeys: [
-      {
-        modifiers: ["Meta", "Shift"],
-        key: "Enter",
-      },
-    ],
     editorCheckCallback: (checking, editor, view): boolean | void => {
       if (view instanceof MarkdownView) {
         return toggleChecklistStatus(checking, view, plugin);
@@ -78,7 +66,7 @@ export function registerCommands(plugin: ReminderPlugin) {
 
   plugin.addCommand({
     id: "pause-notifications",
-    name: "Pause reminder notifications",
+    name: "Pause notifications",
     checkCallback: (checking: boolean) => {
       return pauseNotifications(checking, plugin);
     },
@@ -86,7 +74,7 @@ export function registerCommands(plugin: ReminderPlugin) {
 
   plugin.addCommand({
     id: "resume-notifications",
-    name: "Resume reminder notifications",
+    name: "Resume notifications",
     checkCallback: (checking: boolean) => {
       return resumeNotifications(checking, plugin);
     },
@@ -94,7 +82,7 @@ export function registerCommands(plugin: ReminderPlugin) {
 
   plugin.addCommand({
     id: "mute-all-reminders",
-    name: "Mute all current reminders",
+    name: "Mute all current notifications",
     checkCallback: (checking: boolean) => {
       return muteAllReminders(checking, plugin);
     },

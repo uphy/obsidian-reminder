@@ -28,7 +28,6 @@
         <button
           class="reminder-list-item hover-highlight"
           aria-label={tooltip(reminder)}
-          title={tooltip(reminder)}
           draggable="true"
           on:dragstart={(e) => {
             e.dataTransfer?.setData("text/plain", generateLink(reminder));

@@ -1,6 +1,6 @@
 import type { MarkdownDocument, Todo } from "model/format/markdown";
 import { DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import { nextOccurrence } from "./recurrence";
 import {
   ReminderFormatParameterKey,
@@ -55,6 +55,7 @@ export abstract class TasksLikeReminderFormat<
     parsed: M,
     edit: ReminderEdit,
   ): boolean {
+    const checkBefore = todo.check;
     if (!super.modifyReminder(doc, todo, parsed, edit)) {
       return false;
     }
@@ -72,21 +73,12 @@ export abstract class TasksLikeReminderFormat<
             if (time == null) {
               return false;
             }
-            const nextTime: Date | undefined = nextOccurrence(
-              recurrence,
-              time.moment(),
-              now,
-            );
-            if (nextTime == null) {
-              return false;
-            }
-            nextReminder.setTime(
-              new DateTime(moment(nextTime), time.hasTimePart),
-            );
             // `dueDate` may legitimately be absent here (an ⏰-only, or
-            // ⏳-only/🛫-only via fallback, line with no 📅): just skip
-            // advancing the due date rather than failing the whole
-            // recurrence.
+            // ⏳-only/🛫-only via fallback, line with no 📅): in that case
+            // `time` is the reference date. When `dueDate` is present,
+            // advance `dueDate` once as the reference date and shift `time`
+            // by the same day offset so the two dates keep their relative
+            // offset when completed late or with `when done`.
             if (dueDate != null) {
               const nextDueDate: Date | undefined = nextOccurrence(
                 recurrence,
@@ -96,8 +88,32 @@ export abstract class TasksLikeReminderFormat<
               if (nextDueDate == null) {
                 return false;
               }
+              const nextDueMoment = moment(nextDueDate);
+              const offsetDays = nextDueMoment
+                .clone()
+                .startOf("day")
+                .diff(dueDate.moment().clone().startOf("day"), "days");
+              const nextTimeMoment = time
+                .moment()
+                .clone()
+                .add(offsetDays, "days");
+              nextReminder.setTime(
+                new DateTime(nextTimeMoment, time.hasTimePart),
+              );
               nextReminder.setDueDate(
-                new DateTime(moment(nextDueDate), dueDate.hasTimePart),
+                new DateTime(nextDueMoment, dueDate.hasTimePart),
+              );
+            } else {
+              const nextTime: Date | undefined = nextOccurrence(
+                recurrence,
+                time.moment(),
+                now,
+              );
+              if (nextTime == null) {
+                return false;
+              }
+              nextReminder.setTime(
+                new DateTime(moment(nextTime), time.hasTimePart),
               );
             }
           } else {
@@ -118,13 +134,23 @@ export abstract class TasksLikeReminderFormat<
             nextReminder.setTime(nextDueDate);
           }
           nextReminderTodo.body = nextReminder.toMarkdown();
-          nextReminderTodo.setChecked(false);
+          nextReminderTodo.setChecked(false, this.statusRegistry());
           doc.insertTodo(todo.lineIndex, nextReminderTodo);
         }
-        parsed.setDoneDate(
-          this.config.getParameter(ReminderFormatParameterKey.now),
-        );
-      } else {
+        // The Tasks plugin stamps ✅ only on DONE lines — a CANCELLED
+        // landing gets no done date. `todo.check` already carries the
+        // landed symbol (super.modifyReminder ran first).
+        if (this.statusRegistry().isDone(todo.check)) {
+          parsed.setDoneDate(
+            this.config.getParameter(ReminderFormatParameterKey.now),
+          );
+        }
+      } else if (todo.check !== checkBefore) {
+        // Clearing the done date belongs to an actual uncheck. When
+        // `setChecked(false)` was a no-op — the registry left the symbol as
+        // it was, e.g. "Remind me later" on a custom status (#269) or on a
+        // line whose symbol the registry cannot uncheck — stripping ✅ would
+        // leave a line that still reads checked but has lost its done date.
         parsed.setDoneDate(undefined);
       }
     }

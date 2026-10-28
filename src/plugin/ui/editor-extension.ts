@@ -9,6 +9,7 @@ import { CM6DateTimeChooserPopup } from "./cm6-datetime-chooser";
 import { showDateTimeChooserModal } from "./date-chooser-modal";
 import {
   appendReminderOrConvert,
+  isKanbanCardEditor,
   showReminderInsertionFailureNotice,
 } from "./util";
 
@@ -47,9 +48,12 @@ export function buildCodeMirrorPlugin(
               // "Reading the editor layout isn't allowed during an update"
               // when called synchronously inside ViewPlugin.update().
               result = new Promise<DateTime>((resolve, reject) => {
-                setTimeout(() => {
+                // The editor's own window, not the global one: in a popout the
+                // two differ, and a timer scheduled on the main window fires
+                // against a document this editor does not live in.
+                update.view.dom.win.setTimeout(() => {
                   if (this.destroyed) {
-                    reject();
+                    reject(new Error("editor view was destroyed"));
                     return;
                   }
                   this.activePopup?.cancel();
@@ -107,6 +111,7 @@ export function buildCodeMirrorPlugin(
                     value,
                     triggerStart,
                     settings.convertNonTaskLines.value,
+                    isKanbanCardEditor(update.view),
                   );
                   if (reminderInsertion == null) {
                     showReminderInsertionFailureNotice();

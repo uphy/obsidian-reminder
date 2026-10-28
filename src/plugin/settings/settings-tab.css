@@ -23,3 +23,18 @@
 .reminder-setting-disabled {
   opacity: 0.5;
 }
+
+/* Validation and info lines appended under a setting's description. Both are
+   hidden until they have text; see SettingContext.setText(). */
+.reminder-setting-validation,
+.reminder-setting-info {
+  margin-top: 0.25rem;
+}
+
+.reminder-setting-validation {
+  color: var(--text-error);
+}
+
+.reminder-setting-info {
+  color: var(--text-faint);
+}

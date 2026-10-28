@@ -430,7 +430,8 @@ the UI.
 2. **Point the vault's plugin symlink** at that checkout (same gotcha as
    `manual-verify`: this is disruptive to whoever else might be using the
    symlink, and Obsidian must not be actively writing `data.json` while you swap
-   it — quit Obsidian first if you're also touching settings).
+   it). If Obsidian is already running with CDP, swap it without a restart —
+   see "Swapping the plugin under test without restarting" below.
 3. **Ensure Obsidian is up with CDP and the test vault is open**:
    `obsidian-launch.sh`.
 4. **Wait for readiness and check the fixtures parsed**:
@@ -440,6 +441,32 @@ the UI.
    `obsidian-shot.sh` (visual capture for the user to glance at, or for
    comparison).
 7. **Clean up** (see below).
+
+## Swapping the plugin under test without restarting
+
+Restarting Obsidian to switch checkouts reopens every vault's window, and
+other vaults (personal, work) are often open at the same time. Instead,
+disable the plugin, swap the symlink, and enable it again — all from the test
+vault's window:
+
+```
+node .../obsidian-eval.mjs 'await app.plugins.disablePlugin("obsidian-reminder-plugin"); return "disabled";'
+ln -sfn <checkout under test> "$OBSIDIAN_TEST_VAULT_PATH/.obsidian/plugins/obsidian-reminder-plugin"
+node .../obsidian-eval.mjs '
+  await app.plugins.enablePlugin("obsidian-reminder-plugin");
+  return !!app.plugins.plugins["obsidian-reminder-plugin"];'
+```
+
+- Disabling runs `onunload` and saves to the *old* checkout's `data.json`;
+  enabling loads the new checkout's `main.js` and `data.json`. Nothing else in
+  any window is touched.
+- Before swapping, `readlink` the symlink and note where it pointed; swap
+  back the same way at the end.
+- A checkout that has never been loaded has no `data.json`: every setting is
+  at its default. Set what the fixtures need (see "Fixtures depend on
+  settings") and assert it took effect.
+- To confirm the new build is the one running, read something only the new
+  code has (a new setting: `!!p.settings.<newKey>`).
 
 ## A concrete, actually-run verification example
 
@@ -480,6 +507,43 @@ the file back, not by assuming the click worked.
 The toast DOM shape used above: `.reminder-toast-card` is one toast; inside it,
 `.reminder-title`, `.reminder-file`, `button` (`×` / the note name / `Done` /
 `Mute`), and `select.later-select` for the Snooze options.
+
+To snooze from a toast, set the select's value and fire `change` (the option
+values are indexes into the configured "laters"; read them first):
+
+```js
+const sel = card.querySelector("select.later-select");
+// [...sel.options].map(o => o.value + " | " + o.textContent)
+// => ["Snooze | Snooze", "0 | In 30 minutes", ..., "3 | Tomorrow", ...]
+sel.value = "3";
+sel.dispatchEvent(new Event("change", { bubbles: true }));
+```
+
+### Toast behaviors that shape a test
+
+- **A toast disappears when its file changes.** Editing the line on disk
+  (or via `reminder-fire.sh`) re-parses the file and drops the toast, so a
+  sequence like "the user completes the line in the editor, *then* presses
+  Remind me later on the still-open toast" can't be driven through the UI.
+  Drive the same code path directly instead — the toast's buttons call
+  `p.fileSystem.updateReminder(reminder, checked)`:
+
+  ```js
+  const p = app.plugins.plugins["obsidian-reminder-plugin"];
+  const Reminder = p._reminders.reminders[0].constructor; // any live reminder
+  const r = new Reminder("<note path>", "<title>", <a DateTime, e.g. another reminder's .time>, <0-based line>, false);
+  await p.fileSystem.updateReminder(r, false); // what "Remind me later" writes
+  ```
+
+  Say in the report that this step went through the code path rather than
+  the toast.
+- **Click Done on one toast at a time per file.** Clicking Done on two toasts
+  for the same file back to back loses one of the writes:
+  `updateReminder` reads, edits, and writes the whole file with nothing
+  serializing concurrent calls, so the second write is based on the
+  pre-first-write content. This is a known, pre-existing behavior, not a
+  regression of whatever you're testing. Click one, wait for the file to
+  change (read it back), then click the next.
 
 ## Cleanup
 

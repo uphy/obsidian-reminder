@@ -14,3 +14,22 @@
  */
 export class Setting {}
 export class AbstractTextComponent {}
+
+/**
+ * Unlike the classes above this one needs real behavior: Obsidian bundles
+ * moment and re-exports it, so the plugin imports it from here rather than
+ * from the `moment` package, and the date logic under test genuinely runs it.
+ */
+export { default as moment } from "moment";
+
+/**
+ * Reachable through `plugin/settings/index.ts`, which passes it to
+ * `testNtfyConnection()` when the ntfy settings' Test button is clicked.
+ * Throwing rather than returning a fake response keeps an accidental network
+ * call in a test loud: nothing under test should ever reach this. Code that
+ * genuinely needs to exercise HTTP takes a request function through its deps
+ * instead (see `NtfyControllerDeps.request`).
+ */
+export function requestUrl(): never {
+  throw new Error("requestUrl() is not available under jest");
+}

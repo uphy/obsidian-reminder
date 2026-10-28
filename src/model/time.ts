@@ -1,6 +1,6 @@
 import { ConstantReference } from "model/ref";
 import type { ReadOnlyReference } from "model/ref";
-import moment from "moment";
+import { moment } from "model/moment";
 
 export class DateTime {
   public static now(): DateTime {
@@ -108,19 +108,19 @@ export class DateTime {
 export class Time {
   public static parse(text: string): Time {
     if (!text.match(/^\d{1,2}:\d{1,2}$/)) {
-      throw `Unexpected format time(${text}). Time must be HH:mm.`;
+      throw new Error(`Unexpected format time(${text}). Time must be HH:mm.`);
     }
     const s = text.split(":");
     if (s.length !== 2) {
-      throw `Unexpected format time(${text}).  time must be HH:mm.`;
+      throw new Error(`Unexpected format time(${text}).  time must be HH:mm.`);
     }
     const hour = parseInt(s[0]!);
     const minute = parseInt(s[1]!);
     if (hour > 23 || hour < 0) {
-      throw "hour must be 0~23";
+      throw new Error("hour must be 0~23");
     }
     if (minute > 59 || minute < 0) {
-      throw "minute must be 0~59";
+      throw new Error("minute must be 0~59");
     }
     return new Time(hour, minute);
   }
@@ -230,7 +230,7 @@ export function parseLater(later: string): Later {
   if (later.startsWith("in")) {
     const tokens = later.split(" ");
     if (tokens.length !== 3) {
-      throw "Unsupported format.  Should be 'In N (minutes|hours)'";
+      throw new Error("Unsupported format.  Should be 'In N (minutes|hours)'");
     }
     const n =
       tokens[1] === "a" || tokens[1] === "an" ? 1 : parseInt(tokens[1]!);
@@ -292,12 +292,12 @@ export function parseLater(later: string): Later {
       case "year":
         return new Later("Next year", nextYear());
       default:
-        throw `Unsupported weekday: ${weekday}`;
+        throw new Error(`Unsupported weekday: ${weekday}`);
     }
   } else if (later === "tomorrow") {
     return new Later("Tomorrow", tomorrow());
   }
-  throw `Unsupported format: ${later}`;
+  throw new Error(`Unsupported format: ${later}`);
 }
 
 export const DEFAULT_LATERS: Array<Later> = [
@@ -327,6 +327,29 @@ class DateTimeFormatter {
     this.strict = strict;
   }
 
+  /**
+   * Parses `text` as a whole, never searching inside it.
+   *
+   * Like `parse()`, this honours the user's "Strict date format" setting — the
+   * formats here are user-configured, so a strict-only pass would silently
+   * reject dates the setting promises to accept. The difference is the lenient
+   * fallback: moment's lenient mode *scans*, finding a date anywhere in the
+   * string, so the fallback additionally requires that the whole input was
+   * consumed (`parsingFlags().unusedInput` empty). A caller that has already
+   * isolated a candidate gets "the candidate is exactly a date, or nothing"
+   * without losing the leniency the setting asks for.
+   */
+  parseWhole(text: string): DateTime | null {
+    const parsed = this.doParse(text, true);
+    if (parsed != null) {
+      return parsed;
+    }
+    if (this.strict.value) {
+      return null;
+    }
+    return this.doParse(text, false, true);
+  }
+
   parse(text: string): DateTime | null {
     const parsed = this.doParse(text, true);
     if (parsed != null) {
@@ -338,16 +361,34 @@ class DateTimeFormatter {
     return this.doParse(text, false);
   }
 
-  private doParse(text: string, strict: boolean): DateTime | null {
+  private doParse(
+    text: string,
+    strict: boolean,
+    requireWhole = false,
+  ): DateTime | null {
+    const whole = (m: moment.Moment): boolean =>
+      !requireWhole || m.parsingFlags().unusedInput.length === 0;
     const dateTime = moment(text, this.dateTimeFormat.value, strict);
-    if (dateTime.isValid()) {
+    if (dateTime.isValid() && whole(dateTime)) {
       return new DateTime(dateTime, true);
     }
     const date = moment(text, this.dateFormat.value, strict);
-    if (date.isValid()) {
+    if (date.isValid() && whole(date)) {
       return new DateTime(date, false);
     }
     return null;
+  }
+
+  /**
+   * The larger whitespace-delimited field count of the two configured formats.
+   * Callers that split candidates by whitespace use this to size their scan;
+   * both formats are user-configurable, so the count cannot be a constant.
+   */
+  maxFieldCount(): number {
+    return Math.max(
+      fieldCount(this.dateFormat.value),
+      fieldCount(this.dateTimeFormat.value),
+    );
   }
 
   toString(time: DateTime): string {
@@ -357,6 +398,10 @@ class DateTimeFormatter {
       return time.format(this.dateFormat.value);
     }
   }
+}
+
+function fieldCount(format: string): number {
+  return (format.match(/\S+/g) ?? []).length;
 }
 
 export const DATE_TIME_FORMATTER = new DateTimeFormatter();

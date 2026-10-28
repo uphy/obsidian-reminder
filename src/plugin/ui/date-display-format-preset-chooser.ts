@@ -1,3 +1,4 @@
+import "./date-display-format-preset-chooser.css";
 import {
   type DateDisplayFormatPreset,
   dateDisplayFormatPresets,
@@ -24,7 +25,7 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
     const container = el.createDiv({ cls: "reminder-preset-suggestion" });
 
     // Title
-    const titleEl = container.createEl("div", {
+    container.createDiv({
       text: preset.name,
       cls: "reminder-preset-title",
     });
@@ -37,38 +38,28 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
     });
 
     // Year & Month example
-    previewsEl.createEl("div", {
+    previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: "Year/Month: " + now.format(preset.format.yearMonthFormat),
     });
 
     // Month & Day example
-    previewsEl.createEl("div", {
+    previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: "Month/Day: " + now.format(preset.format.monthDayFormat),
     });
 
     // Short date with weekday example
-    previewsEl.createEl("div", {
+    previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: "Short: " + now.format(preset.format.shortDateWithWeekdayFormat),
     });
 
     // Time example
-    previewsEl.createEl("div", {
+    previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: "Time: " + now.format(preset.format.timeFormat),
     });
-
-    // Basic inline styles added via element classes to avoid global CSS edits.
-    // Obsidian applies its own styling; these classes allow modest spacing.
-    titleEl.style.fontWeight = "600";
-    titleEl.style.marginBottom = "4px";
-    previewsEl.style.opacity = "0.8";
-    previewsEl.style.fontSize = "12px";
-    previewsEl.style.display = "grid";
-    previewsEl.style.gridAutoRows = "min-content";
-    previewsEl.style.rowGap = "2px";
   }
 
   onChooseSuggestion(preset: DateDisplayFormatPreset) {

@@ -12,8 +12,19 @@ import {
   ReminderFormatConfig,
   ReminderFormatParameterKey,
 } from "model/format/reminder-base";
+import {
+  DEFAULT_STATUSES_TEXT,
+  StatusRegistry,
+  formatStatusSetting,
+  parseStatusSetting,
+  unknownStatusTypes,
+} from "model/format/status";
+import type { TaskStatus } from "model/format/status";
 import { DateTime, Later, Time } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
+import { isValidNtfyTopic } from "model/ntfy";
+import { requestUrl } from "obsidian";
+import { testNtfyConnection } from "plugin/ntfy";
 import {
   ExcludedPathsSerde,
   LatersSerde,
@@ -25,6 +36,19 @@ import {
 import type { SettingModel, SettingModelBase } from "./helper";
 
 export const TAG_RESCAN = "re-scan";
+
+/**
+ * The default statuses the "Task statuses" setting extends, seeded from the
+ * Tasks plugin's own status settings at load time (see `main.ts`): the whole
+ * registry when the setting is empty, the merge base under the user's lines
+ * otherwise. Empty when the Tasks plugin is absent, which keeps
+ * `StatusRegistry.EMPTY`'s historical x/- behavior for an empty setting.
+ */
+let seededTaskStatusesText = "";
+
+export function setSeededTaskStatuses(statuses: Array<TaskStatus>): void {
+  seededTaskStatusesText = formatStatusSetting(statuses);
+}
 
 export class Settings {
   settings: SettingTabModel = new SettingTabModel();
@@ -52,6 +76,7 @@ export class Settings {
   useCustomEmojiForTasksPlugin: SettingModel<boolean, boolean>;
   useReminderTimeFallbackForTasksPlugin: SettingModel<boolean, boolean>;
   removeTagsForTasksPlugin: SettingModel<boolean, boolean>;
+  taskStatuses: SettingModel<string, string>;
   dataviewReminderFieldName: SettingModel<string, string>;
   linkDatesToDailyNotes: SettingModel<boolean, boolean>;
   yearMonthDisplayFormat: SettingModel<string, string>;
@@ -64,6 +89,7 @@ export class Settings {
   ntfyEnabled: SettingModel<boolean, boolean>;
   ntfyServerUrl: SettingModel<string, string>;
   ntfyTopic: SettingModel<string, string>;
+  ntfyAccessToken: SettingModel<string, string>;
 
   constructor() {
     const reminderFormatSettings = new ReminderFormatSettings(this.settings);
@@ -103,7 +129,7 @@ export class Settings {
       .desc(
         "When enabled, reminders you previously muted are notified again the next time Obsidian starts. " +
           "Useful if you rely on startup notifications to review overdue reminders. " +
-          'If many reminders are overdue, they are shown one after another — use the "Mute all current reminders" command to silence them again.',
+          'If many reminders are overdue, they are shown one after another — use the "Mute all current notifications" command to silence them again.',
       )
       .toggle(false)
       .build(new RawSerde());
@@ -364,6 +390,34 @@ export class Settings {
       })
       .build(new RawSerde());
 
+    this.taskStatuses = this.settings
+      .newSettingBuilder()
+      .key("taskStatuses")
+      .name("Task statuses")
+      .desc(
+        "One status per line: [symbol] -> [next symbol] TYPE, where TYPE is TODO, IN_PROGRESS, DONE, CANCELLED, ON_HOLD or NON_TASK. " +
+          "Decides which lines count as done (DONE/CANCELLED/NON_TASK never remind) and which symbol the Done button writes (the next symbol, when it lands on a done status). " +
+          "Applies to every reminder format and to the 'Toggle checklist status' command. " +
+          "Lines here extend the defaults (the Tasks plugin's status settings when that plugin is enabled, the built-in [ ]/[x]/[-] set otherwise) and win over them on a duplicate symbol. " +
+          "Leave empty to follow the defaults alone.",
+      )
+      .tag(TAG_RESCAN)
+      .textArea("")
+      .placeHolder("[ ] -> [x] TODO\n[x] -> [ ] DONE\n[w] -> [v] ON_HOLD")
+      .onAnyValueChanged((context) => {
+        // Free text where Tasks has a dropdown: a typo like "DOME" parses
+        // happily and quietly reads as TODO, so say so here. Info, not a
+        // validation error — `load()` puts stored values straight into
+        // `rawValue`, and an old data.json must never fail the settings tab.
+        const unknown = unknownStatusTypes(this.taskStatuses.value);
+        context.setInfo(
+          unknown.length
+            ? `Unknown status types (treated as TODO): ${unknown.join(", ")}`
+            : null,
+        );
+      })
+      .build(new RawSerde());
+
     this.dataviewReminderFieldName = this.settings
       .newSettingBuilder()
       .key("dataviewReminderFieldName")
@@ -478,10 +532,59 @@ export class Settings {
       .key("ntfyTopic")
       .name("ntfy topic")
       .desc(
-        "Topic to publish reminders to. Anyone who knows this topic name can subscribe to it and read your reminder titles, so use a long, hard-to-guess name rather than something predictable.",
+        "Topic to publish reminders to. Anyone who knows this topic name can subscribe to it and read your reminder titles, so use a long, hard-to-guess name rather than something predictable. " +
+          "May only contain letters, digits, dashes and underscores (1-64 characters).",
       )
       .text("")
       .placeHolder("a-long-random-topic-name")
+      // Validated here rather than in a Serde that throws: a Serde rejection
+      // also makes `value` throw when the *persisted* value is invalid, and
+      // an invalid topic is exactly what someone upgrading from a build
+      // without this check may already have saved. `NtfyController` runs the
+      // same check before sending anything, so a bad name never reaches the
+      // network either way.
+      .onAnyValueChanged((context) => {
+        const topic = this.ntfyTopic.value.trim();
+        context.setValidationError(
+          topic.length === 0 || isValidNtfyTopic(topic)
+            ? null
+            : "A topic may only contain letters, digits, dashes and underscores (1-64 characters).",
+        );
+      })
+      .build(new RawSerde());
+
+    this.ntfyAccessToken = this.settings
+      .newSettingBuilder()
+      .key("ntfyAccessToken")
+      .name("ntfy access token")
+      .desc(
+        "Only needed for a server that requires authentication (a self-hosted instance with access control, for example); leave it empty otherwise. " +
+          "Create one with `ntfy token add <user>` or from the ntfy web app under Account → Access tokens. The token needs read-write access to the topic above, because this plugin reads, publishes and deletes scheduled messages. " +
+          "It is stored in plain text in this plugin's data.json, which is synced along with your vault if you sync your Obsidian configuration folder.",
+      )
+      .text("")
+      .masked()
+      .placeHolder("tk_...")
+      .button("Test", async (context) => {
+        context.setValidationError(null);
+        context.setInfo("Testing…");
+        const result = await testNtfyConnection(
+          async (request) => requestUrl({ ...request, throw: false }),
+          {
+            serverUrl: this.ntfyServerUrl.value,
+            topic: this.ntfyTopic.value,
+            accessToken: this.ntfyAccessToken.value,
+          },
+        );
+        context.setInfo(result.ok ? result.message : null);
+        context.setValidationError(result.ok ? null : result.message);
+      })
+      // Clears a stale test result once any setting is edited, so the line
+      // under this field never describes a configuration that's no longer
+      // the one on screen.
+      .onAnyValueChanged((context) => {
+        context.setInfo(null);
+      })
       .build(new RawSerde());
 
     this.settings
@@ -528,6 +631,14 @@ export class Settings {
         this.useReminderTimeFallbackForTasksPlugin,
         this.removeTagsForTasksPlugin,
       );
+    // A group of its own, not a "Tasks plugin format" sibling: the registry
+    // drives isChecked/setChecked for EVERY format plus the
+    // toggle-checklist-status command — only the seed comes from Tasks. It
+    // also must not take that group's setEnabled wiring: users with the
+    // Tasks format turned off are exactly the ones who need to edit this.
+    reminderFormatsPage
+      .newGroup("Task statuses")
+      .addSettings(this.taskStatuses);
     reminderFormatsPage
       .newGroup("Dataview format")
       .addSettings(
@@ -548,6 +659,17 @@ export class Settings {
         this.weekStart,
       );
     this.settings
+      .newPage("ntfy")
+      .newGroup()
+      .addSettings(
+        this.ntfyEnabled,
+        this.ntfyServerUrl,
+        this.ntfyTopic,
+        this.ntfyAccessToken,
+      );
+    // Last: "Advanced" is the catch-all for settings that don't belong to a
+    // feature of their own, so feature pages go in front of it.
+    this.settings
       .newPage("Advanced")
       .newGroup()
       .addSettings(
@@ -555,10 +677,6 @@ export class Settings {
         this.editDetectionSec,
         this.reminderCheckIntervalSec,
       );
-    this.settings
-      .newPage("ntfy")
-      .newGroup()
-      .addSettings(this.ntfyEnabled, this.ntfyServerUrl, this.ntfyTopic);
   }
 
   /**
@@ -597,6 +715,32 @@ export class Settings {
       ReminderFormatParameterKey.dataviewReminderFieldName,
       this.dataviewReminderFieldName,
     );
+    // The registry is rebuilt only when the effective text changes: parsing
+    // runs per keystroke otherwise (every parse() call reads the parameter).
+    let lastText: string | null = null;
+    let lastRegistry = StatusRegistry.EMPTY;
+    config.setParameterFunc(ReminderFormatParameterKey.taskStatuses, () => {
+      // The user's lines EXTEND the defaults rather than replacing them:
+      // someone who adds just "[/] -> [x] IN_PROGRESS" must not turn every
+      // "- [x]" in the vault back into an active reminder. User lines come
+      // first, and the registry keeps the first definition per symbol, so a
+      // user line wins on a duplicate. An empty setting stays the pure
+      // seed/EMPTY path, which is what preserves the historical behavior
+      // when neither the user nor the Tasks plugin defines anything.
+      const userText = this.taskStatuses.value;
+      const text = userText.trim().length
+        ? userText +
+          "\n" +
+          (seededTaskStatusesText.trim().length
+            ? seededTaskStatusesText
+            : DEFAULT_STATUSES_TEXT)
+        : seededTaskStatusesText;
+      if (text !== lastText) {
+        lastText = text;
+        lastRegistry = new StatusRegistry(parseStatusSetting(text));
+      }
+      return lastRegistry;
+    });
     setReminderFormatConfig(config);
   }
 

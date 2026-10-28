@@ -9,7 +9,10 @@ import { isNotificationPaused } from "model/dnd";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
-import { App, Plugin } from "obsidian";
+import { setSeededTaskStatuses } from "plugin/settings";
+import { formatStatusSetting } from "model/format/status";
+import type { TaskStatus } from "model/format/status";
+import { App, Notice, Plugin, requestUrl } from "obsidian";
 import type { PluginManifest } from "obsidian";
 
 export default class ReminderPlugin extends Plugin {
@@ -91,10 +94,18 @@ export default class ReminderPlugin extends Plugin {
       isEnabled: () => this.settings.ntfyEnabled.value,
       serverUrl: () => this.settings.ntfyServerUrl.value,
       topic: () => this.settings.ntfyTopic.value,
+      accessToken: () => this.settings.ntfyAccessToken.value,
       reminders: () => this.reminders.reminders,
       defaultTime: () => this.settings.reminderTime.value,
       vaultName: () => this.app.vault.getName(),
       registerInterval: (id) => this.registerInterval(id),
+      // `throw: false` so an HTTP error status comes back as a response the
+      // controller can inspect (status *and* body) instead of an exception
+      // that has already thrown away the server's explanation.
+      request: (request) => requestUrl({ ...request, throw: false }),
+      notify: (message) => {
+        new Notice(message);
+      },
     });
     // Without this, changing any of the ntfy settings (most importantly,
     // flipping the toggle back on) would sit inert until the next reminder
@@ -105,6 +116,7 @@ export default class ReminderPlugin extends Plugin {
       this.settings.ntfyEnabled,
       this.settings.ntfyServerUrl,
       this.settings.ntfyTopic,
+      this.settings.ntfyAccessToken,
     ]) {
       setting.rawValue.onChanged(() => {
         this._ntfyController.notifySettingsChanged();
@@ -116,11 +128,58 @@ export default class ReminderPlugin extends Plugin {
     this.ui.onload();
     this.app.workspace.onLayoutReady(async () => {
       await this.data.load();
+      await this.seedTaskStatuses();
       this.ui.onLayoutReady();
       this.fileSystem.onload(this);
       this._notificationWorker.startPeriodicTask();
       this._ntfyController.start();
     });
+  }
+
+  /**
+   * Seeds the "Task statuses" fallback from the Tasks plugin's own status
+   * settings, so an empty setting follows the vault's real statuses. Reads
+   * via `loadData()` because the Tasks plugin does not expose its settings
+   * object on the plugin instance.
+   */
+  private async seedTaskStatuses() {
+    try {
+      let statuses: Array<TaskStatus> = [];
+      const tasks = this.app.plugins.plugins["obsidian-tasks-plugin"];
+      if (tasks != null) {
+        // `loadData()` returns whatever the Tasks plugin persisted; this cast
+        // is the minimal trusted bridge to the fields read here (same pattern
+        // as `PluginData.doLoad`).
+        const data = (await tasks.loadData()) as
+          | {
+              statusSettings?: {
+                coreStatuses?: Array<TaskStatus>;
+                customStatuses?: Array<TaskStatus>;
+              };
+            }
+          | undefined;
+        const statusSettings = data?.statusSettings;
+        if (statusSettings != null) {
+          statuses = [
+            ...(statusSettings.coreStatuses ?? []),
+            ...(statusSettings.customStatuses ?? []),
+          ];
+        }
+      }
+      setSeededTaskStatuses(statuses);
+      // Reminders already stored in data.json were classified under the
+      // PREVIOUS seed and are restored without re-parsing, so a seed that
+      // changed since last session (the Tasks plugin's statuses edited, the
+      // plugin installed or removed) must force a rescan. An empty seed is a
+      // real value here for exactly that reason. Runs after `data.load()`
+      // and before the notification worker starts, so the cleared `scanned`
+      // is acted on this session.
+      this.data.updateSeededTaskStatuses(formatStatusSetting(statuses));
+    } catch (e) {
+      // Read failure is not a seed of "no statuses": keep last session's
+      // seed rather than rescanning the vault on a transient error.
+      console.warn("Failed to read the Tasks plugin's statuses: %o", e);
+    }
   }
 
   override onunload(): void {

@@ -1,5 +1,5 @@
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import type { MarkdownDocument, Todo } from "./markdown";
 import { nextOccurrence } from "./recurrence";
 import {
@@ -49,14 +49,26 @@ export class DefaultReminderModel implements ReminderModel {
         recurrence = tail;
       }
     }
-    return new DefaultReminderModel(
+    const model = new DefaultReminderModel(
       linkDatesToDailyNotes,
       title1,
       time,
       title2,
       recurrence,
     );
+    model.sourceGroupLength = line.length - title1.length - title2.length;
+    return model;
   }
+
+  /**
+   * Length of the `(@...)` group as it appeared in the parsed line. The
+   * rendered group can differ from the source (e.g. a plain date gets
+   * wrapped in `[[...]]` when linking dates to daily notes), so the span
+   * must be measured from the source text while it still matches the
+   * document. Cleared when the time is rewritten, since the document text
+   * then becomes `toMarkdown()`.
+   */
+  private sourceGroupLength: number | undefined;
 
   constructor(
     private linkDatesToDailyNotes: boolean,
@@ -74,9 +86,11 @@ export class DefaultReminderModel implements ReminderModel {
   }
   setTime(time: DateTime): void {
     this.time = DATE_TIME_FORMATTER.toString(time);
+    this.sourceGroupLength = undefined;
   }
   setRawTime(rawTime: string): boolean {
     this.time = rawTime;
+    this.sourceGroupLength = undefined;
     return true;
   }
   getEndOfTimeTextIndex(): number {
@@ -84,8 +98,9 @@ export class DefaultReminderModel implements ReminderModel {
   }
   computeSpan(): { start: number; end: number } {
     const start = this.title1.length;
-    const groupText = this.computeGroupText();
-    return { start, end: start + groupText.length };
+    const groupLength =
+      this.sourceGroupLength ?? this.computeGroupText().length;
+    return { start, end: start + groupLength };
   }
   toMarkdown(): string {
     return `${this.title1}${this.computeGroupText()}${this.title2}`;
@@ -94,7 +109,8 @@ export class DefaultReminderModel implements ReminderModel {
   /**
    * Render the whole `(@...)` group text, including the recurrence segment
    * (if any) and the daily-note-link rendering (if enabled). This is the
-   * single source of truth for both `toMarkdown()` and `computeSpan()`.
+   * single source of truth for `toMarkdown()`, and for `computeSpan()` when
+   * there is no source text to measure.
    */
   private computeGroupText(): string {
     const timeText =
@@ -164,7 +180,7 @@ export class DefaultReminderFormat extends TodoBasedReminderFormat<DefaultRemind
             );
             const nextTodo = todo.clone()!;
             nextTodo.body = nextModel.toMarkdown();
-            nextTodo.setChecked(false);
+            nextTodo.setChecked(false, this.statusRegistry());
             doc.insertTodo(todo.lineIndex, nextTodo);
           }
           // nextOccurrence returning undefined means either the recurrence

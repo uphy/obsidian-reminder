@@ -1,3 +1,4 @@
+import "./date-chooser-modal.css";
 import type { Reminders } from "model/reminder";
 import type { DateTime } from "model/time";
 import { App, Modal, Platform } from "obsidian";
@@ -21,9 +22,7 @@ class DateTimeChooserModal extends Modal {
   override onOpen() {
     let targetElement: HTMLElement;
     if (Platform.isDesktop) {
-      this.modalEl.style.minWidth = "0px";
-      this.modalEl.style.minHeight = "0px";
-      this.modalEl.style.width = "auto";
+      this.modalEl.addClass("reminder-date-chooser-modal");
       targetElement = this.contentEl;
     } else {
       targetElement = this.containerEl;

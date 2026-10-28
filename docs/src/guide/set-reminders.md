@@ -36,6 +36,8 @@ The recurrence rule uses the same natural-language vocabulary as the [Tasks plug
 
 When a recurring reminder is completed (via the [notification's "Mark as Done"](/guide/notification.html) button, or the `Toggle checklist status` command/hotkey), a new unchecked TODO line for the next occurrence is inserted above the completed line, and the recurrence rule is carried over to it.
 
+The next occurrence keeps the original weekday or day of the month from the current reminder date. Append `when done` to the rule (e.g. `🔁every week when done`) to compute the next occurrence from the completion date instead.
+
 ::: tip
 Snoozing ("Remind me later") re-anchors the series: the next occurrence after completion is computed from the snoozed time, not the original one.
 :::
@@ -115,13 +117,16 @@ It will open the calendar popup.
 
 Unlike the inline popup shown when typing the trigger, this always opens as a dialog — this is also how the calendar popup is shown on mobile.
 
+No shortcut is assigned to it by default; you can assign one from `Obsidian > Settings > Hotkeys > Reminder: Show calendar popup`.
+
 ::: tip
 For mobile users, it would be useful to add a button to the toolbar at the bottom of the markdown editor to show the calendar popup.
 
 1. `Options` > `Mobile`
 2. `Configure`
 3. Select the command named `Show calendar popup`
-   :::
+
+:::
 
 ### Using the trigger on a non-task line
 
@@ -140,12 +145,13 @@ If you are using [Tasks Plugin format](/guide/interop-tasks.html), this action d
 
 - Insert done date (`✅ YYYY-MM-DD`)
 - Create next recurring task (if you use `🔁 XXX`)
-  :::
 
-**By keyboad shortcut**
+:::
 
-By default, <kbd>Meta</kbd> + <kbd>Shift</kbd> + <kbd>Enter</kbd> to toggle checklist status.  
-You can change it from `Obsidian > Settings > Hotkeys > Reminder: Toggle checklist status`.
+**By keyboard shortcut**
+
+No shortcut is assigned by default.  
+You can assign one from `Obsidian > Settings > Hotkeys > Reminder: Toggle checklist status`.
 
 **From reminder notification**
 
@@ -175,3 +181,8 @@ You can create a TODO item that is not a reminder by formatting it as `- [-] xxx
 ```markdown
 - [-] Task 1 (@2024-12-24)
 ```
+
+::: tip
+Which checkbox symbols count as done or cancelled can be customized with
+the [Task statuses](/setting/#task-statuses) setting.
+:::

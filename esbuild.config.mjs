@@ -1,7 +1,7 @@
 import process from "process";
 import fs from 'fs';
 import esbuild from "esbuild";
-import builtins from 'builtin-modules'
+import { builtinModules as builtins } from 'node:module';
 import esbuildSvelte from "esbuild-svelte";
 import { sveltePreprocess } from "svelte-preprocess";
 

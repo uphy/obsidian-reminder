@@ -2,7 +2,7 @@
  * @jest-environment
  */
 import { DateTime } from "model/time";
-import moment from "moment";
+import { moment } from "model/moment";
 import {
   KanbanDateTimeFormat,
   KanbanReminderModel,
