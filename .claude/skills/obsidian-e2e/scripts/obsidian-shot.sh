@@ -38,24 +38,36 @@
 # so it has nothing but the title to go on. obsidian-eval.mjs, which can look
 # at the DOM, does classify windows — use --window there.
 #
+# Window discovery needs PyObjC's Quartz bindings, which are NOT part of the
+# system python3 on macOS. Rather than fail — which used to surface as a
+# misleading "expected exactly 1 window" — this falls back to capturing the
+# page through CDP (lib/cdp-screenshot.mjs). That image has no native title
+# bar or window shadow, but everything Obsidian draws itself is in it. Install
+# `python3 -m pip install pyobjc-framework-Quartz` for true window captures, or
+# pass --cdp to take the fallback path deliberately.
+#
 # Usage:
 #   obsidian-shot.sh <output-path.png>
 #   obsidian-shot.sh --title-contains '設定' <output-path.png>
+#   obsidian-shot.sh --cdp <output-path.png>          # skip Quartz, capture via CDP
 #
 # Env:
 #   OBSIDIAN_TEST_VAULT_NAME   required, no default
-#   OBSIDIAN_CDP_PORT          default 9333 (used only for the cross-check)
+#   OBSIDIAN_CDP_PORT          default 9333 (the cross-check, and the fallback)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CDP_PAGES="$SCRIPT_DIR/lib/cdp-pages.mjs"
+CDP_SHOT="$SCRIPT_DIR/lib/cdp-screenshot.mjs"
 
 TITLE_CONTAINS=""
 OUTPUT_PATH=""
+FORCE_CDP=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --title-contains) TITLE_CONTAINS="$2"; shift 2 ;;
+    --cdp) FORCE_CDP=1; shift ;;
     *) OUTPUT_PATH="$1"; shift ;;
   esac
 done
@@ -68,6 +80,31 @@ fi
 
 : "${OBSIDIAN_TEST_VAULT_NAME:?error: OBSIDIAN_TEST_VAULT_NAME is required (no default)}"
 PORT="${OBSIDIAN_CDP_PORT:-9333}"
+
+capture_via_cdp() {
+  # An array, not `${VAR:+--flag "$VAR"}`: that expands unquoted and would
+  # split a title containing spaces into several arguments.
+  local args
+  args=(--vault "$OBSIDIAN_TEST_VAULT_NAME" --port "$PORT")
+  if [[ -n "$TITLE_CONTAINS" ]]; then
+    args+=(--title-contains "$TITLE_CONTAINS")
+  fi
+  exec node "$CDP_SHOT" "${args[@]}" "$OUTPUT_PATH"
+}
+
+if [[ "$FORCE_CDP" -eq 1 ]]; then
+  capture_via_cdp
+fi
+
+# Quartz is what turns a window title into the window ID `screencapture -l`
+# needs. Without it there is no window-ID path at all, so take the fallback
+# instead of reporting the missing module as a guard failure.
+if ! python3 -c 'import Quartz' > /dev/null 2>&1; then
+  echo "note: PyObjC's Quartz bindings are not installed, so the window list is unavailable." >&2
+  echo "  Capturing the page through CDP instead (no native title bar in the image)." >&2
+  echo "  For true window captures: python3 -m pip install pyobjc-framework-Quartz" >&2
+  capture_via_cdp
+fi
 
 # --- Guard A: exactly one on-screen Obsidian window matching the vault -----
 # (temporarily disable errexit: a non-zero exit here means "not exactly one

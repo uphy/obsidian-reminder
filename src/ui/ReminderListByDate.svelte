@@ -18,7 +18,13 @@
     <div class="reminder-list-item no-reminders">No reminders</div>
   {:else}
     <div>
-      {#each reminders as reminder (reminder.key())}
+      <!-- Keyed by position, not by `reminder.key()`: that key is
+           file + title + time, which two identical task lines in one file
+           share. Svelte rejects a duplicate key by throwing, and the throw
+           took down the whole list — a single repeated line anywhere in the
+           vault left the reminder list empty. A `Reminder` carries no id that
+           is unique across the list, so there is nothing better to key on. -->
+      {#each reminders as reminder, i (i)}
         <button
           class="reminder-list-item hover-highlight"
           aria-label={tooltip(reminder)}
