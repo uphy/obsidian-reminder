@@ -3,14 +3,20 @@ import {
   findReminderInRenderedText,
 } from "./rendered-pill";
 
+// Parsed rather than assigned to `innerHTML`, and built without Obsidian's
+// `createEl()` helpers, which jsdom doesn't have.
 function taskItem(html: string, task: string = ""): Element {
-  const list = document.createElement("ul");
-  list.innerHTML = `<li class="task-list-item" data-task="${task}">${html}</li>`;
-  return list.querySelector("li")!;
+  const doc = new DOMParser().parseFromString(
+    `<ul><li class="task-list-item" data-task="${task}">${html}</li></ul>`,
+    "text/html",
+  );
+  return doc.querySelector("li")!;
 }
 
 function pill(): HTMLElement {
-  const el = document.createElement("span");
+  const el = new DOMParser()
+    .parseFromString("<span></span>", "text/html")
+    .querySelector("span")!;
   el.className = "reminder-pill";
   el.textContent = "PILL";
   return el;

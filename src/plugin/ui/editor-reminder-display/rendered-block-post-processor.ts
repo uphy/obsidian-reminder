@@ -70,7 +70,7 @@ function buildPill(
   ctx: MarkdownPostProcessorContext,
   reminder: Reminder,
 ): HTMLElement {
-  const container = document.createElement("span");
+  const container = createSpan();
   const component = new ReminderPillComponent({
     target: container,
     props: {
