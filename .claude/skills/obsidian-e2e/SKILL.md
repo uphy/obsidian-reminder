@@ -16,11 +16,12 @@ They are complementary, not interchangeable:
 
 - Things this skill **can** verify automatically: reminder firing timing, toast
   contents, button clicks and their effect on the file, settings state,
-  `Reminders`/`ReminderNotifier` internal state.
+  `Reminders`/`ReminderNotifier` internal state, and clicks on macOS system
+  notifications ("Mark as Done", snooze, the body, close — see
+  `system-notification.sh`).
 - Things only a **human** can verify (see "What cannot be automated" below): the
-  look and feel of macOS system notifications, whether a system notification click
-  actually does the right thing, and anything that depends on the user's macOS
-  notification style settings (Banners vs. Alerts, etc).
+  look and feel of macOS system notifications, and anything that depends on the
+  user's macOS notification style settings (Banners vs. Alerts, etc).
 
 For anything touching `src/plugin/` or `src/ui/`, prefer running both: this skill
 for the parts it can check unattended, `manual-verify` for the rest.
@@ -151,8 +152,9 @@ offer to record it.
 ## Scripts
 
 All scripts live in `scripts/` and use only Node's built-ins (`fetch`,
-`WebSocket`, `fs`) plus macOS system tools (`osascript`, `screencapture`, and
-optionally `python3` + PyObjC's `Quartz`) — no `npm install` required, so they
+`WebSocket`, `fs`) plus macOS system tools (`osascript`, `screencapture`,
+optionally `python3` + PyObjC's `Quartz`, and `swiftc` from the Xcode Command
+Line Tools for `system-notification.sh`) — no `npm install` required, so they
 work in a worktree before dependencies have ever been installed.
 
 The shell scripts must run under **bash 3.2**, which is what macOS ships as
@@ -167,6 +169,8 @@ everything these scripts need.
 call), `cdp-pages.mjs`, a tiny CLI over the page list so the bash scripts
 don't each carry their own copy of the title rule, and `cdp-screenshot.mjs`,
 the screenshot path used when PyObjC isn't installed (see `obsidian-shot.sh`).
+`notification-center.swift` is the Accessibility-API half of
+`system-notification.sh`.
 
 ### `obsidian-launch.sh [--restart] [--no-open-vault]`
 
@@ -250,8 +254,9 @@ internal plugin state is directly reachable. Confirmed working as of this writin
 - `.ui.reminderNotifier.toastManager.toasts` → `Map` of currently-shown toasts,
   keyed by `<file><title><time>`.
 - `.ui.reminderNotifier.systemNotifier.systemNotifications` → `Map` of tracked
-  system notifications. **This is how you detect that a system notification fired
-  even though you can't click it** (see "What cannot be automated").
+  system notifications. Use it to assert that a system notification was raised
+  (or, after a click on it, that the plugin let go of it); to click one, see
+  `system-notification.sh`.
 - `.ui.reminderNotifier.systemNotifier.isAvailable()` → whether system
   notifications are usable on this platform.
 
@@ -338,14 +343,69 @@ number to be one.
 This is the only way to inspect the settings screen, since CDP can't evaluate
 anything in that window (no `app` global — see `obsidian-eval.mjs` above).
 
+### `system-notification.sh (list | act | clear-all)`
+
+```
+.claude/skills/obsidian-e2e/scripts/system-notification.sh act e2e-skill-smoke-task1 "Mark as Done"
+# => { "action": "Mark as Done", "body": "e2e-skill-smoke-task1", "kind": "banner" }
+
+system-notification.sh act --timeout 20 <reminder title> "In 30 minutes"   # a "Remind me later" label
+system-notification.sh act <reminder title> click    # the notification body
+system-notification.sh act <reminder title> close    # the close button
+system-notification.sh list                          # Obsidian Reminder rows on screen
+system-notification.sh clear-all                     # close every Obsidian Reminder notification
+```
+
+Clicks a macOS system notification raised by the plugin, then you check the
+effect over CDP like any other click (file rewritten, toast shown,
+`systemNotifier.systemNotifications` emptied). It finds the notification by its
+body, which is the reminder's title, and only ever reads or touches
+notifications titled "Obsidian Reminder" — other apps' notifications in
+Notification Center are personal data and are never printed.
+
+`act` waits up to `--timeout` seconds (default 15) for the notification, so
+call it right after `reminder-fire.sh`. By default it opens Notification Center
+first and closes it again afterwards, which works whether the banner is still
+on screen (macOS shows it for about 5 seconds) or already moved into the
+panel. `--banner-only` leaves the panel alone and acts on the banner, for
+testing that path specifically. Exit codes: 3 = no such notification within
+the timeout, 4 = it exists but has no such action (the error lists what it
+has).
+
+How it works, and why it's not a general GUI-automation tool: on macOS 26 a
+notification's buttons are exposed as *custom Accessibility actions on the
+notification row*, not as child button elements. `lib/notification-center.swift`
+performs those actions directly (`AXUIElementPerformAction`), which delivers
+the same `action` / `click` / `close` event to Electron as a real click — no
+mouse or keyboard, no focus change. It opens Notification Center by pressing
+the menu-bar clock found by its identifier (`com.apple.menuextra.clock`), so
+it works in any system language and needs no Automation permission. It needs
+Accessibility permission for the app running it (your terminal / IDE); the
+binary is compiled once into `$TMPDIR/obsidian-e2e/`.
+
+vercel-labs/agent-desktop (1.0.2) was tried for this and doesn't work here:
+its `notification-action` / `dismiss-notification` look for child buttons and
+find none, on a Japanese-locale macOS it can't open Notification Center (it
+looks for a clock labelled "Clock") and mis-splits app name and title, and it
+skips stacked notifications. It *can* list notifications while one is on
+screen, and it can drive the settings window's toggles and text fields
+headlessly — but that window's values are already readable and writable over
+CDP (see "What cannot be automated").
+
+`close` and `clear-all` look for the close button by its label, which macOS
+localizes; English and Japanese are known (`closeLabels` /
+`clearAllLabels` in the Swift file). Under another system language, `act`
+exits 4 and lists the actual labels — add them there.
+
 ## What cannot be automated
 
 Be upfront about these with the user rather than trying to fake a check:
 
-- **Clicking macOS system notifications.** They're rendered by Electron's
-  `Notification` API, which lives outside the DOM entirely — CDP cannot see or
-  click them. You *can* detect that one was raised (see
-  `systemNotifier.systemNotifications` above), but not interact with it.
+- **Clicking a system notification through CDP.** They're rendered by
+  Electron's `Notification` API, outside the DOM — use `system-notification.sh`
+  instead. What it can't do: tell whether the notification *looks* right, or
+  exercise macOS settings it doesn't control (Alerts style, Focus modes,
+  notifications turned off for Obsidian).
 - **How a system notification actually looks**, including anything that depends
   on the user's System Settings → Notifications style (Banners vs. Alerts,
   grouping, etc). This has to be eyeballed by a human.
@@ -384,7 +444,7 @@ node .../obsidian-eval.mjs '
     if (s.key === "enableTasksPluginReminderFormat") s.rawValue.value = true;
   });
   p.settings.useCustomEmojiForTasksPlugin.rawValue.value = true;
-  await p.fileSystem.reloadRemindersInAllFiles();
+  await p.fileSystem.reloadRemindersInAllFiles();   // see the warning below
   await p.data.save(true);
   return p._reminders.reminders.length;'
 
@@ -394,6 +454,16 @@ node .../obsidian-eval.mjs '
 Note `p.settings.settings.forEach` for the format toggles: the per-format
 settings aren't exposed as named fields on `Settings`, only through the
 collection.
+
+**`reloadRemindersInAllFiles()` forgets which reminders were muted.** It clears
+every reminder and re-parses the vault, and the parsed reminders come back
+unmuted, so every overdue reminder in the test vault fires again within
+seconds. With system notifications on, that was about 70 macOS notifications
+at once (`system-notification.sh clear-all` cleans them up). Do the full
+reload before turning on `useSystemNotification`, so the re-fire lands as
+in-app toasts rather than OS notifications, and when you only
+added or changed a fixture, let the file watcher pick it up (or reload just
+that file with `p.fileSystem.reloadRemindersInFile(file)`).
 
 ## Testing startup / restart behavior
 
