@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import type ReminderPlugin from "main";
 import { EditorView, WidgetType } from "@codemirror/view";
 import { openChooserAndApplyEdit } from "./edit-reminder";
@@ -44,7 +45,7 @@ export class ReminderPillWidget extends WidgetType {
       target: container,
       props: {
         label: `⏰ ${this.span.reminder.time.toString()}`,
-        title: `Reminder: ${this.span.reminder.title}`,
+        title: t("Reminder: {title}", { title: this.span.reminder.title }),
       },
     });
     component.$on("activate", () => {

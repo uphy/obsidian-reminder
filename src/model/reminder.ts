@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import type { ReadOnlyReference } from "model/ref";
 import { DateTime, Time } from "model/time";
 
@@ -274,12 +275,12 @@ function generateGroup(
     );
   }
   if (days >= 7) {
-    return new Group("Over 1 week", (time) =>
+    return new Group(t("Over 1 week"), (time) =>
       time.format(format.monthDayFormat, reminderTime),
     );
   }
   if (time.toYYYYMMDD(reminderTime) === now.toYYYYMMDD(reminderTime)) {
-    const todaysGroup = new Group("Today", (time) =>
+    const todaysGroup = new Group(t("Today"), (time) =>
       time.format(format.timeFormat, reminderTime),
     );
     todaysGroup.isToday = true;
@@ -289,7 +290,7 @@ function generateGroup(
     time.toYYYYMMDD(reminderTime) ===
     now.add(1, "days", reminderTime).toYYYYMMDD()
   ) {
-    return new Group("Tomorrow", (time) =>
+    return new Group(t("Tomorrow"), (time) =>
       time.format(format.timeFormat, reminderTime),
     );
   }
@@ -349,7 +350,7 @@ export function groupReminders(
     result.push(new GroupedReminder(previousGroup, currentReminders));
   }
   if (overdueReminders.length > 0) {
-    const overdueGroup: Group = new Group("Overdue", (time) => {
+    const overdueGroup: Group = new Group(t("Overdue"), (time) => {
       // Overdue reminders can be from a previous day, so a time-only label
       // like "09:00" would be ambiguous about which day it refers to.
       // Show the date only (no time) for previous days: once a reminder is

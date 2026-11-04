@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import "./status-bar.css";
 import type ReminderPlugin from "main";
 
@@ -26,7 +27,7 @@ export class OverdueStatusBar {
     ]);
     this.el.setAttribute(
       "aria-label",
-      "Overdue reminders — click to open the reminder list",
+      t("Overdue reminders — click to open the reminder list"),
     );
     this.plugin.registerDomEvent(this.el, "click", () => {
       void this.plugin.ui.showReminderList();

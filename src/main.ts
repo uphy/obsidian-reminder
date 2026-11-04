@@ -1,3 +1,4 @@
+import { momentLocaleOf, setLocaleApplier } from "i18n";
 import {
   NotificationWorker,
   NtfyController,
@@ -6,6 +7,7 @@ import {
   ReminderPluginUI,
 } from "plugin";
 import { isNotificationPaused } from "model/dnd";
+import { moment } from "model/moment";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
@@ -44,6 +46,21 @@ export default class ReminderPlugin extends Plugin {
     // lifetime of the plugin (only its values change on reload), so it's
     // safe to capture the reference once here.
     this.settings = this.data.settings;
+    // Resolve "automatic" before any UI is built, so the commands registered
+    // in `onload()` already use the right language. `applyLanguage()` runs
+    // again once the persisted settings are loaded.
+    this.settings.applyLanguage();
+    // Month and weekday names inside user-configured display formats ("MMMM",
+    // "ddd", ...) are rendered by moment, whose locale is global to the app.
+    // Follow the selected language when Obsidian's bundled moment knows that
+    // locale; the plugin's own translations (and the calendar's day/month
+    // names) do not depend on this.
+    setLocaleApplier((language) => {
+      const locale = momentLocaleOf(language);
+      if (moment.locales().includes(locale)) {
+        moment.locale(locale);
+      }
+    });
     this.reminders.reminderTime = this.settings.reminderTime;
     DATE_TIME_FORMATTER.setTimeFormat(
       this.settings.dateFormat,
@@ -128,6 +145,10 @@ export default class ReminderPlugin extends Plugin {
     this.ui.onload();
     this.app.workspace.onLayoutReady(async () => {
       await this.data.load();
+      // A fresh install has nothing persisted for the "Language" setting, so
+      // its change listener never fires; resolving "automatic" here is what
+      // makes the plugin follow Obsidian's UI language from the first run on.
+      this.settings.applyLanguage();
       await this.seedTaskStatuses();
       this.ui.onLayoutReady();
       this.fileSystem.onload(this);

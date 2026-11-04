@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import { ConstantReference } from "model/ref";
 import type { ReadOnlyReference } from "model/ref";
 import { moment } from "model/moment";
@@ -107,20 +108,22 @@ export class DateTime {
 
 export class Time {
   public static parse(text: string): Time {
+    const invalid = () =>
+      t("Unexpected format time({time}). Time must be HH:mm.", { time: text });
     if (!text.match(/^\d{1,2}:\d{1,2}$/)) {
-      throw new Error(`Unexpected format time(${text}). Time must be HH:mm.`);
+      throw new Error(invalid());
     }
     const s = text.split(":");
     if (s.length !== 2) {
-      throw new Error(`Unexpected format time(${text}).  time must be HH:mm.`);
+      throw new Error(invalid());
     }
     const hour = parseInt(s[0]!);
     const minute = parseInt(s[1]!);
     if (hour > 23 || hour < 0) {
-      throw new Error("hour must be 0~23");
+      throw new Error(t("hour must be 0~23"));
     }
     if (minute > 59 || minute < 0) {
-      throw new Error("minute must be 0~59");
+      throw new Error(t("minute must be 0~59"));
     }
     return new Time(hour, minute);
   }
@@ -225,12 +228,23 @@ export function parseLaters(laters: string): Array<Later> {
   return laters.split("\n").map((l) => parseLater(l.trim()));
 }
 
+/**
+ * The label of a relative "In N unit" option. The unit word is translated
+ * separately so the whole phrase can be reordered per language; the parser
+ * itself keeps accepting English input only.
+ */
+function inLabel(count: number, unit: string): string {
+  return t("In {count} {unit}", { count, unit: t(unit) });
+}
+
 export function parseLater(later: string): Later {
   later = later.toLowerCase();
   if (later.startsWith("in")) {
     const tokens = later.split(" ");
     if (tokens.length !== 3) {
-      throw new Error("Unsupported format.  Should be 'In N (minutes|hours)'");
+      throw new Error(
+        t("Unsupported format.  Should be 'In N (minutes|hours)'"),
+      );
     }
     const n =
       tokens[1] === "a" || tokens[1] === "an" ? 1 : parseInt(tokens[1]!);
@@ -238,75 +252,81 @@ export function parseLater(later: string): Later {
       case "minute":
       case "minutes": {
         const unit = n == 1 ? "minute" : "minutes";
-        return new Later(`In ${n} ${unit}`, inMinutes(n));
+        return new Later(inLabel(n, unit), inMinutes(n));
       }
       case "hour":
       case "hours": {
         const unit = n == 1 ? "hour" : "hours";
-        return new Later(`In ${n} ${unit}`, inHours(n));
+        return new Later(inLabel(n, unit), inHours(n));
       }
       case "day":
       case "days": {
         const unit = n == 1 ? "day" : "days";
-        return new Later(`In ${n} ${unit}`, inDays(n));
+        return new Later(inLabel(n, unit), inDays(n));
       }
       case "week":
       case "weeks": {
         const unit = n == 1 ? "week" : "weeks";
-        return new Later(`In ${n} ${unit}`, inWeeks(n));
+        return new Later(inLabel(n, unit), inWeeks(n));
       }
       case "month":
       case "months": {
         const unit = n == 1 ? "month" : "months";
-        return new Later(`In ${n} ${unit}`, inMonths(n));
+        return new Later(inLabel(n, unit), inMonths(n));
       }
       case "year":
       case "years": {
         const unit = n == 1 ? "year" : "years";
-        return new Later(`In ${n} ${unit}`, inYears(n));
+        return new Later(inLabel(n, unit), inYears(n));
       }
     }
   } else if (later.startsWith("next")) {
     const weekday = later.substring(5);
     switch (weekday) {
       case "sunday":
-        return new Later("Next Sunday", nextWeekday(0));
+        return new Later(t("Next Sunday"), nextWeekday(0));
       case "monday":
-        return new Later("Next Monday", nextWeekday(1));
+        return new Later(t("Next Monday"), nextWeekday(1));
       case "tuesday":
-        return new Later("Next Tuesday", nextWeekday(2));
+        return new Later(t("Next Tuesday"), nextWeekday(2));
       case "wednesday":
-        return new Later("Next Wednesday", nextWeekday(3));
+        return new Later(t("Next Wednesday"), nextWeekday(3));
       case "thursday":
-        return new Later("Next Thursday", nextWeekday(4));
+        return new Later(t("Next Thursday"), nextWeekday(4));
       case "friday":
-        return new Later("Next Friday", nextWeekday(5));
+        return new Later(t("Next Friday"), nextWeekday(5));
       case "saturday":
-        return new Later("Next Saturday", nextWeekday(6));
+        return new Later(t("Next Saturday"), nextWeekday(6));
       case "day":
-        return new Later("Tomorrow", tomorrow());
+        return new Later(t("Tomorrow"), tomorrow());
       case "week":
-        return new Later("Next week", nextWeek());
+        return new Later(t("Next week"), nextWeek());
       case "month":
-        return new Later("Next month", nextMonth());
+        return new Later(t("Next month"), nextMonth());
       case "year":
-        return new Later("Next year", nextYear());
+        return new Later(t("Next year"), nextYear());
       default:
-        throw new Error(`Unsupported weekday: ${weekday}`);
+        throw new Error(t("Unsupported weekday: {weekday}", { weekday }));
     }
   } else if (later === "tomorrow") {
-    return new Later("Tomorrow", tomorrow());
+    return new Later(t("Tomorrow"), tomorrow());
   }
-  throw new Error(`Unsupported format: ${later}`);
+  throw new Error(t("Unsupported format: {format}", { format: later }));
 }
 
-export const DEFAULT_LATERS: Array<Later> = [
-  new Later("In 30 minutes", inMinutes(30)),
-  new Later("In 1 hours", inHours(1)),
-  new Later("In 3 hours", inHours(3)),
-  new Later("Tomorrow", tomorrow()),
-  new Later("Next week", nextWeek()),
-];
+/**
+ * The built-in "quick pick" snooze options. Built per call rather than kept as
+ * a constant, so the labels follow a language change.
+ */
+export function defaultLaters(): Array<Later> {
+  return [
+    new Later(t("In 30 minutes"), inMinutes(30)),
+    new Later(t("In 1 hours"), inHours(1)),
+    new Later(t("In 3 hours"), inHours(3)),
+    new Later(t("Tomorrow"), tomorrow()),
+    new Later(t("Next week"), nextWeek()),
+  ];
+}
 
 class DateTimeFormatter {
   private dateFormat: ReadOnlyReference<string> = new ConstantReference(

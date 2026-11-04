@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import "./date-display-format-preset-chooser.css";
 import {
   type DateDisplayFormatPreset,
@@ -16,7 +17,7 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
 
   getSuggestions(query: string): DateDisplayFormatPreset[] {
     return dateDisplayFormatPresets.filter((preset) =>
-      preset.name.toLowerCase().includes(query.toLowerCase()),
+      t(preset.name).toLowerCase().includes(query.toLowerCase()),
     );
   }
 
@@ -26,7 +27,7 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
 
     // Title
     container.createDiv({
-      text: preset.name,
+      text: t(preset.name),
       cls: "reminder-preset-title",
     });
 
@@ -40,25 +41,33 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
     // Year & Month example
     previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
-      text: "Year/Month: " + now.format(preset.format.yearMonthFormat),
+      text: t("Year/Month: {value}", {
+        value: now.format(preset.format.yearMonthFormat),
+      }),
     });
 
     // Month & Day example
     previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
-      text: "Month/Day: " + now.format(preset.format.monthDayFormat),
+      text: t("Month/Day: {value}", {
+        value: now.format(preset.format.monthDayFormat),
+      }),
     });
 
     // Short date with weekday example
     previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
-      text: "Short: " + now.format(preset.format.shortDateWithWeekdayFormat),
+      text: t("Short: {value}", {
+        value: now.format(preset.format.shortDateWithWeekdayFormat),
+      }),
     });
 
     // Time example
     previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
-      text: "Time: " + now.format(preset.format.timeFormat),
+      text: t("Time: {value}", {
+        value: now.format(preset.format.timeFormat),
+      }),
     });
   }
 

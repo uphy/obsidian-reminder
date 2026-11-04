@@ -1,4 +1,5 @@
 <script lang="typescript">
+  import { monthShortName, weekdayShortName } from "i18n";
   import { moment } from "model/moment";
   import { createEventDispatcher, onMount } from "svelte";
   import { Calendar } from "./calendar";
@@ -16,10 +17,11 @@
     value.startOf("day"),
     weekStart,
   );
+  // Day names come from the plugin's own translations rather than from
+  // moment, so the calendar header follows the language setting even when
+  // moment has no locale data for it.
   $: daysOfWeek = Array.from({ length: 7 }, (_, i) =>
-    moment()
-      .day((calendar.weekStart + i) % 7)
-      .format("ddd"),
+    weekdayShortName(calendar.weekStart + i),
   );
   let table: HTMLElement;
   let slot: HTMLElement;
@@ -132,7 +134,9 @@
     <button tabindex="-1" class="month-nav" on:click={() => previousMonth()}
       >&lt;</button
     >
-    <span class="month">{calendar.current.monthStart.format("MMM")}</span>
+    <span class="month"
+      >{monthShortName(calendar.current.monthStart.month())}</span
+    >
     <span class="year">{calendar.current.monthStart.format("YYYY")}</span>
     <button tabindex="-1" class="month-nav" on:click={() => nextMonth()}
       >&gt;</button

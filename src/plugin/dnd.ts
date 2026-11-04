@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import type ReminderPlugin from "main";
 import type { Later } from "model/time";
 import { Notice } from "obsidian";
@@ -17,7 +18,9 @@ export function pauseNotifications(plugin: ReminderPlugin, later: Later): void {
   void plugin.data.save(true);
   plugin.ui.refreshDndStatusBar();
   new Notice(
-    `Reminder notifications paused until ${until.format("YYYY-MM-DD HH:mm")}`,
+    t("Reminder notifications paused until {time}", {
+      time: until.format("YYYY-MM-DD HH:mm"),
+    }),
   );
 }
 
@@ -25,7 +28,7 @@ export function resumeNotifications(plugin: ReminderPlugin): void {
   plugin.data.dndUntil.value = null;
   void plugin.data.save(true);
   plugin.ui.refreshDndStatusBar();
-  new Notice("Reminder notifications resumed");
+  new Notice(t("Reminder notifications resumed"));
 }
 
 export function showPauseDurationChooser(

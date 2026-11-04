@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import "./status-bar.css";
 import type ReminderPlugin from "main";
 import { isNotificationPaused } from "model/dnd";
@@ -28,7 +29,7 @@ export class DndStatusBar {
     ]);
     this.el.setAttribute(
       "aria-label",
-      "Click to resume reminder notifications",
+      t("Click to resume reminder notifications"),
     );
     this.plugin.registerDomEvent(this.el, "click", () => {
       resumeNotifications(this.plugin);
@@ -50,7 +51,9 @@ export class DndStatusBar {
       return;
     }
     // `isNotificationPaused` returning true guarantees `dndUntil` is set.
-    this.el.setText(`🔕 Until ${this.formatUntil(dndUntil!)}`);
+    this.el.setText(
+      t("🔕 Until {time}", { time: this.formatUntil(dndUntil!) }),
+    );
     this.el.removeClass("is-hidden");
   }
 

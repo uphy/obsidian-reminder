@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import type { EditorView } from "@codemirror/view";
 import { appendReminderToKanbanCardLine } from "model/format/kanban-card";
 import { convertToTodoLine } from "model/format/markdown";
@@ -11,7 +12,9 @@ import { electron } from "./electron";
 
 export function showReminderInsertionFailureNotice() {
   new Notice(
-    'Cannot insert a reminder here.  Reminders can only be added to task lines such as "- [ ] task".',
+    t(
+      'Cannot insert a reminder here.  Reminders can only be added to task lines such as "- [ ] task".',
+    ),
   );
 }
 
@@ -80,7 +83,7 @@ export async function showOkCancelDialog(
     title: "Obsidian Reminder",
     message: title,
     detail: message,
-    buttons: ["OK", "Cancel"],
+    buttons: [t("OK"), t("Cancel")],
     cancelId: 1,
   });
   if (selected.response === 0) {

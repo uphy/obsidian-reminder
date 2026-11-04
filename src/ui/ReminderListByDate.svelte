@@ -1,4 +1,5 @@
 <script lang="typescript">
+  import { t } from "i18n";
   import type { DateTime } from "model/time";
   import type { Reminder } from "model/reminder";
   import Markdown from "./Markdown.svelte";
@@ -15,7 +16,7 @@
 
 <div class="reminder-group">
   {#if reminders.length === 0}
-    <div class="reminder-list-item no-reminders">No reminders</div>
+    <div class="reminder-list-item no-reminders">{t("No reminders")}</div>
   {:else}
     <div>
       <!-- Keyed by position, not by `reminder.key()`: that key is
