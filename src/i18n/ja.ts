@@ -71,9 +71,9 @@ export const ja: Record<string, string> = {
     "ステータスバーに期限切れの件数を表示する",
   "Show the number of overdue reminders in the status bar. Click it to open the reminder list.":
     "期限切れのリマインダーの件数をステータスバーに表示します。クリックするとリマインダー一覧を開きます。",
-  "Remind me later": "後で通知",
+  "Remind me later": "スヌーズの選択肢",
   "Line-separated list of remind me later items":
-    "「後で通知」の選択肢の一覧（1行に1つ）",
+    "「スヌーズ」で選べる時間の一覧（1行に1つ）",
 
   // --- Settings tab: editor ----------------------------------------------
   "Calendar popup trigger": "カレンダーのポップアップを開く文字列",
