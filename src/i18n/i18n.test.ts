@@ -9,7 +9,6 @@ import {
   onLanguageChange,
   resolveLanguage,
   setLanguage,
-  setLocaleApplier,
   t,
   tn,
   translationsOf,
@@ -119,16 +118,6 @@ describe("setLanguage()", () => {
 
     expect(getLanguageSetting()).toBe("auto");
   });
-
-  test("passes the resolved language to the installed locale applier", () => {
-    const applied: Array<LanguageCode> = [];
-    setLocaleApplier((language) => applied.push(language));
-
-    setLanguage("zh-cn");
-    setLanguage("en");
-
-    expect(applied.slice(-2)).toEqual(["zh-cn", "en"]);
-  });
 });
 
 describe("language resolution", () => {
@@ -145,12 +134,45 @@ describe("language resolution", () => {
     expect(languageFromTag("")).toBe("en");
   });
 
-  test("never resolves auto to an unavailable language", () => {
-    expect(resolveLanguage("auto")).toBe(
-      resolveLanguage("auto") === "zh-cn" ? "zh-cn" : "en",
-    );
+  test("returns the setting itself for an explicit language", () => {
     expect(resolveLanguage("zh-cn")).toBe("zh-cn");
     expect(resolveLanguage("en")).toBe("en");
+  });
+});
+
+describe("automatic language detection", () => {
+  afterEach(() => {
+    setLanguage("en");
+    window.localStorage.clear();
+    document.documentElement.removeAttribute("lang");
+  });
+
+  test("follows the language Obsidian itself stored", () => {
+    window.localStorage.setItem("language", "zh");
+
+    expect(resolveLanguage("auto")).toBe("zh-cn");
+  });
+
+  test("falls back to the document language, mapping zh-TW to zh-cn", () => {
+    document.documentElement.lang = "zh-TW";
+
+    expect(resolveLanguage("auto")).toBe("zh-cn");
+  });
+
+  test("prefers Obsidian's stored language over the document language", () => {
+    window.localStorage.setItem("language", "en");
+    document.documentElement.lang = "zh";
+
+    expect(resolveLanguage("auto")).toBe("en");
+  });
+
+  test("applies the detected language when the setting is auto", () => {
+    window.localStorage.setItem("language", "zh");
+
+    setLanguage("auto");
+
+    expect(getLanguage()).toBe("zh-cn");
+    expect(getLanguageSetting()).toBe("auto");
   });
 });
 

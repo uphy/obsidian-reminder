@@ -1,4 +1,5 @@
 import { Reminders } from "model/reminder";
+import { getLanguage, getLanguageSetting, setLanguage } from "i18n";
 import { PluginData } from "./data";
 import type { DataStore } from "./data";
 
@@ -31,6 +32,13 @@ function mutedByTitle(reminders: Reminders): Record<string, boolean> {
 }
 
 describe("PluginData", (): void => {
+  // The language is module-global state in `i18n`, and these tests load
+  // persisted values into it, so it has to be reset between cases.
+  afterEach((): void => {
+    setLanguage("en");
+    window.localStorage.clear();
+  });
+
   test("restores persisted mute flags by default", async (): Promise<void> => {
     const reminders = new Reminders(() => {});
     const data = new PluginData(createStore(savedData()), reminders);
@@ -121,5 +129,29 @@ describe("PluginData", (): void => {
     await expect(data.load()).rejects.toThrow("boom");
 
     await expect(data.loaded).resolves.toBeUndefined();
+  });
+
+  test("applies a persisted language while restoring", async (): Promise<void> => {
+    const data = new PluginData(
+      createStore(savedData({ language: "zh-cn" })),
+      new Reminders(() => {}),
+    );
+
+    await data.load();
+
+    expect(data.settings.language.value).toBe("zh-cn");
+    expect(getLanguage()).toBe("zh-cn");
+  });
+
+  test("falls back to auto for a persisted language it does not ship", async (): Promise<void> => {
+    const data = new PluginData(
+      createStore(savedData({ language: "klingon" })),
+      new Reminders(() => {}),
+    );
+
+    await data.load();
+
+    expect(getLanguageSetting()).toBe("auto");
+    expect(getLanguage()).toBe("en");
   });
 });

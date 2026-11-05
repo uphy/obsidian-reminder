@@ -27,10 +27,6 @@ export class DndStatusBar {
       "reminder-dnd-status-bar",
       "is-hidden",
     ]);
-    this.el.setAttribute(
-      "aria-label",
-      t("Click to resume reminder notifications"),
-    );
     this.plugin.registerDomEvent(this.el, "click", () => {
       resumeNotifications(this.plugin);
     });
@@ -45,6 +41,13 @@ export class DndStatusBar {
     if (!this.el) {
       return;
     }
+    // Set here rather than in `onload()`: `onload()` runs before the persisted
+    // language is applied, so a label set there would keep the initial
+    // language for the whole session.
+    this.el.setAttribute(
+      "aria-label",
+      t("Click to resume reminder notifications"),
+    );
     const dndUntil = this.plugin.data.dndUntil.value;
     if (!isNotificationPaused(dndUntil, DateTime.now())) {
       this.el.addClass("is-hidden");
@@ -59,11 +62,11 @@ export class DndStatusBar {
 
   private formatUntil(dndUntil: DateTime): string {
     const timeFormat = this.plugin.settings.timeDisplayFormat.value;
-    const time = dndUntil.format(timeFormat);
+    const time = dndUntil.formatForDisplay(timeFormat);
     if (dndUntil.toYYYYMMDD() === DateTime.now().toYYYYMMDD()) {
       return time;
     }
     const dateFormat = this.plugin.settings.monthDayDisplayFormat.value;
-    return `${dndUntil.format(dateFormat)} ${time}`;
+    return `${dndUntil.formatForDisplay(dateFormat)} ${time}`;
   }
 }

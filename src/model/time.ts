@@ -1,4 +1,4 @@
-import { t } from "i18n";
+import { getLanguage, getLanguageSetting, momentLocaleOf, t } from "i18n";
 import { ConstantReference } from "model/ref";
 import type { ReadOnlyReference } from "model/ref";
 import { moment } from "model/moment";
@@ -46,6 +46,26 @@ export class DateTime {
 
   public format(format: string, defaultTime?: Time) {
     return this.fixedTime(defaultTime).format(format);
+  }
+
+  /**
+   * Formats this time for display in the plugin's language.
+   *
+   * Format tokens that spell out a name — `MMMM`, `ddd`, `A` — are rendered by
+   * moment, whose locale is global to the app (Obsidian's moment instance is
+   * shared with its own date parsing and with the dates this plugin writes to
+   * the vault). Applying the selected language therefore happens on a clone of
+   * this instance instead of through `moment.locale()`, so nothing outside the
+   * plugin's own rendering changes. `format()` keeps the app's locale and is
+   * what the parse/write paths use.
+   */
+  public formatForDisplay(format: string, defaultTime?: Time): string {
+    const time = this.fixedTime(defaultTime);
+    const locale = displayLocale();
+    if (locale == null) {
+      return time.format(format);
+    }
+    return time.clone().locale(locale).format(format);
   }
 
   public toYYYYMMMM(defaultTime?: Time): string {
@@ -422,6 +442,25 @@ class DateTimeFormatter {
 
 function fieldCount(format: string): number {
   return (format.match(/\S+/g) ?? []).length;
+}
+
+/**
+ * The moment locale to render display formats in, or `null` to leave the
+ * instance on the app's locale.
+ *
+ * "Automatic" returns `null` on purpose: moment's locale is app-wide, Obsidian
+ * already sets it from its own UI language, and that is the behavior the
+ * display formats had before the language setting existed. An explicitly
+ * selected language is applied per instance, and only when Obsidian's bundled
+ * moment actually ships the locale -- otherwise moment would silently fall
+ * back to English rather than the app's language.
+ */
+function displayLocale(): string | null {
+  if (getLanguageSetting() === "auto") {
+    return null;
+  }
+  const locale = momentLocaleOf(getLanguage());
+  return moment.locales().includes(locale) ? locale : null;
 }
 
 export const DATE_TIME_FORMATTER = new DateTimeFormatter();

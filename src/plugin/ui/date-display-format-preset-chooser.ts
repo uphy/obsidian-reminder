@@ -42,7 +42,7 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
     previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: t("Year/Month: {value}", {
-        value: now.format(preset.format.yearMonthFormat),
+        value: now.formatForDisplay(preset.format.yearMonthFormat),
       }),
     });
 
@@ -50,7 +50,7 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
     previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: t("Month/Day: {value}", {
-        value: now.format(preset.format.monthDayFormat),
+        value: now.formatForDisplay(preset.format.monthDayFormat),
       }),
     });
 
@@ -58,7 +58,7 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
     previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: t("Short: {value}", {
-        value: now.format(preset.format.shortDateWithWeekdayFormat),
+        value: now.formatForDisplay(preset.format.shortDateWithWeekdayFormat),
       }),
     });
 
@@ -66,7 +66,7 @@ export class DateDisplayFormatPresetModal extends SuggestModal<DateDisplayFormat
     previewsEl.createDiv({
       cls: "reminder-preset-preview-line",
       text: t("Time: {value}", {
-        value: now.format(preset.format.timeFormat),
+        value: now.formatForDisplay(preset.format.timeFormat),
       }),
     });
   }

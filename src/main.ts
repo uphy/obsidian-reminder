@@ -1,4 +1,3 @@
-import { momentLocaleOf, setLocaleApplier } from "i18n";
 import {
   NotificationWorker,
   NtfyController,
@@ -7,7 +6,6 @@ import {
   ReminderPluginUI,
 } from "plugin";
 import { isNotificationPaused } from "model/dnd";
-import { moment } from "model/moment";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
@@ -50,17 +48,6 @@ export default class ReminderPlugin extends Plugin {
     // in `onload()` already use the right language. `applyLanguage()` runs
     // again once the persisted settings are loaded.
     this.settings.applyLanguage();
-    // Month and weekday names inside user-configured display formats ("MMMM",
-    // "ddd", ...) are rendered by moment, whose locale is global to the app.
-    // Follow the selected language when Obsidian's bundled moment knows that
-    // locale; the plugin's own translations (and the calendar's day/month
-    // names) do not depend on this.
-    setLocaleApplier((language) => {
-      const locale = momentLocaleOf(language);
-      if (moment.locales().includes(locale)) {
-        moment.locale(locale);
-      }
-    });
     this.reminders.reminderTime = this.settings.reminderTime;
     DATE_TIME_FORMATTER.setTimeFormat(
       this.settings.dateFormat,

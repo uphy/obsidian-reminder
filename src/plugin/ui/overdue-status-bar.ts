@@ -47,6 +47,13 @@ export class OverdueStatusBar {
     if (!this.el) {
       return;
     }
+    // Set here rather than in `onload()`: `onload()` runs before the persisted
+    // language is applied, so a label set there would keep the initial
+    // language for the whole session.
+    this.el.setAttribute(
+      "aria-label",
+      t("Overdue reminders — click to open the reminder list"),
+    );
     if (!this.plugin.settings.showOverdueCountInStatusBar.value) {
       this.el.addClass("is-hidden");
       return;

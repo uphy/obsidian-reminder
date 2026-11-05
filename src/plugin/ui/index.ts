@@ -186,6 +186,16 @@ export class ReminderPluginUI {
     }
     this.overdueStatusBar.refresh();
     this.dndStatusBar.refresh();
+    if (Platform.isDesktopApp) {
+      // The pills are editor widgets whose `eq()` compares only what is
+      // rendered, and the ones inside callouts live in Obsidian-owned
+      // widgets. Reconfiguring the editor extensions re-runs their `eq()`
+      // (picking up the new tooltip text) and rebuilding the markdown views
+      // refreshes the post-processor output, without either of them waiting
+      // for the note to be edited or reopened.
+      this.plugin.app.workspace.updateOptions();
+      rebuildMarkdownViews(this.plugin.app);
+    }
     this.viewProxy.invalidate();
     this.viewProxy.reload(true);
   }

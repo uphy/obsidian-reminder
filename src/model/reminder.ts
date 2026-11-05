@@ -270,18 +270,18 @@ function generateGroup(
   const days = DateTime.duration(now, time, "days", reminderTime);
   if (days > 30) {
     return new Group(
-      time.format(format.yearMonthFormat, reminderTime),
-      (time) => time.format(format.monthDayFormat, reminderTime),
+      time.formatForDisplay(format.yearMonthFormat, reminderTime),
+      (time) => time.formatForDisplay(format.monthDayFormat, reminderTime),
     );
   }
   if (days >= 7) {
     return new Group(t("Over 1 week"), (time) =>
-      time.format(format.monthDayFormat, reminderTime),
+      time.formatForDisplay(format.monthDayFormat, reminderTime),
     );
   }
   if (time.toYYYYMMDD(reminderTime) === now.toYYYYMMDD(reminderTime)) {
     const todaysGroup = new Group(t("Today"), (time) =>
-      time.format(format.timeFormat, reminderTime),
+      time.formatForDisplay(format.timeFormat, reminderTime),
     );
     todaysGroup.isToday = true;
     return todaysGroup;
@@ -291,12 +291,12 @@ function generateGroup(
     now.add(1, "days", reminderTime).toYYYYMMDD()
   ) {
     return new Group(t("Tomorrow"), (time) =>
-      time.format(format.timeFormat, reminderTime),
+      time.formatForDisplay(format.timeFormat, reminderTime),
     );
   }
   return new Group(
-    time.format(format.shortDateWithWeekdayFormat, reminderTime),
-    (time) => time.format(format.timeFormat, reminderTime),
+    time.formatForDisplay(format.shortDateWithWeekdayFormat, reminderTime),
+    (time) => time.formatForDisplay(format.timeFormat, reminderTime),
   );
 }
 
@@ -358,9 +358,9 @@ export function groupReminders(
       // formats the date label has the same width as the time label, keeping
       // the titles within the group aligned.
       if (time.toYYYYMMDD(reminderTime) === now.toYYYYMMDD(reminderTime)) {
-        return time.format(format.timeFormat, reminderTime);
+        return time.formatForDisplay(format.timeFormat, reminderTime);
       }
-      return time.format(format.monthDayFormat, reminderTime);
+      return time.formatForDisplay(format.monthDayFormat, reminderTime);
     });
     overdueGroup.isOverdue = true;
     result.splice(0, 0, new GroupedReminder(overdueGroup, overdueReminders));

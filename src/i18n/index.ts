@@ -11,10 +11,12 @@ import { zhCN } from "./zh-cn";
  * showing a raw key.
  *
  * This module imports nothing from `obsidian`, so the model layer can use it
- * and jest can load it. Side effects that need Obsidian -- setting moment's
- * locale so user-configured date formats such as "MMMM" render in the
- * selected language -- are installed by the plugin through
- * `setLocaleApplier()`.
+ * and jest can load it. It only maps English text to translations: switching
+ * language deliberately has no global side effect. Month and weekday names in
+ * the user-configured display formats are applied per instance by
+ * `DateTime.formatForDisplay()` (see `model/time.ts`), because moment's locale
+ * is app-wide and shared with Obsidian's own date parsing and with the dates
+ * this plugin writes to the vault.
  */
 
 export type LanguageCode = "en" | "zh-cn";
@@ -49,21 +51,8 @@ const dictionaries: Record<LanguageCode, Record<string, string>> = {
 
 let languageSetting: LanguageSetting = "auto";
 let activeLanguage: LanguageCode = "en";
-let localeApplier: ((language: LanguageCode) => void) | undefined;
 
 const listeners = new Set<(language: LanguageCode) => void>();
-
-/**
- * Installs the side effect that makes date formatting follow the language
- * (see `main.ts`). Called once by the plugin; tests and the model layer run
- * without it.
- */
-export function setLocaleApplier(
-  applier: (language: LanguageCode) => void,
-): void {
-  localeApplier = applier;
-  applier(activeLanguage);
-}
 
 /** The language currently used for translations. */
 export function getLanguage(): LanguageCode {
@@ -86,7 +75,6 @@ export function setLanguage(setting: LanguageSetting): void {
     return;
   }
   activeLanguage = resolved;
-  localeApplier?.(resolved);
   listeners.forEach((listener) => listener(resolved));
 }
 
