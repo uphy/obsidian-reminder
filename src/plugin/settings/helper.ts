@@ -1,9 +1,26 @@
+import { t } from "i18n";
 import { Reference } from "model/ref";
 import type { ReadOnlyReference } from "model/ref";
 import { Later, Time, parseLaters } from "model/time";
 import { AbstractTextComponent, Setting } from "obsidian";
 import { ReminderFormatType, ReminderFormatTypes } from "model/format";
 import "./settings-tab.css";
+
+/**
+ * Text a setting displays: either English source text -- translated when the
+ * setting is rendered, so the settings tab follows a language change without
+ * rebuilding the models -- or a function that produces already-translated text
+ * (for text assembled from other translated pieces, e.g. a format's name).
+ */
+type TranslatableText = string | (() => string);
+
+/** Resolves a `TranslatableText` to the text to display right now. */
+function resolveText(text: TranslatableText | undefined): string {
+  if (text === undefined) {
+    return "";
+  }
+  return t(typeof text === "function" ? text() : text);
+}
 
 class SettingRegistry {
   private settingContexts: Array<SettingContext> = [];
@@ -26,8 +43,8 @@ class SettingContext {
   private infoEl?: HTMLElement;
   private _setting?: Setting;
   public key?: string;
-  public name?: string;
-  public desc?: string;
+  public name?: TranslatableText;
+  public desc?: TranslatableText;
   public tags: Array<string> = [];
   public settingModel?: SettingModelBase;
   public buttons: Array<SettingButton> = [];
@@ -130,12 +147,12 @@ export class SettingModelBuilder {
     return this;
   }
 
-  name(name: string) {
+  name(name: TranslatableText) {
     this.context.name = name;
     return this;
   }
 
-  desc(desc: string) {
+  desc(desc: TranslatableText) {
     this.context.desc = desc;
     return this;
   }
@@ -185,7 +202,7 @@ type AnyValueChanged = (context: SettingContext) => void;
  * through the setting's existing info/validation lines.
  */
 interface SettingButton {
-  label: string;
+  label: TranslatableText;
   onClick: (context: SettingContext) => void | Promise<void>;
 }
 
@@ -208,7 +225,7 @@ abstract class AbstractSettingModelBuilder<R> {
    * listener on each setting's `rawValue`.
    */
   button(
-    label: string,
+    label: TranslatableText,
     onClick: (context: SettingContext) => void | Promise<void>,
   ) {
     this.context.buttons.push({ label, onClick });
@@ -256,7 +273,7 @@ abstract class AbstractSettingModelBuilder<R> {
 }
 
 class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
-  private _placeHolder?: string;
+  private _placeHolder?: TranslatableText;
   private _masked = false;
 
   constructor(
@@ -267,7 +284,7 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
     super(context, initValue);
   }
 
-  placeHolder(placeHolder: string) {
+  placeHolder(placeHolder: TranslatableText) {
     this._placeHolder = placeHolder;
     return this;
   }
@@ -292,7 +309,7 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
       ) => {
         this.wireTextComponent(
           text,
-          this._placeHolder ?? "",
+          resolveText(this._placeHolder),
           rawValue.value,
           (value) => {
             try {
@@ -327,13 +344,13 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
 }
 
 class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number> {
-  private _placeHolder?: string;
+  private _placeHolder?: TranslatableText;
 
   constructor(context: SettingContext, initValue: number) {
     super(context, initValue);
   }
 
-  placeHolder(placeHolder: string) {
+  placeHolder(placeHolder: TranslatableText) {
     this._placeHolder = placeHolder;
     return this;
   }
@@ -343,12 +360,12 @@ class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number> {
       setting.addText((text) => {
         this.wireTextComponent(
           text,
-          this._placeHolder ?? "",
+          resolveText(this._placeHolder),
           rawValue.value.toString(),
           (value) => {
             const n = parseInt(value, 10);
             if (Number.isNaN(n)) {
-              context.setValidationError("Please enter a valid number.");
+              context.setValidationError(t("Please enter a valid number."));
               return;
             }
             context.setValidationError(null);
@@ -381,7 +398,7 @@ class ToggleSettingModelBuilder extends AbstractSettingModelBuilder<boolean> {
 
 class DropdownOption {
   constructor(
-    public label: string,
+    public label: TranslatableText,
     public value: string,
   ) {}
 }
@@ -389,7 +406,7 @@ class DropdownOption {
 class DropdownSettingModelBuilder extends AbstractSettingModelBuilder<string> {
   private options: Array<DropdownOption> = [];
 
-  addOption(label: string, value: string) {
+  addOption(label: TranslatableText, value: string) {
     this.options.push(new DropdownOption(label, value));
     return this;
   }
@@ -402,7 +419,7 @@ class DropdownSettingModelBuilder extends AbstractSettingModelBuilder<string> {
       ({ setting, rawValue }) => {
         setting.addDropdown((d) => {
           this.options.forEach((option) => {
-            d.addOption(option.value, option.label);
+            d.addOption(option.value, resolveText(option.label));
           });
           d.setValue(rawValue.value);
           d.onChange(async (value) => {
@@ -464,8 +481,8 @@ class SettingModelImpl<R, E> implements SettingModel<R, E> {
 
   createSetting(containerEl: HTMLElement): Setting {
     const setting = new Setting(containerEl)
-      .setName(this.context.name ?? "")
-      .setDesc(this.context.desc ?? "");
+      .setName(resolveText(this.context.name))
+      .setDesc(resolveText(this.context.desc));
     this.context.init(this, setting);
     this.settingInitializer({
       setting,
@@ -476,7 +493,7 @@ class SettingModelImpl<R, E> implements SettingModel<R, E> {
     // setting's own input rather than in front of it.
     this.context.buttons.forEach((button) => {
       setting.addButton((b) => {
-        b.setButtonText(button.label).onClick(async () => {
+        b.setButtonText(resolveText(button.label)).onClick(async () => {
           // A button's handler is typically a network round-trip; disabling
           // it for the duration keeps a second click from starting an
           // overlapping run whose result would race the first one's.
@@ -566,7 +583,7 @@ export class SettingTabModel {
     const tabButtons: Array<HTMLElement> = this.pages.map((page, index) => {
       const tabEl = tabBarEl.createEl("button", {
         cls: "reminder-settings-tab",
-        text: page.name,
+        text: t(page.name),
       });
       tabEl.setAttribute("role", "tab");
       tabEl.setAttribute("type", "button");
@@ -599,7 +616,7 @@ export class SettingTabModel {
     }
     activePage.groups.forEach((group) => {
       if (group.name !== undefined) {
-        new Setting(contentEl).setName(group.name).setHeading();
+        new Setting(contentEl).setName(t(group.name)).setHeading();
       }
       group.settings.forEach((settings) => {
         settings.createSetting(contentEl);

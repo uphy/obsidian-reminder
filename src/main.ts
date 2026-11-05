@@ -44,6 +44,10 @@ export default class ReminderPlugin extends Plugin {
     // lifetime of the plugin (only its values change on reload), so it's
     // safe to capture the reference once here.
     this.settings = this.data.settings;
+    // Resolve "automatic" before any UI is built, so the commands registered
+    // in `onload()` already use the right language. `applyLanguage()` runs
+    // again once the persisted settings are loaded.
+    this.settings.applyLanguage();
     this.reminders.reminderTime = this.settings.reminderTime;
     DATE_TIME_FORMATTER.setTimeFormat(
       this.settings.dateFormat,
@@ -128,6 +132,10 @@ export default class ReminderPlugin extends Plugin {
     this.ui.onload();
     this.app.workspace.onLayoutReady(async () => {
       await this.data.load();
+      // A fresh install has nothing persisted for the "Language" setting, so
+      // its change listener never fires; resolving "automatic" here is what
+      // makes the plugin follow Obsidian's UI language from the first run on.
+      this.settings.applyLanguage();
       await this.seedTaskStatuses();
       this.ui.onLayoutReady();
       this.fileSystem.onload(this);

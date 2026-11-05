@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import { ItemView, TFile, View, WorkspaceLeaf } from "obsidian";
 import ReminderListView from "ui/ReminderList.svelte";
 import type ReminderPlugin from "main";
@@ -20,7 +21,7 @@ class ReminderListItemView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Reminders";
+    return t("Reminders");
   }
 
   override getIcon(): string {

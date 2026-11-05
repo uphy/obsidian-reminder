@@ -1,9 +1,10 @@
 <script lang="typescript">
+  import { t } from "i18n";
   import { moment } from "model/moment";
   import { setIcon } from "obsidian";
   import { tick } from "svelte";
   import type { Reminders } from "model/reminder";
-  import { DEFAULT_LATERS, DateTime, type Later } from "model/time";
+  import { DateTime, type Later, defaultLaters } from "model/time";
   import CalendarView from "./Calendar.svelte";
   import TimePicker from "./TimePicker.svelte";
   import ReminderListByDate from "./ReminderListByDate.svelte";
@@ -38,7 +39,7 @@
     setIcon(modeToggleIconEl, mode === "calendar" ? "clock" : "calendar");
   }
 
-  $: filteredLaters = DEFAULT_LATERS.filter((later) =>
+  $: filteredLaters = defaultLaters().filter((later) =>
     later.label.toLowerCase().includes(filterQuery.toLowerCase()),
   );
   // Reset the highlighted item whenever the filter text changes.
@@ -147,8 +148,8 @@
       <button
         type="button"
         class="dtchooser-mode-toggle dtchooser-mode-toggle-overlay"
-        aria-label="Show quick date picks"
-        title="Show quick date picks"
+        aria-label={t("Show quick date picks")}
+        title={t("Show quick date picks")}
         on:click={toggleMode}
       >
         <span class="dtchooser-mode-toggle-icon" bind:this={modeToggleIconEl}
@@ -170,7 +171,7 @@
     </div>
     <div class="dtchooser-wrapper">
       <div class="dtchooser-time-picker">
-        <span>Time: </span>
+        <span>{t("Time:")}</span>
         <TimePicker
           bind:value={time}
           step={timeStep}
@@ -182,14 +183,14 @@
           }}
         />
       </div>
-      <button class="mod-cta" on:click={handleSelect}>OK</button>
+      <button class="mod-cta" on:click={handleSelect}>{t("OK")}</button>
     </div>
   {:else}
     <div class="dtchooser-header">
       <input
         type="text"
         class="dtchooser-quick-pick-filter"
-        placeholder="Filter..."
+        placeholder={t("Filter...")}
         bind:value={filterQuery}
         bind:this={filterInputEl}
         on:keydown={handleFilterKeyDown}
@@ -197,8 +198,8 @@
       <button
         type="button"
         class="dtchooser-mode-toggle"
-        aria-label="Show calendar"
-        title="Show calendar"
+        aria-label={t("Show calendar")}
+        title={t("Show calendar")}
         on:click={toggleMode}
       >
         <span class="dtchooser-mode-toggle-icon" bind:this={modeToggleIconEl}

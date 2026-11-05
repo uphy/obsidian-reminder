@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import type { Later } from "model/time";
 import { App, SuggestModal } from "obsidian";
 
@@ -18,7 +19,7 @@ export class DndDurationModal extends SuggestModal<Later> {
     private onCloseCallback?: () => void,
   ) {
     super(app);
-    this.setPlaceholder("Pause reminder notifications for...");
+    this.setPlaceholder(t("Pause reminder notifications for..."));
   }
 
   getSuggestions(query: string): Array<Later> {

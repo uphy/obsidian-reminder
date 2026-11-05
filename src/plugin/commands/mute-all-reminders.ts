@@ -1,3 +1,4 @@
+import { tn } from "i18n";
 import type ReminderPlugin from "main";
 import { Notice } from "obsidian";
 
@@ -22,6 +23,6 @@ export function muteAllReminders(
   );
   plugin.ui.reload(true);
   void plugin.data.save(true);
-  new Notice(`Muted ${count} reminder${count === 1 ? "" : "s"}`);
+  new Notice(tn(count, "Muted {count} reminder", "Muted {count} reminders"));
   return true;
 }

@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import type ReminderPlugin from "main";
 import { EditorView, WidgetType } from "@codemirror/view";
 import { openChooserAndApplyEdit } from "./edit-reminder";
@@ -19,11 +20,22 @@ const mountedComponents = new WeakMap<HTMLElement, ReminderPillComponent>();
 
 /** Renders a single reminder's time text as a clickable "⏰ <time>" pill. */
 export class ReminderPillWidget extends WidgetType {
+  /**
+   * The tooltip as rendered, captured when the widget is built.
+   *
+   * It is part of `eq()` because it is the only rendered text that follows the
+   * language: after a language change the span text and the reminder are
+   * unchanged, so without comparing the tooltip CodeMirror would keep the old
+   * DOM (and the old language) until the line itself changed.
+   */
+  private readonly title: string;
+
   constructor(
     private readonly span: ReminderPillSpan,
     private readonly plugin: ReminderPlugin,
   ) {
     super();
+    this.title = t("Reminder: {title}", { title: span.reminder.title });
   }
 
   override eq(other: ReminderPillWidget): boolean {
@@ -34,7 +46,8 @@ export class ReminderPillWidget extends WidgetType {
     // down and rebuilding it on each decoration rebuild.
     return (
       this.span.text === other.span.text &&
-      this.span.reminder.title === other.span.reminder.title
+      this.span.reminder.title === other.span.reminder.title &&
+      this.title === other.title
     );
   }
 
@@ -44,7 +57,7 @@ export class ReminderPillWidget extends WidgetType {
       target: container,
       props: {
         label: `⏰ ${this.span.reminder.time.toString()}`,
-        title: `Reminder: ${this.span.reminder.title}`,
+        title: this.title,
       },
     });
     component.$on("activate", () => {

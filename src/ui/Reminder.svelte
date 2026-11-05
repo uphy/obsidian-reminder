@@ -1,5 +1,6 @@
 <script lang="typescript">
   import { onMount, tick } from "svelte";
+  import { t } from "i18n";
   import type { Reminder } from "model/reminder";
   import type { DateTime, Later } from "model/time";
   import IconText from "./IconText.svelte";
@@ -36,6 +37,15 @@
   let doneButton: HTMLButtonElement;
   let laterSelect: HTMLSelectElement;
   let containerEl: HTMLElement;
+
+  // Translated labels. The keyboard mnemonics below refer to the English
+  // letter (Alt+D / Alt+M / Alt+S), so the underlined letter is only shown
+  // when the label still starts with it; a translation into a language
+  // without that chord renders the plain label.
+  const doneLabel = t("Done");
+  const muteLabel = t("Mute");
+  const showDoneMnemonic = doneLabel.toUpperCase().startsWith("D");
+  const showMuteMnemonic = muteLabel.toUpperCase().startsWith("M");
 
   function remindMeLater() {
     const selected = laters[selectedIndex];
@@ -114,7 +124,11 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
 
 <main bind:this={containerEl} tabindex="-1" class:toast={variant === "toast"}>
   {#if variant === "toast"}
-    <button class="reminder-toast-close" on:click={onClose} aria-label="Close">
+    <button
+      class="reminder-toast-close"
+      on:click={onClose}
+      aria-label={t("Close")}
+    >
       ×
     </button>
   {/if}
@@ -138,7 +152,9 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
       aria-keyshortcuts="Alt+D Control+D"
     >
       <IconText icon="check-small" /><span
-        ><span class="mnemonic">D</span>one</span
+        >{#if showDoneMnemonic}<span class="mnemonic">D</span>{doneLabel.slice(
+            1,
+          )}{:else}{doneLabel}{/if}</span
       >
     </button>
     <button
@@ -147,7 +163,9 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
       aria-keyshortcuts="Alt+M Control+M"
     >
       <IconText icon="minus-with-circle" /><span
-        ><span class="mnemonic">M</span>ute</span
+        >{#if showMuteMnemonic}<span class="mnemonic">M</span>{muteLabel.slice(
+            1,
+          )}{:else}{muteLabel}{/if}</span
       >
     </button>
     <select
@@ -159,7 +177,7 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
       aria-keyshortcuts="Alt+S Control+S"
     >
       <!-- placeholder -->
-      <option selected disabled hidden>Snooze</option>
+      <option selected disabled hidden>{t("Snooze")}</option>
       <!-- options -->
       {#each laters as later, i (i)}
         <option value={i} selected={selectedIndex === i}>{later.label}</option>
@@ -171,16 +189,20 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
       <button
         class="reminder-footer-action"
         on:click={onPauseAllNotifications}
-        title="Pause all notifications for a chosen duration. Reminders are not muted: anything still overdue notifies you again after the pause ends."
+        title={t(
+          "Pause all notifications for a chosen duration. Reminders are not muted: anything still overdue notifies you again after the pause ends.",
+        )}
       >
-        Pause all notifications…
+        {t("Pause all notifications…")}
       </button>
       <button
         class="reminder-footer-action"
         on:click={onMuteAll}
-        title="Mute every currently overdue reminder. Muted reminders stay silent (even across restarts) until you snooze them or change their date."
+        title={t(
+          "Mute every currently overdue reminder. Muted reminders stay silent (even across restarts) until you snooze them or change their date.",
+        )}
       >
-        Mute all reminders…
+        {t("Mute all reminders…")}
       </button>
     </div>
   {/if}

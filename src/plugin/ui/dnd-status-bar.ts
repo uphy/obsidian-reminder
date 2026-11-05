@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import "./status-bar.css";
 import type ReminderPlugin from "main";
 import { isNotificationPaused } from "model/dnd";
@@ -26,10 +27,6 @@ export class DndStatusBar {
       "reminder-dnd-status-bar",
       "is-hidden",
     ]);
-    this.el.setAttribute(
-      "aria-label",
-      "Click to resume reminder notifications",
-    );
     this.plugin.registerDomEvent(this.el, "click", () => {
       resumeNotifications(this.plugin);
     });
@@ -44,23 +41,32 @@ export class DndStatusBar {
     if (!this.el) {
       return;
     }
+    // Set here rather than in `onload()`: `onload()` runs before the persisted
+    // language is applied, so a label set there would keep the initial
+    // language for the whole session.
+    this.el.setAttribute(
+      "aria-label",
+      t("Click to resume reminder notifications"),
+    );
     const dndUntil = this.plugin.data.dndUntil.value;
     if (!isNotificationPaused(dndUntil, DateTime.now())) {
       this.el.addClass("is-hidden");
       return;
     }
     // `isNotificationPaused` returning true guarantees `dndUntil` is set.
-    this.el.setText(`🔕 Until ${this.formatUntil(dndUntil!)}`);
+    this.el.setText(
+      t("🔕 Until {time}", { time: this.formatUntil(dndUntil!) }),
+    );
     this.el.removeClass("is-hidden");
   }
 
   private formatUntil(dndUntil: DateTime): string {
     const timeFormat = this.plugin.settings.timeDisplayFormat.value;
-    const time = dndUntil.format(timeFormat);
+    const time = dndUntil.formatForDisplay(timeFormat);
     if (dndUntil.toYYYYMMDD() === DateTime.now().toYYYYMMDD()) {
       return time;
     }
     const dateFormat = this.plugin.settings.monthDayDisplayFormat.value;
-    return `${dndUntil.format(dateFormat)} ${time}`;
+    return `${dndUntil.formatForDisplay(dateFormat)} ${time}`;
   }
 }

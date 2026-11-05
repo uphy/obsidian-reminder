@@ -337,6 +337,21 @@ button completes to `[x]`:
 
 ## Display
 
+### Language
+
+Language of the plugin's own interface: setting names and descriptions, notices, the reminder popup, the reminder list, the calendar and the command names.
+
+- Type: `select`
+- Values:
+  - `Automatic` — follow Obsidian's own UI language (default)
+  - `English`
+  - `简体中文` (Simplified Chinese)
+- Default: `Automatic`
+
+The switch takes effect immediately: the settings tab, the reminder list, the status bar items, the reminders shown inline in notes and the command names are re-rendered in the new language. A reminder popup or date picker that is already open keeps the language it was opened with, until it is closed.
+
+Obsidian language tags without a translation of their own (e.g. `ja`) fall back to English. Adding a language means adding a dictionary next to `src/i18n/zh-cn.ts` and registering it in `src/i18n/index.ts`.
+
 You can customize how dates and times are displayed in the Reminder List and related UI. This affects:
 
 - Group headers such as Year/Month, Today, Tomorrow, and weekday lines
@@ -344,10 +359,10 @@ You can customize how dates and times are displayed in the Reminder List and rel
 
 Four independent Moment-style display formats are available, plus the first day of the week used by the calendar popup.
 
-::: tip Month and weekday names follow Obsidian's language
-Format tokens that spell out a name — `MMMM` (August / 8月), `ddd` (Sun / 日), `A` (PM / 午後) — are rendered in whatever language Obsidian is set to, matching how Obsidian displays dates elsewhere. Numeric tokens such as `MM`, `DD` and `HH` are unaffected.
+::: tip Month and weekday names follow the language setting
+Format tokens that spell out a name — `MMMM` (August / 8月), `ddd` (Sun / 日), `A` (PM / 午後) — are rendered in the language selected above when you pick one explicitly. On `Automatic` they keep following Obsidian's own language, as they always have. Numeric tokens such as `MM`, `DD` and `HH` are unaffected.
 
-Releases up to 1.4.3 always rendered these in English, whatever the app language, so a preset can look different after updating. The examples below are written as they appear in an English Obsidian.
+This only changes how the plugin displays dates. Reminder dates are still read from and written to your notes using Obsidian's language, so the setting can never make an existing reminder unreadable or rewrite its date. The examples below are written as they appear in an English Obsidian.
 :::
 
 ### Year & month format
@@ -383,7 +398,7 @@ Releases up to 1.4.3 always rendered these in English, whatever the app language
 You can quickly apply a preset via the command palette:
 
 - Command: “Set date display format”
-  Preset names describe the **order** the date parts appear in, not the language they are written in — month and weekday names follow Obsidian's language, as above. `JP Style` additionally uses 年 / 月 / 日 as literal separators.
+  Preset names describe the **order** the date parts appear in, not the language they are written in — month and weekday names follow the language setting (Obsidian's own language on `Automatic`), as above. `JP Style` additionally uses 年 / 月 / 日 as literal separators.
 
 - Presets include typical regional styles, e.g.:
   - US Style (12h): `MMMM YYYY`, `MM/DD`, `M/DD (ddd)`, `h:mm A`

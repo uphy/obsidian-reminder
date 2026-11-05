@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
 import type { Later } from "model/time";
@@ -64,7 +65,7 @@ export class SystemNotifier {
 
     const Notification = electron.remote.Notification;
     const n = new Notification({
-      title: "Obsidian Reminder",
+      title: t("Obsidian Reminder"),
       body: reminder.title,
       // "never" keeps the notification on screen (Windows/Linux only, see
       // Electron docs -- ignored on macOS) until the user interacts with
@@ -124,7 +125,9 @@ export class SystemNotifier {
           const later = laters[index - 1]!;
           actions.remindMeLater(later.later());
         });
-        const notificationActions = [{ type: "button", text: "Mark as Done" }];
+        const notificationActions = [
+          { type: "button", text: t("Mark as Done") },
+        ];
         laters.forEach((later) => {
           notificationActions.push({ type: "button", text: later.label });
         });

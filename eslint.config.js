@@ -216,6 +216,22 @@ const nodeScriptsConfig = {
   },
 };
 
+/**
+ * `obsidianmd/prefer-get-language` asks for Obsidian's own `getLanguage()`,
+ * which the plugin cannot use yet: it exists since 1.8.7, while `manifest.json`
+ * declares 1.7.2 as the oldest supported version. `src/i18n/index.ts` reads the
+ * UI language the way those older versions expose it (localStorage, falling
+ * back to the document/navigator). Drop this entry together with a
+ * `minAppVersion` bump.
+ */
+/** @type {import("eslint").Linter.Config} */
+const i18nLanguageDetectionConfig = {
+  files: ['src/i18n/index.ts'],
+  rules: {
+    'obsidianmd/prefer-get-language': 'off',
+  },
+};
+
 /** Type-aware rules: TS files only (projectService can't include .svelte files). */
 /** @type {import("eslint").Linter.Config} */
 const typeAwareConfig = {
@@ -266,6 +282,7 @@ export default [
   nodeScriptsConfig,
   ...deferredFindings,
   settingsDropdownConfig,
+  i18nLanguageDetectionConfig,
   obsidianMockConfig,
   dependenciesConfig,
   eslintConfigPrettier,

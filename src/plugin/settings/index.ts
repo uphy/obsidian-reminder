@@ -21,8 +21,15 @@ import {
 } from "model/format/status";
 import type { TaskStatus } from "model/format/status";
 import { DateTime, Later, Time } from "model/time";
-import { moment } from "model/moment";
 import { isValidNtfyTopic } from "model/ntfy";
+import {
+  LANGUAGE_SETTINGS,
+  type LanguageSetting,
+  languageLabel,
+  setLanguage,
+  t,
+  weekdayName,
+} from "i18n";
 import { requestUrl } from "obsidian";
 import { testNtfyConnection } from "plugin/ntfy";
 import {
@@ -53,6 +60,7 @@ export function setSeededTaskStatuses(statuses: Array<TaskStatus>): void {
 export class Settings {
   settings: SettingTabModel = new SettingTabModel();
 
+  language: SettingModel<string, string>;
   reminderTime: SettingModel<string, Time>;
   reminderTimeStep: SettingModel<number, number>;
   enableNotification: SettingModel<boolean, boolean>;
@@ -92,6 +100,29 @@ export class Settings {
   ntfyAccessToken: SettingModel<string, string>;
 
   constructor() {
+    // Deliberately first in the "Display" page: it decides how every other
+    // label here (and in the rest of the plugin) reads. Setting names and
+    // descriptions are translated when the tab renders, so switching the
+    // language only needs a re-display -- see `ReminderSettingTab`.
+    const languageBuilder = this.settings
+      .newSettingBuilder()
+      .key("language")
+      .name("Language")
+      .desc(
+        "Language of this plugin's own interface: settings, notices, reminder popups, the reminder list and command names. " +
+          "Automatic follows Obsidian's own UI language. Month and weekday names follow the selected language as well where the display formats use them.",
+      )
+      .dropdown("auto");
+    LANGUAGE_SETTINGS.forEach((option) => {
+      languageBuilder.addOption(() => languageLabel(option), option);
+    });
+    this.language = languageBuilder.build(new RawSerde());
+    // Also fires while `PluginData` restores the persisted settings, so a
+    // saved value is applied before anything is rendered.
+    this.language.rawValue.onChanged(() => {
+      this.applyLanguage();
+    });
+
     const reminderFormatSettings = new ReminderFormatSettings(this.settings);
 
     this.reminderTime = this.settings
@@ -216,8 +247,9 @@ export class Settings {
       .desc("Select the first day of the week")
       .dropdown("0");
     Array.from({ length: 7 }, (_, d) => {
-      const dayName = moment().day(d).format("dddd");
-      weekStartBuilder.addOption(dayName, d.toString());
+      // Translated when the dropdown is rendered, so the day names follow the
+      // selected language (moment's own locale data is not required).
+      weekStartBuilder.addOption(() => weekdayName(d), d.toString());
     });
     this.weekStart = weekStartBuilder.build(new RawSerde());
 
@@ -293,7 +325,7 @@ export class Settings {
       .onAnyValueChanged((context) => {
         const value = this.autoCompleteTrigger.value;
         context.setInfo(
-          `Popup is ${value.length === 0 ? "disabled" : "enabled"}`,
+          value.length === 0 ? t("Popup is disabled") : t("Popup is enabled"),
         );
       })
       .build(new RawSerde());
@@ -325,7 +357,10 @@ export class Settings {
       .desc("Reminder format for generated reminder by calendar popup")
       .dropdown(ReminderFormatTypes[0]!.name);
     ReminderFormatTypes.forEach((f) =>
-      primaryFormatBuilder.addOption(`${f.description} - ${f.example}`, f.name),
+      primaryFormatBuilder.addOption(
+        () => `${t(f.description)} - ${f.example}`,
+        f.name,
+      ),
     );
     this.primaryFormat = primaryFormatBuilder.build(
       new ReminderFormatTypeSerde(),
@@ -412,7 +447,9 @@ export class Settings {
         const unknown = unknownStatusTypes(this.taskStatuses.value);
         context.setInfo(
           unknown.length
-            ? `Unknown status types (treated as TODO): ${unknown.join(", ")}`
+            ? t("Unknown status types (treated as TODO): {types}", {
+                types: unknown.join(", "),
+              })
             : null,
         );
       })
@@ -548,7 +585,9 @@ export class Settings {
         context.setValidationError(
           topic.length === 0 || isValidNtfyTopic(topic)
             ? null
-            : "A topic may only contain letters, digits, dashes and underscores (1-64 characters).",
+            : t(
+                "A topic may only contain letters, digits, dashes and underscores (1-64 characters).",
+              ),
         );
       })
       .build(new RawSerde());
@@ -567,7 +606,7 @@ export class Settings {
       .placeHolder("tk_...")
       .button("Test", async (context) => {
         context.setValidationError(null);
-        context.setInfo("Testing…");
+        context.setInfo(t("Testing…"));
         const result = await testNtfyConnection(
           async (request) => requestUrl({ ...request, throw: false }),
           {
@@ -648,16 +687,16 @@ export class Settings {
     reminderFormatsPage
       .newGroup("Kanban plugin format")
       .addSettings(reminderFormatSettings.enableKanbanPluginReminderFormat);
-    this.settings
-      .newPage("Display")
-      .newGroup()
-      .addSettings(
-        this.yearMonthDisplayFormat,
-        this.monthDayDisplayFormat,
-        this.shortDateWithWeekdayDisplayFormat,
-        this.timeDisplayFormat,
-        this.weekStart,
-      );
+    this.settings.newPage("Display").newGroup().addSettings(
+      // First in this tab on purpose: it changes how every other label on
+      // this page reads.
+      this.language,
+      this.yearMonthDisplayFormat,
+      this.monthDayDisplayFormat,
+      this.shortDateWithWeekdayDisplayFormat,
+      this.timeDisplayFormat,
+      this.weekStart,
+    );
     this.settings
       .newPage("ntfy")
       .newGroup()
@@ -677,6 +716,19 @@ export class Settings {
         this.editDetectionSec,
         this.reminderCheckIntervalSec,
       );
+  }
+
+  /**
+   * Applies the "Language" setting value to the translation layer.
+   *
+   * A fresh install has no persisted value for this setting, so `load()` never
+   * assigns it and the setting's own change listener never fires: the plugin
+   * calls this once after loading, to resolve "automatic" against Obsidian's
+   * UI language. Safe to call repeatedly -- it only notifies when the resolved
+   * language actually changes.
+   */
+  public applyLanguage(): void {
+    setLanguage(this.language.value as LanguageSetting);
   }
 
   /**
@@ -777,13 +829,17 @@ class ReminderFormatSettings {
     const setting = this.settings
       .newSettingBuilder()
       .key(key)
-      .name(`Enable ${format.description}`)
+      .name(() => t("Enable {format}", { format: t(format.description) }))
       .desc("Recognize reminders written in this format.")
       .tag(TAG_RESCAN)
       .toggle(format.defaultEnabled)
       .onAnyValueChanged((context) => {
         context.setInfo(
-          `Example: ${format.format.appendReminder("- [ ] Task 1", DateTime.now())?.insertedLine}`,
+          t("Example: {example}", {
+            example:
+              format.format.appendReminder("- [ ] Task 1", DateTime.now())
+                ?.insertedLine ?? "",
+          }),
         );
       })
       .build(new RawSerde());

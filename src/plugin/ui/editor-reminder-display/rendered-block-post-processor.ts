@@ -1,3 +1,4 @@
+import { t } from "i18n";
 import type ReminderPlugin from "main";
 import type { Reminder } from "model/reminder";
 import { EditorView } from "@codemirror/view";
@@ -75,7 +76,7 @@ function buildPill(
     target: container,
     props: {
       label: `⏰ ${reminder.time.toString()}`,
-      title: `Reminder: ${reminder.title}`,
+      title: t("Reminder: {title}", { title: reminder.title }),
     },
   });
   component.$on("activate", () => {

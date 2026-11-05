@@ -76,7 +76,7 @@ GitHub Release notes are auto-generated from PR labels according to `.github/rel
 
 ## Notes
 
-- Unlike the common practice of using the `window.moment` that Obsidian itself provides, this plugin imports `moment` directly as an npm dependency (it's not listed in `esbuild.config.mjs`'s `external` either) and bundles it itself with esbuild. Don't write code that assumes Obsidian's bundled moment.
+- `moment` is not bundled: `src/model/moment.ts` re-exports the instance Obsidian provides, so it is the same object as `window.moment` and its locale is shared with everything else in the app. That means two things. Never call `moment.locale()` — it would change how Obsidian and this plugin *parse and write* dates (`DateTimeFormatter`), not just how they are displayed; to render a date in a specific language, apply the locale to a clone (`DateTime.formatForDisplay()`). And never `import "moment/locale/..."` — esbuild cannot resolve moment's dynamic locale requires, and the locale data that matters is whatever Obsidian ships. Under jest, `src/test/obsidian-mock.ts` substitutes the npm package.
 - eslint's `quotes` rule is set to `single`, but `eslint-config-prettier` overrides this later in the chain, so prettier's default (double quotes) is effectively what's enforced. The actual code consistently uses double quotes.
 - Import paths mostly use the absolute-path-style notation rooted at baseUrl (`src/`) (e.g. `model/reminder`), but some files mix in relative paths (`../../model/reminder`).
 - See `.claude/rules/` for detailed conventions.

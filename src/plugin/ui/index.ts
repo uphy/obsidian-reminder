@@ -1,3 +1,4 @@
+import { onLanguageChange, tn } from "i18n";
 import type ReminderPlugin from "main";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
@@ -11,7 +12,7 @@ import {
   TFile,
   WorkspaceLeaf,
 } from "obsidian";
-import { registerCommands } from "plugin/commands";
+import { refreshCommandNames, registerCommands } from "plugin/commands";
 import { showPauseDurationChooser } from "plugin/dnd";
 import { rebuildMarkdownViews } from "plugin/obsidian-hack/leaf";
 import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
@@ -41,6 +42,8 @@ export class ReminderPluginUI {
   private viewProxy: ReminderListItemViewProxy;
   private dndStatusBar: DndStatusBar;
   private overdueStatusBar: OverdueStatusBar;
+  // Kept so a language change can re-render the open settings tab.
+  private settingTab?: ReminderSettingTab;
   constructor(private plugin: ReminderPlugin) {
     this.viewProxy = new ReminderListItemViewProxy(
       this.plugin,
@@ -88,7 +91,16 @@ export class ReminderPluginUI {
       return this.viewProxy.createView(leaf);
     });
     this.plugin.addSettingTab(
-      new ReminderSettingTab(this.plugin.app, this.plugin),
+      (this.settingTab = new ReminderSettingTab(this.plugin.app, this.plugin)),
+    );
+    // Every label this plugin renders is translated when it is rendered, so a
+    // language change has to re-render the surfaces that are already on
+    // screen. Open popups/modals are short-lived and pick the new language up
+    // the next time they open.
+    this.plugin.register(
+      onLanguageChange(() => {
+        this.onLanguageChanged();
+      }),
     );
 
     this.plugin.registerDomEvent(document, "keydown", () => {
@@ -150,6 +162,42 @@ export class ReminderPluginUI {
 
   isEditing(): boolean {
     return this.editDetector.isEditing();
+  }
+
+  /**
+   * Re-renders everything that is already on screen in the language that was
+   * just selected: command names, the settings tab (if open), the status bar
+   * items, and the reminder list.
+   */
+  private onLanguageChanged(): void {
+    refreshCommandNames(this.plugin);
+    if (this.settingTab?.containerEl.isConnected) {
+      // Deferred: this runs from inside the language dropdown's own change
+      // handler, and re-rendering the tab synchronously would tear down the
+      // element that is still dispatching the event.
+      //
+      // `display()` is avoided (deprecated since 1.13); re-rendering the
+      // plugin's own tab model is exactly what it did.
+      window.setTimeout(() => {
+        if (this.settingTab?.containerEl.isConnected) {
+          this.plugin.settings.settings.displayOn(this.settingTab.containerEl);
+        }
+      }, 0);
+    }
+    this.overdueStatusBar.refresh();
+    this.dndStatusBar.refresh();
+    if (Platform.isDesktopApp) {
+      // The pills are editor widgets whose `eq()` compares only what is
+      // rendered, and the ones inside callouts live in Obsidian-owned
+      // widgets. Reconfiguring the editor extensions re-runs their `eq()`
+      // (picking up the new tooltip text) and rebuilding the markdown views
+      // refreshes the post-processor output, without either of them waiting
+      // for the note to be edited or reopened.
+      this.plugin.app.workspace.updateOptions();
+      rebuildMarkdownViews(this.plugin.app);
+    }
+    this.viewProxy.invalidate();
+    this.viewProxy.reload(true);
   }
 
   invalidate() {
@@ -344,7 +392,9 @@ export class ReminderPluginUI {
         reminder.muteNotification = true;
         this.reload(true);
         void this.plugin.data.save(true);
-        new Notice(`Muted ${count} reminder${count === 1 ? "" : "s"}`);
+        new Notice(
+          tn(count, "Muted {count} reminder", "Muted {count} reminders"),
+        );
       },
     };
     this.reminderNotifier.show(reminder, actions);
