@@ -1,4 +1,5 @@
 import {
+  LANGUAGE_CODES,
   type LanguageCode,
   getLanguage,
   getLanguageSetting,
@@ -127,15 +128,23 @@ describe("language resolution", () => {
     expect(languageFromTag("zh_CN")).toBe("zh-cn");
   });
 
+  test("maps Japanese tags to ja", () => {
+    expect(languageFromTag("ja")).toBe("ja");
+    expect(languageFromTag("ja-JP")).toBe("ja");
+    expect(languageFromTag("ja_JP")).toBe("ja");
+  });
+
   test("maps every other tag to English", () => {
     expect(languageFromTag("en")).toBe("en");
     expect(languageFromTag("en-GB")).toBe("en");
-    expect(languageFromTag("ja")).toBe("en");
+    expect(languageFromTag("fr")).toBe("en");
+    expect(languageFromTag("jv")).toBe("en");
     expect(languageFromTag("")).toBe("en");
   });
 
   test("returns the setting itself for an explicit language", () => {
     expect(resolveLanguage("zh-cn")).toBe("zh-cn");
+    expect(resolveLanguage("ja")).toBe("ja");
     expect(resolveLanguage("en")).toBe("en");
   });
 });
@@ -166,6 +175,12 @@ describe("automatic language detection", () => {
     expect(resolveLanguage("auto")).toBe("en");
   });
 
+  test("follows a Japanese Obsidian", () => {
+    window.localStorage.setItem("language", "ja");
+
+    expect(resolveLanguage("auto")).toBe("ja");
+  });
+
   test("applies the detected language when the setting is auto", () => {
     window.localStorage.setItem("language", "zh");
 
@@ -184,6 +199,7 @@ describe("languageLabel()", () => {
   test("shows each language in its own language, and translates auto", () => {
     expect(languageLabel("en")).toBe("English");
     expect(languageLabel("zh-cn")).toBe("简体中文");
+    expect(languageLabel("ja")).toBe("日本語");
     expect(languageLabel("auto")).toBe("Automatic (follow Obsidian)");
 
     setLanguage("zh-cn");
@@ -210,6 +226,12 @@ describe("weekday and month names", () => {
     expect(weekdayName(1)).toBe("星期一");
     expect(weekdayShortName(0)).toBe("日");
     expect(monthShortName(0)).toBe("1月");
+
+    setLanguage("ja");
+
+    expect(weekdayName(1)).toBe("月曜日");
+    expect(weekdayShortName(0)).toBe("日");
+    expect(monthShortName(11)).toBe("12月");
   });
 
   test("wrap around the week and the year", () => {
@@ -219,33 +241,61 @@ describe("weekday and month names", () => {
   });
 });
 
-describe("zh-cn dictionary", () => {
-  const dictionary = translationsOf("zh-cn");
+describe.each(LANGUAGE_CODES.filter((language) => language !== "en"))(
+  "%s dictionary",
+  (language) => {
+    const dictionary = translationsOf(language);
 
-  test("has no empty translations", () => {
-    const empty = Object.entries(dictionary)
-      .filter(([, value]) => value.trim().length === 0)
-      .map(([key]) => key);
+    test("has no empty translations", () => {
+      const empty = Object.entries(dictionary)
+        .filter(([, value]) => value.trim().length === 0)
+        .map(([key]) => key);
 
-    expect(empty).toEqual([]);
-  });
+      expect(empty).toEqual([]);
+    });
 
-  test("keeps every placeholder of the English key", () => {
-    const mismatched = Object.entries(dictionary)
-      .filter(
-        ([key, value]) =>
-          placeholders(key).join(",") !== placeholders(value).join(","),
-      )
-      .map(([key]) => key);
+    test("keeps every placeholder of the English key", () => {
+      const mismatched = Object.entries(dictionary)
+        .filter(
+          ([key, value]) =>
+            placeholders(key).join(",") !== placeholders(value).join(","),
+        )
+        .map(([key]) => key);
 
-    expect(mismatched).toEqual([]);
-  });
+      expect(mismatched).toEqual([]);
+    });
 
-  test("is only consulted for non-English languages", () => {
-    setLanguage("zh-cn");
-    expect(hasTranslation("Reminder time")).toBe(true);
+    test("is only consulted for non-English languages", () => {
+      setLanguage(language);
+      expect(hasTranslation("Reminder time")).toBe(true);
 
+      setLanguage("en");
+      expect(hasTranslation("Reminder time")).toBe(false);
+    });
+  },
+);
+
+describe("translated dictionaries", () => {
+  afterEach(() => {
     setLanguage("en");
-    expect(hasTranslation("Reminder time")).toBe(false);
+  });
+
+  test("translate the same set of English texts", () => {
+    const keysOf = (language: LanguageCode): Array<string> =>
+      Object.keys(translationsOf(language)).sort();
+
+    expect(keysOf("ja")).toEqual(keysOf("zh-cn"));
+  });
+
+  test("ja translates into Japanese", () => {
+    setLanguage("ja");
+
+    expect(t("Reminder time")).toBe("リマインド時刻");
+    expect(t("In {count} {unit}", { count: 3, unit: t("hours") })).toBe(
+      "3時間後",
+    );
+    expect(tn(2, "Muted {count} reminder", "Muted {count} reminders")).toBe(
+      "2件のリマインダーをミュートしました",
+    );
   });
 });

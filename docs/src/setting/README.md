@@ -345,12 +345,13 @@ Language of the plugin's own interface: setting names and descriptions, notices,
 - Values:
   - `Automatic` — follow Obsidian's own UI language (default)
   - `English`
+  - `日本語` (Japanese)
   - `简体中文` (Simplified Chinese)
 - Default: `Automatic`
 
 The switch takes effect immediately: the settings tab, the reminder list, the status bar items, the reminders shown inline in notes and the command names are re-rendered in the new language. A reminder popup or date picker that is already open keeps the language it was opened with, until it is closed.
 
-Obsidian language tags without a translation of their own (e.g. `ja`) fall back to English. Adding a language means adding a dictionary next to `src/i18n/zh-cn.ts` and registering it in `src/i18n/index.ts`.
+On `Automatic`, an Obsidian displayed in Japanese (`ja`) shows the plugin in Japanese, and one displayed in any Chinese variant (`zh`, `zh-TW`) shows it in Simplified Chinese. Obsidian languages without a translation of their own (e.g. `fr`) fall back to English. Adding a language means adding a dictionary next to `src/i18n/zh-cn.ts` and registering it in `src/i18n/index.ts`.
 
 You can customize how dates and times are displayed in the Reminder List and related UI. This affects:
 
