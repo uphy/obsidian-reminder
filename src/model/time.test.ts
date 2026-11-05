@@ -31,6 +31,20 @@ beforeAll(() => {
       weekdaysMin: "日_一_二_三_四_五_六".split("_"),
     });
   }
+  if (!moment.locales().includes("ja")) {
+    moment.defineLocale("ja", {
+      months: "1月_2月_3月_4月_5月_6月_7月_8月_9月_10月_11月_12月".split("_"),
+      monthsShort: "1月_2月_3月_4月_5月_6月_7月_8月_9月_10月_11月_12月".split(
+        "_",
+      ),
+      weekdays: "日曜日_月曜日_火曜日_水曜日_木曜日_金曜日_土曜日".split("_"),
+      weekdaysShort: "日_月_火_水_木_金_土".split("_"),
+      weekdaysMin: "日_月_火_水_木_金_土".split("_"),
+      meridiem: (hour) => (hour < 12 ? "午前" : "午後"),
+    });
+  }
+  // defineLocale() also makes the new locale global; put the app's back.
+  moment.locale("en");
 });
 
 afterEach(() => {
@@ -106,6 +120,17 @@ describe("DateTime.formatForDisplay()", () => {
     expect(time.formatForDisplay("ddd")).toBe("周四");
     // The app's locale is shared with Obsidian's own date parsing, so the
     // plugin must never change it.
+    expect(moment.locale()).toBe("en");
+  });
+
+  test("renders Japanese month and weekday names for ja", () => {
+    setLanguage("ja");
+
+    const time = DateTime.parse("2026-11-05");
+
+    expect(time.formatForDisplay("YYYY年MMMM")).toBe("2026年11月");
+    expect(time.formatForDisplay("ddd")).toBe("木");
+    expect(time.formatForDisplay("A")).toBe("午前");
     expect(moment.locale()).toBe("en");
   });
 

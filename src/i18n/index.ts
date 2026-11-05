@@ -1,3 +1,4 @@
+import { ja } from "./ja";
 import { zhCN } from "./zh-cn";
 
 /**
@@ -19,7 +20,7 @@ import { zhCN } from "./zh-cn";
  * this plugin writes to the vault.
  */
 
-export type LanguageCode = "en" | "zh-cn";
+export type LanguageCode = "en" | "ja" | "zh-cn";
 
 /**
  * The value persisted in the "Language" setting. `"auto"` follows Obsidian's
@@ -28,7 +29,11 @@ export type LanguageCode = "en" | "zh-cn";
 export type LanguageSetting = "auto" | LanguageCode;
 
 /** Every language the plugin ships, in the order the setting offers them. */
-export const LANGUAGE_CODES: ReadonlyArray<LanguageCode> = ["en", "zh-cn"];
+export const LANGUAGE_CODES: ReadonlyArray<LanguageCode> = [
+  "en",
+  "ja",
+  "zh-cn",
+];
 
 /** Every value the "Language" setting can hold, in dropdown order. */
 export const LANGUAGE_SETTINGS: ReadonlyArray<LanguageSetting> = [
@@ -39,6 +44,7 @@ export const LANGUAGE_SETTINGS: ReadonlyArray<LanguageSetting> = [
 /** Each language's name in that language, so the dropdown is readable either way. */
 const LANGUAGE_NATIVE_NAMES: Record<LanguageCode, string> = {
   en: "English",
+  ja: "日本語",
   "zh-cn": "简体中文",
 };
 
@@ -46,6 +52,7 @@ export type TranslationParams = Record<string, string | number>;
 
 const dictionaries: Record<LanguageCode, Record<string, string>> = {
   en: {},
+  ja,
   "zh-cn": zhCN,
 };
 
@@ -107,6 +114,9 @@ export function resolveLanguage(setting: LanguageSetting): LanguageCode {
  */
 export function languageFromTag(tag: string): LanguageCode {
   const normalized = tag.trim().toLowerCase().replace(/_/g, "-");
+  if (normalized === "ja" || normalized.startsWith("ja-")) {
+    return "ja";
+  }
   if (normalized.startsWith("zh")) {
     return "zh-cn";
   }
@@ -134,7 +144,7 @@ export function t(template: string, params?: TranslationParams): string {
  * Translates the singular or plural template for `count`.
  *
  * English needs the distinction ("1 reminder" / "2 reminders") while Chinese
- * does not, so both templates are keys of their own and `{count}` is
+ * and Japanese do not, so both templates are keys of their own and `{count}` is
  * available to either.
  */
 export function tn(
@@ -228,6 +238,7 @@ const WEEKDAY_NAMES: Record<LanguageCode, ReadonlyArray<string>> = {
     "Friday",
     "Saturday",
   ],
+  ja: ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"],
   "zh-cn": [
     "星期日",
     "星期一",
@@ -242,6 +253,7 @@ const WEEKDAY_NAMES: Record<LanguageCode, ReadonlyArray<string>> = {
 /** Short weekday names for the calendar header, indexed by `day()` (0 = Sunday). */
 const WEEKDAY_SHORT_NAMES: Record<LanguageCode, ReadonlyArray<string>> = {
   en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  ja: ["日", "月", "火", "水", "木", "金", "土"],
   "zh-cn": ["日", "一", "二", "三", "四", "五", "六"],
 };
 
@@ -260,6 +272,20 @@ const MONTH_SHORT_NAMES: Record<LanguageCode, ReadonlyArray<string>> = {
     "Oct",
     "Nov",
     "Dec",
+  ],
+  ja: [
+    "1月",
+    "2月",
+    "3月",
+    "4月",
+    "5月",
+    "6月",
+    "7月",
+    "8月",
+    "9月",
+    "10月",
+    "11月",
+    "12月",
   ],
   "zh-cn": [
     "1月",
