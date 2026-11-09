@@ -20,6 +20,8 @@ declare module "obsidian" {
          */
         "obsidian-kanban"?: { settings?: Record<string, unknown> };
         "obsidian-tasks-plugin"?: Plugin;
+        /** TaskNotes stores its active settings object on the plugin instance. */
+        tasknotes?: Plugin & { settings?: Record<string, unknown> };
       };
     };
   }

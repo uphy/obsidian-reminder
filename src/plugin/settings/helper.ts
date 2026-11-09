@@ -261,6 +261,7 @@ abstract class AbstractSettingModelBuilder<R> {
     text: AbstractTextComponent<HTMLInputElement | HTMLTextAreaElement>,
     placeHolder: string,
     initialValue: string,
+    setDisplayValue: (update: (value: string) => void) => void,
     onChange: (value: string) => void,
   ): void {
     text
@@ -269,6 +270,11 @@ abstract class AbstractSettingModelBuilder<R> {
       .onChange(async (value) => {
         onChange(value);
       });
+    setDisplayValue((value) => {
+      if (text.getValue() !== value) {
+        text.setValue(value);
+      }
+    });
   }
 }
 
@@ -303,43 +309,47 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
   }
 
   build<E>(serde: Serde<string, E>): SettingModel<string, E> {
-    return this.buildSettingModel(serde, ({ setting, rawValue, context }) => {
-      const initText = (
-        text: AbstractTextComponent<HTMLInputElement | HTMLTextAreaElement>,
-      ) => {
-        this.wireTextComponent(
-          text,
-          resolveText(this._placeHolder),
-          rawValue.value,
-          (value) => {
-            try {
-              serde.unmarshal(value);
-              rawValue.value = value;
-              context.setValidationError(null);
-              this.onValueChange();
-            } catch (e) {
-              if (e instanceof Error) {
-                context.setValidationError(e.message);
-              } else if (typeof e === "string") {
-                context.setValidationError(e);
+    return this.buildSettingModel(
+      serde,
+      ({ setting, rawValue, context, setDisplayValue }) => {
+        const initText = (
+          text: AbstractTextComponent<HTMLInputElement | HTMLTextAreaElement>,
+        ) => {
+          this.wireTextComponent(
+            text,
+            resolveText(this._placeHolder),
+            rawValue.value,
+            setDisplayValue,
+            (value) => {
+              try {
+                serde.unmarshal(value);
+                rawValue.value = value;
+                context.setValidationError(null);
+                this.onValueChange();
+              } catch (e) {
+                if (e instanceof Error) {
+                  context.setValidationError(e.message);
+                } else if (typeof e === "string") {
+                  context.setValidationError(e);
+                }
               }
+            },
+          );
+        };
+        if (this.longText) {
+          setting.addTextArea((textarea) => {
+            initText(textarea);
+          });
+        } else {
+          setting.addText((text) => {
+            initText(text);
+            if (this._masked) {
+              text.inputEl.type = "password";
             }
-          },
-        );
-      };
-      if (this.longText) {
-        setting.addTextArea((textarea) => {
-          initText(textarea);
-        });
-      } else {
-        setting.addText((text) => {
-          initText(text);
-          if (this._masked) {
-            text.inputEl.type = "password";
-          }
-        });
-      }
-    });
+          });
+        }
+      },
+    );
   }
 }
 
@@ -356,25 +366,33 @@ class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number> {
   }
 
   build<E>(serde: Serde<number, E>): SettingModel<number, E> {
-    return this.buildSettingModel(serde, ({ setting, rawValue, context }) => {
-      setting.addText((text) => {
-        this.wireTextComponent(
-          text,
-          resolveText(this._placeHolder),
-          rawValue.value.toString(),
-          (value) => {
-            const n = parseInt(value, 10);
-            if (Number.isNaN(n)) {
-              context.setValidationError(t("Please enter a valid number."));
-              return;
-            }
-            context.setValidationError(null);
-            rawValue.value = n;
-            this.onValueChange();
-          },
-        );
-      });
-    });
+    return this.buildSettingModel(
+      serde,
+      ({ setting, rawValue, context, setDisplayValue }) => {
+        setting.addText((text) => {
+          this.wireTextComponent(
+            text,
+            resolveText(this._placeHolder),
+            rawValue.value.toString(),
+            (update) => {
+              setDisplayValue((value) => {
+                update(value.toString());
+              });
+            },
+            (value) => {
+              const n = parseInt(value, 10);
+              if (Number.isNaN(n)) {
+                context.setValidationError(t("Please enter a valid number."));
+                return;
+              }
+              context.setValidationError(null);
+              rawValue.value = n;
+              this.onValueChange();
+            },
+          );
+        });
+      },
+    );
   }
 }
 
@@ -416,12 +434,15 @@ class DropdownSettingModelBuilder extends AbstractSettingModelBuilder<string> {
       this.context,
       serde,
       this.initValue,
-      ({ setting, rawValue }) => {
+      ({ setting, rawValue, setDisplayValue }) => {
         setting.addDropdown((d) => {
           this.options.forEach((option) => {
             d.addOption(option.value, resolveText(option.label));
           });
           d.setValue(rawValue.value);
+          setDisplayValue((value) => {
+            d.setValue(value);
+          });
           d.onChange(async (value) => {
             rawValue.value = value;
             this.onValueChange();
@@ -458,14 +479,17 @@ type SettingInitializer<R> = ({
   setting,
   rawValue,
   context,
+  setDisplayValue,
 }: {
   setting: Setting;
   rawValue: Reference<R>;
   context: SettingContext;
+  setDisplayValue: (update: (value: R) => void) => void;
 }) => void;
 
 class SettingModelImpl<R, E> implements SettingModel<R, E> {
   rawValue: Reference<R>;
+  private updateDisplay?: (value: R) => void;
 
   constructor(
     private context: SettingContext,
@@ -474,6 +498,9 @@ class SettingModelImpl<R, E> implements SettingModel<R, E> {
     private settingInitializer: SettingInitializer<R>,
   ) {
     this.rawValue = new Reference(initRawValue);
+    this.rawValue.onChanged((_oldValue, value) => {
+      this.updateDisplay?.(value);
+    });
     if (context.key == null) {
       throw new Error("key is required.");
     }
@@ -488,6 +515,9 @@ class SettingModelImpl<R, E> implements SettingModel<R, E> {
       setting,
       rawValue: this.rawValue,
       context: this.context,
+      setDisplayValue: (update) => {
+        this.updateDisplay = update;
+      },
     });
     // After the initializer, so the button lands to the right of the
     // setting's own input rather than in front of it.

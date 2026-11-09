@@ -8,6 +8,7 @@ import {
   extractReminders,
   firstCompletedStatus,
 } from "model/tasknotes";
+import { importTaskNotesSettings } from "model/tasknotes/settings-import";
 import { completeTaskNotesReminder } from "model/tasknotes/completion";
 import type { TaskNotesDoneBehavior } from "model/tasknotes";
 import { TaskNotesReminderState } from "model/tasknotes/state";
@@ -28,6 +29,7 @@ export class TaskNotesIntegration {
   private state?: TaskNotesReminderState;
   private eventCleanups: Array<() => void> = [];
   private warnedKeys = new Set<string>();
+  private applyingFetchedSettings = false;
 
   constructor(
     private app: App,
@@ -35,6 +37,9 @@ export class TaskNotesIntegration {
     private data: PluginData,
     private settings: Settings,
   ) {
+    this.settings.setTaskNotesSettingsFetcher(() =>
+      this.fetchSettingsFromTaskNotes(),
+    );
     this.settings.taskNotesEnabled.rawValue.onChanged((_oldValue, enabled) => {
       if (!this.started) {
         return;
@@ -47,6 +52,9 @@ export class TaskNotesIntegration {
     });
     this.settingReferences().forEach((reference) => {
       reference.onChanged(() => {
+        if (this.applyingFetchedSettings) {
+          return;
+        }
         this.data.changed = true;
         if (this.started && this.settings.taskNotesEnabled.value) {
           void this.reloadAllFiles().catch((error: unknown) => {
@@ -55,6 +63,67 @@ export class TaskNotesIntegration {
         }
       });
     });
+  }
+
+  private async fetchSettingsFromTaskNotes(): Promise<string> {
+    const taskNotesPlugin = this.app.plugins.plugins["tasknotes"];
+    if (!isRecord(taskNotesPlugin)) {
+      throw new Error(
+        "TaskNotes must be installed and enabled to fetch settings.",
+      );
+    }
+
+    const imported = importTaskNotesSettings(taskNotesPlugin["settings"]);
+    this.applyingFetchedSettings = true;
+    try {
+      this.settings.taskNotesIdentificationMode.rawValue.value =
+        imported.identificationMode;
+      this.settings.taskNotesTag.rawValue.value = imported.tag;
+      this.settings.taskNotesIdentificationProperty.rawValue.value =
+        imported.identificationProperty;
+      this.settings.taskNotesIdentificationValue.rawValue.value =
+        imported.identificationValue;
+      this.settings.taskNotesExcludedFolders.rawValue.value =
+        imported.excludedFolders;
+      this.settings.taskNotesCompletedStatuses.rawValue.value =
+        imported.completedStatuses;
+      this.settings.taskNotesArchiveTag.rawValue.value = imported.archiveTag;
+      this.settings.taskNotesProperties.title.rawValue.value =
+        imported.properties.title;
+      this.settings.taskNotesProperties.status.rawValue.value =
+        imported.properties.status;
+      this.settings.taskNotesProperties.due.rawValue.value =
+        imported.properties.due;
+      this.settings.taskNotesProperties.scheduled.rawValue.value =
+        imported.properties.scheduled;
+      this.settings.taskNotesProperties.reminders.rawValue.value =
+        imported.properties.reminders;
+      this.settings.taskNotesProperties.completedDate.rawValue.value =
+        imported.properties.completedDate;
+      this.settings.taskNotesProperties.recurrence.rawValue.value =
+        imported.properties.recurrence;
+      this.settings.taskNotesProperties.completeInstances.rawValue.value =
+        imported.properties.completeInstances;
+      this.settings.taskNotesProperties.skippedInstances.rawValue.value =
+        imported.properties.skippedInstances;
+    } finally {
+      this.applyingFetchedSettings = false;
+    }
+
+    this.data.changed = true;
+    if (this.started && this.settings.taskNotesEnabled.value) {
+      try {
+        await this.reloadAllFiles();
+      } catch (error) {
+        const detail =
+          error instanceof Error ? error.message : "unknown rescan error";
+        throw new Error(
+          `TaskNotes settings were imported, but reminders could not be rescanned: ${detail}`,
+        );
+      }
+      return "Fetched TaskNotes settings and rescanned reminders.";
+    }
+    return "Fetched TaskNotes settings. Enable the integration to scan reminders.";
   }
 
   async onLayoutReady(plugin: Plugin): Promise<void> {

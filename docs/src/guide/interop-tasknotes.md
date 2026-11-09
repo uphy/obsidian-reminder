@@ -8,6 +8,8 @@ Open **Settings → TaskNotes integration** and enable the integration. By defau
 
 The default TaskNotes property names are `title`, `status`, `due`, `scheduled`, `reminders`, `completedDate`, `recurrence`, `complete_instances`, and `skipped_instances`. If your TaskNotes setup uses different names, expand **TaskNotes property names** in the settings and change the mappings.
 
+Use **Fetch from TaskNotes** to import the current property mappings, identification mode/tag/property, excluded folders, archive tag, and completed statuses from the installed TaskNotes plugin. Fetching replaces those matching Reminder Plugin settings; Reminder Plugin-specific behavior such as skip toggles and the date-only anchor time is unchanged. TaskNotes must be installed and enabled.
+
 ## Reminder formats
 
 TaskNotes reminders are read from the `reminders` frontmatter property. Relative reminders use a `due` or `scheduled` anchor and an ISO 8601 duration:

@@ -63,6 +63,7 @@ export function setSeededTaskStatuses(statuses: Array<TaskStatus>): void {
 
 export class Settings {
   settings: SettingTabModel = new SettingTabModel();
+  private taskNotesSettingsFetcher?: () => Promise<string>;
 
   language: SettingModel<string, string>;
   reminderTime: SettingModel<string, Time>;
@@ -656,6 +657,25 @@ export class Settings {
         "Read TaskNotes reminder metadata from task-note frontmatter. Writing a completed status is optional and controlled by the Done behavior setting.",
       )
       .toggle(false)
+      .button("Fetch from TaskNotes", async (context) => {
+        context.setValidationError(null);
+        context.setInfo("Fetching settings from TaskNotes…");
+        try {
+          const fetchSettings = this.taskNotesSettingsFetcher;
+          if (!fetchSettings) {
+            throw new Error("TaskNotes settings fetch is not available.");
+          }
+          context.setInfo(await fetchSettings());
+        } catch (error) {
+          console.error("Failed to fetch TaskNotes settings: %o", error);
+          context.setInfo(null);
+          context.setValidationError(
+            error instanceof Error
+              ? error.message
+              : "Could not fetch TaskNotes settings.",
+          );
+        }
+      })
       .build(new RawSerde());
     this.taskNotesDoneBehavior = this.settings
       .newSettingBuilder()
@@ -939,6 +959,10 @@ export class Settings {
         this.editDetectionSec,
         this.reminderCheckIntervalSec,
       );
+  }
+
+  setTaskNotesSettingsFetcher(fetcher: () => Promise<string>): void {
+    this.taskNotesSettingsFetcher = fetcher;
   }
 
   /**
