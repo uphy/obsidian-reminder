@@ -77,7 +77,11 @@ export class TaskNotesReminderState {
       .getTimeInMillis();
     let removed = 0;
     Object.entries(this.entries).forEach(([key, entry]) => {
-      if (entry.trigger < threshold) {
+      const effectiveTime =
+        entry.kind === "snoozed"
+          ? (entry.until ?? entry.trigger)
+          : entry.trigger;
+      if (effectiveTime < threshold) {
         delete this.entries[key];
         removed++;
       }

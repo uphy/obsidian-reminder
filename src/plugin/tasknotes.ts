@@ -204,6 +204,20 @@ export class TaskNotesIntegration {
       fileName: file.basename,
       tags: cache ? (getAllTags(cache) ?? []) : [],
       options,
+      effectiveTimeFor: (reminderId, trigger) => {
+        const key = `${file.path}::${reminderId}`;
+        const hadEntry = Object.prototype.hasOwnProperty.call(
+          this.data.taskNotesReminderState,
+          key,
+        );
+        const entry = this.stateForEvents().get(file.path, reminderId, trigger);
+        if (hadEntry && !entry) {
+          this.data.changed = true;
+        }
+        return DateTime.ofEpochMillis(
+          entry?.until ?? trigger.getTimeInMillis(),
+        );
+      },
       warnOnce: (key, message) => {
         if (!this.warnedKeys.has(key)) {
           this.warnedKeys.add(key);

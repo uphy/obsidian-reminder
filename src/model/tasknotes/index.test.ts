@@ -103,6 +103,24 @@ describe("extractReminders()", (): void => {
     });
   });
 
+  test("uses the configured local time for date-only YAML Date values", (): void => {
+    const dateOnly = new Date("2026-11-20T00:00:00.000Z");
+    const defaultReminder = extract({
+      due: dateOnly,
+      reminders: [reminder("date-object-default", "due", "-P0D")],
+    })[0];
+    const customReminder = extract(
+      {
+        due: dateOnly,
+        reminders: [reminder("date-object-custom", "due", "-P0D")],
+      },
+      { dateOnlyAnchorTime: "07:45" },
+    )[0];
+
+    expect(defaultReminder?.time.toString()).toBe("2026-11-20 00:00");
+    expect(customReminder?.time.toString()).toBe("2026-11-20 07:45");
+  });
+
   [
     ["UTC", "2026-11-19T08:00:00Z"],
     ["numeric offset", "2026-11-19T08:00:00+05:30"],
@@ -351,6 +369,32 @@ describe("extractReminders()", (): void => {
         { ignoreOlderThanDays: 1 },
       ),
     ).toHaveLength(0);
+  });
+
+  test("applies the flood guard to the snooze effective time", (): void => {
+    const trigger = DateTime.parse("2026-11-01 09:00");
+    const futureSnooze = DateTime.parse("2026-11-20 09:00");
+    const pastSnooze = DateTime.parse("2026-11-08 09:00");
+    const base = {
+      due: "2026-11-01T09:00",
+      reminders: [reminder("snoozed-old-trigger", "due", "-P0D")],
+    };
+
+    const retained = extractReminders(base, {
+      ...context({ ignoreOlderThanDays: 1 }),
+      effectiveTimeFor: (_id, originalTrigger) => {
+        expect(originalTrigger.equals(trigger)).toBe(true);
+        return futureSnooze;
+      },
+    });
+    const suppressed = extractReminders(base, {
+      ...context({ ignoreOlderThanDays: 1 }),
+      effectiveTimeFor: () => pastSnooze,
+    });
+
+    expect(retained).toHaveLength(1);
+    expect(retained[0]?.effectiveTime.equals(futureSnooze)).toBe(true);
+    expect(suppressed).toHaveLength(0);
   });
 
   test("uses calendar-aware subtraction across a daylight-saving transition", (): void => {

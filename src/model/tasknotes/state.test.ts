@@ -43,9 +43,19 @@ describe("TaskNotesReminderState", (): void => {
 
   test("prunes entries whose triggers are outside the flood window", (): void => {
     const entries: TaskNotesReminderStateMap = {
-      "Tasks/old.md::old": {
+      "Tasks/old.md::old-muted": {
         trigger: DateTime.parse("2026-11-01 09:00").getTimeInMillis(),
         kind: "muted",
+      },
+      "Tasks/old.md::future-snooze": {
+        trigger: DateTime.parse("2026-11-01 09:00").getTimeInMillis(),
+        kind: "snoozed",
+        until: DateTime.parse("2026-11-21 09:00").getTimeInMillis(),
+      },
+      "Tasks/old.md::expired-snooze": {
+        trigger: DateTime.parse("2026-11-01 09:00").getTimeInMillis(),
+        kind: "snoozed",
+        until: DateTime.parse("2026-11-15 09:00").getTimeInMillis(),
       },
       "Tasks/recent.md::recent": {
         trigger: DateTime.parse("2026-11-19 09:00").getTimeInMillis(),
@@ -55,8 +65,11 @@ describe("TaskNotesReminderState", (): void => {
     };
     const state = new TaskNotesReminderState(entries);
 
-    expect(state.prune(DateTime.parse("2026-11-20 09:00"), 2)).toBe(1);
-    expect(Object.keys(entries)).toEqual(["Tasks/recent.md::recent"]);
+    expect(state.prune(DateTime.parse("2026-11-20 09:00"), 2)).toBe(2);
+    expect(Object.keys(entries)).toEqual([
+      "Tasks/old.md::future-snooze",
+      "Tasks/recent.md::recent",
+    ]);
   });
 
   test("removes state for deleted task notes", (): void => {

@@ -39,6 +39,7 @@ export interface TaskNotesContext {
   tags: Array<string>;
   options: TaskNotesOptions;
   now?: DateTime;
+  effectiveTimeFor?: (reminderId: string, trigger: DateTime) => DateTime;
   warnOnce?: (key: string, message: string) => void;
 }
 
@@ -144,9 +145,12 @@ export function extractReminders(
     ) {
       return false;
     }
-    if (reminder.time.getTimeInMillis() < oldest.getTimeInMillis()) {
+    const effectiveTime =
+      ctx.effectiveTimeFor?.(task.reminderId, reminder.time) ?? reminder.time;
+    if (effectiveTime.getTimeInMillis() < oldest.getTimeInMillis()) {
       return false;
     }
+    reminder.effectiveTime = effectiveTime;
     task.taskTitle = title;
     reminder.title = task.description || title;
     return true;
@@ -242,7 +246,7 @@ function parseReminder(
 }
 
 function parseAnchor(value: unknown, dateOnlyAnchorTime: string) {
-  const scalar = coerceScalar(value);
+  const scalar = coerceAnchorScalar(value);
   if (!scalar) {
     return undefined;
   }
@@ -266,6 +270,20 @@ function parseAnchor(value: unknown, dateOnlyAnchorTime: string) {
   return datetime.isValid()
     ? DateTime.ofEpochMillis(datetime.valueOf())
     : undefined;
+}
+
+function coerceAnchorScalar(value: unknown): string | undefined {
+  if (
+    value instanceof Date &&
+    Number.isFinite(value.getTime()) &&
+    value.getUTCHours() === 0 &&
+    value.getUTCMinutes() === 0 &&
+    value.getUTCSeconds() === 0 &&
+    value.getUTCMilliseconds() === 0
+  ) {
+    return value.toISOString().slice(0, 10);
+  }
+  return coerceScalar(value);
 }
 
 function parseDateTime(value: unknown) {
