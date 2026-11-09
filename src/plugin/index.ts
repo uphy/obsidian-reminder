@@ -12,3 +12,4 @@ export { NtfyController } from "./ntfy";
 export { ReminderPluginUI } from "./ui";
 export { ReminderPluginFileSystem } from "./filesystem";
 export { PluginData } from "./data";
+export { TaskNotesIntegration } from "./tasknotes";

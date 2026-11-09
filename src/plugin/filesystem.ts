@@ -41,7 +41,7 @@ export class ReminderPluginFileSystem {
 
   async removeRemindersByFile(path: string): Promise<boolean> {
     console.debug("Remove file: path=%s", path);
-    return this.reminders.removeByFile(path);
+    return this.reminders.removeSourceFile(path, "markdown");
   }
 
   async reloadRemindersInFile(file: TAbstractFile) {
@@ -58,16 +58,16 @@ export class ReminderPluginFileSystem {
       console.debug("Excluded file: file=%o", file);
       // The file may have had reminders from before it was excluded; make
       // sure those are removed so the exclusion actually hides them.
-      return this.reminders.removeByFile(file.path);
+      return this.reminders.removeSourceFile(file.path, "markdown");
     }
     const content = new Content(file.path, await this.vault.cachedRead(file));
     const reminders = content.getReminders();
     if (reminders.length > 0) {
-      if (!this.reminders.replaceFile(file.path, reminders)) {
+      if (!this.reminders.replaceSourceFile(file.path, "markdown", reminders)) {
         return false;
       }
     } else {
-      if (!this.reminders.removeByFile(file.path)) {
+      if (!this.reminders.removeSourceFile(file.path, "markdown")) {
         return false;
       }
     }
@@ -81,11 +81,10 @@ export class ReminderPluginFileSystem {
     // its initial scan on its first tick. Parsing every file before the
     // settings are restored would use the default reminder formats and
     // excluded paths, and the reminders `load()` restores afterwards would
-    // undo the `clear()` below (`Reminders.replaceFile()` carries the
-    // restored mute flags over onto freshly parsed reminders).
+    // undo the source-specific replacement below.
     await this.dataLoaded();
     console.debug("Reload all files and collect reminders");
-    this.reminders.clear();
+    this.reminders.clearSource("markdown");
     for (const file of this.vault.getMarkdownFiles()) {
       await this.reloadRemindersInFile(file);
     }
@@ -97,6 +96,9 @@ export class ReminderPluginFileSystem {
   }
 
   async updateReminder(reminder: Reminder, checked: boolean) {
+    if (reminder.source === "tasknotes") {
+      throw new Error("TaskNotes reminders are read-only.");
+    }
     const file = this.vault.getAbstractFileByPath(reminder.file);
     if (!(file instanceof TFile)) {
       console.error("file is not instance of TFile: %o", file);

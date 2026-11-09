@@ -1,4 +1,5 @@
-import { Reminders } from "model/reminder";
+import { Reminder, Reminders } from "model/reminder";
+import { DateTime } from "model/time";
 import { getLanguage, getLanguageSetting, setLanguage } from "i18n";
 import { PluginData } from "./data";
 import type { DataStore } from "./data";
@@ -65,6 +66,57 @@ describe("PluginData", (): void => {
     expect(mutedByTitle(reminders)).toStrictEqual({
       Muted: false,
       "Not muted": false,
+    });
+  });
+
+  test("defaults and persists TaskNotes state without serializing TaskNotes reminders as markdown", async (): Promise<void> => {
+    let saved: Record<string, unknown> | undefined;
+    const store: DataStore = {
+      loadData: async () => savedData(),
+      saveData: async (data) => {
+        saved = data as Record<string, unknown>;
+      },
+    };
+    const reminders = new Reminders(() => {});
+    const data = new PluginData(store, reminders);
+    await data.load();
+    expect(data.taskNotesReminderState).toEqual({});
+
+    reminders.replaceSourceFile("Tasks/Task.md", "tasknotes", [
+      new Reminder(
+        "Tasks/Task.md",
+        "Reminder",
+        DateTime.parse("2026-11-20 09:00"),
+        -1,
+        false,
+        "tasknotes",
+        {
+          reminderId: "persisted-state",
+          anchor: { type: "due", time: DateTime.parse("2026-11-20 09:00") },
+          taskTitle: "Task",
+        },
+      ),
+    ]);
+    data.taskNotesReminderState["Tasks/Task.md::persisted-state"] = {
+      trigger: DateTime.parse("2026-11-20 09:00").getTimeInMillis(),
+      kind: "muted",
+    };
+
+    await data.save(true);
+
+    expect(saved?.["taskNotesReminderState"]).toEqual(
+      data.taskNotesReminderState,
+    );
+    expect(saved?.["reminders"]).toEqual({
+      "file.md": [
+        { title: "Muted", time: "2021-09-08", rowNumber: 0, muted: true },
+        {
+          title: "Not muted",
+          time: "2021-09-09",
+          rowNumber: 1,
+          muted: false,
+        },
+      ],
     });
   });
 

@@ -22,6 +22,7 @@ import {
 import type { TaskStatus } from "model/format/status";
 import { DateTime, Later, Time } from "model/time";
 import { isValidNtfyTopic } from "model/ntfy";
+import type { TaskNotesPropertyNames } from "model/tasknotes";
 import {
   LANGUAGE_SETTINGS,
   type LanguageSetting,
@@ -98,6 +99,23 @@ export class Settings {
   ntfyServerUrl: SettingModel<string, string>;
   ntfyTopic: SettingModel<string, string>;
   ntfyAccessToken: SettingModel<string, string>;
+  taskNotesEnabled: SettingModel<boolean, boolean>;
+  taskNotesIdentificationMode: SettingModel<string, string>;
+  taskNotesTag: SettingModel<string, string>;
+  taskNotesIdentificationProperty: SettingModel<string, string>;
+  taskNotesIdentificationValue: SettingModel<string, string>;
+  taskNotesExcludedFolders: SettingModel<string, Array<string>>;
+  taskNotesCompletedStatuses: SettingModel<string, string>;
+  taskNotesSkipCompleted: SettingModel<boolean, boolean>;
+  taskNotesSkipArchived: SettingModel<boolean, boolean>;
+  taskNotesArchiveTag: SettingModel<string, string>;
+  taskNotesSkipRecurringInstances: SettingModel<boolean, boolean>;
+  taskNotesDateOnlyAnchorTime: SettingModel<string, string>;
+  taskNotesIgnoreOlderThanDays: SettingModel<number, number>;
+  taskNotesProperties: Record<
+    keyof TaskNotesPropertyNames,
+    SettingModel<string, string>
+  >;
 
   constructor() {
     // Deliberately first in the "Display" page: it decides how every other
@@ -626,6 +644,171 @@ export class Settings {
       })
       .build(new RawSerde());
 
+    this.taskNotesEnabled = this.settings
+      .newSettingBuilder()
+      .key("taskNotesEnabled")
+      .name("Enable TaskNotes integration")
+      .desc(
+        "Read TaskNotes reminder metadata from task-note frontmatter. This integration never writes to task notes.",
+      )
+      .toggle(false)
+      .build(new RawSerde());
+    const taskNotesIdentificationMode = this.settings
+      .newSettingBuilder()
+      .key("taskNotesIdentificationMode")
+      .name("Task identification mode")
+      .desc("Choose which notes are considered TaskNotes tasks.")
+      .dropdown("tag")
+      .addOption("Task tag", "tag")
+      .addOption("Property", "property")
+      .addOption("Any note with valid reminders", "reminders");
+    this.taskNotesIdentificationMode = taskNotesIdentificationMode.build(
+      new RawSerde(),
+    );
+    this.taskNotesTag = this.settings
+      .newSettingBuilder()
+      .key("taskNotesTag")
+      .name("Task tag")
+      .desc(
+        "Tag used to identify task notes when identification mode is Task tag.",
+      )
+      .text("task")
+      .placeHolder("task")
+      .build(new RawSerde());
+    this.taskNotesIdentificationProperty = this.settings
+      .newSettingBuilder()
+      .key("taskNotesIdentificationProperty")
+      .name("Task identification property")
+      .desc("Property name used to identify task notes in Property mode.")
+      .text("type")
+      .placeHolder("type")
+      .build(new RawSerde());
+    this.taskNotesIdentificationValue = this.settings
+      .newSettingBuilder()
+      .key("taskNotesIdentificationValue")
+      .name("Task identification property value")
+      .desc(
+        "Required property value. Leave empty to identify notes by property presence.",
+      )
+      .text("task")
+      .placeHolder("task")
+      .build(new RawSerde());
+    this.taskNotesExcludedFolders = this.settings
+      .newSettingBuilder()
+      .key("taskNotesExcludedFolders")
+      .name("Excluded folders")
+      .desc(
+        "One folder path per line. TaskNotes reminders in these folders are ignored.",
+      )
+      .textArea("")
+      .build(new ExcludedPathsSerde());
+    this.taskNotesCompletedStatuses = this.settings
+      .newSettingBuilder()
+      .key("taskNotesCompletedStatuses")
+      .name("Completed statuses")
+      .desc("One completed status per line.")
+      .textArea("done")
+      .build(new RawSerde());
+    this.taskNotesSkipCompleted = this.settings
+      .newSettingBuilder()
+      .key("taskNotesSkipCompleted")
+      .name("Skip completed tasks")
+      .desc(
+        "Skip tasks with a completed status, status: true, or a completedDate on a non-recurring task.",
+      )
+      .toggle(true)
+      .build(new RawSerde());
+    this.taskNotesSkipArchived = this.settings
+      .newSettingBuilder()
+      .key("taskNotesSkipArchived")
+      .name("Skip archived tasks")
+      .desc("Skip tasks carrying the configured archive tag.")
+      .toggle(true)
+      .build(new RawSerde());
+    this.taskNotesArchiveTag = this.settings
+      .newSettingBuilder()
+      .key("taskNotesArchiveTag")
+      .name("Archive tag")
+      .desc("Tag used to identify archived tasks.")
+      .text("archived")
+      .placeHolder("archived")
+      .build(new RawSerde());
+    this.taskNotesSkipRecurringInstances = this.settings
+      .newSettingBuilder()
+      .key("taskNotesSkipRecurringInstances")
+      .name("Skip completed recurring instances")
+      .desc(
+        "Skip a reminder when its anchor date appears in complete_instances or skipped_instances.",
+      )
+      .toggle(true)
+      .build(new RawSerde());
+    this.taskNotesDateOnlyAnchorTime = this.settings
+      .newSettingBuilder()
+      .key("taskNotesDateOnlyAnchorTime")
+      .name("Date-only anchor time")
+      .desc(
+        "Local time used when a due or scheduled date has no time component. TaskNotes specifies 00:00 by default.",
+      )
+      .text("00:00")
+      .placeHolder("00:00")
+      .build(new RawSerde());
+    this.taskNotesIgnoreOlderThanDays = this.settings
+      .newSettingBuilder()
+      .key("taskNotesIgnoreOlderThanDays")
+      .name("Ignore reminders older than (days)")
+      .desc(
+        "Ignore TaskNotes reminders whose trigger is older than this many days, preventing a flood when the integration is enabled.",
+      )
+      .number(1)
+      .build(new RawSerde());
+    const propertySetting = (
+      key: string,
+      name: string,
+      value: string,
+    ): SettingModel<string, string> =>
+      this.settings
+        .newSettingBuilder()
+        .key(key)
+        .name(name)
+        .text(value)
+        .placeHolder(value)
+        .build(new RawSerde());
+    this.taskNotesProperties = {
+      title: propertySetting("taskNotesPropertyTitle", "Title", "title"),
+      status: propertySetting("taskNotesPropertyStatus", "Status", "status"),
+      due: propertySetting("taskNotesPropertyDue", "Due", "due"),
+      scheduled: propertySetting(
+        "taskNotesPropertyScheduled",
+        "Scheduled",
+        "scheduled",
+      ),
+      reminders: propertySetting(
+        "taskNotesPropertyReminders",
+        "Reminders",
+        "reminders",
+      ),
+      completedDate: propertySetting(
+        "taskNotesPropertyCompletedDate",
+        "Completed date",
+        "completedDate",
+      ),
+      recurrence: propertySetting(
+        "taskNotesPropertyRecurrence",
+        "Recurrence",
+        "recurrence",
+      ),
+      completeInstances: propertySetting(
+        "taskNotesPropertyCompleteInstances",
+        "Complete instances",
+        "complete_instances",
+      ),
+      skippedInstances: propertySetting(
+        "taskNotesPropertySkippedInstances",
+        "Skipped instances",
+        "skipped_instances",
+      ),
+    };
+
     this.settings
       .newPage("Notifications")
       .newGroup()
@@ -643,6 +826,27 @@ export class Settings {
         this.focusDoneButtonOnPopup,
         this.showOverdueCountInStatusBar,
       );
+    const taskNotesPage = this.settings.newPage("TaskNotes integration");
+    taskNotesPage
+      .newGroup()
+      .addSettings(
+        this.taskNotesEnabled,
+        this.taskNotesIdentificationMode,
+        this.taskNotesTag,
+        this.taskNotesIdentificationProperty,
+        this.taskNotesIdentificationValue,
+        this.taskNotesExcludedFolders,
+        this.taskNotesCompletedStatuses,
+        this.taskNotesSkipCompleted,
+        this.taskNotesSkipArchived,
+        this.taskNotesArchiveTag,
+        this.taskNotesSkipRecurringInstances,
+        this.taskNotesDateOnlyAnchorTime,
+        this.taskNotesIgnoreOlderThanDays,
+      );
+    taskNotesPage
+      .newGroup("TaskNotes property names", true)
+      .addSettings(...Object.values(this.taskNotesProperties));
     this.settings
       .newPage("Editor")
       .newGroup()

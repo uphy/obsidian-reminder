@@ -90,6 +90,7 @@ export class SystemNotifier {
       // `n.close()` call.
       this.close(key);
       if (this.openNoteOnReminderClick.value) {
+        actions.mute();
         actions.openFile();
         return;
       }

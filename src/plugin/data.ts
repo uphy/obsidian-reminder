@@ -1,5 +1,6 @@
 import { Reference } from "model/ref";
 import { Reminder, Reminders } from "model/reminder";
+import type { TaskNotesReminderStateMap } from "model/tasknotes/state";
 import { DateTime } from "model/time";
 import { Settings, TAG_RESCAN } from "plugin/settings";
 import type { SettingModel } from "plugin/settings/helper";
@@ -42,6 +43,7 @@ export class PluginData {
   // merely re-read. See `updateSeededTaskStatuses`.
   private seededTaskStatusesText = "";
   public debug: Reference<boolean> = new Reference(false);
+  public taskNotesReminderState: TaskNotesReminderStateMap = {};
   // Do-not-disturb end time, or `null` while do-not-disturb is inactive.
   // Transient state (not a setting): not exposed in the settings tab, but
   // still persisted so a pause survives an Obsidian restart.
@@ -117,6 +119,7 @@ export class PluginData {
           dndUntil?: number | null;
           settings?: Record<string, unknown>;
           reminders?: Record<string, Array<ReminderData>>;
+          taskNotesReminderState?: TaskNotesReminderStateMap;
         }
       | undefined;
     if (!data) {
@@ -124,6 +127,7 @@ export class PluginData {
       return;
     }
     this.scanned.value = data.scanned;
+    this.taskNotesReminderState = data.taskNotesReminderState ?? {};
     this.seededTaskStatusesText = data.seededTaskStatuses ?? "";
     if (data.debug != null) {
       this.debug.value = data.debug;
@@ -181,7 +185,13 @@ export class PluginData {
     );
     const remindersData: Record<string, Array<ReminderData>> = {};
     this.reminders.fileToReminders.forEach((r, filePath) => {
-      remindersData[filePath] = r.map((rr) => ({
+      const markdownReminders = r.filter(
+        (reminder) => reminder.source === "markdown",
+      );
+      if (markdownReminders.length === 0) {
+        return;
+      }
+      remindersData[filePath] = markdownReminders.map((rr) => ({
         title: rr.title,
         time: rr.time.toString(),
         rowNumber: rr.rowNumber,
@@ -196,6 +206,7 @@ export class PluginData {
       scanned: this.scanned.value,
       seededTaskStatuses: this.seededTaskStatusesText,
       reminders: remindersData,
+      taskNotesReminderState: this.taskNotesReminderState,
       debug: this.debug.value,
       dndUntil: this.dndUntil.value?.getTimeInMillis() ?? null,
       settings,

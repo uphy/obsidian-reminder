@@ -18,11 +18,7 @@ export function muteAllReminders(
   if (checking) {
     return true;
   }
-  const count = plugin.reminders.muteExpiredReminders(
-    plugin.settings.reminderTime.value,
-  );
-  plugin.ui.reload(true);
-  void plugin.data.save(true);
+  const count = plugin.ui.muteExpiredReminders();
   new Notice(tn(count, "Muted {count} reminder", "Muted {count} reminders"));
   return true;
 }

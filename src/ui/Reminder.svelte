@@ -132,9 +132,37 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
       ×
     </button>
   {/if}
-  <h3 class="reminder-title" aria-label={reminder.title}>
-    <Markdown markdown={reminder.title} sourcePath={reminder.file} />
-  </h3>
+  {#if reminder.source === "tasknotes" && reminder.tasknotes}
+    <div class="tasknotes-details">
+      <h3 class="reminder-title" aria-label={reminder.tasknotes.taskTitle}>
+        <Markdown
+          markdown={reminder.tasknotes.taskTitle}
+          sourcePath={reminder.file}
+        />
+      </h3>
+      {#if reminder.tasknotes.description}
+        <div class="tasknotes-description">
+          <Markdown
+            markdown={reminder.tasknotes.description}
+            sourcePath={reminder.file}
+          />
+        </div>
+      {/if}
+      <div class="tasknotes-anchor">
+        {t("TaskNotes")} · {t(
+          reminder.tasknotes.anchor.type === "due"
+            ? "Due date"
+            : reminder.tasknotes.anchor.type === "scheduled"
+              ? "Scheduled date"
+              : "Absolute time",
+        )}: {reminder.tasknotes.anchor.time.toString()}
+      </div>
+    </div>
+  {:else}
+    <h3 class="reminder-title" aria-label={reminder.title}>
+      <Markdown markdown={reminder.title} sourcePath={reminder.file} />
+    </h3>
+  {/if}
   <button
     class="reminder-file"
     on:click={onOpenFile}
@@ -222,6 +250,17 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
 
   .reminder-title {
     margin: 0.3rem 0;
+  }
+  .tasknotes-details {
+    margin-bottom: 0.5rem;
+  }
+  .tasknotes-description {
+    margin: -0.5rem 0 0.5rem;
+    color: var(--text-normal);
+  }
+  .tasknotes-anchor {
+    color: var(--text-muted);
+    font-size: var(--font-smaller);
   }
 
   .reminder-file {

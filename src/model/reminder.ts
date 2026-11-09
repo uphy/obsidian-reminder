@@ -14,6 +14,7 @@ export class Reminder {
    * to false once the reminder is dealt with.
    */
   public beingDisplayed: boolean = false;
+  public effectiveTime: DateTime;
 
   constructor(
     public file: string,
@@ -21,10 +22,20 @@ export class Reminder {
     public time: DateTime,
     public rowNumber: number,
     public done: boolean,
-  ) {}
+    public source: "markdown" | "tasknotes" = "markdown",
+    public tasknotes?: TaskNotesReminder,
+  ) {
+    this.effectiveTime = time;
+  }
 
   key() {
-    return this.file + this.title + this.time.toString();
+    if (this.source === "markdown") {
+      return this.file + this.title + this.time.toString();
+    }
+    if (!this.tasknotes) {
+      throw new Error("TaskNotes reminders must include a reminder id.");
+    }
+    return `${this.file}::tasknotes::${this.tasknotes.reminderId}`;
   }
 
   /**
@@ -35,7 +46,7 @@ export class Reminder {
    * "Overdue" grouping (`groupReminders()`).
    */
   isExpired(nowMillis: number, defaultTime?: Time): boolean {
-    return this.time.getTimeInMillis(defaultTime) <= nowMillis;
+    return this.effectiveTime.getTimeInMillis(defaultTime) <= nowMillis;
   }
 
   equals(reminder: Reminder) {
@@ -43,6 +54,10 @@ export class Reminder {
       this.rowNumber === reminder.rowNumber &&
       this.title === reminder.title &&
       this.time.equals(reminder.time) &&
+      this.source === reminder.source &&
+      (this.source === "markdown" ||
+        (taskNotesEqual(this.tasknotes, reminder.tasknotes) &&
+          this.effectiveTime.equals(reminder.effectiveTime))) &&
       this.file === reminder.file
     );
   }
@@ -55,6 +70,34 @@ export class Reminder {
     const p = path.split(/[/\\]/);
     return p[p.length - 1]!.replace(/^(.*?)(\..+)?$/, "$1");
   }
+}
+
+export type TaskNotesAnchorType = "due" | "scheduled" | "absolute";
+
+export interface TaskNotesReminder {
+  reminderId: string;
+  description?: string;
+  anchor: {
+    type: TaskNotesAnchorType;
+    time: DateTime;
+  };
+  taskTitle: string;
+}
+
+function taskNotesEqual(
+  first: TaskNotesReminder | undefined,
+  second: TaskNotesReminder | undefined,
+): boolean {
+  if (!first || !second) {
+    return first === second;
+  }
+  return (
+    first.reminderId === second.reminderId &&
+    first.description === second.description &&
+    first.taskTitle === second.taskTitle &&
+    first.anchor.type === second.anchor.type &&
+    first.anchor.time.equals(second.anchor.time)
+  );
 }
 
 export class Reminders {
@@ -100,7 +143,7 @@ export class Reminders {
 
   public byDate(date: DateTime) {
     return this.reminders.filter(
-      (reminder) => reminder.time.toYYYYMMDD() === date.toYYYYMMDD(),
+      (reminder) => reminder.effectiveTime.toYYYYMMDD() === date.toYYYYMMDD(),
     );
   }
 
@@ -123,12 +166,120 @@ export class Reminders {
     this.onChange();
   }
 
+  public clearSource(source: Reminder["source"]): boolean {
+    let changed = false;
+    for (const [filePath, reminders] of this.fileToReminders.entries()) {
+      const retained = reminders.filter(
+        (reminder) => reminder.source !== source,
+      );
+      if (retained.length !== reminders.length) {
+        changed = true;
+        if (retained.length === 0) {
+          this.fileToReminders.delete(filePath);
+        } else {
+          this.fileToReminders.set(filePath, retained);
+        }
+      }
+    }
+    if (changed) {
+      this.sortReminders();
+    }
+    return changed;
+  }
+
   public removeByFile(filePath: string) {
     if (this.fileToReminders.delete(filePath)) {
       this.sortReminders();
       return true;
     }
     return false;
+  }
+
+  public removeSourceFile(
+    filePath: string,
+    source: Reminder["source"],
+  ): boolean {
+    const current = this.fileToReminders.get(filePath);
+    if (!current) {
+      return false;
+    }
+    const retained = current.filter((reminder) => reminder.source !== source);
+    if (retained.length === current.length) {
+      return false;
+    }
+    if (retained.length === 0) {
+      this.fileToReminders.delete(filePath);
+    } else {
+      this.fileToReminders.set(filePath, retained);
+    }
+    this.sortReminders();
+    return true;
+  }
+
+  public replaceSourceFile(
+    filePath: string,
+    source: Reminder["source"],
+    reminders: Array<Reminder>,
+  ): boolean {
+    const current = this.fileToReminders.get(filePath) ?? [];
+    const oldByKey = new Map(
+      current
+        .filter((reminder) => reminder.source === source)
+        .map((reminder) => [reminder.key(), reminder]),
+    );
+    for (const reminder of reminders) {
+      const old = oldByKey.get(reminder.key());
+      if (old?.time.equals(reminder.time)) {
+        reminder.muteNotification = old.muteNotification;
+      }
+    }
+    const retained = current.filter((reminder) => reminder.source !== source);
+    const replacement = [...retained, ...reminders];
+    if (this.equals(current, replacement)) {
+      return false;
+    }
+    if (replacement.length === 0) {
+      this.fileToReminders.delete(filePath);
+    } else {
+      this.fileToReminders.set(filePath, replacement);
+    }
+    this.sortReminders();
+    return true;
+  }
+
+  public migrateSourceFile(
+    oldPath: string,
+    newPath: string,
+    source: Reminder["source"],
+  ): boolean {
+    const oldFile = this.fileToReminders.get(oldPath);
+    if (!oldFile) {
+      return false;
+    }
+    const moved = oldFile.filter((reminder) => reminder.source === source);
+    if (moved.length === 0) {
+      return false;
+    }
+    const retained = oldFile.filter((reminder) => reminder.source !== source);
+    if (retained.length === 0) {
+      this.fileToReminders.delete(oldPath);
+    } else {
+      this.fileToReminders.set(oldPath, retained);
+    }
+    moved.forEach((reminder) => {
+      reminder.file = newPath;
+    });
+    const destination = this.fileToReminders.get(newPath) ?? [];
+    const destinationRetained = destination.filter(
+      (reminder) => reminder.source !== source,
+    );
+    this.fileToReminders.set(newPath, [...destinationRetained, ...moved]);
+    this.sortReminders();
+    return true;
+  }
+
+  public resort(): void {
+    this.sortReminders();
   }
 
   public replaceFile(filePath: string, reminders: Array<Reminder>): boolean {
@@ -185,8 +336,8 @@ export class Reminders {
   private sort(reminders: Array<Reminder>) {
     reminders.sort((a, b) => {
       const d =
-        a.time.getTimeInMillis(this.reminderTime?.value) -
-        b.time.getTimeInMillis(this.reminderTime?.value);
+        a.effectiveTime.getTimeInMillis(this.reminderTime?.value) -
+        b.effectiveTime.getTimeInMillis(this.reminderTime?.value);
       return d > 0 ? 1 : d < 0 ? -1 : 0;
     });
   }
@@ -336,7 +487,7 @@ export function groupReminders(
       overdueReminders.push(r);
       continue;
     }
-    const group = generateGroup(r.time, now, reminderTime, format);
+    const group = generateGroup(r.effectiveTime, now, reminderTime, format);
     if (group.name !== previousGroup.name) {
       if (currentReminders.length > 0 || previousGroup.isToday) {
         result.push(new GroupedReminder(previousGroup, currentReminders));

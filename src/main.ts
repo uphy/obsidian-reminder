@@ -4,6 +4,7 @@ import {
   PluginData,
   ReminderPluginFileSystem,
   ReminderPluginUI,
+  TaskNotesIntegration,
 } from "plugin";
 import { isNotificationPaused } from "model/dnd";
 import { Reminders } from "model/reminder";
@@ -25,6 +26,7 @@ export default class ReminderPlugin extends Plugin {
   private _ui: ReminderPluginUI;
   private _reminders: Reminders;
   private _fileSystem: ReminderPluginFileSystem;
+  private _taskNotes: TaskNotesIntegration;
   private _notificationWorker: NotificationWorker;
   private _ntfyController: NtfyController;
   constructor(app: App, manifest: PluginManifest) {
@@ -44,6 +46,12 @@ export default class ReminderPlugin extends Plugin {
     // lifetime of the plugin (only its values change on reload), so it's
     // safe to capture the reference once here.
     this.settings = this.data.settings;
+    this._taskNotes = new TaskNotesIntegration(
+      app,
+      this.reminders,
+      this.data,
+      this.settings,
+    );
     // Resolve "automatic" before any UI is built, so the commands registered
     // in `onload()` already use the right language. `applyLanguage()` runs
     // again once the persisted settings are loaded.
@@ -139,6 +147,7 @@ export default class ReminderPlugin extends Plugin {
       await this.seedTaskStatuses();
       this.ui.onLayoutReady();
       this.fileSystem.onload(this);
+      await this.taskNotes.onLayoutReady(this);
       this._notificationWorker.startPeriodicTask();
       this._ntfyController.start();
     });
@@ -209,5 +218,14 @@ export default class ReminderPlugin extends Plugin {
 
   get data() {
     return this._data;
+  }
+
+  get taskNotes() {
+    return this._taskNotes;
+  }
+
+  async reloadRemindersInAllFiles(): Promise<void> {
+    await this.fileSystem.reloadRemindersInAllFiles();
+    await this.taskNotes.reloadAllFiles();
   }
 }

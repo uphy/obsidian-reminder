@@ -35,15 +35,17 @@ Alternatively, you can postpone the reminder by selecting `Remind Me Later`.
 
 <img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/main/images/reminder-notification2.png" width="600" />
 
-
 #### Interoperability with other plugins
 
 In addition to original format `@YYYY-MM-DD`, this plugin also supports following plugin formats.
 
 - [Obsidian Tasks](https://uphy.github.io/obsidian-reminder/guide/interop-tasks.html) (e.g. `📅 2021-05-02`)
 - [Kanban](https://uphy.github.io/obsidian-reminder/guide/interop-kanban.html) (e.g. `@{YYYY-MM-DD}`)
+- [TaskNotes](https://uphy.github.io/obsidian-reminder/guide/interop-tasknotes.html) (YAML reminders in task-note frontmatter)
 
 If you use the [Natural Language Dates](https://uphy.github.io/obsidian-reminder/guide/interop-nldates.html) plugin, see the guide for how to avoid the `@` autocompletion conflict.
+
+TaskNotes can also send its own reminder notifications. If both TaskNotes and this plugin notify you about the same reminders, disable notifications in one of them to avoid duplicates.
 
 ### Guide
 

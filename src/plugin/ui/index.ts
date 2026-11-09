@@ -2,6 +2,7 @@ import { onLanguageChange, tn } from "i18n";
 import type ReminderPlugin from "main";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
+import type { DateTime } from "model/time";
 import {
   App,
   Editor,
@@ -57,7 +58,7 @@ export class ReminderPluginUI {
           return;
         }
         // Callback is synchronous; opening the file is fire-and-forget here.
-        void this.openReminderFile(reminder);
+        this.handleReminderAction(reminder, "open");
       },
     );
     this.autoComplete = new AutoComplete(
@@ -281,6 +282,9 @@ export class ReminderPluginUI {
     if (!(leaf.view instanceof MarkdownView)) {
       return;
     }
+    if (reminder.source === "tasknotes") {
+      return;
+    }
     const editor = leaf.view.editor;
     // A reused tab that was deferred (not yet loaded) gets its content a
     // moment after `revealLeaf` resolves; until then the editor is empty.
@@ -323,30 +327,16 @@ export class ReminderPluginUI {
     const actions: ReminderActions = {
       remindMeLater: (time) => {
         console.debug("Remind me later: time=%o", time);
-        reminder.time = time;
-        reminder.muteNotification = false;
-        // Callback is synchronous; both calls are fire-and-forget here.
-        void this.plugin.fileSystem.updateReminder(reminder, false);
-        void this.plugin.data.save(true);
+        this.handleReminderAction(reminder, "snooze", time);
       },
       done: () => {
-        console.debug("done");
-        reminder.muteNotification = false;
-        // Callback is synchronous; both calls are fire-and-forget here.
-        void this.plugin.fileSystem.updateReminder(reminder, true);
-        this.plugin.reminders.removeReminder(reminder);
-        void this.plugin.data.save(true);
+        this.handleReminderAction(reminder, "done");
       },
       mute: () => {
-        console.debug("Mute");
-        reminder.muteNotification = true;
-        this.reload(true);
-        void this.plugin.data.save(true);
+        this.handleReminderAction(reminder, "mute");
       },
       openFile: () => {
-        console.debug("Open");
-        // Callback is synchronous; opening the file is fire-and-forget here.
-        void this.openReminderFile(reminder);
+        this.handleReminderAction(reminder, "open");
       },
       pauseAll: () => {
         console.debug("Pause all notifications");
@@ -377,27 +367,82 @@ export class ReminderPluginUI {
         });
       },
       muteAll: () => {
-        console.debug("Mute all reminders");
-        // +1 for the currently displayed reminder: it was already flagged
-        // muted at display time (top of `showReminder()`), so
-        // `muteExpiredReminders()` never counts it as newly muted, but from
-        // the user's perspective this action is what mutes it.
-        const count =
-          this.plugin.reminders.muteExpiredReminders(
-            this.plugin.settings.reminderTime.value,
-          ) + 1;
-        // Already covered by muteExpiredReminders() in the common case, but
-        // set explicitly to stay correct even if this reminder's expiry
-        // check races with the bulk mute above.
-        reminder.muteNotification = true;
-        this.reload(true);
-        void this.plugin.data.save(true);
+        const count = this.muteExpiredReminders(reminder) + 1;
         new Notice(
           tn(count, "Muted {count} reminder", "Muted {count} reminders"),
         );
       },
     };
     this.reminderNotifier.show(reminder, actions);
+  }
+
+  muteExpiredReminders(currentReminder?: Reminder): number {
+    const expired = this.plugin.reminders.getExpiredReminders(
+      this.plugin.settings.reminderTime.value,
+    );
+    const newlyMuted = expired.filter((reminder) => !reminder.muteNotification);
+    newlyMuted.forEach((reminder) => {
+      this.handleReminderAction(reminder, "mute", undefined, false);
+    });
+    if (currentReminder) {
+      this.handleReminderAction(currentReminder, "mute", undefined, false);
+    }
+    if (newlyMuted.length > 0 || currentReminder) {
+      this.reload(true);
+      void this.plugin.data.save(true);
+    }
+    return newlyMuted.length;
+  }
+
+  private handleReminderAction(
+    reminder: Reminder,
+    action: "done" | "snooze" | "mute" | "open",
+    time?: DateTime,
+    refresh: boolean = true,
+  ): void {
+    if (action === "open") {
+      console.debug("Open");
+      void this.openReminderFile(reminder);
+      return;
+    }
+    if (action === "snooze") {
+      if (!time) {
+        throw new Error("A snooze time is required.");
+      }
+      console.debug("Remind me later: time=%o", time);
+      if (reminder.source === "tasknotes") {
+        this.plugin.taskNotes.snooze(reminder, time);
+      } else {
+        reminder.time = time;
+        reminder.effectiveTime = time;
+        reminder.muteNotification = false;
+        void this.plugin.fileSystem.updateReminder(reminder, false);
+      }
+      void this.plugin.data.save(true);
+      return;
+    }
+    if (action === "done") {
+      console.debug("Done");
+      if (reminder.source === "tasknotes") {
+        this.plugin.taskNotes.done(reminder);
+      } else {
+        reminder.muteNotification = false;
+        void this.plugin.fileSystem.updateReminder(reminder, true);
+      }
+      this.plugin.reminders.removeReminder(reminder);
+      void this.plugin.data.save(true);
+      return;
+    }
+    console.debug("Mute");
+    if (reminder.source === "tasknotes") {
+      this.plugin.taskNotes.mute(reminder);
+    } else {
+      reminder.muteNotification = true;
+    }
+    if (refresh) {
+      this.reload(true);
+      void this.plugin.data.save(true);
+    }
   }
 }
 

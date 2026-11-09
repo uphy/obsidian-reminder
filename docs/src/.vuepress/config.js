@@ -76,6 +76,7 @@ module.exports = {
           collapsable: false,
           children: [
             'interop-tasks',
+            'interop-tasknotes',
             'interop-dataview',
             'interop-kanban',
             'interop-nldates'

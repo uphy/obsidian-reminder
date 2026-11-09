@@ -540,7 +540,10 @@ class SettingModelImpl<R, E> implements SettingModel<R, E> {
 
 export class SettingGroup {
   public settings: Array<SettingModelBase> = [];
-  constructor(public name?: string) {}
+  constructor(
+    public name?: string,
+    public collapsed: boolean = false,
+  ) {}
 
   addSettings(...settingModels: Array<SettingModelBase>) {
     this.settings.push(...settingModels);
@@ -551,8 +554,8 @@ export class SettingPage {
   public groups: Array<SettingGroup> = [];
   constructor(public name: string) {}
 
-  newGroup(name?: string): SettingGroup {
-    const group = new SettingGroup(name);
+  newGroup(name?: string, collapsed: boolean = false): SettingGroup {
+    const group = new SettingGroup(name, collapsed);
     this.groups.push(group);
     return group;
   }
@@ -615,11 +618,18 @@ export class SettingTabModel {
       return;
     }
     activePage.groups.forEach((group) => {
-      if (group.name !== undefined) {
+      const groupEl = group.collapsed
+        ? contentEl.createEl("details", {
+            cls: "reminder-settings-collapsible-group",
+          })
+        : contentEl;
+      if (group.collapsed && group.name !== undefined) {
+        groupEl.createEl("summary", { text: t(group.name) });
+      } else if (group.name !== undefined) {
         new Setting(contentEl).setName(t(group.name)).setHeading();
       }
       group.settings.forEach((settings) => {
-        settings.createSetting(contentEl);
+        settings.createSetting(groupEl);
       });
     });
     this.registry.forEach((context) => context.update());
