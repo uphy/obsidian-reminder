@@ -46,7 +46,11 @@ class ReminderListItemView extends ItemView {
               destinationFile.path,
             );
           }
-          return `${reminder.title} - ${linkMd}`;
+          const title =
+            reminder.source === "tasknotes"
+              ? reminder.tasknotes?.taskTitle || reminder.getFileName()
+              : reminder.title;
+          return `${title} - ${linkMd}`;
         },
       },
     });
