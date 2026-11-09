@@ -4,6 +4,20 @@ import { Reminder, Reminders, groupReminders } from "./reminder";
 import type { DateDisplayFormat, GroupedReminder } from "./reminder";
 
 describe("Reminder", (): void => {
+  test("key() keeps the exact markdown reminder key format", (): void => {
+    const reminder = new Reminder(
+      "folder/note.md",
+      "Review the proposal",
+      DateTime.parse("2026-11-09 08:15"),
+      2,
+      false,
+    );
+
+    expect(reminder.key()).toBe(
+      "folder/note.mdReview the proposal2026-11-09 08:15",
+    );
+  });
+
   test("extractFileName()", (): void => {
     expect(Reminder.extractFileName("/dir1/dir2/file")).toBe("file");
     expect(Reminder.extractFileName("/dir1/dir2/file.md")).toBe("file");
