@@ -424,7 +424,19 @@ export class ReminderPluginUI {
     if (action === "done") {
       console.debug("Done");
       if (reminder.source === "tasknotes") {
-        this.plugin.taskNotes.done(reminder);
+        void this.plugin.taskNotes
+          .done(reminder)
+          .then(() => {
+            this.plugin.reminders.removeReminder(reminder);
+            void this.plugin.data.save(true);
+          })
+          .catch((error: unknown) => {
+            console.error("Failed to complete TaskNotes reminder: %o", error);
+            new Notice(
+              "Could not complete the tasknotes reminder. See the console for details.",
+            );
+          });
+        return;
       } else {
         reminder.muteNotification = false;
         void this.plugin.fileSystem.updateReminder(reminder, true);

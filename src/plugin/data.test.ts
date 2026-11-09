@@ -120,6 +120,30 @@ describe("PluginData", (): void => {
     });
   });
 
+  test("defaults TaskNotes Done behavior to opening the task modal and persists changes", async (): Promise<void> => {
+    let saved: Record<string, unknown> | undefined;
+    const store: DataStore = {
+      loadData: async () => savedData(),
+      saveData: async (data) => {
+        saved = data as Record<string, unknown>;
+      },
+    };
+    const data = new PluginData(store, new Reminders(() => {}));
+
+    await data.load();
+    expect(data.settings.taskNotesDoneBehavior.value).toBe("open-task-modal");
+
+    data.settings.taskNotesDoneBehavior.rawValue.value =
+      "write-completed-status";
+    await data.save(true);
+
+    expect(
+      (saved?.["settings"] as Record<string, unknown>)?.[
+        "taskNotesDoneBehavior"
+      ],
+    ).toBe("write-completed-status");
+  });
+
   test("a changed Tasks-plugin seed forces a rescan; an unchanged one does not", async (): Promise<void> => {
     const reminders = new Reminders(() => {});
     let saved: { scanned: boolean; seededTaskStatuses?: string } | undefined;

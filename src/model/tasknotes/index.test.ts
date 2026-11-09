@@ -1,6 +1,10 @@
 import { moment } from "model/moment";
 import { DateTime } from "model/time";
-import { DEFAULT_TASKNOTES_PROPERTIES, extractReminders } from "./index";
+import {
+  DEFAULT_TASKNOTES_PROPERTIES,
+  extractReminders,
+  firstCompletedStatus,
+} from "./index";
 import type { TaskNotesContext, TaskNotesOptions } from "./index";
 
 const defaultOptions: TaskNotesOptions = {
@@ -44,6 +48,11 @@ function reminder(id: string, relatedTo: "due" | "scheduled", offset: string) {
 }
 
 describe("extractReminders()", (): void => {
+  test("uses the first configured completed status and defaults to done", (): void => {
+    expect(firstCompletedStatus("  finished \n done")).toBe("finished");
+    expect(firstCompletedStatus("\n  \n")).toBe("done");
+  });
+
   test("resolves the TaskNotes due and scheduled reminder examples", (): void => {
     const reminders = extract({
       due: "2026-11-20T14:30",

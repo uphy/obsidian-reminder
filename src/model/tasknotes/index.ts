@@ -4,6 +4,17 @@ import { moment } from "model/moment";
 import { DateTime, Time } from "model/time";
 
 export type TaskNotesIdentificationMode = "tag" | "property" | "reminders";
+export type TaskNotesDoneBehavior =
+  "open-task-modal" | "write-completed-status";
+
+export function firstCompletedStatus(statuses: string): string {
+  return (
+    statuses
+      .split(/\r?\n/)
+      .map((status) => status.trim())
+      .find((status) => status.length > 0) ?? "done"
+  );
+}
 
 export interface TaskNotesPropertyNames {
   title: string;

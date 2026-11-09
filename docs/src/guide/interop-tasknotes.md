@@ -54,6 +54,13 @@ Absolute times may use `Z` or a numeric UTC offset. A timestamp with no offset i
 - Triggers older than one day are ignored by default to avoid a burst of historic notifications when enabling the integration. Adjust **Ignore reminders older than (days)** as needed.
 - Invalid reminder entries are skipped and warned about once per note and reminder ID. If an ID is duplicated in a note, only its first entry is used.
 
-Reminder actions do not edit TaskNotes YAML or complete the task. Marking done and snoozing are stored by this plugin as reminder state. Opening a reminder opens its task note; the reminder list labels these entries as TaskNotes.
+## Done button behavior
+
+The **Done button behavior** setting controls what happens when you mark a TaskNotes reminder done:
+
+- **Open TaskNotes edit modal (do not write)** is the default. The task note is unchanged, the reminder is marked done in Reminder Plugin's `data.json`, and the TaskNotes edit modal opens so you can update the task yourself. If TaskNotes or its edit-modal API is unavailable, the plugin shows a notice and opens the task note instead.
+- **Write completed status to task note** updates the configured **Status** property to the first non-empty value in **Completed statuses** (default `done`). The reminder is then removed from the list as the updated task is parsed. If the note cannot be updated, the reminder remains and an error is shown.
+
+Snoozing and muting remain stored in Reminder Plugin's `data.json`; they do not change TaskNotes YAML. Opening a reminder from the list opens its task note, and the reminder list labels these entries as TaskNotes.
 
 TaskNotes can also display its own reminder notifications. If both plugins notify for the same task, disable notifications in one plugin to avoid duplicate alerts.

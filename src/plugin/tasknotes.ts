@@ -1,15 +1,26 @@
-import { getAllTags } from "obsidian";
-import type { App, EventRef, Plugin, TFile } from "obsidian";
+import { Notice, TFile, getAllTags } from "obsidian";
+import type { App, EventRef, Plugin } from "obsidian";
 import { DateTime } from "model/time";
 import type { Reminder, Reminders } from "model/reminder";
 import type { TaskNotesContext, TaskNotesOptions } from "model/tasknotes";
 import {
   DEFAULT_TASKNOTES_PROPERTIES,
   extractReminders,
+  firstCompletedStatus,
 } from "model/tasknotes";
+import { completeTaskNotesReminder } from "model/tasknotes/completion";
+import type { TaskNotesDoneBehavior } from "model/tasknotes";
 import { TaskNotesReminderState } from "model/tasknotes/state";
 import type { PluginData } from "./data";
 import type { Settings } from "./settings";
+
+interface TaskNotesModalApi {
+  getTaskInfo(filePath: string): Promise<unknown>;
+  openTaskEditModal(taskInfo: unknown): Promise<void>;
+}
+
+type TaskInfoGetter = (filePath: string) => unknown;
+type TaskEditModal = (taskInfo: unknown) => void | Promise<void>;
 
 export class TaskNotesIntegration {
   private started = false;
@@ -74,11 +85,28 @@ export class TaskNotesIntegration {
     }
   }
 
-  done(reminder: Reminder): void {
+  async done(reminder: Reminder): Promise<void> {
     const task = this.taskForReminder(reminder);
-    const state = this.stateForEvents();
-    state.set(reminder.file, task.reminderId, reminder.time, "done");
-    this.data.changed = true;
+    await completeTaskNotesReminder({
+      behavior: this.doneBehavior(),
+      openTaskEditModal: () => this.openTaskEditModal(reminder),
+      notifyModalUnavailable: () => {
+        new Notice(
+          "Tasknotes edit modal is unavailable. Opening the task note instead.",
+        );
+      },
+      openTaskNote: () => this.openTaskNote(reminder),
+      writeCompletedStatus: () => this.writeCompletedStatus(reminder),
+      markReminderDone: () => {
+        this.stateForEvents().set(
+          reminder.file,
+          task.reminderId,
+          reminder.time,
+          "done",
+        );
+        this.data.changed = true;
+      },
+    });
   }
 
   snooze(reminder: Reminder, until: DateTime): void {
@@ -317,6 +345,50 @@ export class TaskNotesIntegration {
     );
   }
 
+  private doneBehavior(): TaskNotesDoneBehavior {
+    return this.settings.taskNotesDoneBehavior.value ===
+      "write-completed-status"
+      ? "write-completed-status"
+      : "open-task-modal";
+  }
+
+  private async writeCompletedStatus(reminder: Reminder): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(reminder.file);
+    if (!(file instanceof TFile)) {
+      throw new Error(
+        `Cannot update TaskNotes status because the note is unavailable: ${reminder.file}`,
+      );
+    }
+    const statusProperty = this.propertyName("status");
+    const completedStatus = firstCompletedStatus(
+      this.settings.taskNotesCompletedStatuses.value,
+    );
+    await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+      const properties = frontmatter as Record<string, unknown>;
+      properties[statusProperty] = completedStatus;
+    });
+  }
+
+  private async openTaskEditModal(reminder: Reminder): Promise<boolean> {
+    const api = getTaskNotesModalApi(this.app.plugins.plugins);
+    const taskInfo = await api?.getTaskInfo(reminder.file);
+    if (api && taskInfo) {
+      await api.openTaskEditModal(taskInfo);
+      return true;
+    }
+    return false;
+  }
+
+  private async openTaskNote(reminder: Reminder): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(reminder.file);
+    if (!(file instanceof TFile)) {
+      throw new Error(
+        `Cannot open TaskNotes note because it is unavailable: ${reminder.file}`,
+      );
+    }
+    await this.app.workspace.getLeaf(false).openFile(file);
+  }
+
   private taskForReminder(reminder: Reminder) {
     if (reminder.source !== "tasknotes" || !reminder.tasknotes) {
       throw new Error("TaskNotes state requires a TaskNotes reminder.");
@@ -368,4 +440,43 @@ export class TaskNotesIntegration {
       .filter((key) => key.startsWith(prefix))
       .forEach((key) => this.warnedKeys.delete(key));
   }
+}
+
+function getTaskNotesModalApi(plugins: unknown): TaskNotesModalApi | undefined {
+  if (!isRecord(plugins)) {
+    return undefined;
+  }
+  const plugin = plugins["tasknotes"];
+  if (!isRecord(plugin)) {
+    return undefined;
+  }
+  const cacheManager = plugin["cacheManager"];
+  if (!isRecord(cacheManager)) {
+    return undefined;
+  }
+  const getTaskInfo = cacheManager["getTaskInfo"];
+  const openTaskEditModal = plugin["openTaskEditModal"];
+  if (!isTaskInfoGetter(getTaskInfo) || !isTaskEditModal(openTaskEditModal)) {
+    return undefined;
+  }
+
+  return {
+    getTaskInfo: async (filePath) =>
+      await getTaskInfo.call(cacheManager, filePath),
+    openTaskEditModal: async (taskInfo) => {
+      await openTaskEditModal.call(plugin, taskInfo);
+    },
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isTaskInfoGetter(value: unknown): value is TaskInfoGetter {
+  return typeof value === "function";
+}
+
+function isTaskEditModal(value: unknown): value is TaskEditModal {
+  return typeof value === "function";
 }
