@@ -15,6 +15,7 @@ import { completeTaskNotesReminder } from "model/tasknotes/completion";
 import { TaskNotesReminderState } from "model/tasknotes/state";
 import type { PluginData } from "./data";
 import type { Settings } from "./settings";
+import { TaskNotesRescanScheduler } from "./tasknotes-rescan";
 
 interface TaskNotesModalApi {
   getTaskInfo(filePath: string): Promise<unknown>;
@@ -40,6 +41,7 @@ export class TaskNotesIntegration {
   private eventCleanups: Array<() => void> = [];
   private warnedKeys = new Set<string>();
   private applyingFetchedSettings = false;
+  private rescanScheduler: TaskNotesRescanScheduler;
 
   constructor(
     private app: App,
@@ -47,6 +49,9 @@ export class TaskNotesIntegration {
     private data: PluginData,
     private settings: Settings,
   ) {
+    this.rescanScheduler = new TaskNotesRescanScheduler(() =>
+      this.reloadAllFiles(),
+    );
     this.settings.setTaskNotesSettingsFetcher(() =>
       this.fetchSettingsFromTaskNotes(),
     );
@@ -67,7 +72,7 @@ export class TaskNotesIntegration {
         }
         this.data.changed = true;
         if (this.started && this.settings.taskNotesEnabled.value) {
-          void this.reloadAllFiles().catch((error: unknown) => {
+          void this.rescanScheduler.schedule().catch((error: unknown) => {
             console.error("Failed to rescan TaskNotes reminders: %o", error);
           });
         }
@@ -131,7 +136,7 @@ export class TaskNotesIntegration {
     this.data.changed = true;
     if (this.started && this.settings.taskNotesEnabled.value) {
       try {
-        await this.reloadAllFiles();
+        await this.rescanScheduler.schedule();
       } catch (error) {
         const detail =
           error instanceof Error ? error.message : "unknown rescan error";
@@ -146,6 +151,7 @@ export class TaskNotesIntegration {
 
   async onLayoutReady(plugin: Plugin): Promise<void> {
     this.plugin = plugin;
+    plugin.register(() => this.rescanScheduler.cancelPending());
     this.state = new TaskNotesReminderState(this.data.taskNotesReminderState);
     this.started = true;
     if (this.settings.reNotifyMutedOnStartup.value) {
@@ -156,7 +162,7 @@ export class TaskNotesIntegration {
     this.pruneState();
     if (this.settings.taskNotesEnabled.value) {
       this.startListening(plugin);
-      await this.reloadAllFiles();
+      await this.rescanScheduler.runNow();
     }
   }
 
@@ -167,9 +173,14 @@ export class TaskNotesIntegration {
       return;
     }
     this.pruneState();
+    const files = new Map<string, Array<Reminder>>();
     for (const file of this.app.vault.getMarkdownFiles()) {
-      this.updateFile(file, this.app.metadataCache.getFileCache(file));
+      files.set(
+        file.path,
+        this.getFileReminders(file, this.app.metadataCache.getFileCache(file)),
+      );
     }
+    this.reminders.replaceSourceFiles("tasknotes", files);
   }
 
   async done(reminder: Reminder): Promise<void> {
@@ -227,7 +238,7 @@ export class TaskNotesIntegration {
       return;
     }
     this.startListening(plugin);
-    void this.reloadAllFiles().catch((error: unknown) => {
+    void this.rescanScheduler.runNow().catch((error: unknown) => {
       console.error(
         "Failed to scan TaskNotes reminders after enabling: %o",
         error,
@@ -236,6 +247,7 @@ export class TaskNotesIntegration {
   }
 
   private disable(): void {
+    this.rescanScheduler.cancelPending();
     this.stopListening();
     if (this.reminders.clearSource("tasknotes")) {
       this.data.changed = true;
@@ -258,6 +270,16 @@ export class TaskNotesIntegration {
     this.registerEvent(plugin, this.app.metadataCache, changedRef);
 
     const renameRef = this.app.vault.on("rename", (file, oldPath) => {
+      if (!isMarkdownPath(oldPath)) {
+        return;
+      }
+      if (!isMarkdownPath(file.path)) {
+        this.removeFileState(oldPath);
+        return;
+      }
+      if (!this.hasTaskNotesData(oldPath)) {
+        return;
+      }
       const stateMoved = this.stateForEvents().migratePath(oldPath, file.path);
       const remindersMoved = this.reminders.migrateSourceFile(
         oldPath,
@@ -272,6 +294,9 @@ export class TaskNotesIntegration {
     this.registerEvent(plugin, this.app.vault, renameRef);
 
     const deleteRef = this.app.vault.on("delete", (file) => {
+      if (!isMarkdownPath(file.path) || !this.hasTaskNotesData(file.path)) {
+        return;
+      }
       const removedState = this.stateForEvents().removeFile(file.path);
       const removedReminders = this.reminders.removeSourceFile(
         file.path,
@@ -305,11 +330,32 @@ export class TaskNotesIntegration {
     file: TFile,
     cache: ReturnType<App["metadataCache"]["getFileCache"]>,
   ): void {
+    if (!isMarkdownPath(file.path)) {
+      return;
+    }
+    if (!this.hasReminderItems(cache)) {
+      this.removeFileState(file.path);
+      return;
+    }
+    this.reminders.replaceSourceFile(
+      file.path,
+      "tasknotes",
+      this.getFileReminders(file, cache),
+    );
+  }
+
+  private getFileReminders(
+    file: TFile,
+    cache: ReturnType<App["metadataCache"]["getFileCache"]>,
+  ): Array<Reminder> {
     if (
       !this.settings.taskNotesEnabled.value ||
       file.extension.toLowerCase() !== "md"
     ) {
-      return;
+      return [];
+    }
+    if (!this.hasReminderItems(cache)) {
+      return [];
     }
     const options = this.options();
     const context: TaskNotesContext = {
@@ -366,7 +412,18 @@ export class TaskNotesIntegration {
       reminder.muteNotification = entry?.kind === "muted";
       active.push(reminder);
     });
-    this.reminders.replaceSourceFile(file.path, "tasknotes", active);
+    return active;
+  }
+
+  private hasReminderItems(
+    cache: ReturnType<App["metadataCache"]["getFileCache"]>,
+  ): boolean {
+    const frontmatter = cache?.frontmatter;
+    if (!isRecord(frontmatter)) {
+      return false;
+    }
+    const reminders = frontmatter[this.propertyName("reminders")];
+    return Array.isArray(reminders) && reminders.length > 0;
   }
 
   private options(): TaskNotesOptions {
@@ -501,6 +558,35 @@ export class TaskNotesIntegration {
       .filter((key) => key.startsWith(prefix))
       .forEach((key) => this.warnedKeys.delete(key));
   }
+
+  private hasTaskNotesData(path: string): boolean {
+    return (
+      this.reminders.hasSourceFile(path, "tasknotes") ||
+      this.stateForEvents().hasFile(path) ||
+      this.hasWarnings(path)
+    );
+  }
+
+  private hasWarnings(path: string): boolean {
+    const prefix = `${path}::`;
+    return Array.from(this.warnedKeys).some((key) => key.startsWith(prefix));
+  }
+
+  private removeFileState(path: string): void {
+    const state = this.stateForEvents();
+    const removedState = state.hasFile(path) ? state.removeFile(path) : 0;
+    const removedReminders = this.reminders.removeSourceFile(path, "tasknotes");
+    if (this.hasWarnings(path)) {
+      this.clearWarnings(path);
+    }
+    if (removedState > 0 || removedReminders) {
+      this.data.changed = true;
+    }
+  }
+}
+
+function isMarkdownPath(path: string): boolean {
+  return path.toLowerCase().endsWith(".md");
 }
 
 function getTaskNotesModalApi(plugins: unknown): TaskNotesModalApi | undefined {

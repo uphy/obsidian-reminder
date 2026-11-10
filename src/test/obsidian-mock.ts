@@ -14,6 +14,7 @@
  */
 export class Setting {}
 export class AbstractTextComponent {}
+export class TFile {}
 
 /**
  * Unlike the classes above this one needs real behavior: Obsidian bundles

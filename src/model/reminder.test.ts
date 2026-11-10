@@ -206,6 +206,95 @@ describe("Reminders#muteExpiredReminders()", (): void => {
 });
 
 describe("Reminders source-scoped replacement", (): void => {
+  test("bulk replacement matches sequential replacement and notifies once", (): void => {
+    const makeTaskNotesReminder = (
+      file: string,
+      reminderId: string,
+      time: string,
+      muted: boolean = false,
+    ): Reminder => {
+      const reminder = new Reminder(
+        file,
+        reminderId,
+        DateTime.parse(time),
+        -1,
+        false,
+        "tasknotes",
+        {
+          reminderId,
+          anchor: { type: "due", time: DateTime.parse(time) },
+          taskTitle: file,
+        },
+      );
+      reminder.muteNotification = muted;
+      return reminder;
+    };
+    const seed = (reminders: Reminders): void => {
+      reminders.replaceSourceFile("a.md", "tasknotes", [
+        makeTaskNotesReminder("a.md", "keep-muted", "2026-11-20 09:00", true),
+      ]);
+      reminders.replaceSourceFile("b.md", "tasknotes", [
+        makeTaskNotesReminder("b.md", "remove", "2026-11-21 09:00"),
+      ]);
+      reminders.replaceSourceFile("c.md", "tasknotes", [
+        makeTaskNotesReminder("c.md", "stale", "2026-11-22 09:00"),
+      ]);
+      reminders.replaceSourceFile("a.md", "markdown", [
+        new Reminder(
+          "a.md",
+          "Markdown reminder",
+          DateTime.parse("2026-11-20 08:00"),
+          0,
+          false,
+        ),
+      ]);
+    };
+    const bulkOnChange = jest.fn();
+    const bulk = new Reminders(bulkOnChange);
+    seed(bulk);
+    bulkOnChange.mockClear();
+
+    const bulkFiles = new Map<string, Array<Reminder>>([
+      [
+        "a.md",
+        [
+          makeTaskNotesReminder("a.md", "keep-muted", "2026-11-20 09:00"),
+          makeTaskNotesReminder("a.md", "new", "2026-11-20 10:00"),
+        ],
+      ],
+      [
+        "b.md",
+        [makeTaskNotesReminder("b.md", "replacement", "2026-11-21 11:00")],
+      ],
+    ]);
+
+    expect(bulk.replaceSourceFiles("tasknotes", bulkFiles)).toBe(true);
+    expect(bulkOnChange).toHaveBeenCalledTimes(1);
+
+    const sequential = new Reminders(() => {});
+    seed(sequential);
+    sequential.replaceSourceFile("a.md", "tasknotes", bulkFiles.get("a.md")!);
+    sequential.replaceSourceFile("b.md", "tasknotes", bulkFiles.get("b.md")!);
+    sequential.replaceSourceFile("c.md", "tasknotes", []);
+
+    const summarize = (reminders: Reminders) =>
+      reminders.reminders.map((reminder) => ({
+        file: reminder.file,
+        key: reminder.key(),
+        muted: reminder.muteNotification,
+      }));
+    expect(summarize(bulk)).toEqual(summarize(sequential));
+    expect(
+      bulk.fileToReminders
+        .get("a.md")
+        ?.find((reminder) => reminder.source === "markdown")?.title,
+    ).toBe("Markdown reminder");
+    expect(
+      bulk.reminders.find((reminder) => reminder.key().includes("keep-muted"))
+        ?.muteNotification,
+    ).toBe(true);
+  });
+
   test("replacing one source keeps the other source in the same file", (): void => {
     const reminders = new Reminders(() => {});
     const markdown = new Reminder(

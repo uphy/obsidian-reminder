@@ -56,6 +56,11 @@ export class TaskNotesReminderState {
     this.entries[key] = entry;
   }
 
+  hasFile(path: string): boolean {
+    const prefix = `${path}::`;
+    return Object.keys(this.entries).some((key) => key.startsWith(prefix));
+  }
+
   migratePath(oldPath: string, newPath: string): number {
     const oldPrefix = `${oldPath}::`;
     const oldKeys = Object.keys(this.entries).filter((key) =>

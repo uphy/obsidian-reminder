@@ -216,7 +216,53 @@ export class Reminders {
     return true;
   }
 
+  public hasSourceFile(filePath: string, source: Reminder["source"]): boolean {
+    return (
+      this.fileToReminders
+        .get(filePath)
+        ?.some((reminder) => reminder.source === source) ?? false
+    );
+  }
+
   public replaceSourceFile(
+    filePath: string,
+    source: Reminder["source"],
+    reminders: Array<Reminder>,
+  ): boolean {
+    if (!this.replaceSourceFileInMap(filePath, source, reminders)) {
+      return false;
+    }
+    this.sortReminders();
+    return true;
+  }
+
+  /**
+   * Replaces the complete set of files for a reminder source in one update.
+   * Paths omitted from `files` have their reminders for `source` removed.
+   */
+  public replaceSourceFiles(
+    source: Reminder["source"],
+    files: Map<string, Array<Reminder>>,
+  ): boolean {
+    const filePaths = new Set([
+      ...this.fileToReminders.keys(),
+      ...files.keys(),
+    ]);
+    let changed = false;
+    filePaths.forEach((filePath) => {
+      if (
+        this.replaceSourceFileInMap(filePath, source, files.get(filePath) ?? [])
+      ) {
+        changed = true;
+      }
+    });
+    if (changed) {
+      this.sortReminders();
+    }
+    return changed;
+  }
+
+  private replaceSourceFileInMap(
     filePath: string,
     source: Reminder["source"],
     reminders: Array<Reminder>,
@@ -243,7 +289,6 @@ export class Reminders {
     } else {
       this.fileToReminders.set(filePath, replacement);
     }
-    this.sortReminders();
     return true;
   }
 

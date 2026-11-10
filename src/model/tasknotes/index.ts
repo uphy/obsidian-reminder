@@ -78,24 +78,28 @@ export function extractReminders(
     return [];
   }
 
+  if (
+    ctx.options.identificationMode !== "reminders" &&
+    !isIdentified(frontmatter, ctx)
+  ) {
+    return [];
+  }
+  if (
+    (ctx.options.skipCompleted && isCompleted(frontmatter, ctx.options)) ||
+    (ctx.options.skipArchived && hasTag(ctx.tags, ctx.options.archiveTag))
+  ) {
+    return [];
+  }
+
   const remindersValue = frontmatter[ctx.options.properties.reminders];
   if (!Array.isArray(remindersValue)) {
     if (ctx.options.identificationMode === "reminders") {
-      return [];
-    }
-    if (!isIdentified(frontmatter, ctx)) {
       return [];
     }
     if (hasValue(remindersValue)) {
       warn(ctx, "<reminders>", "the reminders property is not a list");
     }
     return [];
-  }
-
-  if (ctx.options.identificationMode !== "reminders") {
-    if (!isIdentified(frontmatter, ctx)) {
-      return [];
-    }
   }
 
   const seenIds = new Set<string>();
@@ -133,18 +137,14 @@ export function extractReminders(
     ctx.fileName;
   const now = ctx.now ?? DateTime.now();
   const oldest = now.add(-Math.max(0, ctx.options.ignoreOlderThanDays), "days");
+  const recurringInstanceDates =
+    ctx.options.skipRecurringInstances &&
+    hasValue(frontmatter[ctx.options.properties.recurrence])
+      ? collectRecurringInstanceDates(frontmatter, ctx.options)
+      : new Set<string>();
   const result = parsed.filter((reminder) => {
     const task = reminder.tasknotes!;
-    if (ctx.options.skipCompleted && isCompleted(frontmatter, ctx.options)) {
-      return false;
-    }
-    if (ctx.options.skipArchived && hasTag(ctx.tags, ctx.options.archiveTag)) {
-      return false;
-    }
-    if (
-      ctx.options.skipRecurringInstances &&
-      isRecurringInstanceDone(frontmatter, task.anchor.time, ctx.options)
-    ) {
+    if (recurringInstanceDates.has(task.anchor.time.toYYYYMMDD())) {
       return false;
     }
     const effectiveTime =
@@ -419,39 +419,72 @@ function isCompleted(
   );
 }
 
-function isRecurringInstanceDone(
+function collectRecurringInstanceDates(
   frontmatter: Record<string, unknown>,
-  anchor: DateTime,
   options: TaskNotesOptions,
-) {
-  if (!hasValue(frontmatter[options.properties.recurrence])) {
-    return false;
-  }
-  const anchorDate = anchor.toYYYYMMDD();
-  return [
+): Set<string> {
+  const dates = new Set<string>();
+  [
     options.properties.completeInstances,
     options.properties.skippedInstances,
-  ].some((property) =>
-    collectDateStrings(frontmatter[property]).includes(anchorDate),
+  ].forEach((property) => collectDateStrings(frontmatter[property], dates));
+  return dates;
+}
+
+function collectDateStrings(value: unknown, dates: Set<string>): void {
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectDateStrings(item, dates));
+    return;
+  }
+  if (isRecord(value)) {
+    Object.entries(value).forEach(([key, item]) => {
+      collectDateStrings(key, dates);
+      collectDateStrings(item, dates);
+    });
+    return;
+  }
+  const scalar = coerceScalar(value)?.trim();
+  if (!scalar) {
+    return;
+  }
+  const date = /^(\d{4}-\d{2}-\d{2})(?:T.*)?$/.exec(scalar)?.[1];
+  if (date && isValidDateString(date)) {
+    dates.add(date);
+  }
+}
+
+function isValidDateString(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    return false;
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const daysInMonth = [
+    31,
+    isLeapYear(year) ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+  return (
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= (daysInMonth[month - 1] ?? 0)
   );
 }
 
-function collectDateStrings(value: unknown): Array<string> {
-  if (Array.isArray(value)) {
-    return value.flatMap(collectDateStrings);
-  }
-  if (isRecord(value)) {
-    return Object.entries(value).flatMap(([key, item]) => [
-      ...collectDateStrings(key),
-      ...collectDateStrings(item),
-    ]);
-  }
-  const scalar = coerceScalar(value);
-  if (!scalar) {
-    return [];
-  }
-  const date = parseAnchor(scalar, "00:00");
-  return date ? [date.toYYYYMMDD()] : [];
+function isLeapYear(year: number): boolean {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
 }
 
 function isExcluded(filePath: string, options: TaskNotesOptions) {
