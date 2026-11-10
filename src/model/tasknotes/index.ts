@@ -381,11 +381,16 @@ function isIdentified(
       return false;
     }
     const expected = ctx.options.identificationValue.trim();
-    return (
-      expected.length === 0 ||
-      coerceScalar(frontmatter[property])?.toLowerCase() ===
-        expected.toLowerCase()
-    );
+    if (expected.length === 0) {
+      return true;
+    }
+    const value = frontmatter[property];
+    if (Array.isArray(value)) {
+      return value.some(
+        (item) => coerceScalar(item)?.toLowerCase() === expected.toLowerCase(),
+      );
+    }
+    return coerceScalar(value)?.toLowerCase() === expected.toLowerCase();
   }
   return true;
 }

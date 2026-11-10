@@ -369,6 +369,25 @@ describe("extractReminders()", (): void => {
     ).toHaveLength(0);
   });
 
+  test("matches configured property values against array elements", (): void => {
+    const options: Partial<TaskNotesOptions> = {
+      identificationMode: "property",
+      identificationProperty: "type",
+      identificationValue: "ai",
+    };
+    const reminders = [reminder("array-property", "due", "-P0D")];
+    const base = { due: "2026-11-20", reminders };
+
+    expect(extract({ ...base, type: ["task", "AI"] }, options)).toHaveLength(1);
+    expect(extract({ ...base, type: ["other"] }, options)).toHaveLength(0);
+    expect(
+      extract(
+        { ...base, type: ["task", "AI"] },
+        { ...options, identificationValue: "" },
+      ),
+    ).toHaveLength(1);
+  });
+
   test("ignores triggers older than the flood-guard window", (): void => {
     expect(
       extract(

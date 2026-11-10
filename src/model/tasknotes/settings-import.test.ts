@@ -1,4 +1,7 @@
-import { importTaskNotesSettings } from "./settings-import";
+import {
+  importTaskNotesRuntimeSettings,
+  importTaskNotesSettings,
+} from "./settings-import";
 
 const taskNotesSettings = {
   fieldMapping: {
@@ -81,5 +84,21 @@ describe("importTaskNotesSettings", (): void => {
     ],
   ])("rejects incomplete or malformed settings", (settings, message): void => {
     expect(() => importTaskNotesSettings(settings)).toThrow(message);
+  });
+});
+
+describe("importTaskNotesRuntimeSettings", (): void => {
+  test("combines the runtime settings snapshot and status catalog", (): void => {
+    const { customStatuses, ...snapshot } = taskNotesSettings;
+    expect(importTaskNotesRuntimeSettings(snapshot, customStatuses)).toEqual(
+      importTaskNotesSettings(taskNotesSettings),
+    );
+  });
+
+  test("rejects a missing runtime status catalog", (): void => {
+    const { customStatuses: _customStatuses, ...snapshot } = taskNotesSettings;
+    expect(() => importTaskNotesRuntimeSettings(snapshot, undefined)).toThrow(
+      "TaskNotes status catalog is unavailable.",
+    );
   });
 });

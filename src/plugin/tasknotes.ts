@@ -7,7 +7,10 @@ import {
   DEFAULT_TASKNOTES_PROPERTIES,
   extractReminders,
 } from "model/tasknotes";
-import { importTaskNotesSettings } from "model/tasknotes/settings-import";
+import {
+  importTaskNotesRuntimeSettings,
+  importTaskNotesSettings,
+} from "model/tasknotes/settings-import";
 import { completeTaskNotesReminder } from "model/tasknotes/completion";
 import { TaskNotesReminderState } from "model/tasknotes/state";
 import type { PluginData } from "./data";
@@ -18,8 +21,17 @@ interface TaskNotesModalApi {
   openTaskEditModal(taskInfo: unknown): Promise<void>;
 }
 
-type TaskInfoGetter = (filePath: string) => unknown;
+type TaskInfoGetter = (filePath: string) => Promise<unknown>;
+type TaskInfoSource = (filePath: string) => unknown;
 type TaskEditModal = (taskInfo: unknown) => void | Promise<void>;
+
+interface TaskNotesRuntimeApi {
+  apiVersion: number;
+  hasCapability: (capability: string) => boolean;
+  settings?: unknown;
+  catalog?: unknown;
+  tasks?: unknown;
+}
 
 export class TaskNotesIntegration {
   private started = false;
@@ -71,7 +83,15 @@ export class TaskNotesIntegration {
       );
     }
 
-    const imported = importTaskNotesSettings(taskNotesPlugin["settings"]);
+    const api = getTaskNotesRuntimeApi(taskNotesPlugin);
+    const imported =
+      api?.hasCapability("settings.snapshot") &&
+      api.hasCapability("catalog.read")
+        ? importTaskNotesRuntimeSettings(
+            callRuntimeApiMethod(api["settings"], "snapshot"),
+            callRuntimeApiMethod(api["catalog"], "statuses"),
+          )
+        : importTaskNotesSettings(taskNotesPlugin["settings"]);
     this.applyingFetchedSettings = true;
     try {
       this.settings.taskNotesIdentificationMode.rawValue.value =
@@ -491,30 +511,99 @@ function getTaskNotesModalApi(plugins: unknown): TaskNotesModalApi | undefined {
   if (!isRecord(plugin)) {
     return undefined;
   }
-  const cacheManager = plugin["cacheManager"];
-  if (!isRecord(cacheManager)) {
-    return undefined;
-  }
-  const getTaskInfo = cacheManager["getTaskInfo"];
   const openTaskEditModal = plugin["openTaskEditModal"];
-  if (!isTaskInfoGetter(getTaskInfo) || !isTaskEditModal(openTaskEditModal)) {
+  if (!isTaskEditModal(openTaskEditModal)) {
     return undefined;
   }
 
+  const api = getTaskNotesRuntimeApi(plugin);
+  const taskGetter = api?.hasCapability("tasks.read")
+    ? runtimeTaskGetter(api)
+    : legacyTaskGetter(plugin);
+  if (!taskGetter) {
+    return undefined;
+  }
   return {
-    getTaskInfo: async (filePath) =>
-      await getTaskInfo.call(cacheManager, filePath),
+    getTaskInfo: taskGetter,
     openTaskEditModal: async (taskInfo) => {
       await openTaskEditModal.call(plugin, taskInfo);
     },
   };
 }
 
+function getTaskNotesRuntimeApi(
+  plugin: Record<string, unknown>,
+): TaskNotesRuntimeApi | undefined {
+  const api = plugin["api"];
+  if (
+    !isRecord(api) ||
+    api["apiVersion"] !== 1 ||
+    !isCapabilityChecker(api["hasCapability"])
+  ) {
+    return undefined;
+  }
+  const hasCapability = api["hasCapability"];
+  return {
+    apiVersion: 1,
+    hasCapability: (capability) => hasCapability.call(api, capability),
+    settings: api["settings"],
+    catalog: api["catalog"],
+    tasks: api["tasks"],
+  };
+}
+
+function callRuntimeApiMethod(target: unknown, methodName: string): unknown {
+  if (!isRecord(target)) {
+    throw new Error(
+      `TaskNotes runtime API is missing the ${methodName} interface.`,
+    );
+  }
+  const method = target[methodName];
+  if (typeof method !== "function") {
+    throw new Error(`TaskNotes runtime API does not provide ${methodName}().`);
+  }
+  return method.call(target);
+}
+
+function runtimeTaskGetter(
+  api: TaskNotesRuntimeApi,
+): TaskInfoGetter | undefined {
+  if (!isRecord(api["tasks"])) {
+    throw new Error("TaskNotes runtime API is missing the tasks interface.");
+  }
+  const tasks = api["tasks"];
+  const getTask = tasks["get"];
+  if (!isTaskInfoGetter(getTask)) {
+    throw new Error("TaskNotes runtime API does not provide tasks.get().");
+  }
+  return async (filePath) => await getTask.call(tasks, filePath);
+}
+
+function legacyTaskGetter(
+  plugin: Record<string, unknown>,
+): TaskInfoGetter | undefined {
+  const cacheManager = plugin["cacheManager"];
+  if (!isRecord(cacheManager)) {
+    return undefined;
+  }
+  const getTaskInfo = cacheManager["getTaskInfo"];
+  if (!isTaskInfoGetter(getTaskInfo)) {
+    return undefined;
+  }
+  return async (filePath) => await getTaskInfo.call(cacheManager, filePath);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function isTaskInfoGetter(value: unknown): value is TaskInfoGetter {
+function isTaskInfoGetter(value: unknown): value is TaskInfoSource {
+  return typeof value === "function";
+}
+
+function isCapabilityChecker(
+  value: unknown,
+): value is (capability: string) => boolean {
   return typeof value === "function";
 }
 

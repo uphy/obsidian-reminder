@@ -93,6 +93,22 @@ export function importTaskNotesSettings(
   };
 }
 
+export function importTaskNotesRuntimeSettings(
+  snapshot: unknown,
+  statuses: unknown,
+): ImportedTaskNotesSettings {
+  if (!isRecord(snapshot)) {
+    throw new Error("TaskNotes settings snapshot is unavailable.");
+  }
+  if (!Array.isArray(statuses)) {
+    throw new Error("TaskNotes status catalog is unavailable.");
+  }
+  return importTaskNotesSettings({
+    ...snapshot,
+    customStatuses: statuses,
+  });
+}
+
 function getMappedProperty(
   fieldMapping: Record<string, unknown>,
   key: keyof TaskNotesPropertyNames,
