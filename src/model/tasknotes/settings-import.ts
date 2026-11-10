@@ -82,7 +82,11 @@ export function importTaskNotesSettings(
       value["taskPropertyValue"],
       "taskPropertyValue",
     ),
-    excludedFolders: requireString(value["excludedFolders"], "excludedFolders"),
+    excludedFolders: requireString(value["excludedFolders"], "excludedFolders")
+      .split(",")
+      .map((folder) => folder.trim())
+      .filter((folder) => folder.length > 0)
+      .join("\n"),
     completedStatuses: completedStatuses.join("\n"),
     archiveTag: requireString(fieldMapping["archiveTag"], "archiveTag"),
     properties,

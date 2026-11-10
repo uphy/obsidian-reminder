@@ -17,7 +17,7 @@ const taskNotesSettings = {
   taskTag: "todo",
   taskPropertyName: "kind",
   taskPropertyValue: "task",
-  excludedFolders: "Archive\nTemplates",
+  excludedFolders: "Archive, Templates",
   customStatuses: [
     { value: "open", isCompleted: false },
     { value: "done", isCompleted: true },

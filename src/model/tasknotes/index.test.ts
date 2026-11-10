@@ -1,10 +1,6 @@
 import { moment } from "model/moment";
 import { DateTime } from "model/time";
-import {
-  DEFAULT_TASKNOTES_PROPERTIES,
-  extractReminders,
-  firstCompletedStatus,
-} from "./index";
+import { DEFAULT_TASKNOTES_PROPERTIES, extractReminders } from "./index";
 import type { TaskNotesContext, TaskNotesOptions } from "./index";
 
 const defaultOptions: TaskNotesOptions = {
@@ -48,9 +44,14 @@ function reminder(id: string, relatedTo: "due" | "scheduled", offset: string) {
 }
 
 describe("extractReminders()", (): void => {
-  test("uses the first configured completed status and defaults to done", (): void => {
-    expect(firstCompletedStatus("  finished \n done")).toBe("finished");
-    expect(firstCompletedStatus("\n  \n")).toBe("done");
+  test("does not warn when a tagged task has no reminders property", (): void => {
+    const warning = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(extract({ due: "2026-11-20T14:30" })).toHaveLength(0);
+      expect(warning).not.toHaveBeenCalled();
+    } finally {
+      warning.mockRestore();
+    }
   });
 
   test("resolves the TaskNotes due and scheduled reminder examples", (): void => {

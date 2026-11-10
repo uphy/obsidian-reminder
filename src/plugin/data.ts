@@ -30,8 +30,8 @@ export class PluginData {
    * Resolves once the first `load()` has finished (or failed). Anything that
    * reparses the whole vault has to wait for this, because scanning before
    * the persisted settings and reminders are restored produces reminders
-   * parsed with default settings — and `Reminders.replaceFile()` would then
-   * carry the restored mute flags over onto them.
+   * parsed with default settings — and `Reminders.replaceSourceFile()` would
+   * then carry the restored mute flags over onto them.
    */
   readonly loaded: Promise<void> = new Promise<void>((resolve) => {
     this.resolveLoaded = resolve;
@@ -141,8 +141,8 @@ export class PluginData {
 
     // Settings are restored just above, so the toggle already holds the
     // persisted value here. Dropping the mute flags at restore time (rather
-    // than unmuting later) means a subsequent `Reminders.replaceFile()` has
-    // nothing to carry over.
+    // than unmuting later) means a subsequent `Reminders.replaceSourceFile()`
+    // has nothing to carry over.
     const restoreMuted = !this.settings.reNotifyMutedOnStartup.value;
 
     const remindersData = data.reminders;
@@ -152,8 +152,9 @@ export class PluginData {
         if (!remindersInFile) {
           return;
         }
-        this.reminders.replaceFile(
+        this.reminders.replaceSourceFile(
           filePath,
+          "markdown",
           remindersInFile.map((d) => {
             const reminder = new Reminder(
               filePath,

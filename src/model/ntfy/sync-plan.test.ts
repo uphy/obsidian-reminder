@@ -1,4 +1,5 @@
 import { Reminder } from "model/reminder";
+import type { TaskNotesReminder } from "model/reminder";
 import { DateTime, Time } from "model/time";
 import { computeSequenceId } from "./sequence-id";
 import { computeNtfySyncPlan, selectOwnPendingSequenceIds } from "./sync-plan";
@@ -20,6 +21,17 @@ function reminderIn(
     rowNumber,
     false,
   );
+}
+
+function taskNotesReminder(reminderId: string): TaskNotesReminder {
+  return {
+    reminderId,
+    anchor: {
+      type: "due",
+      time: DateTime.ofEpochMillis(NOW.getTimeInMillis() + 60 * 1000),
+    },
+    taskTitle: "Task",
+  };
 }
 
 describe("computeNtfySyncPlan()", (): void => {
@@ -72,6 +84,29 @@ describe("computeNtfySyncPlan()", (): void => {
     expect(plan.publish[0]!.sequenceId).toBe(sequenceId);
     expect(plan.publish[0]!.atSeconds).toBe(NOW_SECONDS + 60);
     expect(plan.delete).toHaveLength(0);
+  });
+
+  test("publishes a snoozed TaskNotes reminder at its effective time", (): void => {
+    const reminder = new Reminder(
+      "Todo.md",
+      "Snoozed task",
+      DateTime.ofEpochMillis(NOW.getTimeInMillis() + 60 * 1000),
+      -1,
+      false,
+      "tasknotes",
+      taskNotesReminder("rem-snoozed"),
+    );
+    reminder.effectiveTime = DateTime.ofEpochMillis(
+      NOW.getTimeInMillis() + 120 * 1000,
+    );
+    const plan = computeNtfySyncPlan({
+      reminders: [reminder],
+      serverPending: [],
+      now: NOW,
+    });
+
+    expect(plan.publish).toHaveLength(1);
+    expect(plan.publish[0]!.atSeconds).toBe(NOW_SECONDS + 120);
   });
 
   test("deletes a pending schedule whose reminder disappeared", (): void => {
@@ -176,6 +211,40 @@ describe("computeNtfySyncPlan()", (): void => {
     expect(sequenceIds).toContain(
       computeSequenceId("Todo.md", "Water plants", 1),
     );
+  });
+
+  test("assigns same-title TaskNotes reminders with equal rowNumber by reminder id", (): void => {
+    const reminderB = new Reminder(
+      "Todo.md",
+      "Same title",
+      DateTime.ofEpochMillis(NOW.getTimeInMillis() + 120 * 1000),
+      -1,
+      false,
+      "tasknotes",
+      taskNotesReminder("rem-b"),
+    );
+    const reminderA = new Reminder(
+      "Todo.md",
+      "Same title",
+      DateTime.ofEpochMillis(NOW.getTimeInMillis() + 60 * 1000),
+      -1,
+      false,
+      "tasknotes",
+      taskNotesReminder("rem-a"),
+    );
+    const plan = computeNtfySyncPlan({
+      reminders: [reminderB, reminderA],
+      serverPending: [],
+      now: NOW,
+    });
+
+    expect(plan.publish).toHaveLength(2);
+    expect(
+      plan.publish.find((action) => action.reminder === reminderA)?.sequenceId,
+    ).toBe(computeSequenceId("Todo.md", "Same title", 0));
+    expect(
+      plan.publish.find((action) => action.reminder === reminderB)?.sequenceId,
+    ).toBe(computeSequenceId("Todo.md", "Same title", 1));
   });
 
   test("does not delete a pending schedule for a reminder that has slid inside the lead window (regression: self-delete right before firing)", (): void => {

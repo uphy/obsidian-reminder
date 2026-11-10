@@ -69,6 +69,33 @@ describe("PluginData", (): void => {
     });
   });
 
+  test("restores persisted markdown reminders without replacing TaskNotes reminders for the same file", async (): Promise<void> => {
+    const reminders = new Reminders(() => {});
+    const taskNotesReminder = new Reminder(
+      "file.md",
+      "TaskNotes reminder",
+      DateTime.parse("2026-11-20 09:00"),
+      -1,
+      false,
+      "tasknotes",
+      {
+        reminderId: "tasknotes-reminder",
+        anchor: { type: "due", time: DateTime.parse("2026-11-20 09:00") },
+        taskTitle: "Task",
+      },
+    );
+    reminders.replaceSourceFile("file.md", "tasknotes", [taskNotesReminder]);
+
+    const data = new PluginData(createStore(savedData()), reminders);
+    await data.load();
+
+    expect(
+      reminders.fileToReminders
+        .get("file.md")
+        ?.map((reminder) => reminder.source),
+    ).toEqual(["tasknotes", "markdown", "markdown"]);
+  });
+
   test("defaults and persists TaskNotes state without serializing TaskNotes reminders as markdown", async (): Promise<void> => {
     let saved: Record<string, unknown> | undefined;
     const store: DataStore = {
@@ -118,30 +145,6 @@ describe("PluginData", (): void => {
         },
       ],
     });
-  });
-
-  test("defaults TaskNotes Done behavior to opening the task modal and persists changes", async (): Promise<void> => {
-    let saved: Record<string, unknown> | undefined;
-    const store: DataStore = {
-      loadData: async () => savedData(),
-      saveData: async (data) => {
-        saved = data as Record<string, unknown>;
-      },
-    };
-    const data = new PluginData(store, new Reminders(() => {}));
-
-    await data.load();
-    expect(data.settings.taskNotesDoneBehavior.value).toBe("open-task-modal");
-
-    data.settings.taskNotesDoneBehavior.rawValue.value =
-      "write-completed-status";
-    await data.save(true);
-
-    expect(
-      (saved?.["settings"] as Record<string, unknown>)?.[
-        "taskNotesDoneBehavior"
-      ],
-    ).toBe("write-completed-status");
   });
 
   test("a changed Tasks-plugin seed forces a rescan; an unchanged one does not", async (): Promise<void> => {

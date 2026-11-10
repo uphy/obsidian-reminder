@@ -6,11 +6,9 @@ import type { TaskNotesContext, TaskNotesOptions } from "model/tasknotes";
 import {
   DEFAULT_TASKNOTES_PROPERTIES,
   extractReminders,
-  firstCompletedStatus,
 } from "model/tasknotes";
 import { importTaskNotesSettings } from "model/tasknotes/settings-import";
 import { completeTaskNotesReminder } from "model/tasknotes/completion";
-import type { TaskNotesDoneBehavior } from "model/tasknotes";
 import { TaskNotesReminderState } from "model/tasknotes/state";
 import type { PluginData } from "./data";
 import type { Settings } from "./settings";
@@ -157,7 +155,6 @@ export class TaskNotesIntegration {
   async done(reminder: Reminder): Promise<void> {
     const task = this.taskForReminder(reminder);
     await completeTaskNotesReminder({
-      behavior: this.doneBehavior(),
       openTaskEditModal: () => this.openTaskEditModal(reminder),
       notifyModalUnavailable: () => {
         new Notice(
@@ -165,7 +162,6 @@ export class TaskNotesIntegration {
         );
       },
       openTaskNote: () => this.openTaskNote(reminder),
-      writeCompletedStatus: () => this.writeCompletedStatus(reminder),
       markReminderDone: () => {
         this.stateForEvents().set(
           reminder.file,
@@ -412,30 +408,6 @@ export class TaskNotesIntegration {
       this.settings.taskNotesProperties[property].value.trim() ||
       DEFAULT_TASKNOTES_PROPERTIES[property]
     );
-  }
-
-  private doneBehavior(): TaskNotesDoneBehavior {
-    return this.settings.taskNotesDoneBehavior.value ===
-      "write-completed-status"
-      ? "write-completed-status"
-      : "open-task-modal";
-  }
-
-  private async writeCompletedStatus(reminder: Reminder): Promise<void> {
-    const file = this.app.vault.getAbstractFileByPath(reminder.file);
-    if (!(file instanceof TFile)) {
-      throw new Error(
-        `Cannot update TaskNotes status because the note is unavailable: ${reminder.file}`,
-      );
-    }
-    const statusProperty = this.propertyName("status");
-    const completedStatus = firstCompletedStatus(
-      this.settings.taskNotesCompletedStatuses.value,
-    );
-    await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-      const properties = frontmatter as Record<string, unknown>;
-      properties[statusProperty] = completedStatus;
-    });
   }
 
   private async openTaskEditModal(reminder: Reminder): Promise<boolean> {

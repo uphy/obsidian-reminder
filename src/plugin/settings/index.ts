@@ -22,10 +22,7 @@ import {
 import type { TaskStatus } from "model/format/status";
 import { DateTime, Later, Time } from "model/time";
 import { isValidNtfyTopic } from "model/ntfy";
-import type {
-  TaskNotesDoneBehavior,
-  TaskNotesPropertyNames,
-} from "model/tasknotes";
+import type { TaskNotesPropertyNames } from "model/tasknotes";
 import {
   LANGUAGE_SETTINGS,
   type LanguageSetting,
@@ -104,7 +101,6 @@ export class Settings {
   ntfyTopic: SettingModel<string, string>;
   ntfyAccessToken: SettingModel<string, string>;
   taskNotesEnabled: SettingModel<boolean, boolean>;
-  taskNotesDoneBehavior: SettingModel<string, TaskNotesDoneBehavior>;
   taskNotesIdentificationMode: SettingModel<string, string>;
   taskNotesTag: SettingModel<string, string>;
   taskNotesIdentificationProperty: SettingModel<string, string>;
@@ -677,20 +673,6 @@ export class Settings {
         }
       })
       .build(new RawSerde());
-    this.taskNotesDoneBehavior = this.settings
-      .newSettingBuilder()
-      .key("taskNotesDoneBehavior")
-      .name("Done button behavior")
-      .desc(
-        "Choose whether Done opens the TaskNotes task edit modal without writing to the note, or updates its configured status property to a completed status.",
-      )
-      .dropdown("open-task-modal")
-      .addOption("Open TaskNotes edit modal (do not write)", "open-task-modal")
-      .addOption(
-        "Write completed status to task note",
-        "write-completed-status",
-      )
-      .build(new RawSerde<TaskNotesDoneBehavior>());
     const taskNotesIdentificationMode = this.settings
       .newSettingBuilder()
       .key("taskNotesIdentificationMode")
@@ -869,7 +851,6 @@ export class Settings {
       .newGroup()
       .addSettings(
         this.taskNotesEnabled,
-        this.taskNotesDoneBehavior,
         this.taskNotesIdentificationMode,
         this.taskNotesTag,
         this.taskNotesIdentificationProperty,
