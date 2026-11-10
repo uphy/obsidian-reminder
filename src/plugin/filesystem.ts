@@ -15,6 +15,11 @@ export class ReminderPluginFileSystem {
 
   onload(plugin: ReminderPlugin) {
     [
+      this.vault.on("create", async (file) => {
+        if (await this.reloadRemindersInFile(file)) {
+          this.onRemindersChanged();
+        }
+      }),
       this.vault.on("modify", async (file) => {
         if (await this.reloadRemindersInFile(file)) {
           this.onRemindersChanged();
