@@ -214,6 +214,7 @@ export const zhCN: Record<string, string> = {
   "Over 1 week": "一周以后",
   "No reminders": "没有提醒",
   Done: "完成",
+  Open: "打开",
   Mute: "忽略",
   Snooze: "稍后提醒",
   Close: "关闭",

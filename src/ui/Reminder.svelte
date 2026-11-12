@@ -42,7 +42,8 @@
   // letter (Alt+D / Alt+M / Alt+S), so the underlined letter is only shown
   // when the label still starts with it; a translation into a language
   // without that chord renders the plain label.
-  const doneLabel = t("Done");
+  const isTaskNotes = reminder.source === "tasknotes";
+  const doneLabel = t(isTaskNotes ? "Open" : "Done");
   const muteLabel = t("Mute");
   const showDoneMnemonic = doneLabel.toUpperCase().startsWith("D");
   const showMuteMnemonic = muteLabel.toUpperCase().startsWith("M");
