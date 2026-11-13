@@ -2,7 +2,7 @@ import { t } from "i18n";
 import { OkCancel, showOkCancelDialog } from "plugin/ui/util";
 import type ReminderPlugin from "main";
 import { Content } from "model/content";
-import { openDateTimeFormatChooser } from "plugin/ui/datetime-format-modal";
+import { openDateTimeFormatChooser } from "plugin/ui/modals/datetime-format-modal";
 
 async function convertDateTimeFormat(
   plugin: ReminderPlugin,

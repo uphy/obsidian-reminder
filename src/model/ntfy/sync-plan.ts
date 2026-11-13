@@ -117,14 +117,14 @@ export function computeNtfySyncPlan(
   // fire.
   const reminderAtSecondsBySequenceId = new Map<string, number>();
   for (const reminder of reminders) {
-    const atMillis = reminder.time.getTimeInMillis(defaultTime);
+    const atMillis = reminder.effectiveTime.getTimeInMillis(defaultTime);
     const sequenceId = sequenceIds.get(reminder)!;
     reminderAtSecondsBySequenceId.set(sequenceId, Math.floor(atMillis / 1000));
   }
 
   const targets = new Map<string, NtfyPublishAction>();
   for (const reminder of reminders) {
-    const atMillis = reminder.time.getTimeInMillis(defaultTime);
+    const atMillis = reminder.effectiveTime.getTimeInMillis(defaultTime);
     // Strictly more than `minLeadSeconds` away (already-expired or
     // about-to-expire reminders are excluded) and at most `horizonSeconds`
     // away (inclusive of the boundary itself).

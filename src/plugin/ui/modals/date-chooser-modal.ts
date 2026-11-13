@@ -1,0 +1,78 @@
+import "plugin/ui/date-chooser-modal.css";
+import type { Reminders } from "model/reminders";
+import type { DateTime } from "model/time";
+import { App, Modal, Platform } from "obsidian";
+import DateTimeChooser from "ui/datetime/DateTimeChooser.svelte";
+
+class DateTimeChooserModal extends Modal {
+  private selected?: DateTime;
+
+  constructor(
+    app: App,
+    private reminders: Reminders,
+    private onSelect: (value: DateTime) => void,
+    private onCancel: () => void,
+    private timeStep: number,
+    private weekStart: number,
+    private initialTime?: DateTime,
+  ) {
+    super(app);
+  }
+
+  override onOpen() {
+    let targetElement: HTMLElement;
+    if (Platform.isDesktop) {
+      this.modalEl.addClass("reminder-date-chooser-modal");
+      targetElement = this.contentEl;
+    } else {
+      targetElement = this.containerEl;
+    }
+
+    new DateTimeChooser({
+      target: targetElement,
+      props: {
+        onSelect: (time: DateTime) => {
+          this.select(time);
+        },
+        reminders: this.reminders,
+        timeStep: this.timeStep,
+        weekStart: this.weekStart,
+        initialTime: this.initialTime,
+      },
+    });
+  }
+
+  private select(time: DateTime) {
+    this.selected = time;
+    this.close();
+  }
+
+  override onClose() {
+    if (this.selected != null) {
+      this.onSelect(this.selected);
+    } else {
+      this.onCancel();
+    }
+  }
+}
+
+export function showDateTimeChooserModal(
+  app: App,
+  reminders: Reminders,
+  timeStep: number = 15,
+  weekStart: number = 0,
+  initialTime?: DateTime,
+): Promise<DateTime> {
+  return new Promise((resolve, reject) => {
+    const modal = new DateTimeChooserModal(
+      app,
+      reminders,
+      resolve,
+      reject,
+      timeStep,
+      weekStart,
+      initialTime,
+    );
+    modal.open();
+  });
+}

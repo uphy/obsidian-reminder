@@ -24,6 +24,13 @@
   opacity: 0.5;
 }
 
+.reminder-settings-collapsible-group > summary {
+  color: var(--text-normal);
+  cursor: pointer;
+  font-weight: 600;
+  margin: 0.75rem 0;
+}
+
 /* Validation and info lines appended under a setting's description. Both are
    hidden until they have text; see SettingContext.setText(). */
 .reminder-setting-validation,

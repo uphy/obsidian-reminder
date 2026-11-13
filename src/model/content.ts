@@ -43,6 +43,9 @@ export class Content {
   }
 
   private async modifyReminderLine(reminder: Reminder, edit: ReminderTodoEdit) {
+    if (reminder.source === "tasknotes") {
+      throw new Error("TaskNotes reminders are read-only.");
+    }
     const modified = await modifyReminder(this.doc, reminder, edit);
     if (modified) {
       console.debug("Reminder was updated: reminder=%o", reminder);

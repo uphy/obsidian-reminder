@@ -7,8 +7,9 @@
  *
  * @module plugin
  */
-export { NotificationWorker } from "./notification-worker";
-export { NtfyController } from "./ntfy";
+export { NotificationWorker } from "./core/notification-worker";
+export { NtfyController } from "./ntfy/controller";
 export { ReminderPluginUI } from "./ui";
-export { ReminderPluginFileSystem } from "./filesystem";
-export { PluginData } from "./data";
+export { ReminderPluginFileSystem } from "./core/filesystem";
+export { PluginData } from "./core/data";
+export { TaskNotesIntegration } from "./tasknotes/integration";

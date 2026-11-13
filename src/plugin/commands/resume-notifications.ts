@@ -1,7 +1,7 @@
 import type ReminderPlugin from "main";
 import { isNotificationPaused } from "model/dnd";
 import { DateTime } from "model/time";
-import { resumeNotifications as clearDnd } from "plugin/dnd";
+import { resumeNotifications as clearDnd } from "plugin/core/dnd";
 
 export function resumeNotifications(
   checking: boolean,

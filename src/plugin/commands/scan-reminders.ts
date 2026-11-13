@@ -9,6 +9,6 @@ export function scanReminders(
   }
   // The command's check callback must return synchronously; the reload
   // itself is intentionally fire-and-forget here.
-  void plugin.fileSystem.reloadRemindersInAllFiles();
+  void plugin.reloadRemindersInAllFiles();
   return true;
 }

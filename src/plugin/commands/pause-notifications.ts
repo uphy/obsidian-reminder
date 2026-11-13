@@ -1,5 +1,5 @@
 import type ReminderPlugin from "main";
-import { showPauseDurationChooser } from "plugin/dnd";
+import { showPauseDurationChooser } from "plugin/core/dnd";
 
 export function pauseNotifications(
   checking: boolean,

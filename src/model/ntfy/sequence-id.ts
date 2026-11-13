@@ -86,7 +86,12 @@ export function assignSequenceIds(
     if (a.file !== b.file) {
       return a.file < b.file ? -1 : 1;
     }
-    return a.rowNumber - b.rowNumber;
+    if (a.rowNumber !== b.rowNumber) {
+      return a.rowNumber - b.rowNumber;
+    }
+    const aReminderId = a.tasknotes?.reminderId ?? "";
+    const bReminderId = b.tasknotes?.reminderId ?? "";
+    return aReminderId < bReminderId ? -1 : aReminderId > bReminderId ? 1 : 0;
   });
 
   const nextIndexByKey = new Map<string, number>();

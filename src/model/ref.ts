@@ -1,4 +1,4 @@
-type OnChangeFunction = <T>(oldValue: T, newValue: T) => void;
+type OnChangeFunction<T> = (oldValue: T, newValue: T) => void;
 
 export interface ReadOnlyReference<T> {
   get value(): T;
@@ -13,10 +13,10 @@ export class ConstantReference<T> implements ReadOnlyReference<T> {
 }
 
 export class Reference<T> implements ReadOnlyReference<T> {
-  private onChangeFunctions: Array<OnChangeFunction> = [];
+  private onChangeFunctions: Array<OnChangeFunction<T>> = [];
   constructor(private _value: T) {}
 
-  public onChanged(listener: OnChangeFunction) {
+  public onChanged(listener: OnChangeFunction<T>) {
     this.onChangeFunctions.push(listener);
   }
 

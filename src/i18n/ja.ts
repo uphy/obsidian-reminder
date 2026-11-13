@@ -229,6 +229,7 @@ export const ja: Record<string, string> = {
   "Over 1 week": "1週間より先",
   "No reminders": "リマインダーはありません",
   Done: "完了",
+  Open: "開く",
   Mute: "ミュート",
   Snooze: "スヌーズ",
   Close: "閉じる",
