@@ -1,7 +1,7 @@
 import type {
   TaskNotesIdentificationMode,
   TaskNotesPropertyNames,
-} from "./index";
+} from "./types";
 
 export interface ImportedTaskNotesSettings {
   identificationMode: TaskNotesIdentificationMode;

@@ -7,7 +7,7 @@ export function muteAllReminders(
   plugin: ReminderPlugin,
 ): boolean {
   const expired = plugin.reminders.getExpiredReminders(
-    plugin.settings.reminderTime.value,
+    plugin.settings.notifications.reminderTime.value,
   );
   // Only available when the command would actually mute something: if every
   // expired reminder is already muted, running it would just report

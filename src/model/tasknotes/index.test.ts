@@ -1,7 +1,7 @@
 import { moment } from "model/moment";
 import { DateTime } from "model/time";
+import type { TaskNotesContext, TaskNotesOptions } from "./types";
 import { DEFAULT_TASKNOTES_PROPERTIES, extractReminders } from "./index";
-import type { TaskNotesContext, TaskNotesOptions } from "./index";
 
 const defaultOptions: TaskNotesOptions = {
   identificationMode: "tag",

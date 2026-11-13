@@ -1,7 +1,9 @@
 import { moment } from "model/moment";
 import { DateTime, Time } from "./time";
-import { Reminder, Reminders, groupReminders } from "./reminder";
-import type { DateDisplayFormat, GroupedReminder } from "./reminder";
+import { Reminder } from "./reminder";
+import { Reminders } from "./reminders";
+import { groupReminders } from "./reminder-grouping";
+import type { DateDisplayFormat, GroupedReminder } from "./reminder-grouping";
 
 describe("Reminder", (): void => {
   test("key() keeps the exact markdown reminder key format", (): void => {

@@ -4,8 +4,8 @@
  * The `obsidian` npm package only ships type definitions (`"main": ""`), so
  * anything that imports it cannot be loaded by jest at all. Most of the
  * plugin sidesteps this by keeping its testable logic free of `obsidian`
- * imports, but `plugin/settings/helper.ts` needs the real `Setting` UI class
- * and is pulled in transitively by `plugin/data.ts`.
+ * imports, but `plugin/settings/setting-model.ts` needs the real `Setting` UI
+ * class and is pulled in transitively by `plugin/core/data.ts`.
  *
  * Only the classes reachable at import time are declared here, as empty
  * classes: no test constructs them, they just have to exist so the module

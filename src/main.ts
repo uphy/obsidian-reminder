@@ -7,7 +7,7 @@ import {
   TaskNotesIntegration,
 } from "plugin";
 import { isNotificationPaused } from "model/dnd";
-import { Reminders } from "model/reminder";
+import { Reminders } from "model/reminders";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
 import { setSeededTaskStatuses } from "plugin/settings";
@@ -56,7 +56,7 @@ export default class ReminderPlugin extends Plugin {
     // in `onload()` already use the right language. `applyLanguage()` runs
     // again once the persisted settings are loaded.
     this.settings.applyLanguage();
-    this.reminders.reminderTime = this.settings.reminderTime;
+    this.reminders.reminderTime = this.settings.notifications.reminderTime;
     DATE_TIME_FORMATTER.setTimeFormat(
       this.settings.dateFormat,
       this.settings.dateTimeFormat,
@@ -82,7 +82,7 @@ export default class ReminderPlugin extends Plugin {
       // unknown popup style value falls back to the previous, conservative
       // (intrusive) behavior.
       isPopupIntrusive: () =>
-        this.settings.notificationPopupStyle.value !== "toast",
+        this.settings.notifications.notificationPopupStyle.value !== "toast",
       showReminder: (reminder) => this.ui.showReminder(reminder),
       isScanned: () => this.data.scanned.value,
       markScanned: () => {
@@ -96,19 +96,22 @@ export default class ReminderPlugin extends Plugin {
       reloadRemindersInAllFiles: () =>
         this.fileSystem.reloadRemindersInAllFiles(),
       getExpiredReminders: () =>
-        this.reminders.getExpiredReminders(this.settings.reminderTime.value),
+        this.reminders.getExpiredReminders(
+          this.settings.notifications.reminderTime.value,
+        ),
       checkIntervalSec: () => this.settings.reminderCheckIntervalSec.value,
-      isNotificationEnabled: () => this.settings.enableNotification.value,
+      isNotificationEnabled: () =>
+        this.settings.notifications.enableNotification.value,
       isNotificationPaused: () =>
         isNotificationPaused(this.data.dndUntil.value, DateTime.now()),
     });
     this._ntfyController = new NtfyController({
-      isEnabled: () => this.settings.ntfyEnabled.value,
-      serverUrl: () => this.settings.ntfyServerUrl.value,
-      topic: () => this.settings.ntfyTopic.value,
-      accessToken: () => this.settings.ntfyAccessToken.value,
+      isEnabled: () => this.settings.ntfy.enabled.value,
+      serverUrl: () => this.settings.ntfy.serverUrl.value,
+      topic: () => this.settings.ntfy.topic.value,
+      accessToken: () => this.settings.ntfy.accessToken.value,
       reminders: () => this.reminders.reminders,
-      defaultTime: () => this.settings.reminderTime.value,
+      defaultTime: () => this.settings.notifications.reminderTime.value,
       vaultName: () => this.app.vault.getName(),
       registerInterval: (id) => this.registerInterval(id),
       // `throw: false` so an HTTP error status comes back as a response the
@@ -125,10 +128,10 @@ export default class ReminderPlugin extends Plugin {
     // `NtfyController.notifySettingsChanged()` for why this is debounced
     // rather than syncing immediately.
     for (const setting of [
-      this.settings.ntfyEnabled,
-      this.settings.ntfyServerUrl,
-      this.settings.ntfyTopic,
-      this.settings.ntfyAccessToken,
+      this.settings.ntfy.enabled,
+      this.settings.ntfy.serverUrl,
+      this.settings.ntfy.topic,
+      this.settings.ntfy.accessToken,
     ]) {
       setting.rawValue.onChanged(() => {
         this._ntfyController.notifySettingsChanged();

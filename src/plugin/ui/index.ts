@@ -14,27 +14,27 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { refreshCommandNames, registerCommands } from "plugin/commands";
-import { showPauseDurationChooser } from "plugin/dnd";
+import { showPauseDurationChooser } from "plugin/core/dnd";
 import { rebuildMarkdownViews } from "plugin/obsidian-hack/leaf";
 import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
-import { DndStatusBar } from "./dnd-status-bar";
+import { DndStatusBar } from "./status-bar/dnd-status-bar";
 import { findLeafShowingFile } from "./find-leaf-showing-file";
-import { OverdueStatusBar } from "./overdue-status-bar";
-import { ReminderListItemViewProxy } from "./reminder-list";
-import { AutoComplete } from "./autocomplete";
-import type { AutoCompletableEditor } from "./autocomplete";
-import { buildCodeMirrorPlugin } from "./editor-extension";
+import { OverdueStatusBar } from "./status-bar/overdue-status-bar";
+import { ReminderListItemViewProxy } from "./views/reminder-list";
+import { AutoComplete } from "./editor/autocomplete";
+import type { AutoCompletableEditor } from "./editor/autocomplete";
+import { buildCodeMirrorPlugin } from "./editor/editor-extension";
 import {
   createReminderPillExtension,
   createRenderedBlockPillPostProcessor,
-} from "./editor-reminder-display";
+} from "./editor/editor-reminder-display";
 import {
   createReminderLineHighlightExtension,
   highlightReminderLine,
-} from "./reminder-line-highlight";
-import type { ReminderActions } from "./reminder-actions";
-import { ReminderNotifier } from "./reminder-notifier";
+} from "./editor/reminder-line-highlight";
+import type { ReminderActions } from "./notifications/reminder-actions";
+import { ReminderNotifier } from "./notifications/reminder-notifier";
 
 export class ReminderPluginUI {
   private autoComplete: AutoComplete;
@@ -51,7 +51,7 @@ export class ReminderPluginUI {
       // On select a reminder in the list
       (reminder) => {
         if (
-          !this.plugin.settings.openNoteOnReminderClick.value &&
+          !this.plugin.settings.notifications.openNoteOnReminderClick.value &&
           reminder.muteNotification
         ) {
           this.showReminder(reminder);
@@ -62,22 +62,22 @@ export class ReminderPluginUI {
       },
     );
     this.autoComplete = new AutoComplete(
-      plugin.settings.autoCompleteTrigger,
-      plugin.settings.reminderTimeStep,
-      plugin.settings.primaryFormat,
-      plugin.settings.convertNonTaskLines,
+      plugin.settings.editor.autoCompleteTrigger,
+      plugin.settings.notifications.reminderTimeStep,
+      plugin.settings.editor.primaryFormat,
+      plugin.settings.editor.convertNonTaskLines,
       plugin.settings.weekStart,
     );
     this.editDetector = new EditDetector(plugin.settings.editDetectionSec);
     this.reminderNotifier = new ReminderNotifier(
       plugin.app,
-      plugin.settings.useSystemNotification,
-      plugin.settings.laters,
-      plugin.settings.openNoteOnReminderClick,
-      plugin.settings.showPopupWithSystemNotification,
-      plugin.settings.keepSystemNotificationOnScreen,
-      plugin.settings.focusDoneButtonOnPopup,
-      plugin.settings.notificationPopupStyle,
+      plugin.settings.notifications.useSystemNotification,
+      plugin.settings.notifications.laters,
+      plugin.settings.notifications.openNoteOnReminderClick,
+      plugin.settings.notifications.showPopupWithSystemNotification,
+      plugin.settings.notifications.keepSystemNotificationOnScreen,
+      plugin.settings.notifications.focusDoneButtonOnPopup,
+      plugin.settings.notifications.notificationPopupStyle,
     );
     this.dndStatusBar = new DndStatusBar(plugin);
     this.overdueStatusBar = new OverdueStatusBar(plugin);
@@ -378,7 +378,7 @@ export class ReminderPluginUI {
 
   muteExpiredReminders(currentReminder?: Reminder): number {
     const expired = this.plugin.reminders.getExpiredReminders(
-      this.plugin.settings.reminderTime.value,
+      this.plugin.settings.notifications.reminderTime.value,
     );
     const newlyMuted = expired.filter((reminder) => !reminder.muteNotification);
     newlyMuted.forEach((reminder) => {
