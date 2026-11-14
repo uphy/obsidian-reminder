@@ -8,7 +8,7 @@ function clamp(value: number, min: number, max: number): number {
 
 /**
  * Converts parser-provided `ReminderSpan`s (line-relative UTF-16 columns,
- * addressed by `reminder.rowNumber`) into absolute `[from, to)` positions
+ * addressed by `reminder.row()`) into absolute `[from, to)` positions
  * within the given CodeMirror document.
  *
  * Spans whose row no longer exists (stale parse against a shorter document)
@@ -22,7 +22,11 @@ export function deriveReminderPillSpans(
 ): ReminderPillSpan[] {
   const spans: ReminderPillSpan[] = [];
   for (const { reminder, columnStart, columnEnd } of reminderSpans) {
-    const lineNumber = reminder.rowNumber + 1; // CM6 lines are 1-based.
+    const row = reminder.row();
+    if (row === undefined) {
+      continue;
+    }
+    const lineNumber = row + 1; // CM6 lines are 1-based.
     if (lineNumber < 1 || lineNumber > doc.lines) {
       continue;
     }

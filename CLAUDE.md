@@ -32,7 +32,7 @@ npx jest -t "parse - link dates to daily notes"
 
 The entry point is `src/main.ts` (`ReminderPlugin`). `src/` is organized into three layers.
 
-- `src/model/` — Domain logic with no dependency on the Obsidian API: `Reminder`/`Reminders` (`model/reminder.ts`), date/time handling via `DateTime`/`Time` (`model/time.ts`), and the reminder-syntax parsers for Markdown (`model/format/`). Most jest unit tests live here, because it never imports the `obsidian` module and so needs nothing else in place.
+- `src/model/` — Domain logic with no dependency on the Obsidian API: `Reminder`/`Reminders` (`model/reminder.ts`), date/time handling via `DateTime`/`Time` (`model/time.ts`), the reminder-syntax parsers for Markdown (`model/format/`), and note reminders — reminders read from a note's frontmatter properties (`model/note/`). Most jest unit tests live here, because it never imports the `obsidian` module and so needs nothing else in place.
 - `src/plugin/` — The plugin body, which depends on the Obsidian API. Bundles file watching, notifications, settings, and command registration (`plugin/index.ts` is the export entry point).
 - `src/ui/` — Svelte components (`ui/*.svelte`) and the TS that supports them (e.g. calendar calculations). The Obsidian Modal/View code in `src/plugin/ui/` mounts the Svelte components.
 
@@ -40,9 +40,10 @@ Flow from reminder parsing to notification:
 1. `src/plugin/filesystem.ts` (`ReminderPluginFileSystem`) watches the vault's modify/delete/rename events.
 2. Changed files are passed to `src/model/content.ts` (`Content`), and `getReminders()` calls `parseReminder()` in `model/format/index.ts`.
 3. `parseReminder()` goes through `CompositeReminderFormat` (`model/format/reminder-base.ts`), trying each enabled format in turn (the default format `reminder-default.ts`, the Tasks plugin format `reminder-tasks-plugin.ts`, the Kanban plugin format `reminder-kanban-plugin.ts`) to build an array of `Reminder`.
-4. The result is stored in `Reminders` in `model/reminder.ts`, and a callback in `main.ts` notifies the UI whenever it changes.
-5. `src/plugin/notification-worker.ts` (`NotificationWorker`) runs periodically via `registerInterval`, detects expired reminders with `Reminders.getExpiredReminders()`, and displays them through `ReminderPluginUI.showReminder()` in `plugin/ui/index.ts` → `ReminderModal` in `plugin/ui/reminder.ts` (which internally uses `ui/Reminder.svelte`).
-6. The reminder list is shown by a custom View in `plugin/ui/reminder-list.ts` (`ui/ReminderList.svelte`, etc).
+4. In the same reload, `filesystem.ts` passes the file's text to `NoteReminderService` (`src/plugin/note-reminders.ts`), which parses the frontmatter and asks the note reminder formats in `model/note/` for the pending note reminders (properties listed in the "Note reminders" settings). Line reminders and note reminders are merged into one `Reminders.replaceFile()` call per file. A `Reminder` says which kind it is through its `origin` (a line with a row, or a note with a format and key).
+5. The result is stored in `Reminders` in `model/reminder.ts`, and a callback in `main.ts` notifies the UI whenever it changes.
+6. `src/plugin/notification-worker.ts` (`NotificationWorker`) runs periodically via `registerInterval`, detects expired reminders with `Reminders.getExpiredReminders()`, and displays them through `ReminderPluginUI.showReminder()` in `plugin/ui/index.ts` → `ReminderModal` in `plugin/ui/reminder.ts` (which internally uses `ui/Reminder.svelte`). "Done" and "Remind me later" rewrite the task line for a line reminder; for a note reminder they go through `NoteReminderService.apply()`, which writes the frontmatter with `FileManager.processFrontMatter` and writes nothing when the note no longer holds the time the notification was shown for.
+7. The reminder list is shown by a custom View in `plugin/ui/reminder-list.ts` (`ui/ReminderList.svelte`, etc).
 
 Settings are declared by `Settings` in `src/plugin/settings/index.ts` using a builder DSL called `SettingTabModel` (`plugin/settings/helper.ts`), and persisted by `PluginData` in `src/plugin/data.ts` via `loadData`/`saveData`.
 

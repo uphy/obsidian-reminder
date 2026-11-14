@@ -1,6 +1,6 @@
 import { Reminder } from "model/reminder";
 import { DateTime, Time } from "model/time";
-import { computeSequenceId } from "./sequence-id";
+import { computeNoteSequenceId, computeSequenceId } from "./sequence-id";
 import { computeNtfySyncPlan, selectOwnPendingSequenceIds } from "./sync-plan";
 import type { NtfyPendingServerEntry } from "./sync-plan";
 
@@ -13,7 +13,7 @@ function reminderIn(
   file: string = "Todo.md",
   rowNumber: number = 0,
 ): Reminder {
-  return new Reminder(
+  return Reminder.ofLine(
     file,
     title,
     DateTime.ofEpochMillis(NOW.getTimeInMillis() + seconds * 1000),
@@ -221,7 +221,7 @@ describe("computeNtfySyncPlan()", (): void => {
   test("uses the default reminder time for date-only reminders", (): void => {
     // A date-only reminder (no time part) falls back to `defaultTime`, same
     // as `Reminder.isExpired()`/`Reminders.getExpiredReminders()`.
-    const dateOnly = new Reminder(
+    const dateOnly = Reminder.ofLine(
       "Todo.md",
       "Date only",
       DateTime.parse(NOW.toYYYYMMDD()),
@@ -372,5 +372,91 @@ describe("selectOwnPendingSequenceIds()", (): void => {
 
   test("returns an empty array when nothing is pending", (): void => {
     expect(selectOwnPendingSequenceIds([])).toStrictEqual([]);
+  });
+});
+
+describe("computeNtfySyncPlan() with note reminders", (): void => {
+  const noteId = computeNoteSequenceId("a.md", "property", "follow-up", "a");
+
+  function noteReminderIn(seconds: number, title: string = "a"): Reminder {
+    return Reminder.ofNote(
+      "a.md",
+      title,
+      DateTime.ofEpochMillis(NOW.getTimeInMillis() + seconds * 1000),
+      {
+        kind: "note",
+        format: "property",
+        key: "follow-up",
+        label: "follow-up",
+      },
+    );
+  }
+
+  test("publishes a note reminder under its own kind of ID", (): void => {
+    const plan = computeNtfySyncPlan({
+      reminders: [noteReminderIn(60)],
+      serverPending: [],
+      now: NOW,
+      ownsNoteReminderIds: true,
+    });
+    expect(plan.publish.map((p) => p.sequenceId)).toStrictEqual([noteId]);
+  });
+
+  test("a device with sources deletes an orphaned note reminder message", (): void => {
+    const plan = computeNtfySyncPlan({
+      reminders: [],
+      serverPending: [{ sequenceId: noteId, atSeconds: NOW_SECONDS + 60 }],
+      serverDelivered: [{ sequenceId: "obrn-x", atSeconds: NOW_SECONDS - 60 }],
+      now: NOW,
+      ownsNoteReminderIds: true,
+    });
+    expect(plan.delete.map((d) => d.sequenceId)).toStrictEqual([
+      noteId,
+      "obrn-x",
+    ]);
+  });
+
+  test("a device without sources leaves note reminder messages alone", (): void => {
+    const plan = computeNtfySyncPlan({
+      reminders: [],
+      serverPending: [{ sequenceId: noteId, atSeconds: NOW_SECONDS + 60 }],
+      serverDelivered: [{ sequenceId: "obrn-x", atSeconds: NOW_SECONDS - 60 }],
+      now: NOW,
+    });
+    expect(plan.delete).toHaveLength(0);
+  });
+
+  test("a snooze republishes under the same ID without a delete", (): void => {
+    const plan = computeNtfySyncPlan({
+      reminders: [noteReminderIn(1800)],
+      serverPending: [{ sequenceId: noteId, atSeconds: NOW_SECONDS + 60 }],
+      now: NOW,
+      ownsNoteReminderIds: true,
+    });
+    expect(plan.publish.map((p) => p.sequenceId)).toStrictEqual([noteId]);
+    expect(plan.delete).toHaveLength(0);
+  });
+
+  test("a new title publishes a new message and deletes the old one", (): void => {
+    const plan = computeNtfySyncPlan({
+      reminders: [noteReminderIn(60, "renamed")],
+      serverPending: [{ sequenceId: noteId, atSeconds: NOW_SECONDS + 60 }],
+      now: NOW,
+      ownsNoteReminderIds: true,
+    });
+    expect(plan.publish.map((p) => p.sequenceId)).toStrictEqual([
+      computeNoteSequenceId("a.md", "property", "follow-up", "renamed"),
+    ]);
+    expect(plan.delete.map((d) => d.sequenceId)).toStrictEqual([noteId]);
+  });
+
+  test("disabling ntfy cleans up note reminder messages too", (): void => {
+    expect(
+      selectOwnPendingSequenceIds([
+        { sequenceId: "obr-a", atSeconds: 1 },
+        { sequenceId: noteId, atSeconds: 1 },
+        { sequenceId: "someone-else", atSeconds: 1 },
+      ]),
+    ).toStrictEqual(["obr-a", noteId]);
   });
 });

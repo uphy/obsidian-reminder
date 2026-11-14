@@ -1,7 +1,12 @@
-import { onLanguageChange, tn } from "i18n";
+import { onLanguageChange, t, tn } from "i18n";
 import type ReminderPlugin from "main";
+import { noteNameOf } from "model/note/reader";
+import { DONE_SUFFIX } from "model/note/sources";
+import type { NoteReminderAction } from "model/note/format";
+import { snoozeTimeFor } from "model/note/value";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
+import { DateTime } from "model/time";
 import {
   App,
   Editor,
@@ -13,12 +18,20 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { refreshCommandNames, registerCommands } from "plugin/commands";
+import type { WriteResult } from "plugin/note-reminders";
 import { showPauseDurationChooser } from "plugin/dnd";
 import { rebuildMarkdownViews } from "plugin/obsidian-hack/leaf";
 import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { DndStatusBar } from "./dnd-status-bar";
 import { findLeafShowingFile } from "./find-leaf-showing-file";
+import { NoteReminderIndicator } from "./note-reminder-indicator";
+import {
+  canSetNoteReminder,
+  closeNoteReminderModals,
+  hasNoteReminder,
+  openNoteReminderModal,
+} from "./note-reminder-modal";
 import { OverdueStatusBar } from "./overdue-status-bar";
 import { ReminderListItemViewProxy } from "./reminder-list";
 import { AutoComplete } from "./autocomplete";
@@ -42,6 +55,7 @@ export class ReminderPluginUI {
   private viewProxy: ReminderListItemViewProxy;
   private dndStatusBar: DndStatusBar;
   private overdueStatusBar: OverdueStatusBar;
+  private noteReminderIndicator: NoteReminderIndicator;
   // Kept so a language change can re-render the open settings tab.
   private settingTab?: ReminderSettingTab;
   constructor(private plugin: ReminderPlugin) {
@@ -80,11 +94,38 @@ export class ReminderPluginUI {
     );
     this.dndStatusBar = new DndStatusBar(plugin);
     this.overdueStatusBar = new OverdueStatusBar(plugin);
+    this.noteReminderIndicator = new NoteReminderIndicator(plugin);
   }
 
   onload() {
     this.dndStatusBar.onload();
     this.overdueStatusBar.onload();
+    this.noteReminderIndicator.onload();
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("file-menu", (menu, file) => {
+        if (
+          !(file instanceof TFile) ||
+          !canSetNoteReminder(this.plugin, file)
+        ) {
+          return;
+        }
+        // Built each time the menu opens, so it can say which of the two
+        // the dialog will do for this note.
+        const edit = hasNoteReminder(this.plugin, file);
+        menu.addItem((item) => {
+          item
+            .setTitle(
+              edit
+                ? t("Edit this note's reminder")
+                : t("Set reminder for this note"),
+            )
+            .setIcon(edit ? "bell" : "bell-plus")
+            .onClick(() => {
+              openNoteReminderModal(this.plugin, file);
+            });
+        });
+      }),
+    );
 
     // Reminder List
     this.plugin.registerView(VIEW_TYPE_REMINDER_LIST, (leaf: WorkspaceLeaf) => {
@@ -158,6 +199,7 @@ export class ReminderPluginUI {
   onunload() {
     this.detachReminderList();
     this.reminderNotifier.destroy();
+    closeNoteReminderModals();
   }
 
   isEditing(): boolean {
@@ -185,6 +227,7 @@ export class ReminderPluginUI {
       }, 0);
     }
     this.overdueStatusBar.refresh();
+    this.noteReminderIndicator.refresh();
     this.dndStatusBar.refresh();
     if (Platform.isDesktopApp) {
       // The pills are editor widgets whose `eq()` compares only what is
@@ -203,6 +246,7 @@ export class ReminderPluginUI {
   invalidate() {
     this.viewProxy.invalidate();
     this.overdueStatusBar.refresh();
+    this.noteReminderIndicator.refresh();
     this.reminderNotifier.sync(
       new Set(
         this.plugin.reminders.reminders.map((reminder) => reminder.key()),
@@ -213,6 +257,12 @@ export class ReminderPluginUI {
   reload(force: boolean = false) {
     this.viewProxy.reload(force);
     this.overdueStatusBar.refresh();
+    if (force) {
+      // A full rescan ends here without `invalidate()` when no reminder
+      // changed, and a source's "Managed" flag changes which notes get a
+      // bell without changing any reminder.
+      this.noteReminderIndicator.refresh();
+    }
   }
 
   showAutoComplete(editor: AutoCompletableEditor) {
@@ -281,23 +331,28 @@ export class ReminderPluginUI {
     if (!(leaf.view instanceof MarkdownView)) {
       return;
     }
+    const row = reminder.row();
+    if (row === undefined) {
+      // A note reminder has no line to jump to; opening the note is enough.
+      return;
+    }
     const editor = leaf.view.editor;
     // A reused tab that was deferred (not yet loaded) gets its content a
     // moment after `revealLeaf` resolves; until then the editor is empty.
-    if (!(await waitForLine(editor, reminder.rowNumber))) {
+    if (!(await waitForLine(editor, row))) {
       console.warn("Reminder line is not in the editor: %o", reminder);
       return;
     }
-    const line = editor.getLine(reminder.rowNumber);
+    const line = editor.getLine(row);
     // Place the cursor on the line (no selection held) and scroll it into
     // view, matching Obsidian's own search-result jump behavior rather than
     // leaving the whole line selected (which risked the user accidentally
     // overwriting it while typing).
-    editor.setCursor({ line: reminder.rowNumber, ch: 0 });
+    editor.setCursor({ line: row, ch: 0 });
     editor.scrollIntoView(
       {
-        from: { line: reminder.rowNumber, ch: 0 },
-        to: { line: reminder.rowNumber, ch: line.length },
+        from: { line: row, ch: 0 },
+        to: { line: row, ch: line.length },
       },
       true,
     );
@@ -308,7 +363,7 @@ export class ReminderPluginUI {
     // otherwise.
     const cm = editor.cm;
     if (cm) {
-      const cmLine = cm.state.doc.line(reminder.rowNumber + 1);
+      const cmLine = cm.state.doc.line(row + 1);
       cm.dispatch({
         effects: highlightReminderLine.of({
           from: cmLine.from,
@@ -320,9 +375,27 @@ export class ReminderPluginUI {
 
   showReminder(reminder: Reminder) {
     reminder.muteNotification = true;
+    // The time this notification is shown for. An action on a note reminder
+    // carries it, so that it writes nothing when the note has moved on.
+    const shownTime = reminder.time;
     const actions: ReminderActions = {
       remindMeLater: (time) => {
         console.debug("Remind me later: time=%o", time);
+        if (reminder.isNote()) {
+          // `reminder.time` is not touched: the reload after the write
+          // replaces the reminder, and another surface showing it must keep
+          // seeing the time it was shown for.
+          this.applyToNote(reminder, {
+            type: "snooze",
+            expected: shownTime,
+            time: snoozeTimeFor(
+              shownTime,
+              time,
+              this.plugin.settings.reminderTime.value,
+            ),
+          });
+          return;
+        }
         reminder.time = time;
         reminder.muteNotification = false;
         // Callback is synchronous; both calls are fire-and-forget here.
@@ -331,6 +404,14 @@ export class ReminderPluginUI {
       },
       done: () => {
         console.debug("done");
+        if (reminder.isNote()) {
+          this.applyToNote(reminder, {
+            type: "done",
+            expected: shownTime,
+            now: DateTime.now(),
+          });
+          return;
+        }
         reminder.muteNotification = false;
         // Callback is synchronous; both calls are fire-and-forget here.
         void this.plugin.fileSystem.updateReminder(reminder, true);
@@ -399,6 +480,64 @@ export class ReminderPluginUI {
     };
     this.reminderNotifier.show(reminder, actions);
   }
+
+  /**
+   * Writes "Done" / "Remind me later" of a note reminder to its note. The
+   * reminder stays muted (it was muted when it was shown) until the write
+   * lands and the note's reload removes or moves it.
+   *
+   * - `unchanged`: the snooze chose the time the note already holds, so
+   *   nothing was written and no reload will replace the reminder. It is
+   *   unmuted, and is notified again as a line reminder in the same
+   *   situation is.
+   * - `stale` / `missing`: the note has moved on (another plugin changed the
+   *   date, another device handled it). Nothing was written; the note is
+   *   reloaded so the outdated reminder goes away.
+   * - `blocked` / `failed`: the user is told. The reminder stays muted and
+   *   overdue in the list: unmuting it would show the same notification
+   *   again within seconds, for a cause the user has to fix in the note.
+   */
+  private applyToNote(reminder: Reminder, action: NoteReminderAction) {
+    void this.plugin.noteReminders.apply(reminder, action).then((result) => {
+      if (result === "unchanged") {
+        // The note may have been reloaded while the notification was open,
+        // so `reminder` is not necessarily the object the worker looks at.
+        this.plugin.reminders.unmute(reminder);
+        return;
+      }
+      this.reportNoteWrite(reminder.file, noteKeyOf(reminder), result);
+    });
+  }
+
+  /** Tells the user about a write that did not happen; see `applyToNote`. */
+  reportNoteWrite(path: string, property: string, result: WriteResult) {
+    const note = noteNameOf(path);
+    if (result === "blocked") {
+      new Notice(
+        t(
+          '"{property}" in {file} holds a value that is not a date, so "Done" was not recorded',
+          { property: property + DONE_SUFFIX, file: note },
+        ),
+      );
+    } else if (result === "failed") {
+      new Notice(t("Could not update the reminder in {file}", { file: note }));
+    } else if (result !== "applied") {
+      const file = this.plugin.app.vault.getAbstractFileByPath(path);
+      if (file != null) {
+        void this.plugin.fileSystem
+          .reloadRemindersInFile(file)
+          .then((changed) => {
+            if (changed) {
+              this.reload(true);
+            }
+          });
+      }
+    }
+  }
+}
+
+function noteKeyOf(reminder: Reminder): string {
+  return reminder.origin.kind === "note" ? reminder.origin.key : "";
 }
 
 class EditDetector {

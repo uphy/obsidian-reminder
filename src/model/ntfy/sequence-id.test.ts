@@ -3,7 +3,9 @@ import { DateTime } from "model/time";
 import {
   NTFY_SEQUENCE_ID_PREFIX,
   assignSequenceIds,
+  computeNoteSequenceId,
   computeSequenceId,
+  isNoteReminderSequenceId,
   isObsidianReminderSequenceId,
 } from "./sequence-id";
 
@@ -12,7 +14,7 @@ function makeReminder(
   title: string,
   rowNumber: number,
 ): Reminder {
-  return new Reminder(
+  return Reminder.ofLine(
     file,
     title,
     DateTime.parse("2021-09-08 09:00"),
@@ -115,5 +117,84 @@ describe("assignSequenceIds()", (): void => {
     const ids = assignSequenceIds([r1, r2]);
     expect(ids.get(r1)).toBe(computeSequenceId("A.md", "Task 1", 0));
     expect(ids.get(r2)).toBe(computeSequenceId("A.md", "Task 2", 0));
+  });
+});
+
+function makeNoteReminder(
+  file: string,
+  key: string,
+  title: string,
+  time: string = "2021-09-08 09:00",
+): Reminder {
+  return Reminder.ofNote(file, title, DateTime.parse(time), {
+    kind: "note",
+    format: "property",
+    key,
+    label: key,
+  });
+}
+
+describe("sequence IDs of line reminders are pinned", (): void => {
+  test("the ID is the one earlier versions published under", (): void => {
+    // Scheduled messages on the server are matched by this exact string.
+    expect(computeSequenceId("Todo.md", "Task", 0)).toBe("obr-1fox7631i9b6vz");
+    expect(computeSequenceId("Todo.md", "Task", 2)).toBe(
+      "obr-1fox7631i9b6vz-2",
+    );
+  });
+});
+
+describe("computeNoteSequenceId()", (): void => {
+  test("matches ntfy's pattern and is not a line reminder ID", (): void => {
+    const id = computeNoteSequenceId(
+      "Notes/Call Alice.md",
+      "property",
+      "follow-up",
+      "Call 太郎 🥛",
+    );
+    expect(id).toMatch(/^[-_A-Za-z0-9]{1,64}$/);
+    expect(isNoteReminderSequenceId(id)).toBe(true);
+    expect(isObsidianReminderSequenceId(id)).toBe(false);
+  });
+
+  test("differs across files, formats, properties and titles", (): void => {
+    const base = computeNoteSequenceId("a.md", "property", "p", "t");
+    expect(computeNoteSequenceId("b.md", "property", "p", "t")).not.toBe(base);
+    expect(computeNoteSequenceId("a.md", "other", "p", "t")).not.toBe(base);
+    expect(computeNoteSequenceId("a.md", "property", "q", "t")).not.toBe(base);
+    expect(computeNoteSequenceId("a.md", "property", "p", "u")).not.toBe(base);
+    expect(computeNoteSequenceId("a.md", "property", "p", "t")).toBe(base);
+  });
+});
+
+describe("assignSequenceIds() with note reminders", (): void => {
+  test("a note reminder does not shift the IDs of line reminders", (): void => {
+    const first = makeReminder("Todo.md", "Task", 1);
+    const second = makeReminder("Todo.md", "Task", 5);
+    const note = makeNoteReminder("Todo.md", "follow-up", "Task");
+
+    const without = assignSequenceIds([first, second]);
+    const withNote = assignSequenceIds([note, first, second]);
+
+    expect(withNote.get(first)).toBe(without.get(first));
+    expect(withNote.get(second)).toBe(without.get(second));
+    expect(withNote.get(note)).toBe(
+      computeNoteSequenceId("Todo.md", "property", "follow-up", "Task"),
+    );
+  });
+
+  test("the ID of a note reminder survives a time change", (): void => {
+    const before = makeNoteReminder("a.md", "follow-up", "a");
+    const after = makeNoteReminder("a.md", "follow-up", "a", "2021-09-09");
+    expect(assignSequenceIds([before]).get(before)).toBe(
+      assignSequenceIds([after]).get(after),
+    );
+  });
+
+  test("two properties of one note get different IDs", (): void => {
+    const a = makeNoteReminder("a.md", "follow-up", "a");
+    const b = makeNoteReminder("a.md", "review", "a");
+    const ids = assignSequenceIds([a, b]);
+    expect(ids.get(a)).not.toBe(ids.get(b));
   });
 });

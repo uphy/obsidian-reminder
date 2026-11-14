@@ -244,6 +244,20 @@ export class Later {
   ) {}
 }
 
+/**
+ * The snooze options that can be offered for a reminder.
+ *
+ * A reminder whose value is a date without a time (`dateOnly`) is written
+ * back as a date, so only the options whose result is a whole day can be
+ * expressed; "In 30 minutes" is left out.
+ */
+export function latersFor(dateOnly: boolean, laters: Array<Later>) {
+  if (!dateOnly) {
+    return laters;
+  }
+  return laters.filter((later) => !later.later().hasTimePart);
+}
+
 export function parseLaters(laters: string): Array<Later> {
   return laters.split("\n").map((l) => parseLater(l.trim()));
 }

@@ -199,7 +199,7 @@ export abstract class TodoBasedReminderFormat<
         if (time == null) {
           return null;
         }
-        const reminder = new Reminder(
+        const reminder = Reminder.ofLine(
           doc.file,
           title,
           time,
@@ -222,7 +222,12 @@ export abstract class TodoBasedReminderFormat<
     reminder: Reminder,
     edit: ReminderEdit,
   ): Promise<boolean> {
-    const todo = doc.getTodo(reminder.rowNumber);
+    const row = reminder.row();
+    if (row === undefined) {
+      // A note reminder lives in the frontmatter; no line format edits it.
+      return false;
+    }
+    const todo = doc.getTodo(row);
     if (todo === null) {
       console.warn("Not a todo: reminder=%o", reminder);
       return false;

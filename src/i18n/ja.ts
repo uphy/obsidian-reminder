@@ -301,4 +301,55 @@ export const ja: Record<string, string> = {
   "Date and time format": "日時の書式",
   "Strict date format": "日付の書式を厳密に扱う",
   "Strictly parse the date and time": "日付と時刻を厳密に解析します",
+
+  // --- Note reminders --------------------------------------------------------
+  "Note reminders": "ノートのリマインダー",
+  "Properties to remind from": "リマインダーとして読むプロパティ",
+  'Add the name of a date or date & time property. A note with a value in it gets a reminder at that time. "Done" records the handled date in "<property>-done" and leaves the property itself alone.':
+    "日付、または日付と時刻のプロパティの名前を追加します。値が入っているノートは、その日時にリマインドされます。「完了」は済ませた日付を「<プロパティ名>-done」に記録し、元のプロパティは変更しません。",
+  Add: "追加",
+  Managed: "管理する",
+  '"Set reminder for this note" creates and edits this property. When off, the property is only read: its value is never created or removed here.':
+    "「このノートにリマインダーを設定」がこのプロパティを作成・変更します。オフのときは読むだけで、このプラグインが値を作ったり消したりすることはありません。",
+  "Values dated earlier are not read.": "これより前の日付の値は読みません。",
+  "Earlier values in the vault that are ignored: {count}.":
+    "保管庫内の、これより前の値 {count} 件は無視されます。",
+  '"{property}" already holds other values (notes: {count}), so "Done" can\'t be recorded there.':
+    "「{property}」には {count} 件のノートで別の値が入っているため、「完了」を記録できません。",
+  "Ignore dates before": "この日より前の日付を無視",
+  "Enter a property name.": "プロパティの名前を入力してください。",
+  "This property is already listed.": "このプロパティは追加済みです。",
+  "This name is used by another listed property for its done or title value.":
+    "この名前は、追加済みのプロパティが完了やタイトルの記録に使っています。",
+  Remove: "削除",
+  "Could not update the reminder in {file}":
+    "{file} のリマインダーを更新できませんでした",
+  '"{property}" in {file} holds a value that is not a date, so "Done" was not recorded':
+    "{file} の「{property}」に日付でない値が入っているため、「完了」を記録できませんでした",
+  "Property name": "プロパティの名前",
+  "Note reminder": "ノートのリマインダー",
+  "Edit this note's reminder": "このノートのリマインダーを編集",
+  "Show a bell in every note's header": "すべてのノートのヘッダーにベルを表示",
+  "A note without a reminder gets a faint bell that opens the reminder dialog. When off, the bell is shown only while a reminder is waiting.":
+    "リマインダーが無いノートには、リマインダーのダイアログを開く薄いベルを表示します。オフのときは、未完了のリマインダーがあるときだけベルを表示します。",
+  "Set a time": "時刻を指定",
+  "Set reminder for this note": "このノートにリマインダーを設定",
+  "Reminder for {note}": "{note} のリマインダー",
+  "Scheduled:": "予定:",
+  "Done:": "完了済み:",
+  "Not shown (before the cut-off):": "通知しない（無視する日付より前）:",
+  Property: "プロパティ",
+  Title: "タイトル",
+  "Remove reminder": "リマインダーを削除",
+  "Remind again": "もう一度リマインドする",
+  "Reminder: {time} ({property})": "リマインダー: {time} ({property})",
+  "“{property}” holds “{value}”, which is not a date. Change it in the note's properties before setting a reminder here.":
+    "「{property}」には日付でない値「{value}」が入っています。ノートのプロパティで直してから、ここでリマインダーを設定してください。",
+  "Note reminders are kept in a property of the note. No property is set up for this yet. Use “{property}”?":
+    "ノートのリマインダーは、ノートのプロパティに保存します。保存先のプロパティがまだ決まっていません。「{property}」を使いますか？",
+  "Use “{property}”": "「{property}」を使う",
+  "Saved, but it will not be shown: dates before {date} are ignored for “{property}” (Settings → Note reminders).":
+    "保存しましたが、通知されません。「{property}」は {date} より前の日付を無視する設定です（設定 → ノートのリマインダー）。",
+  "“{property}” can't be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on “Managed”.":
+    "「{property}」は使えません。追加済みのプロパティがその名前を使っています。設定 → ノートのリマインダーでプロパティを追加し、「管理する」をオンにしてください。",
 };

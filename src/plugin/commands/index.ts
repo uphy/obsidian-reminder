@@ -10,6 +10,7 @@ import { convertReminderTimeFormat } from "./convert-reminder-time-format";
 import { showDateChooser } from "./show-date-chooser";
 import { toggleChecklistStatus } from "./toggle-checklist-status";
 import { setDateDisplayFormat } from "./set-date-display-format";
+import { setNoteReminder } from "./set-note-reminder";
 
 /**
  * The ids of every command this plugin registers, so a language change can
@@ -26,6 +27,7 @@ const COMMAND_IDS: ReadonlyArray<string> = [
   "pause-notifications",
   "resume-notifications",
   "mute-all-reminders",
+  "set-note-reminder",
 ];
 
 export function registerCommands(plugin: ReminderPlugin) {
@@ -120,6 +122,15 @@ function addCommands(plugin: ReminderPlugin) {
     name: t("Mute all current notifications"),
     checkCallback: (checking: boolean) => {
       return muteAllReminders(checking, plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: "set-note-reminder",
+    name: t("Set reminder for this note"),
+    icon: "bell-plus",
+    checkCallback: (checking: boolean) => {
+      return setNoteReminder(checking, plugin);
     },
   });
 }

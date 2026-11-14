@@ -1,0 +1,9 @@
+/* The bell of a note with no waiting reminder: there to be clicked, not to
+   draw the eye. */
+.reminder-note-indicator.is-idle {
+  color: var(--text-faint);
+}
+
+.reminder-note-indicator.is-idle:hover {
+  color: var(--text-muted);
+}

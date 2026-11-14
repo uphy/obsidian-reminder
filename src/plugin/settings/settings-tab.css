@@ -38,3 +38,53 @@
 .reminder-setting-info {
   color: var(--text-faint);
 }
+
+.reminder-note-sources {
+  margin-left: var(--size-4-4);
+}
+
+/* One block per property, drawn as a single bordered box so it is clear
+   which settings belong to which property: a tinted title line with the
+   property's name, then its settings as plain lines inside the box. */
+.reminder-note-sources .reminder-note-source {
+  margin: var(--size-4-3) 0 var(--size-4-4);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+}
+
+.reminder-note-sources .reminder-note-source > .setting-item {
+  margin: 0;
+  border-radius: 0;
+  border-top: 1px solid var(--background-modifier-border);
+  background-color: transparent;
+  padding: var(--size-4-3) var(--size-4-4);
+}
+
+.reminder-note-sources .reminder-note-source > .reminder-note-source-title {
+  border-top: none;
+  background-color: var(--background-secondary);
+  padding-top: var(--size-4-2);
+  padding-bottom: var(--size-4-2);
+  /* The name and the remove button have different heights. */
+  align-items: center;
+}
+
+.reminder-note-source-title .setting-item-name {
+  font-weight: var(--font-semibold);
+  font-family: var(--font-monospace);
+}
+
+/* Without a warning the title line has no description; an empty one would
+   still push the name off-centre. */
+.reminder-note-source-title .setting-item-description:empty {
+  display: none;
+}
+
+.reminder-note-sources:empty {
+  display: none;
+}
+
+.reminder-note-sources-error {
+  color: var(--text-error);
+}

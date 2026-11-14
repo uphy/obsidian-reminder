@@ -11,6 +11,14 @@ export class ReminderPluginFileSystem {
     private onRemindersChanged: () => void,
     private excludedPaths: () => Array<string>,
     private dataLoaded: () => Promise<void>,
+    // Reads the note reminders (reminders kept in the note's properties) out
+    // of a note's text. They are merged with the line reminders before the
+    // single `replaceFile()` call below, because that call replaces
+    // everything stored for the file.
+    private readNoteReminders: (
+      path: string,
+      content: string,
+    ) => Array<Reminder> = () => [],
   ) {}
 
   onload(plugin: ReminderPlugin) {
@@ -65,8 +73,12 @@ export class ReminderPluginFileSystem {
       // sure those are removed so the exclusion actually hides them.
       return this.reminders.removeByFile(file.path);
     }
-    const content = new Content(file.path, await this.vault.cachedRead(file));
-    const reminders = content.getReminders();
+    const text = await this.vault.cachedRead(file);
+    const content = new Content(file.path, text);
+    const reminders = [
+      ...content.getReminders(),
+      ...this.readNoteReminders(file.path, text),
+    ];
     if (reminders.length > 0) {
       if (!this.reminders.replaceFile(file.path, reminders)) {
         return false;

@@ -4,7 +4,13 @@ import { NotificationWorker } from "./notification-worker";
 import type { NotificationWorkerDeps } from "./notification-worker";
 
 function makeReminder(title: string): Reminder {
-  return new Reminder("file.md", title, DateTime.parse("2021-09-08"), 0, false);
+  return Reminder.ofLine(
+    "file.md",
+    title,
+    DateTime.parse("2021-09-08"),
+    0,
+    false,
+  );
 }
 
 function createDeps(
