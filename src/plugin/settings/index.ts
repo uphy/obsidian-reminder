@@ -1017,10 +1017,6 @@ export class Settings {
         this.taskNotesTaskPropertyValue,
         this.taskNotesCompletedStatuses,
         this.taskNotesArchiveTag,
-      );
-    noteRemindersPage
-      .newGroup("TaskNotes property names")
-      .addSettings(
         this.taskNotesPropertyNames.reminders,
         this.taskNotesPropertyNames.due,
         this.taskNotesPropertyNames.scheduled,

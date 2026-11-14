@@ -389,7 +389,6 @@ export const ja: Record<string, string> = {
   "Archive tag": "アーカイブのタグ",
   "The tag of an archived task. Archived tasks have no reminders.":
     "アーカイブしたタスクのタグ。アーカイブしたタスクのリマインダーは読みません。",
-  "TaskNotes property names": "TaskNotes のプロパティ名",
   "Reminders property": "リマインダーのプロパティ",
   'The list of a task\'s reminders. Handled reminders are recorded in this name with "-done" appended.':
     "タスクのリマインダーのリスト。処理したリマインダーは、この名前に「-done」を付けたプロパティに記録します。",

@@ -369,7 +369,6 @@ export const zhCN: Record<string, string> = {
   "Archive tag": "归档标签",
   "The tag of an archived task. Archived tasks have no reminders.":
     "已归档任务的标签。已归档的任务没有提醒。",
-  "TaskNotes property names": "TaskNotes 的属性名",
   "Reminders property": "提醒属性",
   'The list of a task\'s reminders. Handled reminders are recorded in this name with "-done" appended.':
     "任务的提醒列表。已处理的提醒记录在此名称加上“-done”的属性中。",
