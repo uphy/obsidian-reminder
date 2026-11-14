@@ -137,6 +137,14 @@ export class TaskNotesNoteReminderFormat implements NoteReminderFormat {
     return this.options().enabled ? [this.properties().reminders] : [];
   }
 
+  /**
+   * The reminders list is TaskNotes' data; the done record next to it is
+   * this plugin's.
+   */
+  externalProperties(): Array<string> {
+    return this.keys();
+  }
+
   /** The property names in use: the configured ones over the defaults. */
   private properties(): TaskNotesProperties {
     const configured = this.options().properties;

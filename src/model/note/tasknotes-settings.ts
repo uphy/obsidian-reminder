@@ -73,45 +73,6 @@ export function importTaskNotesSettings(
   };
 }
 
-/**
- * The settings of the running TaskNotes plugin, given its plugin instance
- * (`undefined` when it is not enabled). Undefined when there are none.
- *
- * TaskNotes publishes a versioned runtime API on `api`; its
- * `settings.snapshot()` returns a copy of the settings and is preferred. A
- * TaskNotes without that API (or with another API version, or one that
- * throws) is read through the `settings` field of the plugin instance, which
- * holds the same object. Either result still goes through
- * `importTaskNotesSettings`.
- */
-export function readTaskNotesSettings(plugin: unknown): unknown {
-  if (!isRecord(plugin)) {
-    return undefined;
-  }
-  const api = plugin["api"];
-  if (isRecord(api) && api["apiVersion"] === 1) {
-    try {
-      const hasCapability = api["hasCapability"];
-      const settings = api["settings"];
-      if (
-        typeof hasCapability === "function" &&
-        hasCapability.call(api, "settings.snapshot") === true &&
-        isRecord(settings) &&
-        typeof settings["snapshot"] === "function"
-      ) {
-        const snapshot: unknown = settings["snapshot"].call(settings);
-        // An asynchronous snapshot can't be used here; the field below can.
-        if (isRecord(snapshot) && !(snapshot instanceof Promise)) {
-          return snapshot;
-        }
-      }
-    } catch (e) {
-      console.warn("Failed to read TaskNotes' settings through its API: %o", e);
-    }
-  }
-  return plugin["settings"];
-}
-
 /** The `value` of every status TaskNotes marks as completed. */
 function completedStatusesOf(statuses: unknown): Array<string> {
   if (!Array.isArray(statuses)) {

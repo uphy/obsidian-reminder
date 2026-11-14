@@ -92,7 +92,7 @@ reminders-done:
 ---
 ```
 
-TaskNotes lists the added reminder with the task's other reminders. **Done** on it removes it again. If the due date moves while it is waiting, the added reminder no longer applies: it is ignored, and removed the next time the plugin writes to the note.
+TaskNotes lists the added reminder with the task's other reminders. **Done** on it removes it again. While TaskNotes is running, the plugin hands the changed list to TaskNotes to write (through TaskNotes' API), so TaskNotes' views follow at once; without TaskNotes, for example on a device that only syncs the vault, the plugin writes the list itself and the note ends up the same. If the due date moves while it is waiting, the added reminder no longer applies: it is ignored, and removed the next time the plugin writes to the note.
 
 ## Good to know
 

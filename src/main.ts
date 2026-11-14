@@ -17,15 +17,18 @@ import {
 } from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
 import type { Frontmatter } from "model/note/format";
-import { TaskNotesNoteReminderFormat } from "model/note/tasknotes-format";
+import {
+  TASKNOTES_FORMAT_ID,
+  TaskNotesNoteReminderFormat,
+} from "model/note/tasknotes-format";
 import {
   exportTaskNotesSettings,
-  readTaskNotesSettings,
   taskNotesDefaults,
 } from "model/note/tasknotes-settings";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
+import { TaskNotesApi } from "plugin/tasknotes-api";
 import { setSeededTaskStatuses } from "plugin/settings";
 import { formatStatusSetting } from "model/format/status";
 import type { TaskStatus } from "model/format/status";
@@ -44,6 +47,9 @@ export default class ReminderPlugin extends Plugin {
   private _fileSystem: ReminderPluginFileSystem;
   private _noteReminders: NoteReminderService;
   private _noteReminderReader: NoteReminderReader;
+  private taskNotesApi = new TaskNotesApi(
+    () => this.app.plugins.plugins.tasknotes,
+  );
   private taskNotesDefaultsCache?: {
     at: number;
     defaults: ReturnType<typeof taskNotesDefaults>;
@@ -95,6 +101,10 @@ export default class ReminderPlugin extends Plugin {
       processFrontMatter: async (path, fn) => {
         await this.app.fileManager.processFrontMatter(fileAt(path), fn);
       },
+      // The only property of another plugin is TaskNotes' reminders list.
+      writeExternalProperty: async (format, path, _property, value) =>
+        format === TASKNOTES_FORMAT_ID &&
+        (await this.taskNotesApi.setReminders(path, value)),
     });
     this.settings.noteReminderStats = (source) =>
       this.noteReminderStats(source);
@@ -305,7 +315,7 @@ export default class ReminderPlugin extends Plugin {
    * because it loads after this plugin or is not installed.
    *
    * TaskNotes' settings come through its runtime API where it has one
-   * (`readTaskNotesSettings`), and are checked field by field before use
+   * (`TaskNotesApi#settings`), and are checked field by field before use
    * (`importTaskNotesSettings`).
    */
   private taskNotesDefaults() {
@@ -317,7 +327,7 @@ export default class ReminderPlugin extends Plugin {
       now - this.taskNotesDefaultsCache.at >= 1000
     ) {
       const defaults = taskNotesDefaults(
-        readTaskNotesSettings(this.app.plugins.plugins.tasknotes),
+        this.taskNotesApi.settings(),
         this.data.knownTaskNotesSettings,
       );
       if (defaults.source === "tasknotes") {

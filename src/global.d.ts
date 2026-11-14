@@ -22,8 +22,8 @@ declare module "obsidian" {
         "obsidian-tasks-plugin"?: Plugin;
         /**
          * Read for how its task notes are identified and which property
-         * names it uses; see `readTaskNotesSettings` in
-         * `model/note/tasknotes-settings`, which checks the shape itself.
+         * names it uses, and asked to write its reminders; see
+         * `plugin/tasknotes-api`, which checks the shape itself.
          */
         tasknotes?: unknown;
       };

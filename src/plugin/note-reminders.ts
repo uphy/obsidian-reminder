@@ -24,6 +24,18 @@ export interface NoteReminderServiceDeps {
     path: string,
     fn: (frontmatter: Frontmatter) => void,
   ): Promise<void>;
+  /**
+   * Offers the new `value` of `property` in the note at `path` to the plugin
+   * the property belongs to (see `NoteReminderFormat.externalProperties`),
+   * which then writes it its own way. False when that plugin did not take
+   * it, e.g. because it is not running. Must not reject.
+   */
+  writeExternalProperty?(
+    format: string,
+    path: string,
+    property: string,
+    value: unknown,
+  ): Promise<boolean>;
 }
 
 /**
@@ -98,12 +110,57 @@ export class NoteReminderService {
   }
 
   /** Writes `action` for the reminder at `origin` in the note at `path`. */
-  applyAt(
+  async applyAt(
     path: string,
     origin: NoteReminderOrigin,
     action: NoteReminderAction,
   ): Promise<WriteResult> {
-    return this.write(path, (fm) => this.reader.apply(fm, origin, action));
+    const fn = (fm: Frontmatter): ApplyOutcome =>
+      this.reader.apply(fm, origin, action);
+    await this.offerExternalProperties(path, origin, fn);
+    return this.write(path, fn);
+  }
+
+  /**
+   * Hands the properties that belong to another plugin to that plugin, when
+   * `fn` changes them.
+   *
+   * This is a courtesy before the real write, not a replacement for it:
+   * `write` runs next either way and brings the whole note to the state
+   * `fn` asks for. Where the other plugin took its property, that write
+   * finds it already in place and adds only what is this plugin's; where it
+   * did not, that write does everything. So nothing here may fail the
+   * action, and the stale check that counts is still the one inside
+   * `write`.
+   */
+  private async offerExternalProperties(
+    path: string,
+    origin: NoteReminderOrigin,
+    fn: (fm: Frontmatter) => ApplyOutcome,
+  ): Promise<void> {
+    const properties = this.reader.externalProperties(origin);
+    if (this.deps.writeExternalProperty == null || properties.length === 0) {
+      return;
+    }
+    try {
+      const fm = await this.readFrontmatter(path);
+      const before = properties.map((p) => JSON.stringify(fm[p]));
+      if (fn(fm) !== "applied") {
+        return;
+      }
+      for (const [i, property] of properties.entries()) {
+        if (JSON.stringify(fm[property]) !== before[i]) {
+          await this.deps.writeExternalProperty(
+            origin.format,
+            path,
+            property,
+            fm[property],
+          );
+        }
+      }
+    } catch (e) {
+      console.debug("Cannot offer a property: path=%s, error=%o", path, e);
+    }
   }
 
   /**

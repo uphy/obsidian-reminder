@@ -171,8 +171,8 @@ Across releases:
 *   Reading a property's type from Obsidian. There is no public API for it.
 *   Calling TaskNotes' internal functions; completing a TaskNotes task from
     a notification; suppressing TaskNotes' own notifications. (TaskNotes'
-    settings are read through its runtime API, type-checked, for the names
-    it uses.)
+    published runtime API is used for two things: reading its settings,
+    type-checked, and writing a changed `reminders` list.)
 *   A public API for formats written by third parties.
 *   Preserving YAML comments, quoting and inline list style when the plugin
     writes to a note's frontmatter (see Risks & Mitigations).
@@ -890,11 +890,34 @@ one. A date-only base counts from midnight.
         without it is read through the `settings` field of the plugin
         instance, which holds the same object. The snapshot is a deep copy
         of all settings, so one answer is reused for a second.
-    *   The API is used for the settings only. Task notes are read from
-        their frontmatter, not through `tasks.get`: the reading has to work
-        on a device without TaskNotes, it runs synchronously with the file
-        scan, and the record of handled reminders is not part of TaskNotes'
-        task.
+    *   Task notes are read from their frontmatter, not through
+        `tasks.get`: the reading has to work on a device without TaskNotes,
+        it runs synchronously with the file scan, and the record of handled
+        reminders is not part of TaskNotes' task.
+    *   Writing. TaskNotes asks companion plugins to change task data
+        through the API instead of rewriting frontmatter, so that its
+        cache, events and views follow. Of what this format writes, the
+        `reminders` list is TaskNotes' data and `reminders-done` is this
+        plugin's. When a write changes the list (a snooze, or "Done" on a
+        snoozed reminder) and TaskNotes is running, the new list is first
+        handed to `tasks.setReminders`. The write to the frontmatter then
+        runs as for any format: it finds the list in place and adds the
+        record. When TaskNotes is not running, has no such API or rejects
+        the write (it does not see the note as a task), that same write
+        does everything, so the note ends up the same either way. TaskNotes
+        also stamps its modification date on a note it writes.
+    *   Layers. The format stays a pure function over frontmatter and knows
+        TaskNotes' data, not its API: it only names the properties that
+        belong to another plugin (`externalProperties`). The service offers
+        a changed one through an injected function and does not know which
+        plugin is behind it. `plugin/tasknotes-api.ts` is the one place
+        that calls TaskNotes (the settings snapshot and `setReminders`),
+        with the version and capability checks.
+    *   The stale check that counts is still the one inside the frontmatter
+        write. The hand-over before it is checked on a read made just
+        before, so a note that changes in that moment can get the snooze
+        entry without its record; such an entry does not count and the next
+        write removes it.
     *   The shape of the settings is not promised either way. `importTaskNotesSettings` checks
         each field's type and falls back to TaskNotes' default for anything
         missing or of another type, so a TaskNotes that renames a key

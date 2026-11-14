@@ -2,7 +2,6 @@ import {
   DEFAULT_TASKNOTES_SETTINGS,
   exportTaskNotesSettings,
   importTaskNotesSettings,
-  readTaskNotesSettings,
   resolveTaskNotesSettings,
   taskNotesDefaults,
 } from "./tasknotes-settings";
@@ -243,63 +242,5 @@ describe("resolveTaskNotesSettings()", (): void => {
     expect(byProperty.taskProperty).toBe("kind");
     // Empty is "any value" here, not "the default".
     expect(byProperty.taskPropertyValue).toBe("");
-  });
-});
-
-describe("readTaskNotesSettings()", (): void => {
-  const api = (overrides: Record<string, unknown> = {}) => ({
-    apiVersion: 1,
-    hasCapability: (capability: string) => capability === "settings.snapshot",
-    settings: { snapshot: () => ({ taskTag: "from-api" }) },
-    ...overrides,
-  });
-  const field = { taskTag: "from-field" };
-
-  test("no plugin means no settings", (): void => {
-    expect(readTaskNotesSettings(undefined)).toBeUndefined();
-    expect(readTaskNotesSettings("tasknotes")).toBeUndefined();
-    expect(readTaskNotesSettings({})).toBeUndefined();
-  });
-
-  test("the API's snapshot is preferred", (): void => {
-    expect(
-      readTaskNotesSettings({ api: api(), settings: field }),
-    ).toStrictEqual({ taskTag: "from-api" });
-  });
-
-  test("without a usable API, the settings field is read", (): void => {
-    const cases: Array<unknown> = [
-      undefined,
-      api({ apiVersion: 2 }),
-      api({ hasCapability: () => false }),
-      api({ hasCapability: undefined }),
-      api({ settings: {} }),
-      api({ settings: { snapshot: () => "broken" } }),
-      api({ settings: { snapshot: async () => ({ taskTag: "later" }) } }),
-    ];
-    for (const value of cases) {
-      expect(readTaskNotesSettings({ api: value, settings: field })).toBe(
-        field,
-      );
-    }
-  });
-
-  test("an API that throws falls back to the settings field", (): void => {
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
-    try {
-      const throwing = api({
-        settings: {
-          snapshot: () => {
-            throw new Error("not ready");
-          },
-        },
-      });
-      expect(readTaskNotesSettings({ api: throwing, settings: field })).toBe(
-        field,
-      );
-      expect(warn).toHaveBeenCalledTimes(1);
-    } finally {
-      warn.mockRestore();
-    }
   });
 });
