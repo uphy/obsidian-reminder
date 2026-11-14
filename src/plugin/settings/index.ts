@@ -390,7 +390,7 @@ export class Settings {
       .key("noteReminderHeaderBell")
       .name("Show a bell in every note's header")
       .desc(
-        "A note without a reminder gets a faint bell that opens the reminder dialog. When off, the bell is shown only while a reminder is waiting. The bell needs a managed property.",
+        "A note without a reminder gets a faint bell that opens the reminder dialog. When off, the bell is shown only while a reminder is waiting.",
       )
       .toggle(true)
       .build(new RawSerde());
