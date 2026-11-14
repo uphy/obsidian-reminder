@@ -103,7 +103,7 @@ For a **managed** property, you do not have to type the property yourself.
 
 1. Run the command **Set reminder for this note**, or right-click a note and choose the same item.
 2. The first time, the plugin offers to keep note reminders in a property named `reminder`. Accepting adds it to the settings as a managed property. (You can instead add your own property in the settings and turn on **Managed**.)
-3. Pick a date, optionally a time and a title, and click **OK**.
+3. Pick a date, optionally a time, a title and a [repeat rule](#repeat-a-reminder), and click **OK**.
 
 ```markdown
 ---
@@ -171,6 +171,37 @@ Any plugin that keeps a date in a property can drive a reminder. For example, th
 **Done** only records `sr-due-done`; it never touches `sr-due`. **Remind me later** changes `sr-due` itself, which Spaced Repetition treats like any other due date.
 
 Notes that were already overdue when you added the property are hidden by [Ignore dates before](#past-dates). Move that date back if you want them too.
+
+## Repeat a reminder
+
+A reminder on a **managed** property can repeat. Type a rule into **Repeat** in the dialog, or write it yourself in `<property>-repeat`:
+
+```markdown
+---
+reminder: 2026-11-20T09:00:00
+reminder-title: Pay the rent
+reminder-repeat: every month
+---
+```
+
+The rule is the same text the [Tasks plugin format](/guide/interop-tasks.html) accepts after 🔁: `every day`, `every week on Monday`, `every 2 weeks`, `every month`, `every month on the 1st`, `every year`, with an optional `until 2027-12-31`. Add `when done` (`every week when done`) to count from the day you press **Done** instead of from the reminder's date.
+
+**Done** on a repeating reminder records the handled time in `reminder-done`, as always, and moves `reminder` to the next occurrence:
+
+```markdown
+---
+reminder: 2026-12-20T09:00:00
+reminder-title: Pay the rent
+reminder-repeat: every month
+reminder-done: 2026-11-20T09:00:00
+---
+```
+
+- **Remind me later** postpones one occurrence only. The plugin notes the postponed occurrence in `reminder-occurrence` until you press **Done**, so a monthly reminder snoozed from the 20th to the 21st comes back on the 20th of next month. Changing the date yourself (in the dialog, the properties panel or Bases) is different: the series continues from the date you chose.
+- Occurrences that are already in the past when you press **Done** are skipped, as for a repeating task line.
+- When the rule has an end (`until ...`) and no occurrence is left, **Done** just completes the reminder.
+- A rule the plugin can't read is flagged in the dialog. If such a rule is in the note anyway, **Done** completes the reminder and a notice tells you it will not repeat.
+- `-repeat` is ignored on properties that are not managed: there the date belongs to whatever writes it.
 
 ## Good to know
 
