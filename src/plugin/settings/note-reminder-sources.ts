@@ -1,5 +1,9 @@
 import { t } from "i18n";
-import { normalizeSources, validateSourceName } from "model/note/sources";
+import {
+  newSourceCutOff,
+  normalizeSources,
+  validateSourceName,
+} from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
 import { DateTime } from "model/time";
 import { Setting } from "obsidian";
@@ -44,12 +48,14 @@ export function renderNoteReminderSources(
         return;
       }
       errorEl.setText("");
+      const property = newName.trim();
+      const today = DateTime.now().format("YYYY-MM-DD");
       update([
         ...rows(),
         {
-          property: newName.trim(),
+          property,
           managed: false,
-          since: DateTime.now().format("YYYY-MM-DD"),
+          since: newSourceCutOff(property, today, stats),
         },
       ]);
       newName = "";

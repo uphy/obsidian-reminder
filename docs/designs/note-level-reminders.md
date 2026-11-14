@@ -575,8 +575,11 @@ type NoteReminderSource = {
 *   The list is empty by default. With an empty list `keys()` is empty and no
     note's YAML is parsed.
 *   A value dated before `since` is not read. A value dated on that day is.
-*   Adding a row sets `since` to today and `managed` to false. Only the user
-    changes `since` afterwards.
+*   Adding a row sets `managed` to false. `since` is today when the vault
+    already holds values of the property dated before today, and empty
+    otherwise: the cut-off exists to stop those values from notifying at
+    once, and a date with nothing to hide only raises a question. Only the
+    user changes `since` afterwards.
 *   The setting is tagged like the other settings that change what is parsed,
     so a change triggers a full rescan.
 *   A name is rejected when it is empty, when it is already listed, or when it
@@ -632,8 +635,9 @@ Mitigations.
     excluded path, because its reminders are not read.
     *   With no managed row, a prompt explains that note reminders are kept in
         a property and offers to use `reminder`. Accepting adds the row as
-        managed with today as its cut-off (or switches an existing `reminder`
-        row to managed), then opens the dialog.
+        managed, with the same cut-off rule as a row added in the settings
+        (or switches an existing `reminder` row to managed), then opens the
+        dialog.
 *   **Dialog.** It reads the note's text through the service when it opens.
     From top to bottom:
     *   A heading, "Reminder for <note name>".
@@ -874,8 +878,9 @@ turning the asynchronous format code synchronous, which is outside this design.
     it.
 *   **The cut-off hides reminders the user may expect.** A value dated before
     `since` is never shown, also when it is written later. If `data.json` is
-    lost, or a row is removed and added again, `since` becomes that day and
-    overdue reminders not yet marked done are hidden. For `sr-due`, the notes
+    lost, or a row is removed and added again, `since` becomes that day
+    (the property has past values by then) and overdue reminders not yet
+    marked done are hidden. For `sr-due`, the notes
     already overdue when the row is added are hidden. Mitigation: the cut-off
     is a visible date the user can move back; the row shows how many values it
     hides; the dialog warns when a chosen time is before it; the guide lists

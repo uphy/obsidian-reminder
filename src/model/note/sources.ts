@@ -98,13 +98,14 @@ export function validateSourceName(
  * The rows after letting the reminder dialog manage `property`: an existing
  * row is switched to managed, keeping its cut-off (resetting it would hide
  * the reminders the property already holds on earlier days), and a new name
- * is added as a managed row with `today` (`YYYY-MM-DD`) as its cut-off.
+ * is added as a managed row with `since` as its cut-off (see
+ * `newSourceCutOff`).
  * Null when the name can't be a source (it is a companion of another row).
  */
 export function withManagedSource(
   rows: ReadonlyArray<NoteReminderSource>,
   property: string,
-  today: string,
+  since: string,
 ): Array<NoteReminderSource> | null {
   const index = rows.findIndex((row) => row.property === property);
   if (index >= 0) {
@@ -115,7 +116,7 @@ export function withManagedSource(
   if (validateSourceName(rows, -1, property) != null) {
     return null;
   }
-  return [...rows, { property, managed: true, since: today }];
+  return [...rows, { property, managed: true, since }];
 }
 
 /** Display-only numbers about a source, shown on the settings page. */
@@ -147,4 +148,22 @@ export function countSourceStats(
     }
   }
   return { ignored, foreignDone };
+}
+
+/**
+ * The cut-off a property gets when it is added to the list. It is `today`
+ * (`YYYY-MM-DD`) only when the vault already holds values of that property
+ * dated before today: those would otherwise all notify at once. A property
+ * with no such value gets no cut-off, so the setting stays empty until it
+ * has something to say.
+ */
+export function newSourceCutOff(
+  property: string,
+  today: string,
+  stats: (
+    source: NoteReminderSource,
+  ) => Pick<NoteReminderSourceCounts, "ignored">,
+): string {
+  const past = stats({ property, managed: false, since: today }).ignored;
+  return past > 0 ? today : "";
 }
