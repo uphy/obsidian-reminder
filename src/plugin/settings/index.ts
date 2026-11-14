@@ -114,9 +114,16 @@ export class Settings {
   taskNotesTaskPropertyValue: SettingModel<string, string>;
   taskNotesCompletedStatuses: SettingModel<string, Array<string>>;
   taskNotesArchiveTag: SettingModel<string, string>;
-  /** One setting per property TaskNotes lets the user rename. */
+  /**
+   * One setting per property name a user may want to set apart from
+   * TaskNotes. The two lists of a recurring task's handled occurrences have
+   * none: they always follow TaskNotes.
+   */
   taskNotesPropertyNames: Record<
-    keyof TaskNotesProperties,
+    Exclude<
+      keyof TaskNotesProperties,
+      "completeInstances" | "skippedInstances"
+    >,
     SettingModel<string, string>
   >;
   taskNotesSince: SettingModel<string, string>;
@@ -580,7 +587,7 @@ export class Settings {
       .build(trimmed);
 
     const propertyName = (
-      field: keyof TaskNotesProperties,
+      field: keyof Settings["taskNotesPropertyNames"],
       name: string,
       desc: string,
     ) =>
@@ -624,7 +631,7 @@ export class Settings {
       recurrence: propertyName(
         "recurrence",
         "Recurrence property",
-        "A task with a value here is recurring, and its reminders are left to TaskNotes.",
+        "A task with a value here is recurring: a completed date does not complete it, and occurrences completed or skipped in TaskNotes have no reminder.",
       ),
       completedDate: propertyName(
         "completedDate",

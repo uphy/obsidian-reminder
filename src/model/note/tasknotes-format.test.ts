@@ -113,13 +113,13 @@ describe("effectiveTime()", (): void => {
     ).toBe(moment(due).subtract(15, "minutes").format("YYYY-MM-DDTHH:mm:00"));
   });
 
-  test("months and years are calendar units", (): void => {
+  test("a month counts as 30 days and a year as 365, as in TaskNotes", (): void => {
     const relative = (offset: string, due: string) =>
       at({ type: "relative", relatedTo: "due", offset }, { due });
-    expect(relative("-P1M", "2026-03-31T10:00")).toBe("2026-02-28T10:00:00");
-    expect(relative("-P1Y", "2026-11-20T10:00")).toBe("2025-11-20T10:00:00");
+    expect(relative("-P1M", "2026-03-31T10:00")).toBe("2026-03-01T10:00:00");
+    expect(relative("-P1Y", "2028-11-20T10:00")).toBe("2027-11-21T10:00:00");
     expect(relative("P1Y2M3DT4H", "2026-01-01T00:00")).toBe(
-      "2027-03-04T04:00:00",
+      "2027-03-05T04:00:00",
     );
     expect(relative("-PT30.5S", "2026-11-20T10:00")).toBe(
       "2026-11-20T09:59:00",
@@ -217,9 +217,83 @@ describe("TaskNotesNoteReminderFormat#read()", (): void => {
     expect(read(format, task({ tags: ["task", "archived"] }))).toStrictEqual(
       [],
     );
-    expect(
-      read(format, task({ recurrence: "FREQ=WEEKLY;BYDAY=MO" })),
-    ).toStrictEqual([]);
+  });
+
+  describe("a recurring task", (): void => {
+    const recurring = (extra: Frontmatter = {}): Frontmatter =>
+      task({ recurrence: "DTSTART:20261120;FREQ=WEEKLY", ...extra });
+
+    test("is read like any other task", (): void => {
+      expect(read(formatOf(), recurring())).toStrictEqual([
+        {
+          key: "rem_1",
+          time: "2026-11-20T09:45:00",
+          title: undefined,
+          label: "15 min before",
+        },
+      ]);
+    });
+
+    test("an occurrence completed or skipped in TaskNotes has no reminder", (): void => {
+      const format = formatOf();
+      expect(
+        read(format, recurring({ complete_instances: ["2026-11-20"] })),
+      ).toStrictEqual([]);
+      expect(
+        read(format, recurring({ skipped_instances: ["2026-11-20T00:00"] })),
+      ).toStrictEqual([]);
+      // Another occurrence was completed, not the one the date points at.
+      expect(
+        read(format, recurring({ complete_instances: ["2026-11-13"] })),
+      ).toHaveLength(1);
+      // The lists mean nothing on a task that does not recur.
+      expect(
+        read(format, task({ complete_instances: ["2026-11-20"] })),
+      ).toHaveLength(1);
+    });
+
+    test("an absolute reminder does not belong to an occurrence", (): void => {
+      const fm = recurring({
+        complete_instances: ["2026-11-18"],
+        reminders: [
+          { id: "abs", type: "absolute", absoluteTime: "2026-11-18T09:00" },
+        ],
+      });
+      expect(read(formatOf(), fm)).toHaveLength(1);
+    });
+
+    test("Done holds until TaskNotes moves the task to the next occurrence", (): void => {
+      const format = formatOf();
+      const fm = recurring();
+      expect(format.apply(fm, "rem_1", done("2026-11-20T09:45"))).toBe(
+        "applied",
+      );
+      expect(read(format, fm)).toStrictEqual([]);
+      // Completing the occurrence in TaskNotes moves the due date on.
+      fm["complete_instances"] = ["2026-11-20"];
+      fm["due"] = "2026-11-27T10:00";
+      expect(read(format, fm).map((e) => e.time)).toStrictEqual([
+        "2026-11-27T09:45:00",
+      ]);
+    });
+
+    test("a completed date does not complete a recurring task", (): void => {
+      expect(
+        read(formatOf(), recurring({ completedDate: "2026-11-13" })),
+      ).toHaveLength(1);
+    });
+
+    test("the lists of occurrences are read under their names", (): void => {
+      const format = formatOf({
+        properties: { completeInstances: "finished_on" },
+      });
+      expect(
+        read(format, recurring({ finished_on: ["2026-11-20"] })),
+      ).toStrictEqual([]);
+      expect(
+        read(format, recurring({ complete_instances: ["2026-11-20"] })),
+      ).toHaveLength(1);
+    });
   });
 
   test("the task tag and statuses come from the settings", (): void => {
@@ -358,9 +432,17 @@ describe("TaskNotesNoteReminderFormat#read()", (): void => {
     test("status and recurrence are read under their names", (): void => {
       const format = renamed();
       expect(read(format, renamedTask({ state: "done" }))).toStrictEqual([]);
-      expect(read(format, renamedTask({ repeat: "FREQ=DAILY" }))).toStrictEqual(
-        [],
-      );
+      // Recurring under the renamed property: the completed date of an
+      // earlier occurrence does not complete the task.
+      expect(
+        read(
+          format,
+          renamedTask({ repeat: "FREQ=DAILY", completedDate: "2026-11-01" }),
+        ),
+      ).toHaveLength(1);
+      expect(
+        read(format, renamedTask({ completedDate: "2026-11-01" })),
+      ).toStrictEqual([]);
       // A property that merely has TaskNotes' default name is not the status.
       expect(read(format, renamedTask({ status: "done" }))).toHaveLength(1);
     });

@@ -418,7 +418,7 @@ The names of the properties this plugin reads from a task note. Empty uses the n
 | Scheduled property | `scheduled` | The date a reminder "before scheduled" counts from |
 | Status property | `status` | Compared with the completed statuses |
 | Title property | `title` | The notification's title; without it the note's name is shown |
-| Recurrence property | `recurrence` | A task with a value here is recurring and is not read |
+| Recurrence property | `recurrence` | A task with a value here is recurring: a completed date does not complete it, and occurrences completed or skipped in TaskNotes have no reminder |
 | Completed date property | `completedDate` | A task with a date here is completed |
 
 ### Ignore TaskNotes reminders before

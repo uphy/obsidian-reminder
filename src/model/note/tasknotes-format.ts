@@ -45,6 +45,8 @@ export type TaskNotesProperties = {
   reminders: string;
   recurrence: string;
   completedDate: string;
+  completeInstances: string;
+  skippedInstances: string;
 };
 
 /** The names TaskNotes uses unless the user renamed them. */
@@ -56,6 +58,8 @@ export const DEFAULT_TASKNOTES_PROPERTIES: TaskNotesProperties = {
   reminders: "reminders",
   recurrence: "recurrence",
   completedDate: "completedDate",
+  completeInstances: "complete_instances",
+  skippedInstances: "skipped_instances",
 };
 
 /** How TaskNotes tells a task note from another note. */
@@ -96,6 +100,11 @@ type TaskNote = {
    * is then read as empty and never written.
    */
   foreignRecords: boolean;
+  /**
+   * For a recurring task: the days (`YYYY-MM-DD`) of the occurrences that
+   * were completed or skipped in TaskNotes. Empty for any other task.
+   */
+  handledDays: Set<string>;
 };
 
 /**
@@ -111,7 +120,9 @@ type TaskNote = {
  *
  * - "Done" appends `<id>@<time>` to `reminders-done` and leaves the entry
  *   alone. A relative entry is pending again when its base date moves,
- *   because the record then no longer matches its time.
+ *   because the record then no longer matches its time. That is also how a
+ *   recurring task works: completing an occurrence in TaskNotes moves the
+ *   task's dates to the next one.
  * - Snooze records the entry as done and adds one absolute entry of its own
  *   (id `obsidian-reminder-snooze-<original id>`). That entry counts only
  *   while the original is still recorded as done at its current time, and
@@ -243,9 +254,8 @@ export class TaskNotesNoteReminderFormat implements NoteReminderFormat {
 
   /**
    * Null when the note is not a task this format reads: reading is off, the
-   * note is not identified as a task, is completed, archived or recurring,
-   * or its reminders property holds something that is not a list of
-   * mappings.
+   * note is not identified as a task, is completed or archived, or its
+   * reminders property holds something that is not a list of mappings.
    */
   private parse(fm: Frontmatter): TaskNote | null {
     const options = this.options();
@@ -264,11 +274,6 @@ export class TaskNotesNoteReminderFormat implements NoteReminderFormat {
     if (isCompleted(fm, names, options.completedStatuses)) {
       return null;
     }
-    if (!isEmptyValue(fm[names.recurrence])) {
-      // A recurring task moves its own dates on completion; which occurrence
-      // a reminder belongs to is TaskNotes' business.
-      return null;
-    }
     const raw = fm[names.reminders];
     if (!Array.isArray(raw) || !raw.every(isMapping)) {
       return null;
@@ -279,6 +284,12 @@ export class TaskNotesNoteReminderFormat implements NoteReminderFormat {
       entries: raw,
       records: records ?? [],
       foreignRecords: records == null,
+      handledDays: isEmptyValue(fm[names.recurrence])
+        ? new Set()
+        : new Set([
+            ...daysIn(fm[names.completeInstances]),
+            ...daysIn(fm[names.skippedInstances]),
+          ]),
     };
   }
 
@@ -293,6 +304,13 @@ export class TaskNotesNoteReminderFormat implements NoteReminderFormat {
     for (const entry of uniqueEntries(note.entries)) {
       const time = effectiveTime(entry, fm, names);
       if (time == null || isBeforeDay(time, since)) {
+        continue;
+      }
+      // A recurring task: the occurrence this reminder counts from was
+      // completed or skipped in TaskNotes, which has not moved the date on
+      // (it does so only for the current occurrence).
+      const baseDay = baseDayOf(entry, fm, names);
+      if (baseDay != null && note.handledDays.has(baseDay)) {
         continue;
       }
       if (isOwnEntry(entry)) {
@@ -390,11 +408,13 @@ export function effectiveTime(
   }
   const sign = match[1] === "-" ? -1 : 1;
   const m = inShapeOf(base, true).moment().clone();
-  // Years down to days are added as calendar units, so "one day before" a
-  // 10:00 deadline stays at 10:00 across a clock change, and "one month
-  // before" March 31 is the last day of February.
-  m.add(sign * Number(match[2] ?? 0), "years");
-  m.add(sign * Number(match[3] ?? 0), "months");
+  // Weeks and days are added as calendar units, so "one day before" a
+  // 10:00 deadline stays at 10:00 across a clock change. A year is 365 days
+  // and a month 30 days, which is how TaskNotes itself counts them; a
+  // calendar month would put this plugin's notification up to two days
+  // away from TaskNotes' own.
+  m.add(sign * Number(match[2] ?? 0) * 365, "days");
+  m.add(sign * Number(match[3] ?? 0) * 30, "days");
   m.add(sign * Number(match[4] ?? 0), "weeks");
   m.add(sign * Number(match[5] ?? 0), "days");
   m.add(sign * Number(match[6] ?? 0), "hours");
@@ -457,6 +477,42 @@ function isCompleted(
   return (
     isEmptyValue(fm[names.recurrence]) && !isEmptyValue(fm[names.completedDate])
   );
+}
+
+/**
+ * For a relative entry: the day (`YYYY-MM-DD`) of the date it counts from.
+ * Null for an absolute entry, or when that date is missing.
+ */
+function baseDayOf(
+  entry: Entry,
+  fm: Frontmatter,
+  names: TaskNotesProperties,
+): string | null {
+  const relatedTo = entry["relatedTo"];
+  if (
+    entry["type"] !== "relative" ||
+    (relatedTo !== "due" && relatedTo !== "scheduled")
+  ) {
+    return null;
+  }
+  const base = parseTaskNotesTime(fm[names[relatedTo]]);
+  return base == null ? null : base.format("YYYY-MM-DD");
+}
+
+/** The days in a list of dates or date-times, as TaskNotes keeps them. */
+function daysIn(value: unknown): Array<string> {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const days: Array<string> = [];
+  for (const item of value) {
+    const match =
+      typeof item === "string" ? /^\d{4}-\d{2}-\d{2}/.exec(item.trim()) : null;
+    if (match != null) {
+      days.push(match[0]);
+    }
+  }
+  return days;
 }
 
 function isRecorded(

@@ -25,6 +25,8 @@ const RENAMED: ImportedTaskNotesSettings = {
     reminders: "alerts",
     recurrence: "repeat",
     completedDate: "finished",
+    completeInstances: "finished_on",
+    skippedInstances: "skipped_on",
   },
 };
 
@@ -64,6 +66,8 @@ describe("importTaskNotesSettings()", (): void => {
         reminders: "alerts",
         recurrence: "repeat",
         completedDate: "finished",
+        completeInstances: "finished_on",
+        skippedInstances: "skipped_on",
         archiveTag: "#shelved",
         priority: "prio",
       },
@@ -89,6 +93,8 @@ describe("importTaskNotesSettings()", (): void => {
         reminders: "alerts",
         recurrence: "repeat",
         completedDate: "finished",
+        completeInstances: "finished_on",
+        skippedInstances: "skipped_on",
       },
     });
   });

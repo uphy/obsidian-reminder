@@ -383,8 +383,8 @@ export const zhCN: Record<string, string> = {
   "Shown as the notification's title. Without it, the note's name is shown.":
     "显示为通知的标题。没有时显示笔记名称。",
   "Recurrence property": "重复属性",
-  "A task with a value here is recurring, and its reminders are left to TaskNotes.":
-    "此处有值的任务是重复任务，其提醒交由 TaskNotes 处理。",
+  "A task with a value here is recurring: a completed date does not complete it, and occurrences completed or skipped in TaskNotes have no reminder.":
+    "此处有值的任务是重复任务：完成日期不会使其视为已完成，在 TaskNotes 中已完成或已跳过的那一次没有提醒。",
   "Same as TaskNotes": "与 TaskNotes 相同",
   "TaskNotes is not enabled here. Using its settings as last seen.":
     "此设备未启用 TaskNotes。正在使用上次读取到的 TaskNotes 设置。",

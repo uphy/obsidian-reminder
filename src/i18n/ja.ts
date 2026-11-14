@@ -404,8 +404,8 @@ export const ja: Record<string, string> = {
   "Shown as the notification's title. Without it, the note's name is shown.":
     "通知のタイトルに表示します。無ければノート名を表示します。",
   "Recurrence property": "繰り返しのプロパティ",
-  "A task with a value here is recurring, and its reminders are left to TaskNotes.":
-    "ここに値があるタスクは繰り返しタスクで、そのリマインダーは TaskNotes に任せます。",
+  "A task with a value here is recurring: a completed date does not complete it, and occurrences completed or skipped in TaskNotes have no reminder.":
+    "ここに値があるタスクは繰り返しタスクです。完了日があっても完了とは見なさず、TaskNotes で完了・スキップした回のリマインダーは読みません。",
   "Same as TaskNotes": "TaskNotes と同じ",
   "TaskNotes is not enabled here. Using its settings as last seen.":
     "この端末では TaskNotes が有効になっていません。最後に読み取った TaskNotes の設定を使っています。",

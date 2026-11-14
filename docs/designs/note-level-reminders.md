@@ -165,12 +165,13 @@ Across releases:
 *   Showing "done" as a checkbox in the properties panel. The state is "`p`
     and `p-done` hold the same date". A Bases formula column, the header bell
     and the reminder list show it.
-*   Values with a UTC offset or `Z` (`2026-11-20T09:00:00+09:00`). They are not
-    read. Obsidian's property editor does not write them.
+*   Values with a UTC offset or `Z` (`2026-11-20T09:00:00+09:00`) in a plain
+    property. They are not read. Obsidian's property editor does not write
+    them. (TaskNotes' times are the exception, see the TaskNotes section.)
 *   Reading a property's type from Obsidian. There is no public API for it.
-*   Reading TaskNotes' settings or calling its internal functions; TaskNotes
-    recurring tasks; completing a TaskNotes task from a notification;
-    suppressing TaskNotes' own notifications.
+*   Calling TaskNotes' internal functions; completing a TaskNotes task from
+    a notification; suppressing TaskNotes' own notifications. (TaskNotes'
+    settings object is read, type-checked, for the names it uses.)
 *   A public API for formats written by third parties.
 *   Preserving YAML comments, quoting and inline list style when the plugin
     writes to a note's frontmatter (see Risks & Mitigations).
@@ -835,8 +836,19 @@ one. A date-only base counts from midnight.
     snooze entry) is written in local time. A record written on a device in
     another time zone names another local time, so the reminder is pending
     again there; that is accepted.
-*   `offset` is an ISO 8601 duration with a sign. Years, months, weeks and
-    days are added as calendar units.
+*   `offset` is an ISO 8601 duration with a sign. Weeks and days are added
+    as calendar days. A month is 30 days and a year 365 days, which is how
+    TaskNotes computes its own notification; calendar months would put the
+    two plugins' notifications up to two days apart.
+*   A recurring task (a value in `recurrence`) is read like any other.
+    TaskNotes keeps the next occurrence in `scheduled` (and `due`) and moves
+    them on when an occurrence is completed or skipped, so a relative
+    reminder becomes pending again through the same rule as a moved due
+    date: its record no longer matches its time. TaskNotes moves the dates
+    only for the current occurrence, so a relative reminder whose base date
+    is listed in `complete_instances` or `skipped_instances` is not read.
+    The names of those two lists follow TaskNotes' settings and have no
+    setting of their own.
 *   A task is completed when its status is one of the completed ones (a
     checkbox status when ticked), or when it does not recur and has a
     completed date. TaskNotes sets that date on completion and clears it
@@ -879,9 +891,8 @@ one. A date-only base counts from midnight.
     *   Not taken over: TaskNotes' excluded folders. A format sees a note's
         frontmatter only, and this plugin's own excluded paths cover the
         need.
-*   Read: a note that is identified as a task, whose status is not a
-    completed one, that does not have the archive tag, and that has no
-    `recurrence`. Each entry
+*   Read: a note that is identified as a task, that is not completed, and
+    that does not have the archive tag. Each entry
     with an id and an effective time on or after the cut-off is a reminder,
     unless `reminders-done` holds its record. An entry of another type, or
     whose time cannot be computed, is skipped; of entries that share an id
