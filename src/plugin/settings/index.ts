@@ -649,7 +649,7 @@ export class Settings {
       )
       .tag(TAG_RESCAN)
       .text("")
-      .placeHolder("YYYY-MM-DD")
+      .date()
       .onAnyValueChanged(whenTaskNotes())
       .build({
         // Anything that is not a date is read as "no cut-off".

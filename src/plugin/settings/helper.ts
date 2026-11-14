@@ -288,6 +288,7 @@ abstract class AbstractSettingModelBuilder<R> {
 class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
   private _placeHolder?: TranslatableText;
   private _masked = false;
+  private _date = false;
 
   constructor(
     context: SettingContext,
@@ -312,6 +313,19 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
    */
   masked() {
     this._masked = true;
+    return this;
+  }
+
+  /**
+   * Renders the input as a date picker, whose value is a whole day
+   * (`YYYY-MM-DD`) or empty and nothing in between. A plain text input
+   * would pass every keystroke on, so a date being retyped would be in
+   * effect as whatever its first characters mean.
+   *
+   * Ignored for `textArea()` settings.
+   */
+  date() {
+    this._date = true;
     return this;
   }
 
@@ -356,6 +370,9 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
             initText(text);
             if (this._masked) {
               text.inputEl.type = "password";
+            }
+            if (this._date) {
+              text.inputEl.type = "date";
             }
           });
         }
