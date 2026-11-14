@@ -21,7 +21,7 @@ Open the plugin settings and go to the **Note reminders** tab.
 1. Type the name of a date or date & time property (for example `follow-up`) and click **Add**.
 2. The property appears as a block below, with a line for each of its settings:
    - **Managed**: whether the plugin may create, edit and remove the value. See [Managed and read-only properties](#managed-and-read-only-properties).
-   - **Ignore dates before**: values dated before this day are not read. See [Past dates](#past-dates).
+   - **Ignore dates before**: values dated before this day are not read. Empty unless the property already had past values when you added it. See [Past dates](#past-dates).
 
 You can add as many properties as you like. Each one holds one date per note. If a note needs several reminders, use several properties or [task lines](/guide/set-reminders.html).
 
@@ -47,14 +47,16 @@ Leave a property read-only when something else owns its value: a follow-up colum
 
 ### Past dates
 
-When you add a property, **Ignore dates before** is set to today. Without it, a property that already holds years of dates across your vault would notify you about all of them at once. The setting tells you how many values it currently ignores.
+**Ignore dates before** is a day; values dated before it are not read. It is empty unless you need it.
 
-You can move the date back to be reminded about older values, or clear it to read everything.
+When you add a property that your notes already use, and some of its values are in the past, **Ignore dates before** is set to today. Without it, a property that already holds years of dates across your vault would notify you about all of them at once. The setting tells you how many values it currently ignores. A property with no past values is added with the setting empty.
+
+You can move the date back to be reminded about older values, clear it to read everything, or set one yourself.
 
 Things to know:
 
 - A date before the cut-off is never shown, even if you type it today.
-- If you remove a row and add it again, the cut-off becomes that day. Reminders that were overdue and not yet done are hidden until you move the date back.
+- If you remove a property and add it again, the cut-off is decided again that day. Reminders that were overdue and not yet done are hidden until you move the date back.
 
 ## What Done and Remind me later do
 
