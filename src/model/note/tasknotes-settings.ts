@@ -1,6 +1,7 @@
 import { DEFAULT_TASKNOTES_PROPERTIES } from "./tasknotes-format";
 import type {
   TaskNotesIdentification,
+  TaskNotesOptions,
   TaskNotesProperties,
 } from "./tasknotes-format";
 
@@ -98,4 +99,112 @@ function text(value: unknown, fallback: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * `settings` in the shape `importTaskNotesSettings` reads, i.e. the part of
+ * TaskNotes' own settings this plugin uses. It is what gets saved as "the
+ * TaskNotes settings last seen", so that reading it back goes through the
+ * same checks as reading TaskNotes itself.
+ */
+export function exportTaskNotesSettings(
+  settings: ImportedTaskNotesSettings,
+): Record<string, unknown> {
+  return {
+    taskIdentificationMethod: settings.identification,
+    taskTag: settings.taskTag,
+    taskPropertyName: settings.taskProperty,
+    taskPropertyValue: settings.taskPropertyValue,
+    fieldMapping: { ...settings.properties, archiveTag: settings.archiveTag },
+    customStatuses: settings.completedStatuses.map((value) => ({
+      value,
+      isCompleted: true,
+    })),
+  };
+}
+
+/** Where the defaults of the TaskNotes settings come from. */
+export type TaskNotesDefaultsSource =
+  /** The running TaskNotes plugin. */
+  | "tasknotes"
+  /** What TaskNotes said the last time it was there. */
+  | "saved"
+  /** TaskNotes' factory defaults: it was never seen. */
+  | "builtin";
+
+/**
+ * The defaults of the TaskNotes settings, by the first source that has
+ * them: the running TaskNotes plugin (`live`, its settings object), what
+ * was saved the last time it was there (`saved`, as written by
+ * `exportTaskNotesSettings`), and TaskNotes' factory defaults.
+ */
+export function taskNotesDefaults(
+  live: unknown,
+  saved: unknown,
+): { settings: ImportedTaskNotesSettings; source: TaskNotesDefaultsSource } {
+  const fromLive = importTaskNotesSettings(live);
+  if (fromLive != null) {
+    return { settings: fromLive, source: "tasknotes" };
+  }
+  const fromSaved = importTaskNotesSettings(saved);
+  if (fromSaved != null) {
+    return { settings: fromSaved, source: "saved" };
+  }
+  return { settings: DEFAULT_TASKNOTES_SETTINGS, source: "builtin" };
+}
+
+/** What the user set in this plugin; an empty value means "the default". */
+export type TaskNotesOverrides = {
+  /** "auto" takes the method and its tag / property from the defaults. */
+  identification: "auto" | TaskNotesIdentification;
+  taskTag: string;
+  taskProperty: string;
+  taskPropertyValue: string;
+  completedStatuses: Array<string>;
+  archiveTag: string;
+  properties: Partial<TaskNotesProperties>;
+};
+
+/**
+ * The settings in effect: each value the user set, and the default for
+ * every value left empty.
+ *
+ * How a task is identified is one decision: with "auto" the method, the tag
+ * and the property all come from the defaults. With a method chosen here,
+ * the tag and the property name fall back to the defaults when empty, but
+ * the property value is taken as it is, because an empty value has a
+ * meaning of its own (any note that has the property).
+ */
+export function resolveTaskNotesSettings(
+  overrides: TaskNotesOverrides,
+  defaults: ImportedTaskNotesSettings,
+): Omit<TaskNotesOptions, "enabled" | "since"> {
+  const or = (value: string | undefined, fallback: string) =>
+    value != null && value.trim() !== "" ? value.trim() : fallback;
+  const properties = { ...defaults.properties };
+  for (const key of Object.keys(properties) as Array<
+    keyof TaskNotesProperties
+  >) {
+    properties[key] = or(overrides.properties[key], properties[key]);
+  }
+  const auto = overrides.identification === "auto";
+  return {
+    identification:
+      overrides.identification === "auto"
+        ? defaults.identification
+        : overrides.identification,
+    taskTag: auto ? defaults.taskTag : or(overrides.taskTag, defaults.taskTag),
+    taskProperty: auto
+      ? defaults.taskProperty
+      : or(overrides.taskProperty, defaults.taskProperty),
+    taskPropertyValue: auto
+      ? defaults.taskPropertyValue
+      : overrides.taskPropertyValue.trim(),
+    completedStatuses:
+      overrides.completedStatuses.length > 0
+        ? overrides.completedStatuses
+        : defaults.completedStatuses,
+    archiveTag: or(overrides.archiveTag, defaults.archiveTag),
+    properties,
+  };
 }

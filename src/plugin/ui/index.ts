@@ -514,7 +514,7 @@ export class ReminderPluginUI {
         reminder.file,
         noteKeyOf(
           reminder,
-          this.plugin.settings.taskNotesPropertyNames.reminders.value,
+          this.plugin.settings.taskNotesOptions().properties.reminders ?? "",
         ),
         result,
       );

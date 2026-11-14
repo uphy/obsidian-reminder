@@ -364,22 +364,18 @@ export const ja: Record<string, string> = {
   // --- Note reminders: TaskNotes ---------------------------------------------
   "TaskNotes plugin": "TaskNotes プラグイン",
   "Read TaskNotes reminders": "TaskNotes のリマインダーを読む",
-  "Show the reminders the TaskNotes plugin keeps in its task notes. TaskNotes shows its own notifications for the same reminders, so turn notifications off in one of the two plugins. The settings below have to match TaskNotes' own; they are copied from TaskNotes when this is turned on, and again with the button.":
-    "TaskNotes プラグインがタスクノートに持つリマインダーを表示します。同じリマインダーを TaskNotes も通知するので、どちらかのプラグインの通知をオフにしてください。下の設定は TaskNotes の設定と同じにする必要があります。オンにしたときに TaskNotes からコピーし、ボタンでもう一度コピーできます。",
+  "Show the reminders the TaskNotes plugin keeps in its task notes. TaskNotes shows its own notifications for the same reminders, so turn notifications off in one of the two plugins. The settings below follow TaskNotes' own settings; fill one in only to use another value.":
+    "TaskNotes プラグインがタスクノートに持つリマインダーを表示します。同じリマインダーを TaskNotes も通知するので、どちらかのプラグインの通知をオフにしてください。下の設定は TaskNotes の設定に従います。別の値を使いたい項目だけ入力してください。",
   "Task tag": "タスクのタグ",
   "The tag that marks a note as a TaskNotes task. A tag nested under it counts as well.":
     "ノートが TaskNotes のタスクであることを示すタグ。その下の階層のタグも対象です。",
   "Completed statuses": "完了を表すステータス",
-  "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders.":
-    "タスクの完了を表すステータスの値（カンマ区切り）。完了したタスクのリマインダーは読みません。",
+  "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders. Empty uses the statuses TaskNotes marks as completed.":
+    "タスクの完了を表すステータスの値（カンマ区切り）。完了したタスクのリマインダーは読みません。空にすると、TaskNotes で完了に設定したステータスを使います。",
   "Ignore TaskNotes reminders before":
     "この日より前の TaskNotes のリマインダーを読まない",
   "A date (YYYY-MM-DD). Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.":
     "日付（YYYY-MM-DD）。これより前のリマインダーは読みません。過去のリマインダーが一斉に通知されないよう、読み取りをオンにした日が入ります。空にするとすべての日付を読みます。",
-  "Copy from TaskNotes": "TaskNotes からコピー",
-  "Copied TaskNotes' settings.": "TaskNotes の設定をコピーしました。",
-  "TaskNotes is not installed or not enabled.":
-    "TaskNotes がインストールされていないか、有効になっていません。",
   "Identify tasks by": "タスクの見分け方",
   "How TaskNotes tells a task note from other notes (TaskNotes: Task identification).":
     "TaskNotes がタスクノートをほかのノートと見分ける方法（TaskNotes の Task identification）。",
@@ -411,4 +407,13 @@ export const ja: Record<string, string> = {
   "Recurrence property": "繰り返しのプロパティ",
   "A task with a value here is recurring, and its reminders are left to TaskNotes.":
     "ここに値があるタスクは繰り返しタスクで、そのリマインダーは TaskNotes に任せます。",
+  "Same as TaskNotes": "TaskNotes と同じ",
+  "TaskNotes is not enabled here. Using its settings as last seen.":
+    "この端末では TaskNotes が有効になっていません。最後に読み取った TaskNotes の設定を使っています。",
+  "TaskNotes is not enabled here and its settings were never seen. Using TaskNotes' defaults.":
+    "この端末では TaskNotes が有効になっておらず、設定を読み取ったこともありません。TaskNotes の既定値を使っています。",
+  "TaskNotes: tag “{tag}”": "TaskNotes: タグ「{tag}」",
+  "TaskNotes: property “{property}”": "TaskNotes: プロパティ「{property}」",
+  "TaskNotes: property “{property}” with value “{value}”":
+    "TaskNotes: プロパティ「{property}」の値が「{value}」",
 };

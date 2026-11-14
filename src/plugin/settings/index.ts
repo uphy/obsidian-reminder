@@ -24,10 +24,15 @@ import { normalizeSources } from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
 import {
   DEFAULT_TASKNOTES_SETTINGS,
-  importTaskNotesSettings,
+  resolveTaskNotesSettings,
 } from "model/note/tasknotes-settings";
 import type {
-  TaskNotesIdentification,
+  ImportedTaskNotesSettings,
+  TaskNotesDefaultsSource,
+  TaskNotesOverrides,
+} from "model/note/tasknotes-settings";
+import type {
+  TaskNotesOptions,
   TaskNotesProperties,
 } from "model/note/tasknotes-format";
 import { isDay } from "model/note/value";
@@ -100,7 +105,10 @@ export class Settings {
    * vault; the settings code itself never reaches Obsidian's `app`.
    */
   taskNotesEnabled: SettingModel<boolean, boolean>;
-  taskNotesIdentification: SettingModel<string, TaskNotesIdentification>;
+  taskNotesIdentification: SettingModel<
+    string,
+    TaskNotesOverrides["identification"]
+  >;
   taskNotesTaskTag: SettingModel<string, string>;
   taskNotesTaskProperty: SettingModel<string, string>;
   taskNotesTaskPropertyValue: SettingModel<string, string>;
@@ -113,10 +121,15 @@ export class Settings {
   >;
   taskNotesSince: SettingModel<string, string>;
   /**
-   * The settings object of the running TaskNotes plugin, or undefined when
-   * it is not enabled. Injected by `main.ts`, which has the `App`.
+   * The defaults of the TaskNotes settings above and where they come from:
+   * the running TaskNotes plugin, what it said the last time it was there,
+   * or TaskNotes' factory defaults. Injected by `main.ts`, which has the
+   * `App` and the saved data.
    */
-  taskNotesSettingsSource: () => unknown = () => undefined;
+  taskNotesDefaults: () => {
+    settings: ImportedTaskNotesSettings;
+    source: TaskNotesDefaultsSource;
+  } = () => ({ settings: DEFAULT_TASKNOTES_SETTINGS, source: "builtin" });
   noteReminderStats: (source: NoteReminderSource) => NoteReminderSourceStats =
     () => ({ ignored: 0, foreignDone: 0 });
   /**
@@ -427,17 +440,24 @@ export class Settings {
       .key("taskNotesEnabled")
       .name("Read TaskNotes reminders")
       .desc(
-        "Show the reminders the TaskNotes plugin keeps in its task notes. TaskNotes shows its own notifications for the same reminders, so turn notifications off in one of the two plugins. The settings below have to match TaskNotes' own; they are copied from TaskNotes when this is turned on, and again with the button.",
+        "Show the reminders the TaskNotes plugin keeps in its task notes. TaskNotes shows its own notifications for the same reminders, so turn notifications off in one of the two plugins. The settings below follow TaskNotes' own settings; fill one in only to use another value.",
       )
       .tag(TAG_RESCAN)
       .toggle(false)
-      .button("Copy from TaskNotes", (context) => {
-        const copied = this.copyTaskNotesSettings();
-        context.setInfo(copied ? t("Copied TaskNotes' settings.") : null);
-        context.setValidationError(
-          copied ? null : t("TaskNotes is not installed or not enabled."),
+      .onAnyValueChanged((context) => {
+        // Says where the values shown as placeholders below come from.
+        const source = this.taskNotesDefaults().source;
+        context.setInfo(
+          !this.taskNotesEnabled.value || source === "tasknotes"
+            ? null
+            : source === "saved"
+              ? t(
+                  "TaskNotes is not enabled here. Using its settings as last seen.",
+                )
+              : t(
+                  "TaskNotes is not enabled here and its settings were never seen. Using TaskNotes' defaults.",
+                ),
         );
-        context.registry.forEach((c) => c.update());
       })
       .build(new RawSerde());
 
@@ -448,7 +468,8 @@ export class Settings {
       };
     const byTag = () => this.taskNotesIdentification.value === "tag";
     const byProperty = () => this.taskNotesIdentification.value === "property";
-    const defaults = DEFAULT_TASKNOTES_SETTINGS;
+    // A default is read when it is shown, so it is TaskNotes' current one.
+    const defaults = () => this.taskNotesDefaults().settings;
     const trimmed = {
       unmarshal: (raw: string) => raw.trim(),
       marshal: (value: string) => value,
@@ -462,14 +483,33 @@ export class Settings {
         "How TaskNotes tells a task note from other notes (TaskNotes: Task identification).",
       )
       .tag(TAG_RESCAN)
-      .dropdown(defaults.identification)
+      .dropdown("auto")
+      .addOption("Same as TaskNotes", "auto")
       .addOption("Tag", "tag")
       .addOption("Property", "property")
-      .onAnyValueChanged(whenTaskNotes())
+      .onAnyValueChanged((context) => {
+        whenTaskNotes()(context);
+        // With "Same as TaskNotes", says what that currently is.
+        const d = defaults();
+        context.setInfo(
+          this.taskNotesIdentification.value !== "auto"
+            ? null
+            : d.identification === "tag"
+              ? t("TaskNotes: tag “{tag}”", { tag: d.taskTag })
+              : d.taskPropertyValue === ""
+                ? t("TaskNotes: property “{property}”", {
+                    property: d.taskProperty,
+                  })
+                : t("TaskNotes: property “{property}” with value “{value}”", {
+                    property: d.taskProperty,
+                    value: d.taskPropertyValue,
+                  }),
+        );
+      })
       .build({
-        unmarshal: (raw: string): TaskNotesIdentification =>
-          raw === "property" ? "property" : "tag",
-        marshal: (value: TaskNotesIdentification) => value,
+        unmarshal: (raw: string): TaskNotesOverrides["identification"] =>
+          raw === "tag" || raw === "property" ? raw : "auto",
+        marshal: (value: TaskNotesOverrides["identification"]) => value,
       });
 
     this.taskNotesTaskTag = this.settings
@@ -480,10 +520,10 @@ export class Settings {
         "The tag that marks a note as a TaskNotes task. A tag nested under it counts as well.",
       )
       .tag(TAG_RESCAN)
-      .text(defaults.taskTag)
-      .placeHolder(defaults.taskTag)
+      .text("")
+      .placeHolder(() => defaults().taskTag)
       .onAnyValueChanged(whenTaskNotes(byTag))
-      .build(new RawSerde());
+      .build(trimmed);
 
     this.taskNotesTaskProperty = this.settings
       .newSettingBuilder()
@@ -491,7 +531,8 @@ export class Settings {
       .name("Task property")
       .desc("The property that marks a note as a TaskNotes task.")
       .tag(TAG_RESCAN)
-      .text(defaults.taskProperty)
+      .text("")
+      .placeHolder(() => defaults().taskProperty)
       .onAnyValueChanged(whenTaskNotes(byProperty))
       .build(trimmed);
 
@@ -503,7 +544,7 @@ export class Settings {
         "The value the task property holds in a task note. Empty means any note that has the property.",
       )
       .tag(TAG_RESCAN)
-      .text(defaults.taskPropertyValue)
+      .text("")
       .onAnyValueChanged(whenTaskNotes(byProperty))
       .build(trimmed);
 
@@ -512,11 +553,11 @@ export class Settings {
       .key("taskNotesCompletedStatuses")
       .name("Completed statuses")
       .desc(
-        "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders.",
+        "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders. Empty uses the statuses TaskNotes marks as completed.",
       )
       .tag(TAG_RESCAN)
-      .text(defaults.completedStatuses.join(", "))
-      .placeHolder("done")
+      .text("")
+      .placeHolder(() => defaults().completedStatuses.join(", "))
       .onAnyValueChanged(whenTaskNotes())
       .build({
         unmarshal: (raw: string) =>
@@ -533,8 +574,8 @@ export class Settings {
       .name("Archive tag")
       .desc("The tag of an archived task. Archived tasks have no reminders.")
       .tag(TAG_RESCAN)
-      .text(defaults.archiveTag)
-      .placeHolder(defaults.archiveTag)
+      .text("")
+      .placeHolder(() => defaults().archiveTag)
       .onAnyValueChanged(whenTaskNotes())
       .build(trimmed);
 
@@ -549,15 +590,11 @@ export class Settings {
         .name(name)
         .desc(desc)
         .tag(TAG_RESCAN)
-        .text(defaults.properties[field])
-        .placeHolder(defaults.properties[field])
+        // Empty means the name TaskNotes uses, shown as the placeholder.
+        .text("")
+        .placeHolder(() => defaults().properties[field])
         .onAnyValueChanged(whenTaskNotes())
-        .build({
-          // An emptied field means TaskNotes' default name.
-          unmarshal: (raw: string) =>
-            raw.trim() === "" ? defaults.properties[field] : raw.trim(),
-          marshal: (value: string) => value,
-        });
+        .build(trimmed);
     this.taskNotesPropertyNames = {
       reminders: propertyName(
         "reminders",
@@ -611,19 +648,11 @@ export class Settings {
     // while the saved settings are loaded too, which is harmless: the saved
     // cut-off is loaded after the switch (the order of the builders above)
     // and replaces what was set here.
-    //
-    // The same goes for copying TaskNotes' settings: what TaskNotes says
-    // when the switch is turned on is the starting point, and saved values
-    // replace it while the settings are loaded.
     this.taskNotesEnabled.rawValue.onChanged(() => {
-      if (!this.taskNotesEnabled.value) {
-        return;
-      }
-      if (this.taskNotesSince.value === "") {
+      if (this.taskNotesEnabled.value && this.taskNotesSince.value === "") {
         this.taskNotesSince.rawValue.value =
           DateTime.now().format("YYYY-MM-DD");
       }
-      this.copyTaskNotesSettings();
     });
 
     this.editorReminderDisplay = this.settings
@@ -1031,30 +1060,38 @@ export class Settings {
   }
 
   /**
-   * Copies what the TaskNotes plugin says about its task notes (how a task
-   * is identified, the completed statuses, the archive tag, the property
-   * names) into this plugin's settings. False when TaskNotes is not there,
-   * in which case nothing is changed.
+   * The TaskNotes settings in effect: what is set here, and TaskNotes' own
+   * value (see `taskNotesDefaults`) for everything left empty.
    */
-  public copyTaskNotesSettings(): boolean {
-    const imported = importTaskNotesSettings(this.taskNotesSettingsSource());
-    if (imported == null) {
-      return false;
-    }
-    this.taskNotesIdentification.rawValue.value = imported.identification;
-    this.taskNotesTaskTag.rawValue.value = imported.taskTag;
-    this.taskNotesTaskProperty.rawValue.value = imported.taskProperty;
-    this.taskNotesTaskPropertyValue.rawValue.value = imported.taskPropertyValue;
-    this.taskNotesCompletedStatuses.rawValue.value =
-      imported.completedStatuses.join(", ");
-    this.taskNotesArchiveTag.rawValue.value = imported.archiveTag;
-    for (const field of Object.keys(imported.properties) as Array<
-      keyof TaskNotesProperties
-    >) {
-      this.taskNotesPropertyNames[field].rawValue.value =
-        imported.properties[field];
-    }
-    return true;
+  public taskNotesOptions(): TaskNotesOptions {
+    const names = this.taskNotesPropertyNames;
+    return {
+      enabled: this.taskNotesEnabled.value,
+      since: this.taskNotesSince.value,
+      ...resolveTaskNotesSettings(
+        {
+          identification: this.taskNotesIdentification.value,
+          taskTag: this.taskNotesTaskTag.value,
+          taskProperty: this.taskNotesTaskProperty.value,
+          taskPropertyValue: this.taskNotesTaskPropertyValue.value,
+          completedStatuses: this.taskNotesCompletedStatuses.value,
+          archiveTag: this.taskNotesArchiveTag.value,
+          properties: {
+            title: names.title.value,
+            status: names.status.value,
+            due: names.due.value,
+            scheduled: names.scheduled.value,
+            reminders: names.reminders.value,
+            recurrence: names.recurrence.value,
+          },
+        },
+        // Not asked for while the reading is off: this runs for every note
+        // that is read.
+        this.taskNotesEnabled.value
+          ? this.taskNotesDefaults().settings
+          : DEFAULT_TASKNOTES_SETTINGS,
+      ),
+    };
   }
 
   /**

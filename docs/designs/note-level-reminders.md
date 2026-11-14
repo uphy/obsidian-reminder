@@ -839,17 +839,27 @@ one. A date-only base counts from midnight.
     value), the archive tag, and the names of `title`, `status`, `due`,
     `scheduled`, `reminders` and `recurrence`. The record of handled
     reminders is the reminders property with `-done` appended.
-    *   The fields are this plugin's own settings, filled by copying from
-        the running TaskNotes plugin's settings object: when the switch is
-        turned on, and with a "Copy from TaskNotes" button. They are not read
-        from TaskNotes on every scan, because TaskNotes may be missing on a
-        device that syncs the vault, may load after this plugin, and offers
-        no event for a settings change; a saved copy reads the same on every
-        device.
+    *   An empty field means "what TaskNotes says", and every field starts
+        empty (how a task is identified starts as "Same as TaskNotes"), so
+        the reading follows TaskNotes without any setup. A field is filled in
+        only to deviate. The value in effect is shown as the field's
+        placeholder.
+    *   "What TaskNotes says" is resolved in three steps
+        (`taskNotesDefaults`): the settings object of the running TaskNotes
+        plugin; else the copy of it saved in this plugin's data the last
+        time TaskNotes was running; else TaskNotes' factory defaults. The
+        saved copy covers a device that syncs the vault without TaskNotes
+        and a session in which TaskNotes loads after this plugin. The
+        settings tab says which step is in use when it is not the first.
+    *   The saved copy is refreshed whenever TaskNotes' settings are read
+        and differ from it; a difference forces a rescan while the reading
+        is on, because notes were read under the old names (the same
+        pattern as the statuses seeded from the Tasks plugin).
     *   That settings object is not an API. `importTaskNotesSettings` checks
         each field's type and falls back to TaskNotes' default for anything
         missing or of another type, so a TaskNotes that renames a key
-        degrades to the defaults.
+        degrades to the defaults. The saved copy is read back through the
+        same function.
     *   Not taken over: TaskNotes' excluded folders. A format sees a note's
         frontmatter only, and this plugin's own excluded paths cover the
         need.

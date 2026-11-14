@@ -18,6 +18,10 @@ import {
 import type { NoteReminderSource } from "model/note/sources";
 import type { Frontmatter } from "model/note/format";
 import { TaskNotesNoteReminderFormat } from "model/note/tasknotes-format";
+import {
+  exportTaskNotesSettings,
+  taskNotesDefaults,
+} from "model/note/tasknotes-settings";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
@@ -71,24 +75,7 @@ export default class ReminderPlugin extends Plugin {
 
     this._noteReminderReader = new NoteReminderReader([
       new PropertyNoteReminderFormat(() => this.noteReminderSources()),
-      new TaskNotesNoteReminderFormat(() => ({
-        enabled: this.settings.taskNotesEnabled.value,
-        identification: this.settings.taskNotesIdentification.value,
-        taskTag: this.settings.taskNotesTaskTag.value,
-        taskProperty: this.settings.taskNotesTaskProperty.value,
-        taskPropertyValue: this.settings.taskNotesTaskPropertyValue.value,
-        completedStatuses: this.settings.taskNotesCompletedStatuses.value,
-        archiveTag: this.settings.taskNotesArchiveTag.value,
-        properties: {
-          title: this.settings.taskNotesPropertyNames.title.value,
-          status: this.settings.taskNotesPropertyNames.status.value,
-          due: this.settings.taskNotesPropertyNames.due.value,
-          scheduled: this.settings.taskNotesPropertyNames.scheduled.value,
-          reminders: this.settings.taskNotesPropertyNames.reminders.value,
-          recurrence: this.settings.taskNotesPropertyNames.recurrence.value,
-        },
-        since: this.settings.taskNotesSince.value,
-      })),
+      new TaskNotesNoteReminderFormat(() => this.settings.taskNotesOptions()),
     ]);
     const fileAt = (path: string): TFile => {
       const file = this.app.vault.getAbstractFileByPath(path);
@@ -108,11 +95,7 @@ export default class ReminderPlugin extends Plugin {
       this.noteReminderStats(source);
     this.settings.noteReminderNewCutOff = (property, today) =>
       this.newNoteReminderCutOff(property, today);
-    // TaskNotes keeps its settings on the plugin instance. That is not an
-    // API, so what comes back is checked field by field before use
-    // (`importTaskNotesSettings`).
-    this.settings.taskNotesSettingsSource = () =>
-      this.app.plugins.plugins["tasknotes"]?.settings;
+    this.settings.taskNotesDefaults = () => this.taskNotesDefaults();
 
     this._ui = new ReminderPluginUI(this);
     this._fileSystem = new ReminderPluginFileSystem(
@@ -307,6 +290,29 @@ export default class ReminderPlugin extends Plugin {
     }
     this.settings.noteReminderSources.rawValue.value = rows;
     return true;
+  }
+
+  /**
+   * The defaults of the TaskNotes settings: the running TaskNotes plugin's
+   * own settings, else what it said the last time it was running, else
+   * TaskNotes' factory defaults. What TaskNotes says is recorded on the way,
+   * for the sessions (and synced devices) where it is not there, e.g.
+   * because it loads after this plugin or is not installed.
+   *
+   * TaskNotes keeps its settings on the plugin instance. That is not an API,
+   * so they are checked field by field before use (`importTaskNotesSettings`).
+   */
+  private taskNotesDefaults() {
+    const defaults = taskNotesDefaults(
+      this.app.plugins.plugins.tasknotes?.settings,
+      this.data.knownTaskNotesSettings,
+    );
+    if (defaults.source === "tasknotes") {
+      this.data.updateKnownTaskNotesSettings(
+        exportTaskNotesSettings(defaults.settings),
+      );
+    }
+    return defaults;
   }
 
   /**

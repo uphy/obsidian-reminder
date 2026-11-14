@@ -345,20 +345,17 @@ export const zhCN: Record<string, string> = {
   // --- Note reminders: TaskNotes ---------------------------------------------
   "TaskNotes plugin": "TaskNotes 插件",
   "Read TaskNotes reminders": "读取 TaskNotes 的提醒",
-  "Show the reminders the TaskNotes plugin keeps in its task notes. TaskNotes shows its own notifications for the same reminders, so turn notifications off in one of the two plugins. The settings below have to match TaskNotes' own; they are copied from TaskNotes when this is turned on, and again with the button.":
-    "显示 TaskNotes 插件保存在任务笔记中的提醒。TaskNotes 也会为同样的提醒发出通知，请关闭其中一个插件的通知。下面的设置需要与 TaskNotes 自身的设置一致；开启时会从 TaskNotes 复制，也可以用按钮再次复制。",
+  "Show the reminders the TaskNotes plugin keeps in its task notes. TaskNotes shows its own notifications for the same reminders, so turn notifications off in one of the two plugins. The settings below follow TaskNotes' own settings; fill one in only to use another value.":
+    "显示 TaskNotes 插件保存在任务笔记中的提醒。TaskNotes 也会为同样的提醒发出通知，请关闭其中一个插件的通知。下面的设置跟随 TaskNotes 自身的设置；只有想使用其他值时才需要填写。",
   "Task tag": "任务标签",
   "The tag that marks a note as a TaskNotes task. A tag nested under it counts as well.":
     "将笔记标记为 TaskNotes 任务的标签。其下的子标签也算。",
   "Completed statuses": "表示已完成的状态",
-  "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders.":
-    "表示任务已完成的状态值，用逗号分隔。已完成的任务没有提醒。",
+  "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders. Empty uses the statuses TaskNotes marks as completed.":
+    "表示任务已完成的状态值，用逗号分隔。已完成的任务没有提醒。留空则使用 TaskNotes 中标记为已完成的状态。",
   "Ignore TaskNotes reminders before": "忽略此日期之前的 TaskNotes 提醒",
   "A date (YYYY-MM-DD). Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.":
     "日期（YYYY-MM-DD）。早于此日期的提醒不会被读取。为避免过去的提醒同时发出通知，开启读取时会填入当天的日期。留空则读取所有日期。",
-  "Copy from TaskNotes": "从 TaskNotes 复制",
-  "Copied TaskNotes' settings.": "已复制 TaskNotes 的设置。",
-  "TaskNotes is not installed or not enabled.": "TaskNotes 未安装或未启用。",
   "Identify tasks by": "任务识别方式",
   "How TaskNotes tells a task note from other notes (TaskNotes: Task identification).":
     "TaskNotes 区分任务笔记与其他笔记的方式（TaskNotes 的 Task identification）。",
@@ -389,4 +386,13 @@ export const zhCN: Record<string, string> = {
   "Recurrence property": "重复属性",
   "A task with a value here is recurring, and its reminders are left to TaskNotes.":
     "此处有值的任务是重复任务，其提醒交由 TaskNotes 处理。",
+  "Same as TaskNotes": "与 TaskNotes 相同",
+  "TaskNotes is not enabled here. Using its settings as last seen.":
+    "此设备未启用 TaskNotes。正在使用上次读取到的 TaskNotes 设置。",
+  "TaskNotes is not enabled here and its settings were never seen. Using TaskNotes' defaults.":
+    "此设备未启用 TaskNotes，也从未读取过其设置。正在使用 TaskNotes 的默认值。",
+  "TaskNotes: tag “{tag}”": "TaskNotes：标签“{tag}”",
+  "TaskNotes: property “{property}”": "TaskNotes：属性“{property}”",
+  "TaskNotes: property “{property}” with value “{value}”":
+    "TaskNotes：属性“{property}”的值为“{value}”",
 };

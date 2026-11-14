@@ -43,9 +43,15 @@ A time written with a UTC offset or `Z` is not read.
 
 ## When you changed TaskNotes' settings
 
-TaskNotes lets you rename its properties (**Task properties**), choose how a task note is identified (**Task identification**: a tag or a property), and define your own statuses. This plugin has a setting for each of those it reads: [Identify tasks by](/setting/#identify-tasks-by), [Task tag](/setting/#task-tag), [Task property](/setting/#task-property), [Completed statuses](/setting/#completed-statuses), [Archive tag](/setting/#archive-tag) and the [TaskNotes property names](/setting/#tasknotes-property-names).
+TaskNotes lets you rename its properties (**Task properties**), choose how a task note is identified (**Task identification**: a tag or a property), and define your own statuses. This plugin follows those settings, so there is nothing to set up: rename `due` to `deadline` in TaskNotes, and a reminder "15 minutes before due" counts from `deadline` here as well.
 
-You do not have to fill them in by hand. They are copied from TaskNotes when you turn [Read TaskNotes reminders](/setting/#read-tasknotes-reminders) on. After changing something in TaskNotes later, press **Copy from TaskNotes** next to that switch. The copy needs TaskNotes to be installed and enabled on the device; the copied values are saved with this plugin's settings, so a device without TaskNotes still reads the task notes.
+Each of these also has a setting here: [Identify tasks by](/setting/#identify-tasks-by), [Task tag](/setting/#task-tag), [Task property](/setting/#task-property), [Completed statuses](/setting/#completed-statuses), [Archive tag](/setting/#archive-tag) and the [TaskNotes property names](/setting/#tasknotes-property-names). Left empty, a setting uses TaskNotes' value, which is shown greyed in the field. Fill one in only to use another value than TaskNotes does.
+
+Where TaskNotes' values come from, in this order:
+
+1. The TaskNotes plugin running in this vault.
+2. What TaskNotes said the last time it was running. This is saved with this plugin's settings, so a device that syncs the vault without TaskNotes reads the task notes the same way.
+3. TaskNotes' factory defaults (`task`, `done`, `archived`, `due`, `reminders`, …), when TaskNotes was never seen.
 
 With a renamed reminders property, handled reminders are recorded under that name: `alerts` gets `alerts-done`.
 
