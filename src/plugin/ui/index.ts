@@ -470,6 +470,10 @@ export class ReminderPluginUI {
    * reminder stays muted (it was muted when it was shown) until the write
    * lands and the note's reload removes or moves it.
    *
+   * - `unchanged`: the snooze chose the time the note already holds, so
+   *   nothing was written and no reload will replace the reminder. It is
+   *   unmuted, and is notified again as a line reminder in the same
+   *   situation is.
    * - `stale` / `missing`: the note has moved on (another plugin changed the
    *   date, another device handled it). Nothing was written; the note is
    *   reloaded so the outdated reminder goes away.
@@ -479,6 +483,10 @@ export class ReminderPluginUI {
    */
   private applyToNote(reminder: Reminder, action: NoteReminderAction) {
     void this.plugin.noteReminders.apply(reminder, action).then((result) => {
+      if (result === "unchanged") {
+        reminder.muteNotification = false;
+        return;
+      }
       this.reportNoteWrite(reminder.file, noteKeyOf(reminder), result);
     });
   }

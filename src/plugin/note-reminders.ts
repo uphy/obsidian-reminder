@@ -27,7 +27,7 @@ export interface NoteReminderServiceDeps {
 }
 
 /**
- * What became of a write. The first four come from the store; `failed`
+ * What became of a write. All but the last come from the store; `failed`
  * means the note could not be read or written at all.
  */
 export type WriteResult = ApplyOutcome | "failed";

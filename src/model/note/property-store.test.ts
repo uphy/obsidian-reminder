@@ -212,6 +212,29 @@ describe("PropertyNoteReminderStore#apply() snooze", (): void => {
     expect(fm).toStrictEqual({ "follow-up": "2026-11-27" });
   });
 
+  test("snoozing onto the time it already has writes nothing", (): void => {
+    const fm: Frontmatter = { "follow-up": "2026-11-20" };
+    // A whole-day choice that is today ("Next Saturday" on a Saturday), and
+    // a time of day on the same day, which a date drops.
+    expect(
+      store.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-20")),
+    ).toBe("unchanged");
+    expect(
+      store.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-20T10:30")),
+    ).toBe("unchanged");
+    expect(fm).toStrictEqual({ "follow-up": "2026-11-20" });
+
+    const timed: Frontmatter = { "follow-up": "2026-11-20T09:00:00" };
+    expect(
+      store.apply(
+        timed,
+        "follow-up",
+        snooze("2026-11-20T09:00", "2026-11-20T09:00"),
+      ),
+    ).toBe("unchanged");
+    expect(timed).toStrictEqual({ "follow-up": "2026-11-20T09:00:00" });
+  });
+
   test("snoozing onto the recorded time removes the record", (): void => {
     const fm: Frontmatter = {
       "follow-up": "2026-11-20",

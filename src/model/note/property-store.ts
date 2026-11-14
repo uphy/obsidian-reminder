@@ -88,6 +88,14 @@ export class PropertyNoteReminderStore implements NoteReminderStore {
 
     if (action.type === "snooze") {
       const next = inShapeOf(action.time, current.hasTimePart);
+      if (formatTimeValue(next) === formatTimeValue(current)) {
+        // "Next Saturday" on a Saturday: the note already holds this time.
+        // The written text is compared, because a date made from a
+        // date-time still carries that time of day.
+        // Reporting it as written would leave the reminder muted for good,
+        // because the reload after the write finds nothing changed.
+        return "unchanged";
+      }
       fm[key] = formatTimeValue(next);
       if (done != null && sameTime(done, next)) {
         // Otherwise the chosen time would count as handled and never show.

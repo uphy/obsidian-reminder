@@ -28,13 +28,16 @@ export type NoteReminderAction =
 
 /**
  * - `applied`: the frontmatter object was changed.
+ * - `unchanged`: a snooze chose the time the reminder already has, so there
+ *   is nothing to write and the reminder is still due.
  * - `stale`: the reminder exists but is not pending at `expected` (the value
  *   changed, or it is already recorded as done).
  * - `missing`: the reminder is gone.
  * - `blocked`: a companion property holds a value the plugin must not
  *   overwrite.
  */
-export type ApplyOutcome = "applied" | "stale" | "missing" | "blocked";
+export type ApplyOutcome =
+  "applied" | "unchanged" | "stale" | "missing" | "blocked";
 
 /**
  * A way of writing note-level reminders in frontmatter.
