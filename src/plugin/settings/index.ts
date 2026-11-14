@@ -89,6 +89,10 @@ export class Settings {
    * whose done property it can't use. Replaced by the plugin, which has the
    * vault; the settings code itself never reaches Obsidian's `app`.
    */
+  taskNotesEnabled: SettingModel<boolean, boolean>;
+  taskNotesTaskTag: SettingModel<string, string>;
+  taskNotesCompletedStatuses: SettingModel<string, Array<string>>;
+  taskNotesSince: SettingModel<string, string>;
   noteReminderStats: (source: NoteReminderSource) => NoteReminderSourceStats =
     () => ({ ignored: 0, foreignDone: 0 });
   editorReminderDisplay: SettingModel<boolean, boolean>;
@@ -371,6 +375,82 @@ export class Settings {
         unmarshal: normalizeSources,
         marshal: (value: Array<NoteReminderSource>) => value,
       });
+
+    this.taskNotesEnabled = this.settings
+      .newSettingBuilder()
+      .key("taskNotesEnabled")
+      .name("Read TaskNotes reminders")
+      .desc(
+        "Show the reminders the TaskNotes plugin keeps in its task notes. TaskNotes shows its own notifications for the same reminders, so turn notifications off in one of the two plugins. Only TaskNotes' default property names are supported.",
+      )
+      .tag(TAG_RESCAN)
+      .toggle(false)
+      .build(new RawSerde());
+
+    this.taskNotesTaskTag = this.settings
+      .newSettingBuilder()
+      .key("taskNotesTaskTag")
+      .name("Task tag")
+      .desc("The tag that marks a note as a TaskNotes task.")
+      .tag(TAG_RESCAN)
+      .text("task")
+      .placeHolder("task")
+      .onAnyValueChanged((context) => {
+        context.setEnabled(this.taskNotesEnabled.value);
+      })
+      .build(new RawSerde());
+
+    this.taskNotesCompletedStatuses = this.settings
+      .newSettingBuilder()
+      .key("taskNotesCompletedStatuses")
+      .name("Completed statuses")
+      .desc(
+        "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders.",
+      )
+      .tag(TAG_RESCAN)
+      .text("done")
+      .placeHolder("done")
+      .onAnyValueChanged((context) => {
+        context.setEnabled(this.taskNotesEnabled.value);
+      })
+      .build({
+        unmarshal: (raw: string) =>
+          raw
+            .split(",")
+            .map((status) => status.trim())
+            .filter((status) => status !== ""),
+        marshal: (value: Array<string>) => value.join(", "),
+      });
+
+    this.taskNotesSince = this.settings
+      .newSettingBuilder()
+      .key("taskNotesSince")
+      .name("Ignore TaskNotes reminders before")
+      .desc(
+        "A date (YYYY-MM-DD). Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.",
+      )
+      .tag(TAG_RESCAN)
+      .text("")
+      .placeHolder("YYYY-MM-DD")
+      .onAnyValueChanged((context) => {
+        context.setEnabled(this.taskNotesEnabled.value);
+      })
+      .build({
+        // Anything that is not a date is read as "no cut-off".
+        unmarshal: (raw: string) =>
+          /^\d{4}-\d{2}-\d{2}$/.test(raw.trim()) ? raw.trim() : "",
+        marshal: (value: string) => value,
+      });
+    // Turning the reading on without a cut-off sets it to today. This runs
+    // while the saved settings are loaded too, which is harmless: the saved
+    // cut-off is loaded after the switch (the order of the builders above)
+    // and replaces what was set here.
+    this.taskNotesEnabled.rawValue.onChanged(() => {
+      if (this.taskNotesEnabled.value && this.taskNotesSince.value === "") {
+        this.taskNotesSince.rawValue.value =
+          DateTime.now().format("YYYY-MM-DD");
+      }
+    });
 
     this.editorReminderDisplay = this.settings
       .newSettingBuilder()
@@ -719,10 +799,16 @@ export class Settings {
     reminderFormatsPage
       .newGroup("Kanban plugin format")
       .addSettings(reminderFormatSettings.enableKanbanPluginReminderFormat);
-    this.settings
-      .newPage("Note reminders")
-      .newGroup()
-      .addSettings(this.noteReminderSources);
+    const noteRemindersPage = this.settings.newPage("Note reminders");
+    noteRemindersPage.newGroup().addSettings(this.noteReminderSources);
+    noteRemindersPage
+      .newGroup("TaskNotes plugin")
+      .addSettings(
+        this.taskNotesEnabled,
+        this.taskNotesTaskTag,
+        this.taskNotesCompletedStatuses,
+        this.taskNotesSince,
+      );
     this.settings.newPage("Display").newGroup().addSettings(
       // First in this tab on purpose: it changes how every other label on
       // this page reads.

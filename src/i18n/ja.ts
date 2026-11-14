@@ -356,4 +356,20 @@ export const ja: Record<string, string> = {
     "このルールは読み取れません。例: 「every day」「every week on Monday」「every month」",
   "The repeat rule in “{property}” of {file} is not understood, so the reminder will not repeat":
     "{file} の「{property}」の繰り返しルールを読み取れないため、このリマインダーは繰り返しません",
+
+  // --- Note reminders: TaskNotes ---------------------------------------------
+  "TaskNotes plugin": "TaskNotes プラグイン",
+  "Read TaskNotes reminders": "TaskNotes のリマインダーを読む",
+  "Show the reminders the TaskNotes plugin keeps in its task notes. TaskNotes shows its own notifications for the same reminders, so turn notifications off in one of the two plugins. Only TaskNotes' default property names are supported.":
+    "TaskNotes プラグインがタスクノートに持つリマインダーを表示します。同じリマインダーを TaskNotes も通知するので、どちらかのプラグインの通知をオフにしてください。対応しているのは TaskNotes の既定のプロパティ名だけです。",
+  "Task tag": "タスクのタグ",
+  "The tag that marks a note as a TaskNotes task.":
+    "ノートが TaskNotes のタスクであることを示すタグ。",
+  "Completed statuses": "完了を表すステータス",
+  "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders.":
+    "タスクの完了を表すステータスの値（カンマ区切り）。完了したタスクのリマインダーは読みません。",
+  "Ignore TaskNotes reminders before":
+    "この日より前の TaskNotes のリマインダーを読まない",
+  "A date (YYYY-MM-DD). Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.":
+    "日付（YYYY-MM-DD）。これより前のリマインダーは読みません。過去のリマインダーが一斉に通知されないよう、読み取りをオンにした日が入ります。空にするとすべての日付を読みます。",
 };

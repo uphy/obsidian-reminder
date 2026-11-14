@@ -13,6 +13,7 @@ import { NoteReminderReader } from "model/note/reader";
 import { countSourceStats, withManagedSource } from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
 import type { Frontmatter } from "model/note/store";
+import { TaskNotesReminderStore } from "model/note/tasknotes-store";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
@@ -66,6 +67,12 @@ export default class ReminderPlugin extends Plugin {
 
     this._noteReminderReader = new NoteReminderReader([
       new PropertyNoteReminderStore(() => this.noteReminderSources()),
+      new TaskNotesReminderStore(() => ({
+        enabled: this.settings.taskNotesEnabled.value,
+        taskTag: this.settings.taskNotesTaskTag.value,
+        completedStatuses: this.settings.taskNotesCompletedStatuses.value,
+        since: this.settings.taskNotesSince.value,
+      })),
     ]);
     const fileAt = (path: string): TFile => {
       const file = this.app.vault.getAbstractFileByPath(path);
@@ -131,7 +138,9 @@ export default class ReminderPlugin extends Plugin {
       accessToken: () => this.settings.ntfyAccessToken.value,
       reminders: () => this.reminders.reminders,
       defaultTime: () => this.settings.reminderTime.value,
-      hasNoteReminderSources: () => this.noteReminderSources().length > 0,
+      hasNoteReminderSources: () =>
+        this.noteReminderSources().length > 0 ||
+        this.settings.taskNotesEnabled.value,
       vaultName: () => this.app.vault.getName(),
       registerInterval: (id) => this.registerInterval(id),
       // `throw: false` so an HTTP error status comes back as a response the

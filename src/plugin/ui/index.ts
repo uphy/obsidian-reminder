@@ -4,6 +4,7 @@ import { noteNameOf } from "model/note/reader";
 import { hasUnreadableRepeatRule } from "model/note/property-store";
 import { DONE_SUFFIX, REPEAT_SUFFIX } from "model/note/sources";
 import type { NoteReminderAction } from "model/note/store";
+import { TASKNOTES_REMINDERS } from "model/note/tasknotes-store";
 import { snoozeTimeFor } from "model/note/value";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
@@ -569,8 +570,17 @@ export class ReminderPluginUI {
   }
 }
 
+/**
+ * The property a notice about `reminder` names: its own for a property
+ * reminder, the `reminders` list for a TaskNotes one (whose key is the id of
+ * an entry in that list).
+ */
 function noteKeyOf(reminder: Reminder): string {
-  return reminder.origin.kind === "note" ? reminder.origin.key : "";
+  const origin = reminder.origin;
+  if (origin.kind !== "note") {
+    return "";
+  }
+  return origin.store === "tasknotes" ? TASKNOTES_REMINDERS : origin.key;
 }
 
 class EditDetector {
