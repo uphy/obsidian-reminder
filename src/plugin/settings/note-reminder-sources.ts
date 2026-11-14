@@ -62,7 +62,8 @@ export function renderNoteReminderSources(
         newName = value;
       });
       text.inputEl.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
+        // The Enter that confirms an IME conversion is not a request to add.
+        if (e.key === "Enter" && !e.isComposing) {
           add();
         }
       });
