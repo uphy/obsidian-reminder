@@ -1,5 +1,6 @@
 import { t } from "i18n";
 import type ReminderPlugin from "main";
+import { propertyOf } from "model/note/property-format";
 import type { Reminder } from "model/reminder";
 import { MarkdownView, TFile } from "obsidian";
 import { openNoteReminderModal } from "./note-reminder-modal";
@@ -95,10 +96,10 @@ export class NoteReminderIndicator {
       .managedNoteReminderSources()
       .map((source) => source.property);
     return (this.plugin.reminders.fileToReminders.get(path) ?? []).filter(
-      (r) =>
-        r.origin.kind === "note" &&
-        r.origin.format === "property" &&
-        managed.includes(r.origin.key),
+      (r) => {
+        const property = propertyOf(r);
+        return property != null && managed.includes(property);
+      },
     );
   }
 

@@ -1,5 +1,5 @@
 import type { Frontmatter } from "./format";
-import { isBeforeDay, isEmptyValue, parseTimeValue } from "./value";
+import { isBeforeDay, isDay, isEmptyValue, parseTimeValue } from "./value";
 
 export const DONE_SUFFIX = "-done";
 export const TITLE_SUFFIX = "-title";
@@ -34,8 +34,6 @@ export type NoteReminderSource = {
   since: string;
 };
 
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
-
 /** Drops anything that is not a well-formed row (hand-edited data). */
 export function normalizeSources(value: unknown): Array<NoteReminderSource> {
   if (!Array.isArray(value)) {
@@ -56,7 +54,7 @@ export function normalizeSources(value: unknown): Array<NoteReminderSource> {
     rows.push({
       property,
       managed: row["managed"] === true,
-      since: typeof since === "string" && DAY.test(since) ? since : "",
+      since: typeof since === "string" && isDay(since) ? since : "",
     });
   }
   return rows;

@@ -3,10 +3,15 @@ import {
   formatTimeValue,
   inShapeOf,
   isBeforeDay,
+  isDay,
   isEmptyValue,
+  isOwnText,
   parseTimeValue,
+  removeOwnText,
   sameTime,
   snoozeTimeFor,
+  textValue,
+  writeOwnText,
 } from "./value";
 
 function parsed(value: unknown): string | null {
@@ -154,5 +159,44 @@ describe("snoozeTimeFor()", (): void => {
     expect(snoozed("2026-11-20T14:30", "2026-11-20T15:00")).toBe(
       "2026-11-20T15:00:00",
     );
+  });
+});
+
+describe("companion text values", (): void => {
+  test("isDay()", (): void => {
+    expect(isDay("2026-11-20")).toBe(true);
+    expect(isDay("2026-11-20T09:00")).toBe(false);
+    expect(isDay("")).toBe(false);
+  });
+
+  test("textValue() joins lines and ignores what is not text", (): void => {
+    expect(textValue("  Send\n  the report ")).toBe("Send the report");
+    expect(textValue(3)).toBe("");
+    expect(textValue(undefined)).toBe("");
+  });
+
+  test("writeOwnText() writes text and removes on empty", (): void => {
+    const fm: Record<string, unknown> = {};
+    writeOwnText(fm, "t", " A\nB ");
+    expect(fm).toStrictEqual({ t: "A B" });
+    writeOwnText(fm, "t", "  ");
+    expect(fm).toStrictEqual({});
+  });
+
+  test("a value that is not text is left alone", (): void => {
+    const fm: Record<string, unknown> = { t: ["x"], n: 3 };
+    writeOwnText(fm, "t", "A");
+    removeOwnText(fm, "n");
+    expect(fm).toStrictEqual({ t: ["x"], n: 3 });
+    expect(isOwnText(null)).toBe(true);
+    expect(isOwnText("")).toBe(true);
+    expect(isOwnText(false)).toBe(false);
+  });
+
+  test("removeOwnText() removes text and empty values", (): void => {
+    const fm: Record<string, unknown> = { a: "x", b: null };
+    removeOwnText(fm, "a");
+    removeOwnText(fm, "b");
+    expect(fm).toStrictEqual({});
   });
 });
