@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
+  import { timeOptions } from "./time-options";
   import { TimedInputHandler } from "./timed-input-handler";
   export let value = "00:00";
   // step in minutes
@@ -19,19 +20,9 @@
     dispatch("blur");
   }
 
-  function generateOptions() {
-    let options = [];
-    for (let i = 0; i < 60 * 24; i += step) {
-      const hour = Math.floor(i / 60);
-      const minute = i % 60;
-      options.push(
-        `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`,
-      );
-    }
-    return options;
-  }
-
-  const options = generateOptions();
+  // Includes the current value when it is not on a step, so the select is
+  // never left blank.
+  const options = timeOptions(step, value);
 
   const timedInputHandler = new TimedInputHandler();
   function handleKeyDown(event) {
