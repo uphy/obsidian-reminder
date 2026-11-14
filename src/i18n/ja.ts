@@ -332,6 +332,7 @@ export const ja: Record<string, string> = {
   "Show a bell in every note's header": "すべてのノートのヘッダーにベルを表示",
   "A note without a reminder gets a faint bell that opens the reminder dialog. When off, the bell is shown only while a reminder is waiting.":
     "リマインダーが無いノートには、リマインダーのダイアログを開く薄いベルを表示します。オフのときは、未完了のリマインダーがあるときだけベルを表示します。",
+  "Set a time": "時刻を指定",
   "Set reminder for this note": "このノートにリマインダーを設定",
   "Reminder for {note}": "{note} のリマインダー",
   "Scheduled:": "予定:",

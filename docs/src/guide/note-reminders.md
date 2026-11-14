@@ -126,7 +126,7 @@ The bell in the note's header shows the state of the note and opens the dialog, 
 
 If you would rather keep note headers empty, turn off [Show a bell in every note's header](/setting/#show-a-bell-in-every-note-s-header): the bell is then shown only while a reminder is waiting.
 
-Whether a reminder has a time is decided by what you pick: leave the time field untouched for a date, or choose a time for a date and time.
+**OK** saves what the dialog shows. A new reminder starts with the [Reminder time](/setting/#reminder-time); pick another time if you like. For a reminder without a time (a date), untick the box next to the time: you are then notified at the Reminder time, whatever that setting is on the day.
 
 :::tip
 Obsidian keeps one type per property name for the whole vault. If `reminder` is typed "Date", a value with a time is shown as plain text in the properties panel and in Bases; if it is typed "Date & time", a date is shown with `00:00`. Reminders work either way. Pick one kind of value per property if you care about how it looks.
