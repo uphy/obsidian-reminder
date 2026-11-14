@@ -247,6 +247,12 @@ export class ReminderPluginUI {
   reload(force: boolean = false) {
     this.viewProxy.reload(force);
     this.overdueStatusBar.refresh();
+    if (force) {
+      // A full rescan ends here without `invalidate()` when no reminder
+      // changed, and a source's "Managed" flag changes which notes get a
+      // bell without changing any reminder.
+      this.noteReminderIndicator.refresh();
+    }
   }
 
   showAutoComplete(editor: AutoCompletableEditor) {
