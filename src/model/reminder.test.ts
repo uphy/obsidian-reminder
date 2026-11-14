@@ -1,4 +1,5 @@
 import { moment } from "model/moment";
+import { ConstantReference } from "./ref";
 import { DateTime, Time } from "./time";
 import { Reminder, Reminders, groupReminders } from "./reminder";
 import type { DateDisplayFormat, GroupedReminder } from "./reminder";
@@ -170,5 +171,26 @@ describe("Reminders#muteExpiredReminders()", (): void => {
     expect(count).toBe(1);
     expect(alreadyMuted.muteNotification).toBe(true);
     expect(newlyMuted.muteNotification).toBe(true);
+  });
+});
+
+describe("Reminders#timeOfDay()", (): void => {
+  function remindersAt(reminderTime: string): Reminders {
+    const reminders = new Reminders(() => {});
+    reminders.reminderTime = new ConstantReference(Time.parse(reminderTime));
+    return reminders;
+  }
+
+  test("a reminder without a time shows the reminder time, not midnight", (): void => {
+    const date = new DateTime(moment("2026-11-14", "YYYY-MM-DD"), false);
+    expect(remindersAt("09:00").timeOfDay(date)).toBe("09:00");
+  });
+
+  test("a reminder with a time shows its own time", (): void => {
+    const time = new DateTime(
+      moment("2026-11-14 18:30", "YYYY-MM-DD HH:mm"),
+      true,
+    );
+    expect(remindersAt("09:00").timeOfDay(time)).toBe("18:30");
   });
 });
