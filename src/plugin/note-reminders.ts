@@ -3,7 +3,7 @@ import type {
   ApplyOutcome,
   Frontmatter,
   NoteReminderAction,
-} from "model/note/store";
+} from "model/note/format";
 import type { NoteReminderOrigin, Reminder } from "model/reminder";
 
 /**
@@ -27,7 +27,7 @@ export interface NoteReminderServiceDeps {
 }
 
 /**
- * What became of a write. All but the last come from the store; `failed`
+ * What became of a write. All but the last come from the format; `failed`
  * means the note could not be read or written at all.
  */
 export type WriteResult = ApplyOutcome | "failed";

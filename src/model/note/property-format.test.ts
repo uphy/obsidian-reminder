@@ -1,15 +1,15 @@
 import { DateTime } from "model/time";
 import {
-  PropertyNoteReminderStore,
+  PropertyNoteReminderFormat,
   hasUnreadableRepeatRule,
   pickInitialProperty,
   readPropertyReminderState,
   rearmPropertyReminder,
   removePropertyReminder,
   setPropertyReminder,
-} from "./property-store";
+} from "./property-format";
 import type { NoteReminderSource } from "./sources";
-import type { Frontmatter, NoteReminderAction } from "./store";
+import type { Frontmatter, NoteReminderAction } from "./format";
 import { formatTimeValue, parseTimeValue } from "./value";
 
 const time = (text: string): DateTime => parseTimeValue(text)!;
@@ -23,18 +23,18 @@ function snooze(expected: string, to: string): NoteReminderAction {
   return { type: "snooze", expected: time(expected), time: time(to) };
 }
 
-function storeOf(
+function formatOf(
   ...sources: Array<Partial<NoteReminderSource> & { property: string }>
-): PropertyNoteReminderStore {
+): PropertyNoteReminderFormat {
   const rows = sources.map((s) => ({ managed: false, since: "", ...s }));
-  return new PropertyNoteReminderStore(() => rows);
+  return new PropertyNoteReminderFormat(() => rows);
 }
 
 function read(
-  store: PropertyNoteReminderStore,
+  format: PropertyNoteReminderFormat,
   fm: Frontmatter,
 ): Array<{ key: string; time: string; title?: string; label: string }> {
-  return store.read(fm).map((e) => ({
+  return format.read(fm).map((e) => ({
     key: e.key,
     time: formatTimeValue(e.time),
     title: e.title,
@@ -42,11 +42,11 @@ function read(
   }));
 }
 
-describe("PropertyNoteReminderStore#read()", (): void => {
-  const store = storeOf({ property: "follow-up" });
+describe("PropertyNoteReminderFormat#read()", (): void => {
+  const format = formatOf({ property: "follow-up" });
 
   test("a date and a date-time are reminders", (): void => {
-    expect(read(store, { "follow-up": "2026-11-20" })).toStrictEqual([
+    expect(read(format, { "follow-up": "2026-11-20" })).toStrictEqual([
       {
         key: "follow-up",
         time: "2026-11-20",
@@ -54,27 +54,27 @@ describe("PropertyNoteReminderStore#read()", (): void => {
         label: "follow-up",
       },
     ]);
-    expect(read(store, { "follow-up": "2026-11-20T09:00:00" })[0]?.time).toBe(
+    expect(read(format, { "follow-up": "2026-11-20T09:00:00" })[0]?.time).toBe(
       "2026-11-20T09:00:00",
     );
   });
 
   test("a value that is not a time, or a property that is not listed, is ignored", (): void => {
-    expect(read(store, { "follow-up": "soon" })).toStrictEqual([]);
-    expect(read(store, { "follow-up": null })).toStrictEqual([]);
-    expect(read(store, { other: "2026-11-20" })).toStrictEqual([]);
-    expect(read(store, {})).toStrictEqual([]);
+    expect(read(format, { "follow-up": "soon" })).toStrictEqual([]);
+    expect(read(format, { "follow-up": null })).toStrictEqual([]);
+    expect(read(format, { other: "2026-11-20" })).toStrictEqual([]);
+    expect(read(format, {})).toStrictEqual([]);
   });
 
   test("a value recorded as done is not pending; a newer value is", (): void => {
     expect(
-      read(store, {
+      read(format, {
         "follow-up": "2026-11-20",
         "follow-up-done": "2026-11-20",
       }),
     ).toStrictEqual([]);
     expect(
-      read(store, {
+      read(format, {
         "follow-up": "2026-12-05",
         "follow-up-done": "2026-11-20",
       }).length,
@@ -83,12 +83,13 @@ describe("PropertyNoteReminderStore#read()", (): void => {
 
   test("a done record that is not a time does not hide the reminder", (): void => {
     expect(
-      read(store, { "follow-up": "2026-11-20", "follow-up-done": true }).length,
+      read(format, { "follow-up": "2026-11-20", "follow-up-done": true })
+        .length,
     ).toBe(1);
   });
 
   test("a value before the cut-off is not read; one on the cut-off day is", (): void => {
-    const cut = storeOf({ property: "follow-up", since: "2026-11-20" });
+    const cut = formatOf({ property: "follow-up", since: "2026-11-20" });
     expect(read(cut, { "follow-up": "2026-11-19" })).toStrictEqual([]);
     expect(read(cut, { "follow-up": "2026-11-20" }).length).toBe(1);
   });
@@ -96,39 +97,38 @@ describe("PropertyNoteReminderStore#read()", (): void => {
   test("the title property is used on a managed row only", (): void => {
     const fm = { reminder: "2026-11-20", "reminder-title": " Send it " };
     expect(
-      read(storeOf({ property: "reminder", managed: true }), fm)[0]?.title,
+      read(formatOf({ property: "reminder", managed: true }), fm)[0]?.title,
     ).toBe("Send it");
-    expect(read(storeOf({ property: "reminder" }), fm)[0]?.title).toBe(
+    expect(read(formatOf({ property: "reminder" }), fm)[0]?.title).toBe(
       undefined,
     );
   });
 
   test("a title that is not text is treated as absent", (): void => {
-    const managed = storeOf({ property: "reminder", managed: true });
+    const managed = formatOf({ property: "reminder", managed: true });
     expect(
       read(managed, { reminder: "2026-11-20", "reminder-title": 3 })[0]?.title,
     ).toBe(undefined);
   });
 
   test("keys() lists the configured properties", (): void => {
-    expect(storeOf({ property: "a" }, { property: "b" }).keys()).toStrictEqual([
-      "a",
-      "b",
-    ]);
+    expect(formatOf({ property: "a" }, { property: "b" }).keys()).toStrictEqual(
+      ["a", "b"],
+    );
   });
 });
 
-describe("PropertyNoteReminderStore#apply() done", (): void => {
-  const store = storeOf({ property: "follow-up" });
+describe("PropertyNoteReminderFormat#apply() done", (): void => {
+  const format = formatOf({ property: "follow-up" });
 
   test("records the time and leaves the value", (): void => {
     const fm: Frontmatter = { "follow-up": "2026-11-20" };
-    expect(store.apply(fm, "follow-up", done("2026-11-20"))).toBe("applied");
+    expect(format.apply(fm, "follow-up", done("2026-11-20"))).toBe("applied");
     expect(fm).toStrictEqual({
       "follow-up": "2026-11-20",
       "follow-up-done": "2026-11-20",
     });
-    expect(read(store, fm)).toStrictEqual([]);
+    expect(read(format, fm)).toStrictEqual([]);
   });
 
   test("a new value is pending again and can be completed again", (): void => {
@@ -136,30 +136,30 @@ describe("PropertyNoteReminderStore#apply() done", (): void => {
       "follow-up": "2026-12-05",
       "follow-up-done": "2026-11-20",
     };
-    expect(read(store, fm).length).toBe(1);
-    expect(store.apply(fm, "follow-up", done("2026-12-05"))).toBe("applied");
+    expect(read(format, fm).length).toBe(1);
+    expect(format.apply(fm, "follow-up", done("2026-12-05"))).toBe("applied");
     expect(fm["follow-up-done"]).toBe("2026-12-05");
   });
 
   test("an outdated notification writes nothing", (): void => {
     const fm: Frontmatter = { "follow-up": "2026-11-27" };
-    expect(store.apply(fm, "follow-up", done("2026-11-20"))).toBe("stale");
+    expect(format.apply(fm, "follow-up", done("2026-11-20"))).toBe("stale");
     expect(fm).toStrictEqual({ "follow-up": "2026-11-27" });
   });
 
   test("a second Done is stale", (): void => {
     const fm: Frontmatter = { "follow-up": "2026-11-20" };
-    store.apply(fm, "follow-up", done("2026-11-20"));
-    expect(store.apply(fm, "follow-up", done("2026-11-20"))).toBe("stale");
+    format.apply(fm, "follow-up", done("2026-11-20"));
+    expect(format.apply(fm, "follow-up", done("2026-11-20"))).toBe("stale");
   });
 
   test("a removed value and an unlisted property are missing", (): void => {
-    expect(store.apply({}, "follow-up", done("2026-11-20"))).toBe("missing");
+    expect(format.apply({}, "follow-up", done("2026-11-20"))).toBe("missing");
     expect(
-      store.apply({ "follow-up": "later" }, "follow-up", done("2026-11-20")),
+      format.apply({ "follow-up": "later" }, "follow-up", done("2026-11-20")),
     ).toBe("missing");
     expect(
-      store.apply({ other: "2026-11-20" }, "other", done("2026-11-20")),
+      format.apply({ other: "2026-11-20" }, "other", done("2026-11-20")),
     ).toBe("missing");
   });
 
@@ -168,7 +168,7 @@ describe("PropertyNoteReminderStore#apply() done", (): void => {
       "follow-up": "2026-11-20",
       "follow-up-done": true,
     };
-    expect(store.apply(fm, "follow-up", done("2026-11-20"))).toBe("blocked");
+    expect(format.apply(fm, "follow-up", done("2026-11-20"))).toBe("blocked");
     expect(fm).toStrictEqual({
       "follow-up": "2026-11-20",
       "follow-up-done": true,
@@ -177,38 +177,38 @@ describe("PropertyNoteReminderStore#apply() done", (): void => {
 
   test("an empty done property does not block", (): void => {
     const fm: Frontmatter = { "follow-up": "2026-11-20", "follow-up-done": "" };
-    expect(store.apply(fm, "follow-up", done("2026-11-20"))).toBe("applied");
+    expect(format.apply(fm, "follow-up", done("2026-11-20"))).toBe("applied");
     expect(fm["follow-up-done"]).toBe("2026-11-20");
   });
 });
 
-describe("PropertyNoteReminderStore#apply() snooze", (): void => {
-  const store = storeOf({ property: "follow-up" });
+describe("PropertyNoteReminderFormat#apply() snooze", (): void => {
+  const format = formatOf({ property: "follow-up" });
 
   test("a date stays a date", (): void => {
     const fm: Frontmatter = { "follow-up": "2026-11-20" };
     expect(
-      store.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-21T10:30")),
+      format.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-21T10:30")),
     ).toBe("applied");
     expect(fm).toStrictEqual({ "follow-up": "2026-11-21" });
   });
 
   test("a date-time stays a date-time", (): void => {
     const fm: Frontmatter = { "follow-up": "2026-11-20T09:00:00" };
-    store.apply(
+    format.apply(
       fm,
       "follow-up",
       snooze("2026-11-20T09:00", "2026-11-20T09:30"),
     );
     expect(fm).toStrictEqual({ "follow-up": "2026-11-20T09:30:00" });
-    store.apply(fm, "follow-up", snooze("2026-11-20T09:30", "2026-11-21"));
+    format.apply(fm, "follow-up", snooze("2026-11-20T09:30", "2026-11-21"));
     expect(fm).toStrictEqual({ "follow-up": "2026-11-21T00:00:00" });
   });
 
   test("an outdated notification writes nothing", (): void => {
     const fm: Frontmatter = { "follow-up": "2026-11-27" };
     expect(
-      store.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-21")),
+      format.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-21")),
     ).toBe("stale");
     expect(fm).toStrictEqual({ "follow-up": "2026-11-27" });
   });
@@ -218,16 +218,16 @@ describe("PropertyNoteReminderStore#apply() snooze", (): void => {
     // A whole-day choice that is today ("Next Saturday" on a Saturday), and
     // a time of day on the same day, which a date drops.
     expect(
-      store.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-20")),
+      format.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-20")),
     ).toBe("unchanged");
     expect(
-      store.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-20T10:30")),
+      format.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-20T10:30")),
     ).toBe("unchanged");
     expect(fm).toStrictEqual({ "follow-up": "2026-11-20" });
 
     const timed: Frontmatter = { "follow-up": "2026-11-20T09:00:00" };
     expect(
-      store.apply(
+      format.apply(
         timed,
         "follow-up",
         snooze("2026-11-20T09:00", "2026-11-20T09:00"),
@@ -241,9 +241,9 @@ describe("PropertyNoteReminderStore#apply() snooze", (): void => {
       "follow-up": "2026-11-20",
       "follow-up-done": "2026-11-21",
     };
-    store.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-21"));
+    format.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-21"));
     expect(fm).toStrictEqual({ "follow-up": "2026-11-21" });
-    expect(read(store, fm).length).toBe(1);
+    expect(read(format, fm).length).toBe(1);
   });
 
   test("a done property that is not a time is left alone", (): void => {
@@ -252,7 +252,7 @@ describe("PropertyNoteReminderStore#apply() snooze", (): void => {
       "follow-up-done": true,
     };
     expect(
-      store.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-21")),
+      format.apply(fm, "follow-up", snooze("2026-11-20", "2026-11-21")),
     ).toBe("applied");
     expect(fm).toStrictEqual({
       "follow-up": "2026-11-21",
@@ -462,8 +462,8 @@ describe("the dialog's functions", (): void => {
   });
 });
 
-describe("PropertyNoteReminderStore with a repeat rule", (): void => {
-  const store = storeOf(
+describe("PropertyNoteReminderFormat with a repeat rule", (): void => {
+  const format = formatOf(
     { property: "reminder", managed: true },
     { property: "due" },
   );
@@ -479,7 +479,7 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       "reminder-repeat": "every month",
     };
     expect(
-      store.apply(
+      format.apply(
         fm,
         "reminder",
         snooze("2026-11-20T09:00", "2026-11-20T09:30"),
@@ -492,7 +492,7 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
     });
 
     expect(
-      store.apply(fm, "reminder", at("2026-11-20T09:40", "2026-11-20T09:30")),
+      format.apply(fm, "reminder", at("2026-11-20T09:40", "2026-11-20T09:30")),
     ).toBe("applied");
     expect(fm).toStrictEqual({
       reminder: "2026-12-20T09:00:00",
@@ -501,11 +501,11 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
     });
 
     expect(
-      store.apply(fm, "reminder", at("2026-12-20T09:05", "2026-12-20T09:00")),
+      format.apply(fm, "reminder", at("2026-12-20T09:05", "2026-12-20T09:00")),
     ).toBe("applied");
     expect(fm["reminder"]).toBe("2027-01-20T09:00:00");
     expect(fm["reminder-done"]).toBe("2026-12-20T09:00:00");
-    expect(read(store, fm)[0]?.time).toBe("2027-01-20T09:00:00");
+    expect(read(format, fm)[0]?.time).toBe("2027-01-20T09:00:00");
   });
 
   test("a second snooze keeps the first occurrence", (): void => {
@@ -514,7 +514,11 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       "reminder-repeat": "every month",
       "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
     };
-    store.apply(fm, "reminder", snooze("2026-11-20T09:30", "2026-11-21T08:00"));
+    format.apply(
+      fm,
+      "reminder",
+      snooze("2026-11-20T09:30", "2026-11-21T08:00"),
+    );
     expect(fm["reminder-occurrence"]).toBe(
       "2026-11-20T09:00:00/2026-11-21T08:00:00",
     );
@@ -527,7 +531,7 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       "reminder-repeat": "every month",
       "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
     };
-    store.apply(fm, "reminder", at("2026-11-25T09:10", "2026-11-25T09:00"));
+    format.apply(fm, "reminder", at("2026-11-25T09:10", "2026-11-25T09:00"));
     expect(fm).toStrictEqual({
       reminder: "2026-12-25T09:00:00",
       "reminder-repeat": "every month",
@@ -541,7 +545,11 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       "reminder-repeat": "every month",
       "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
     };
-    store.apply(fm, "reminder", snooze("2026-11-25T09:00", "2026-11-25T10:00"));
+    format.apply(
+      fm,
+      "reminder",
+      snooze("2026-11-25T09:00", "2026-11-25T10:00"),
+    );
     expect(fm["reminder-occurrence"]).toBe(
       "2026-11-25T09:00:00/2026-11-25T10:00:00",
     );
@@ -556,10 +564,10 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       "reminder-repeat": "every day",
       "reminder-occurrence": "2026-11-20T09:00:00/2026-11-21T09:00:00",
     };
-    store.apply(fm, "reminder", at("2026-11-20T10:00", "2026-11-21T09:00"));
+    format.apply(fm, "reminder", at("2026-11-20T10:00", "2026-11-21T09:00"));
     expect(fm["reminder"]).toBe("2026-11-22T09:00:00");
     expect(fm["reminder-done"]).toBe("2026-11-21T09:00:00");
-    expect(read(store, fm)).toHaveLength(1);
+    expect(read(format, fm)).toHaveLength(1);
   });
 
   test("a date-only reminder stays a date", (): void => {
@@ -567,7 +575,7 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       reminder: "2026-11-20",
       "reminder-repeat": "every week",
     };
-    store.apply(fm, "reminder", at("2026-11-20T09:40", "2026-11-20"));
+    format.apply(fm, "reminder", at("2026-11-20T09:40", "2026-11-20"));
     expect(fm["reminder"]).toBe("2026-11-27");
     expect(fm["reminder-done"]).toBe("2026-11-20");
   });
@@ -577,7 +585,7 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       reminder: "2026-11-20",
       "reminder-repeat": "every week",
     };
-    store.apply(fm, "reminder", at("2026-12-10T09:00", "2026-11-20"));
+    format.apply(fm, "reminder", at("2026-12-10T09:00", "2026-11-20"));
     expect(fm["reminder"]).toBe("2026-12-11");
   });
 
@@ -586,7 +594,7 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       reminder: "2026-11-20",
       "reminder-repeat": "every week when done",
     };
-    store.apply(fm, "reminder", at("2026-11-23T09:00", "2026-11-20"));
+    format.apply(fm, "reminder", at("2026-11-23T09:00", "2026-11-20"));
     expect(fm["reminder"]).toBe("2026-11-30");
   });
 
@@ -596,7 +604,7 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       "reminder-repeat": "now and then",
     };
     expect(hasUnreadableRepeatRule(fm, "reminder")).toBe(true);
-    expect(store.apply(fm, "reminder", done("2026-11-20"))).toBe("applied");
+    expect(format.apply(fm, "reminder", done("2026-11-20"))).toBe("applied");
     expect(fm).toStrictEqual({
       reminder: "2026-11-20",
       "reminder-repeat": "now and then",
@@ -610,16 +618,16 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       "reminder-repeat": "every week until 2026-11-22",
     };
     expect(hasUnreadableRepeatRule(fm, "reminder")).toBe(false);
-    store.apply(fm, "reminder", done("2026-11-20"));
+    format.apply(fm, "reminder", done("2026-11-20"));
     expect(fm["reminder"]).toBe("2026-11-20");
-    expect(read(store, fm)).toStrictEqual([]);
+    expect(read(format, fm)).toStrictEqual([]);
   });
 
   test("the rule is ignored on a property the plugin does not manage", (): void => {
     const fm: Frontmatter = { due: "2026-11-20", "due-repeat": "every week" };
-    store.apply(fm, "due", snooze("2026-11-20", "2026-11-21"));
+    format.apply(fm, "due", snooze("2026-11-20", "2026-11-21"));
     expect(fm["due-occurrence"]).toBeUndefined();
-    store.apply(fm, "due", at("2026-11-21T10:00", "2026-11-21"));
+    format.apply(fm, "due", at("2026-11-21T10:00", "2026-11-21"));
     expect(fm).toStrictEqual({
       due: "2026-11-21",
       "due-repeat": "every week",
@@ -633,7 +641,7 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       "reminder-repeat": "every week",
       "reminder-occurrence": "third",
     };
-    store.apply(fm, "reminder", done("2026-11-20"));
+    format.apply(fm, "reminder", done("2026-11-20"));
     expect(fm["reminder-occurrence"]).toBe("third");
     expect(fm["reminder"]).toBe("2026-11-27");
   });
@@ -704,7 +712,7 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
       "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
     };
     expect(
-      store.apply(
+      format.apply(
         fm,
         "reminder",
         snooze("2026-11-20T09:30", "2026-11-21T08:00"),

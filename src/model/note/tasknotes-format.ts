@@ -5,8 +5,8 @@ import type {
   Frontmatter,
   NoteReminderAction,
   NoteReminderEntry,
-  NoteReminderStore,
-} from "./store";
+  NoteReminderFormat,
+} from "./format";
 import {
   formatTimeValue,
   inShapeOf,
@@ -56,7 +56,7 @@ type TaskNote = {
  * Reminders the TaskNotes plugin keeps in a task note's `reminders` list.
  *
  * An entry is either absolute (a time) or relative (an offset from the
- * task's `due` or `scheduled` date). TaskNotes owns the list, so this store
+ * task's `due` or `scheduled` date). TaskNotes owns the list, so this format
  * changes as little of it as it can:
  *
  * - "Done" appends `<id>@<time>` to `reminders-done` and leaves the entry
@@ -67,7 +67,7 @@ type TaskNote = {
  *   while the original is still recorded as done at its current time, and
  *   every write removes the ones that no longer count.
  */
-export class TaskNotesReminderStore implements NoteReminderStore {
+export class TaskNotesNoteReminderFormat implements NoteReminderFormat {
   readonly id = "tasknotes";
 
   constructor(private options: () => TaskNotesOptions) {}
@@ -178,7 +178,7 @@ export class TaskNotesReminderStore implements NoteReminderStore {
   }
 
   /**
-   * Null when the note is not a task this store reads: reading is off, the
+   * Null when the note is not a task this format reads: reading is off, the
    * note lacks the task tag, is completed, archived or recurring, or its
    * `reminders` holds something that is not a list of mappings.
    */
@@ -296,7 +296,7 @@ function originalTimeOf(
  * When an entry fires: its `absoluteTime`, or the task's `due` / `scheduled`
  * date plus its offset. A date without a time counts from midnight. Null
  * when it can't be computed (another type, a missing base date, a time with
- * a UTC offset, an offset this store can't read).
+ * a UTC offset, an offset this format can't read).
  */
 export function effectiveTime(entry: Entry, fm: Frontmatter): DateTime | null {
   if (entry["type"] === "absolute") {

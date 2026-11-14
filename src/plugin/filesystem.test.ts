@@ -70,7 +70,7 @@ describe("ReminderPluginFileSystem#reloadRemindersInAllFiles()", (): void => {
     const { fileSystem, reminders } = createFileSystem(notes, (path) => [
       Reminder.ofNote(path, "a", DateTime.parse("2021-09-15"), {
         kind: "note",
-        store: "property",
+        format: "property",
         key: "due",
         label: "due",
       }),

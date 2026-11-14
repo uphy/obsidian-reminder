@@ -32,7 +32,7 @@ describe("Reminder", (): void => {
     const note = (key: string, title: string): Reminder =>
       Reminder.ofNote("file.md", title, time, {
         kind: "note",
-        store: "property",
+        format: "property",
         key,
         label: key,
       });
@@ -47,7 +47,7 @@ describe("Reminder", (): void => {
     const note = (time: string): Reminder =>
       Reminder.ofNote("file.md", "title", DateTime.parse(time), {
         kind: "note",
-        store: "property",
+        format: "property",
         key: "due",
         label: "due",
       });
@@ -66,7 +66,7 @@ describe("Reminder", (): void => {
     const note = (title: string, label: string): Reminder =>
       Reminder.ofNote("file.md", title, time, {
         kind: "note",
-        store: "property",
+        format: "property",
         key: "a",
         label,
       });
@@ -242,7 +242,7 @@ describe("Reminders#unmute()", (): void => {
   function makeNote(key: string): Reminder {
     return Reminder.ofNote("file.md", "title", DateTime.parse("2021-09-08"), {
       kind: "note",
-      store: "property",
+      format: "property",
       key,
       label: key,
     });

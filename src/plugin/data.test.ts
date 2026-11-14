@@ -230,14 +230,19 @@ describe("PluginData", (): void => {
       "both.md",
       "both",
       DateTime.parse("2021-09-09"),
-      { kind: "note", store: "property", key: "follow-up", label: "follow-up" },
+      {
+        kind: "note",
+        format: "property",
+        key: "follow-up",
+        label: "follow-up",
+      },
     );
     note.muteNotification = true;
     const noteOnly = Reminder.ofNote(
       "note.md",
       "Send the report",
       DateTime.parse("2021-09-10 09:00"),
-      { kind: "note", store: "property", key: "reminder", label: "reminder" },
+      { kind: "note", format: "property", key: "reminder", label: "reminder" },
     );
     reminders.replaceFile("both.md", [line, note]);
     reminders.replaceFile("note.md", [noteOnly]);
@@ -257,7 +262,7 @@ describe("PluginData", (): void => {
           title: "both",
           time: "2021-09-09",
           muted: true,
-          store: "property",
+          format: "property",
           key: "follow-up",
           label: "follow-up",
         },
@@ -267,7 +272,7 @@ describe("PluginData", (): void => {
           title: "Send the report",
           time: "2021-09-10 09:00",
           muted: false,
-          store: "property",
+          format: "property",
           key: "reminder",
           label: "reminder",
         },
