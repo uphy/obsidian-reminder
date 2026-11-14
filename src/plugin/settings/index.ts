@@ -645,7 +645,7 @@ export class Settings {
       .key("taskNotesSince")
       .name("Ignore TaskNotes reminders before")
       .desc(
-        "A date (YYYY-MM-DD). Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.",
+        "Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.",
       )
       .tag(TAG_RESCAN)
       .text("")

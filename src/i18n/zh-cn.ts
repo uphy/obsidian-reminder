@@ -354,8 +354,8 @@ export const zhCN: Record<string, string> = {
   "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders. Empty uses the statuses TaskNotes marks as completed.":
     "表示任务已完成的状态值，用逗号分隔。已完成的任务没有提醒。留空则使用 TaskNotes 中标记为已完成的状态。",
   "Ignore TaskNotes reminders before": "忽略此日期之前的 TaskNotes 提醒",
-  "A date (YYYY-MM-DD). Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.":
-    "日期（YYYY-MM-DD）。早于此日期的提醒不会被读取。为避免过去的提醒同时发出通知，开启读取时会填入当天的日期。留空则读取所有日期。",
+  "Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.":
+    "早于此日期的提醒不会被读取。为避免过去的提醒同时发出通知，开启读取时会填入当天的日期。留空则读取所有日期。",
   "Identify tasks by": "任务识别方式",
   "How TaskNotes tells a task note from other notes (TaskNotes: Task identification).":
     "TaskNotes 区分任务笔记与其他笔记的方式（TaskNotes 的 Task identification）。",

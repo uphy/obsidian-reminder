@@ -423,7 +423,7 @@ The names of the properties this plugin reads from a task note. Empty uses the n
 
 ### Ignore TaskNotes reminders before
 
-A date (`YYYY-MM-DD`). Reminders dated earlier are not read. It is set to today when you turn on `Read TaskNotes reminders` while it is empty, so that reminders already in the past do not all notify at once. Empty reads every date.
+Reminders dated earlier are not read. It is set to today when you turn on `Read TaskNotes reminders` while it is empty, so that reminders already in the past do not all notify at once. Empty reads every date.
 
 ## Display
 

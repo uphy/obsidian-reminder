@@ -374,8 +374,8 @@ export const ja: Record<string, string> = {
     "タスクの完了を表すステータスの値（カンマ区切り）。完了したタスクのリマインダーは読みません。空にすると、TaskNotes で完了に設定したステータスを使います。",
   "Ignore TaskNotes reminders before":
     "この日より前の TaskNotes のリマインダーを読まない",
-  "A date (YYYY-MM-DD). Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.":
-    "日付（YYYY-MM-DD）。これより前のリマインダーは読みません。過去のリマインダーが一斉に通知されないよう、読み取りをオンにした日が入ります。空にするとすべての日付を読みます。",
+  "Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.":
+    "これより前のリマインダーは読みません。過去のリマインダーが一斉に通知されないよう、読み取りをオンにした日が入ります。空にするとすべての日付を読みます。",
   "Identify tasks by": "タスクの見分け方",
   "How TaskNotes tells a task note from other notes (TaskNotes: Task identification).":
     "TaskNotes がタスクノートをほかのノートと見分ける方法（TaskNotes の Task identification）。",
