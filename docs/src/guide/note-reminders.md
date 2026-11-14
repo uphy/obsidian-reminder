@@ -143,7 +143,7 @@ filters:
   and:
     - '!note["follow-up"].isEmpty()'
 formulas:
-  follow_up_state: 'if(note["follow-up"].isEmpty(), "", if(note["follow-up"] == note["follow-up-done"], "✅ done", if(note["follow-up"] < now(), "🔴 overdue", "⏳ scheduled")))'
+  follow_up_state: 'if(note["follow-up"].isEmpty(), "", if(note["follow-up"].toString() == note["follow-up-done"].toString(), "✅ done", if(note["follow-up"] < now(), "🔴 overdue", "⏳ scheduled")))'
 properties:
   formula.follow_up_state:
     displayName: State
@@ -165,6 +165,7 @@ views:
 - Edit a date in the `follow-up` column and the row goes back to "scheduled" or "overdue", and the plugin reminds you at the new date.
 - Press **Done** on a notification and the row becomes "done".
 - A property name that contains a hyphen has to be written as `note["follow-up"]` in a formula.
+- The two values are compared as text (`.toString()`), the way the plugin compares them. Compared as dates, a date and a date and time on the same day would count as equal, and the table would say "done" for a reminder that is still waiting.
 
 To add the column to a table you already have, add the `formulas` entry and put `formula.follow_up_state` in the view's `order`.
 
