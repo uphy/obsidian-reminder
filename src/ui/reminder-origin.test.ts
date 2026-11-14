@@ -10,12 +10,16 @@ const line = Reminder.ofLine(
   false,
 );
 
-function note(title: string, time: string = "2026-11-20"): Reminder {
+function note(
+  title: string,
+  time: string = "2026-11-20",
+  label: string = "follow-up",
+): Reminder {
   return Reminder.ofNote("dir/Call Alice.md", title, DateTime.parse(time), {
     kind: "note",
     format: "property",
     key: "follow-up",
-    label: "follow-up",
+    label,
   });
 }
 
@@ -24,6 +28,12 @@ describe("originLine()", (): void => {
     expect(originLine(note("Call Alice"))).toBe("follow-up · 2026-11-20");
     expect(originLine(note("Call Alice", "2026-11-20 09:00"))).toBe(
       "follow-up · 2026-11-20 09:00",
+    );
+  });
+
+  test("a note reminder without a label shows its time alone", (): void => {
+    expect(originLine(note("Call Alice", "2026-11-20 09:00", ""))).toBe(
+      "2026-11-20 09:00",
     );
   });
 
@@ -39,6 +49,13 @@ describe("listOrigin()", (): void => {
 
   test("a note reminder titled with the note name shows the label", (): void => {
     expect(listOrigin(note("Call Alice"))).toBe("follow-up");
+  });
+
+  test("a note reminder without a label shows the note name at most", (): void => {
+    expect(listOrigin(note("Call Alice", "2026-11-20", ""))).toBe("");
+    expect(listOrigin(note("Send the report", "2026-11-20", ""))).toBe(
+      "Call Alice",
+    );
   });
 
   test("a note reminder with its own title shows the note name too", (): void => {

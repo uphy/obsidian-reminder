@@ -69,7 +69,12 @@ export class PropertyNoteReminderFormat implements NoteReminderFormat {
 
   read(fm: Frontmatter): Array<NoteReminderEntry> {
     const entries: Array<NoteReminderEntry> = [];
-    for (const source of this.sources()) {
+    const sources = this.sources();
+    // The label tells the reminders of the listed properties apart. With one
+    // property listed there is nothing to tell apart, and the same name on
+    // every notification would only be noise.
+    const labelled = sources.length > 1;
+    for (const source of sources) {
       const property = source.property;
       const time = parseTimeValue(fm[property]);
       if (time == null || isBeforeDay(time, source.since)) {
@@ -86,7 +91,7 @@ export class PropertyNoteReminderFormat implements NoteReminderFormat {
         key: property,
         time,
         title: title !== "" ? title : undefined,
-        label: property,
+        label: labelled ? property : "",
       });
     }
     return entries;

@@ -13,7 +13,10 @@ export type NoteReminderEntry = {
   time: DateTime;
   /** Overrides the note name as the reminder's title. */
   title?: string;
-  /** Short text shown next to the title: where the reminder comes from. */
+  /**
+   * Short text shown next to the title: which of the note reminders this
+   * is. Empty when there is nothing to tell apart.
+   */
   label: string;
 };
 

@@ -16,7 +16,7 @@ Reminders defined in your all of the markdown files are listed like below:
 If you click the reminder, the file in which you defined the reminder will be opened.
 If a tab already shows that file (even a pinned one), that tab is reused instead of opening a new one.
 
-[Note reminders](/guide/note-reminders.html) are listed together with task reminders. They are marked with a note icon, and the name of the property they come from is shown after the title. Clicking one opens the note.
+[Note reminders](/guide/note-reminders.html) are listed together with task reminders. They are marked with a note icon. When you read more than one property, the name of the property they come from is shown after the title. Clicking one opens the note.
 
 ## Overdue Reminders
 

@@ -176,6 +176,6 @@ export class NoteReminderIndicator {
 function tooltipOf(reminder: Reminder): string {
   return t("Reminder: {time} ({property})", {
     time: reminder.time.toString(),
-    property: reminder.origin.kind === "note" ? reminder.origin.label : "",
+    property: propertyOf(reminder) ?? "",
   });
 }

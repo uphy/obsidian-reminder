@@ -31,7 +31,7 @@ The `Remind Me Later`'s option is customizable with [Remind Me Later](/setting/#
 
 ### Note reminders
 
-A [note reminder](/guide/note-reminders.html) is shown in the same popup. Under the title, it also shows the property it comes from and its time (for example `follow-up · 2026-11-20`). `Mark as Done` and `Remind Me Later` write to the note's properties instead of a task line; see [What Done and Remind me later do](/guide/note-reminders.html#what-done-and-remind-me-later-do).
+A [note reminder](/guide/note-reminders.html) is shown in the same popup. Under the title, it also shows its time, and the property it comes from when you read more than one property (for example `follow-up · 2026-11-20`). `Mark as Done` and `Remind Me Later` write to the note's properties instead of a task line; see [What Done and Remind me later do](/guide/note-reminders.html#what-done-and-remind-me-later-do).
 
 ### Keyboard shortcuts
 

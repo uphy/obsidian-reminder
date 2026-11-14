@@ -8,7 +8,9 @@ import { DateTime, Time } from "model/time";
  * - `line`: a task line in the note's body, addressed by its row.
  * - `note`: the note's frontmatter. `format` names the code that understands
  *   the format, `key` identifies the reminder inside the note (a property
- *   name, for instance), and `label` is the short text shown to the user.
+ *   name, for instance), and `label` is the short text shown to the user
+ *   to tell it from other note reminders (empty when there is nothing to
+ *   tell apart).
  */
 export type ReminderOrigin =
   | { kind: "line"; row: number }
