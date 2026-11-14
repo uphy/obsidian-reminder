@@ -667,9 +667,15 @@ Mitigations.
     property that is not pending (done, or before the cut-off); a faint bell
     with a plus for a note with none. The two faint states exist so that the
     way to add a note reminder is on screen and not only in the command
-    palette and the file menu. They are shown when at least one property is
-    managed and the "Show a bell in every note's header" setting is on
-    (default); with it off only the ringing bell is shown. The file-menu item
+    palette and the file menu. They are shown when the "Show a bell in every
+    note's header" setting is on (default); with it off only the ringing
+    bell is shown. They are shown before any property is managed as well,
+    where a click leads to the offer to use `reminder`: without that, a new
+    user has nothing on screen that leads to the feature. The cost is one
+    more header icon for users who never use note reminders, which the
+    setting removes. No note is read for it: the state comes from the
+    managed properties in Obsidian's metadata cache, and with none managed
+    the state is always "none". The file-menu item
     follows the same distinction: "Set reminder for this note" or "Edit this
     note's reminder". The command keeps one name, because a command's name
     is not evaluated per note. The set of bells is refreshed when reminders,
