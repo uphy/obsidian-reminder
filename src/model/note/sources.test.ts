@@ -1,5 +1,6 @@
 import {
   countSourceStats,
+  newSourceCutOff,
   normalizeSources,
   validateSourceName,
   withManagedSource,
@@ -143,5 +144,32 @@ describe("countSourceStats()", (): void => {
         { due: "2026-11-20", "due-done": "2026-11-20" },
       ]),
     ).toStrictEqual({ ignored: 0, foreignDone: 0 });
+  });
+});
+
+describe("newSourceCutOff()", (): void => {
+  const statsOver =
+    (frontmatters: Array<Record<string, unknown>>) =>
+    (source: NoteReminderSource) =>
+      countSourceStats(source, frontmatters);
+
+  test("today when the vault already holds earlier values", (): void => {
+    const stats = statsOver([
+      { "sr-due": "2026-10-01" },
+      { "sr-due": "2026-12-01" },
+    ]);
+    expect(newSourceCutOff("sr-due", "2026-11-14", stats)).toBe("2026-11-14");
+  });
+
+  test("empty when no value is dated before today", (): void => {
+    const stats = statsOver([
+      { "sr-due": "2026-11-14" },
+      { other: "2020-01-01" },
+    ]);
+    expect(newSourceCutOff("sr-due", "2026-11-14", stats)).toBe("");
+  });
+
+  test("empty when the property is not used yet", (): void => {
+    expect(newSourceCutOff("reminder", "2026-11-14", statsOver([]))).toBe("");
   });
 });

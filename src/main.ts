@@ -10,7 +10,11 @@ import { isNotificationPaused } from "model/dnd";
 import { isPathExcluded } from "model/exclusion";
 import { PropertyNoteReminderFormat } from "model/note/property-format";
 import { NoteReminderReader } from "model/note/reader";
-import { countSourceStats, withManagedSource } from "model/note/sources";
+import {
+  countSourceStats,
+  newSourceCutOff,
+  withManagedSource,
+} from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
 import type { Frontmatter } from "model/note/format";
 import { TaskNotesNoteReminderFormat } from "model/note/tasknotes-format";
@@ -268,7 +272,8 @@ export default class ReminderPlugin extends Plugin {
 
   /**
    * Lets the reminder dialog manage `property`: adds it as a managed source
-   * with today as its cut-off, or switches an existing row to managed.
+   * (with today as its cut-off when the vault already holds earlier values
+   * of it), or switches an existing row to managed.
    * Returns false when the name can't be a source (it is a companion of
    * another row).
    */
@@ -276,7 +281,9 @@ export default class ReminderPlugin extends Plugin {
     const rows = withManagedSource(
       this.noteReminderSources(),
       property,
-      DateTime.now().format("YYYY-MM-DD"),
+      newSourceCutOff(property, DateTime.now().format("YYYY-MM-DD"), (source) =>
+        this.noteReminderStats(source),
+      ),
     );
     if (rows == null) {
       return false;
