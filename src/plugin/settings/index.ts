@@ -97,6 +97,15 @@ export class Settings {
   taskNotesSince: SettingModel<string, string>;
   noteReminderStats: (source: NoteReminderSource) => NoteReminderSourceStats =
     () => ({ ignored: 0, foreignDone: 0 });
+  /**
+   * The cut-off for a property that is being added (see `newSourceCutOff`).
+   * Set by the plugin for the same reason as `noteReminderStats`. Until
+   * then a new property gets today, the safe side.
+   */
+  noteReminderNewCutOff: (property: string, today: string) => string = (
+    _property,
+    today,
+  ) => today;
   editorReminderDisplay: SettingModel<boolean, boolean>;
   primaryFormat: SettingModel<string, ReminderFormatType>;
   excludedPaths: SettingModel<string, Array<string>>;
@@ -369,7 +378,10 @@ export class Settings {
       .tag(TAG_RESCAN)
       .custom<unknown>(
         [],
-        renderNoteReminderSources((source) => this.noteReminderStats(source)),
+        renderNoteReminderSources(
+          (source) => this.noteReminderStats(source),
+          (property, today) => this.noteReminderNewCutOff(property, today),
+        ),
       )
       // Whatever was persisted (or edited by hand) is read through
       // `normalizeSources`, so the rest of the plugin only sees valid rows.

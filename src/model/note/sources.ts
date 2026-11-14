@@ -152,19 +152,28 @@ export function countSourceStats(
 
 /**
  * The cut-off a property gets when it is added to the list. It is `today`
- * (`YYYY-MM-DD`) only when the vault already holds values of that property
- * dated before today: those would otherwise all notify at once. A property
- * with no such value gets no cut-off, so the setting stays empty until it
- * has something to say.
+ * (`YYYY-MM-DD`) when a note already holds a value of that property dated
+ * before today: those would otherwise all notify at once. A property with
+ * no such value gets no cut-off, so the setting stays empty until it has
+ * something to say.
+ *
+ * `frontmatters` has to cover every note of the vault, the ones under an
+ * excluded path too (they are read as soon as the path is no longer
+ * excluded). Pass null when that is not known, for example while Obsidian is
+ * still indexing: the answer is then `today`, the safe side.
  */
 export function newSourceCutOff(
   property: string,
   today: string,
-  stats: (
-    source: NoteReminderSource,
-  ) => Pick<NoteReminderSourceCounts, "ignored">,
+  frontmatters: Iterable<Frontmatter> | null,
 ): string {
-  const past = stats({ property, managed: false, since: today }).ignored;
+  if (frontmatters == null) {
+    return today;
+  }
+  const past = countSourceStats(
+    { property, managed: false, since: today },
+    frontmatters,
+  ).ignored;
   return past > 0 ? today : "";
 }
 

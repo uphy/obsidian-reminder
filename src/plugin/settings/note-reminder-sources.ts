@@ -1,9 +1,5 @@
 import { t } from "i18n";
-import {
-  newSourceCutOff,
-  normalizeSources,
-  validateSourceName,
-} from "model/note/sources";
+import { normalizeSources, validateSourceName } from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
 import { DateTime } from "model/time";
 import { Setting } from "obsidian";
@@ -28,6 +24,7 @@ export type NoteReminderSourceStats = {
  */
 export function renderNoteReminderSources(
   stats: (source: NoteReminderSource) => NoteReminderSourceStats,
+  newCutOff: (property: string, today: string) => string,
 ): SettingInitializer<unknown> {
   return ({ setting, rawValue }) => {
     const rowsEl = createDiv("reminder-note-sources");
@@ -55,7 +52,7 @@ export function renderNoteReminderSources(
         {
           property,
           managed: false,
-          since: newSourceCutOff(property, today, stats),
+          since: newCutOff(property, today),
         },
       ]);
       newName = "";

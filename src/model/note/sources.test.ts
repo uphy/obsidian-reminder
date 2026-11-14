@@ -149,29 +149,22 @@ describe("countSourceStats()", (): void => {
 });
 
 describe("newSourceCutOff()", (): void => {
-  const statsOver =
-    (frontmatters: Array<Record<string, unknown>>) =>
-    (source: NoteReminderSource) =>
-      countSourceStats(source, frontmatters);
-
   test("today when the vault already holds earlier values", (): void => {
-    const stats = statsOver([
-      { "sr-due": "2026-10-01" },
-      { "sr-due": "2026-12-01" },
-    ]);
-    expect(newSourceCutOff("sr-due", "2026-11-14", stats)).toBe("2026-11-14");
+    const notes = [{ "sr-due": "2026-10-01" }, { "sr-due": "2026-12-01" }];
+    expect(newSourceCutOff("sr-due", "2026-11-14", notes)).toBe("2026-11-14");
   });
 
   test("empty when no value is dated before today", (): void => {
-    const stats = statsOver([
-      { "sr-due": "2026-11-14" },
-      { other: "2020-01-01" },
-    ]);
-    expect(newSourceCutOff("sr-due", "2026-11-14", stats)).toBe("");
+    const notes = [{ "sr-due": "2026-11-14" }, { other: "2020-01-01" }];
+    expect(newSourceCutOff("sr-due", "2026-11-14", notes)).toBe("");
   });
 
   test("empty when the property is not used yet", (): void => {
-    expect(newSourceCutOff("reminder", "2026-11-14", statsOver([]))).toBe("");
+    expect(newSourceCutOff("reminder", "2026-11-14", [])).toBe("");
+  });
+
+  test("today when the notes of the vault are not all known", (): void => {
+    expect(newSourceCutOff("reminder", "2026-11-14", null)).toBe("2026-11-14");
   });
 });
 
@@ -184,6 +177,10 @@ describe("hasManagedValue()", (): void => {
         "reminder-done": "2026-11-20",
       }),
     ).toBe(true);
+  });
+
+  test("true for a time dated before the property's cut-off", (): void => {
+    expect(hasManagedValue(rows, { reminder: "2026-10-01" })).toBe(true);
   });
 
   test("false for a property that is only read", (): void => {
