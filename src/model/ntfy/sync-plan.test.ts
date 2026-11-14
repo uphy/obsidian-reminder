@@ -13,7 +13,7 @@ function reminderIn(
   file: string = "Todo.md",
   rowNumber: number = 0,
 ): Reminder {
-  return new Reminder(
+  return Reminder.ofLine(
     file,
     title,
     DateTime.ofEpochMillis(NOW.getTimeInMillis() + seconds * 1000),
@@ -221,7 +221,7 @@ describe("computeNtfySyncPlan()", (): void => {
   test("uses the default reminder time for date-only reminders", (): void => {
     // A date-only reminder (no time part) falls back to `defaultTime`, same
     // as `Reminder.isExpired()`/`Reminders.getExpiredReminders()`.
-    const dateOnly = new Reminder(
+    const dateOnly = Reminder.ofLine(
       "Todo.md",
       "Date only",
       DateTime.parse(NOW.toYYYYMMDD()),

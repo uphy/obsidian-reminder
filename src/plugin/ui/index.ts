@@ -281,23 +281,28 @@ export class ReminderPluginUI {
     if (!(leaf.view instanceof MarkdownView)) {
       return;
     }
+    const row = reminder.row();
+    if (row === undefined) {
+      // A note reminder has no line to jump to; opening the note is enough.
+      return;
+    }
     const editor = leaf.view.editor;
     // A reused tab that was deferred (not yet loaded) gets its content a
     // moment after `revealLeaf` resolves; until then the editor is empty.
-    if (!(await waitForLine(editor, reminder.rowNumber))) {
+    if (!(await waitForLine(editor, row))) {
       console.warn("Reminder line is not in the editor: %o", reminder);
       return;
     }
-    const line = editor.getLine(reminder.rowNumber);
+    const line = editor.getLine(row);
     // Place the cursor on the line (no selection held) and scroll it into
     // view, matching Obsidian's own search-result jump behavior rather than
     // leaving the whole line selected (which risked the user accidentally
     // overwriting it while typing).
-    editor.setCursor({ line: reminder.rowNumber, ch: 0 });
+    editor.setCursor({ line: row, ch: 0 });
     editor.scrollIntoView(
       {
-        from: { line: reminder.rowNumber, ch: 0 },
-        to: { line: reminder.rowNumber, ch: line.length },
+        from: { line: row, ch: 0 },
+        to: { line: row, ch: line.length },
       },
       true,
     );
@@ -308,7 +313,7 @@ export class ReminderPluginUI {
     // otherwise.
     const cm = editor.cm;
     if (cm) {
-      const cmLine = cm.state.doc.line(reminder.rowNumber + 1);
+      const cmLine = cm.state.doc.line(row + 1);
       cm.dispatch({
         effects: highlightReminderLine.of({
           from: cmLine.from,

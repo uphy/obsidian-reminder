@@ -12,7 +12,7 @@ function makeReminder(
   title: string,
   rowNumber: number,
 ): Reminder {
-  return new Reminder(
+  return Reminder.ofLine(
     file,
     title,
     DateTime.parse("2021-09-08 09:00"),

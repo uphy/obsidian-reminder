@@ -2,6 +2,24 @@ import { t } from "i18n";
 import type { ReadOnlyReference } from "model/ref";
 import { DateTime, Time } from "model/time";
 
+/**
+ * Where a reminder comes from.
+ *
+ * - `line`: a task line in the note's body, addressed by its row.
+ * - `note`: the note's frontmatter. `store` names the code that understands
+ *   the format, `key` identifies the reminder inside the note (a property
+ *   name, for instance), and `label` is the short text shown to the user.
+ */
+export type ReminderOrigin =
+  | { kind: "line"; row: number }
+  | { kind: "note"; store: string; key: string; label: string };
+
+export type NoteReminderOrigin = Extract<ReminderOrigin, { kind: "note" }>;
+
+// Separates the parts of a note reminder's key. A control character cannot
+// appear in a path or a property name, so the parts cannot run together.
+const KEY_SEPARATOR = "\u0001";
+
 export class Reminder {
   // To avoid duplicate notification, set this flag true before notification and set false on notification done.
   public muteNotification: boolean = false;
@@ -19,11 +37,59 @@ export class Reminder {
     public file: string,
     public title: string,
     public time: DateTime,
-    public rowNumber: number,
+    public origin: ReminderOrigin,
     public done: boolean,
   ) {}
 
+  /** A reminder written on a task line. */
+  static ofLine(
+    file: string,
+    title: string,
+    time: DateTime,
+    row: number,
+    done: boolean,
+  ): Reminder {
+    return new Reminder(file, title, time, { kind: "line", row }, done);
+  }
+
+  /**
+   * A reminder read from the note's frontmatter. Such a reminder only exists
+   * while it is pending, so it is never `done`.
+   */
+  static ofNote(
+    file: string,
+    title: string,
+    time: DateTime,
+    origin: NoteReminderOrigin,
+  ): Reminder {
+    return new Reminder(file, title, time, origin, false);
+  }
+
+  /** The row of the task line, or `undefined` for a note reminder. */
+  row(): number | undefined {
+    return this.origin.kind === "line" ? this.origin.row : undefined;
+  }
+
+  isNote(): boolean {
+    return this.origin.kind === "note";
+  }
+
+  /**
+   * Identifies the reminder for mute flags and open notifications.
+   *
+   * The line form must not change: mute flags saved by earlier versions are
+   * matched by it. A note reminder leaves the title out, so that editing the
+   * title does not make an already dismissed reminder notify again.
+   */
   key() {
+    if (this.origin.kind === "note") {
+      return [
+        this.file,
+        this.origin.store,
+        this.origin.key,
+        this.time.toString(),
+      ].join(KEY_SEPARATOR);
+    }
     return this.file + this.title + this.time.toString();
   }
 
@@ -39,8 +105,17 @@ export class Reminder {
   }
 
   equals(reminder: Reminder) {
+    const a = this.origin;
+    const b = reminder.origin;
+    const sameOrigin =
+      a.kind === "line"
+        ? b.kind === "line" && a.row === b.row
+        : b.kind === "note" &&
+          a.store === b.store &&
+          a.key === b.key &&
+          a.label === b.label;
     return (
-      this.rowNumber === reminder.rowNumber &&
+      sameOrigin &&
       this.title === reminder.title &&
       this.time.equals(reminder.time) &&
       this.file === reminder.file

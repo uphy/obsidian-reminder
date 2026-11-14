@@ -52,7 +52,7 @@ function callDoSync(controller: NtfyController): Promise<void> {
 
 /** A reminder due `minutes` from now, i.e. inside the 24h publish horizon. */
 function reminderInMinutes(title: string, minutes: number): Reminder {
-  return new Reminder(
+  return Reminder.ofLine(
     "notes/Todo.md",
     title,
     DateTime.ofEpochMillis(Date.now() + minutes * 60 * 1000),

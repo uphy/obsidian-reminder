@@ -12,6 +12,54 @@ describe("Reminder", (): void => {
 
     expect(Reminder.extractFileName("file.md")).toBe("file");
   });
+
+  test("the key of a line reminder is file, title and time run together", (): void => {
+    // Saved mute flags are matched by this exact string.
+    const reminder = Reminder.ofLine(
+      "dir/file.md",
+      "Task",
+      DateTime.parse("2021-09-08 10:00"),
+      3,
+      false,
+    );
+    expect(reminder.key()).toBe("dir/file.mdTask2021-09-08 10:00");
+    expect(reminder.row()).toBe(3);
+    expect(reminder.isNote()).toBe(false);
+  });
+
+  test("the key of a note reminder separates properties and ignores the title", (): void => {
+    const time = DateTime.parse("2021-09-08");
+    const note = (key: string, title: string): Reminder =>
+      Reminder.ofNote("file.md", title, time, {
+        kind: "note",
+        store: "property",
+        key,
+        label: key,
+      });
+
+    expect(note("a", "title").key()).not.toBe(note("b", "title").key());
+    expect(note("a", "title").key()).toBe(note("a", "another").key());
+    expect(note("a", "title").row()).toBeUndefined();
+    expect(note("a", "title").isNote()).toBe(true);
+  });
+
+  test("equals() tells a line reminder from a note reminder", (): void => {
+    const time = DateTime.parse("2021-09-08");
+    const line = Reminder.ofLine("file.md", "title", time, 0, false);
+    const note = (title: string, label: string): Reminder =>
+      Reminder.ofNote("file.md", title, time, {
+        kind: "note",
+        store: "property",
+        key: "a",
+        label,
+      });
+
+    expect(line.equals(note("title", "a"))).toBe(false);
+    expect(note("title", "a").equals(line)).toBe(false);
+    expect(note("title", "a").equals(note("title", "a"))).toBe(true);
+    expect(note("title", "a").equals(note("changed", "a"))).toBe(false);
+    expect(note("title", "a").equals(note("title", "changed"))).toBe(false);
+  });
 });
 
 describe("groupReminders()", (): void => {
@@ -24,7 +72,7 @@ describe("groupReminders()", (): void => {
   const reminderTime = Time.parse("09:00");
 
   function makeReminder(time: DateTime): Reminder {
-    return new Reminder("file.md", "title", time, 0, false);
+    return Reminder.ofLine("file.md", "title", time, 0, false);
   }
 
   // `groupReminders` calls `DateTime.now()` internally, so test reminders
@@ -134,7 +182,7 @@ describe("Reminders#muteExpiredReminders()", (): void => {
     time: DateTime,
     muteNotification: boolean = false,
   ): Reminder {
-    const reminder = new Reminder("file.md", title, time, 0, false);
+    const reminder = Reminder.ofLine("file.md", title, time, 0, false);
     reminder.muteNotification = muteNotification;
     return reminder;
   }
@@ -175,7 +223,7 @@ describe("Reminders#muteExpiredReminders()", (): void => {
 
 describe("Reminders#replaceFile()", (): void => {
   function makeReminder(title: string, time: string): Reminder {
-    return new Reminder("file.md", title, DateTime.parse(time), 0, false);
+    return Reminder.ofLine("file.md", title, DateTime.parse(time), 0, false);
   }
 
   test("an equal list reports no change and keeps the mute flag", (): void => {

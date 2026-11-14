@@ -151,7 +151,7 @@ export class PluginData {
         this.reminders.replaceFile(
           filePath,
           remindersInFile.map((d) => {
-            const reminder = new Reminder(
+            const reminder = Reminder.ofLine(
               filePath,
               d.title,
               DateTime.parse(d.time),
@@ -181,12 +181,22 @@ export class PluginData {
     );
     const remindersData: Record<string, Array<ReminderData>> = {};
     this.reminders.fileToReminders.forEach((r, filePath) => {
-      remindersData[filePath] = r.map((rr) => ({
-        title: rr.title,
-        time: rr.time.toString(),
-        rowNumber: rr.rowNumber,
-        muted: rr.muteNotification,
-      }));
+      const lines: Array<ReminderData> = [];
+      for (const rr of r) {
+        const row = rr.row();
+        if (row === undefined) {
+          continue;
+        }
+        lines.push({
+          title: rr.title,
+          time: rr.time.toString(),
+          rowNumber: row,
+          muted: rr.muteNotification,
+        });
+      }
+      if (lines.length > 0) {
+        remindersData[filePath] = lines;
+      }
     });
     const settings: Record<string, unknown> = {};
     this.settings.forEach((setting) => {

@@ -86,7 +86,7 @@ export function assignSequenceIds(
     if (a.file !== b.file) {
       return a.file < b.file ? -1 : 1;
     }
-    return a.rowNumber - b.rowNumber;
+    return (a.row() ?? 0) - (b.row() ?? 0);
   });
 
   const nextIndexByKey = new Map<string, number>();
