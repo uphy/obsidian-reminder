@@ -165,6 +165,7 @@
           <hr class="dtchooser-divider" />
           <ReminderListByDate
             reminders={reminders.byDate(new DateTime(date, false))}
+            timeToString={(time) => reminders.timeOfDay(time)}
           />
         </div>
       </CalendarView>

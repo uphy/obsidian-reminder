@@ -98,6 +98,15 @@ export class Reminders {
     return count;
   }
 
+  /**
+   * The time of day a reminder is notified at, as `HH:mm`. A reminder
+   * without a time part is notified at the "Reminder time" setting, so that
+   * is what is shown for it, not midnight.
+   */
+  public timeOfDay(time: DateTime): string {
+    return time.format("HH:mm", this.reminderTime?.value);
+  }
+
   public byDate(date: DateTime) {
     return this.reminders.filter(
       (reminder) => reminder.time.toYYYYMMDD() === date.toYYYYMMDD(),
