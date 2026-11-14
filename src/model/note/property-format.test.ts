@@ -1,8 +1,11 @@
+import { Reminder } from "model/reminder";
 import { DateTime } from "model/time";
 import {
   PropertyNoteReminderFormat,
   hasUnreadableRepeatRule,
   pickInitialProperty,
+  propertyOf,
+  propertyOrigin,
   readPropertyReminderState,
   rearmPropertyReminder,
   removePropertyReminder,
@@ -759,5 +762,27 @@ describe("PropertyNoteReminderFormat with a repeat rule", (): void => {
     };
     removePropertyReminder(fm, "reminder");
     expect(fm).toStrictEqual({ other: 1 });
+  });
+});
+
+describe("the origin of a property reminder", (): void => {
+  test("propertyOf() names the property of a reminder of this format only", (): void => {
+    const at = time("2026-11-20");
+    const origin = propertyOrigin("follow-up");
+    expect(origin).toStrictEqual({
+      kind: "note",
+      format: new PropertyNoteReminderFormat(() => []).id,
+      key: "follow-up",
+      label: "follow-up",
+    });
+    expect(propertyOf(Reminder.ofNote("a.md", "a", at, origin))).toBe(
+      "follow-up",
+    );
+    expect(
+      propertyOf(
+        Reminder.ofNote("a.md", "a", at, { ...origin, format: "tasknotes" }),
+      ),
+    ).toBe(null);
+    expect(propertyOf(Reminder.ofLine("a.md", "a", at, 3, false))).toBe(null);
   });
 });

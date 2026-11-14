@@ -4,6 +4,7 @@ import type ReminderPlugin from "main";
 import { isPathExcluded } from "model/exclusion";
 import {
   hasUnreadableRepeatRule,
+  propertyOrigin,
   readPropertyReminderState,
   rearmPropertyReminder,
   removePropertyReminder,
@@ -151,11 +152,11 @@ class NoteReminderModal extends Modal {
           // The stale check applies here too: the note may have changed
           // since the dialog read it.
           write(property, (fm) =>
-            this.plugin.noteReminderReader.apply(
-              fm,
-              { kind: "note", format: "property", key: property, label: "" },
-              { type: "done", expected: shown, now: DateTime.now() },
-            ),
+            this.plugin.noteReminderReader.apply(fm, propertyOrigin(property), {
+              type: "done",
+              expected: shown,
+              now: DateTime.now(),
+            }),
           );
           if (hasUnreadableRepeatRule(this.fm, property)) {
             this.plugin.ui.reportUnreadableRepeatRule(path, property);

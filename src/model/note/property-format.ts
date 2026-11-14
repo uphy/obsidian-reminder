@@ -1,5 +1,6 @@
 import { isValidRecurrence, nextOccurrence } from "model/format/recurrence";
 import { moment } from "model/moment";
+import type { NoteReminderOrigin, Reminder } from "model/reminder";
 import { DateTime } from "model/time";
 import {
   DONE_SUFFIX,
@@ -21,8 +22,35 @@ import {
   isBeforeDay,
   isEmptyValue,
   parseTimeValue,
+  removeOwnText,
   sameTime,
+  textValue,
+  writeOwnText,
 } from "./value";
+
+/** The id of this format, as kept in a reminder's origin. */
+export const PROPERTY_FORMAT_ID = "property";
+
+/** The origin of the reminder a note keeps in `property`. */
+export function propertyOrigin(property: string): NoteReminderOrigin {
+  return {
+    kind: "note",
+    format: PROPERTY_FORMAT_ID,
+    key: property,
+    label: property,
+  };
+}
+
+/**
+ * The property `reminder` is kept in, or null when it is not a reminder of
+ * this format (a task line, or another note format).
+ */
+export function propertyOf(reminder: Reminder): string | null {
+  const origin = reminder.origin;
+  return origin.kind === "note" && origin.format === PROPERTY_FORMAT_ID
+    ? origin.key
+    : null;
+}
 
 /**
  * Reminders written as a plain date or date-time property.
@@ -45,7 +73,7 @@ import {
  *   starts the series from that date.
  */
 export class PropertyNoteReminderFormat implements NoteReminderFormat {
-  readonly id = "property";
+  readonly id = PROPERTY_FORMAT_ID;
 
   constructor(private sources: () => Array<NoteReminderSource>) {}
 
@@ -65,7 +93,9 @@ export class PropertyNoteReminderFormat implements NoteReminderFormat {
       if (done != null && sameTime(done, time)) {
         continue;
       }
-      const title = source.managed ? textOf(fm[property + TITLE_SUFFIX]) : "";
+      const title = source.managed
+        ? textValue(fm[property + TITLE_SUFFIX])
+        : "";
       entries.push({
         key: property,
         time,
@@ -152,7 +182,7 @@ export class PropertyNoteReminderFormat implements NoteReminderFormat {
 
 /** The recurrence rule kept next to `property`, or "" when there is none. */
 function repeatRuleOf(fm: Frontmatter, property: string): string {
-  return textOf(fm[property + REPEAT_SUFFIX]);
+  return textValue(fm[property + REPEAT_SUFFIX]);
 }
 
 /**
@@ -268,14 +298,6 @@ export type PropertyReminderEdit = {
   repeat: string;
 };
 
-// A multi-line YAML string would break the single-line places a title is
-// shown in, so line breaks become spaces.
-function textOf(value: unknown): string {
-  return typeof value === "string"
-    ? value.replace(/\s*[\r\n]+\s*/g, " ").trim()
-    : "";
-}
-
 /**
  * Reads the state of the reminder in `property`. `since` is the cut-off of
  * its source (empty for none).
@@ -297,7 +319,7 @@ export function readPropertyReminderState(
           ? value
           : JSON.stringify(value)
         : null,
-    title: textOf(fm[property + TITLE_SUFFIX]),
+    title: textValue(fm[property + TITLE_SUFFIX]),
     repeat: repeatRuleOf(fm, property),
     done,
     pending: time != null && !done && !isBeforeDay(time, since),
@@ -342,25 +364,8 @@ export function setPropertyReminder(
     return "blocked";
   }
   fm[property] = formatTimeValue(edit.time);
-  const titleKey = property + TITLE_SUFFIX;
-  if (isEmptyValue(fm[titleKey]) || typeof fm[titleKey] === "string") {
-    // A title that is not text is someone else's value: leave it alone.
-    const title = textOf(edit.title);
-    if (title === "") {
-      delete fm[titleKey];
-    } else {
-      fm[titleKey] = title;
-    }
-  }
-  const repeatKey = property + REPEAT_SUFFIX;
-  if (isEmptyValue(fm[repeatKey]) || typeof fm[repeatKey] === "string") {
-    const repeat = textOf(edit.repeat);
-    if (repeat === "") {
-      delete fm[repeatKey];
-    } else {
-      fm[repeatKey] = repeat;
-    }
-  }
+  writeOwnText(fm, property + TITLE_SUFFIX, edit.title);
+  writeOwnText(fm, property + REPEAT_SUFFIX, edit.repeat);
   const moved = current == null || !sameTime(current, edit.time);
   const done = parseTimeValue(fm[property + DONE_SUFFIX]);
   if (moved && done != null && sameTime(done, edit.time)) {
@@ -411,18 +416,12 @@ export function removePropertyReminder(
     return "blocked";
   }
   delete fm[property];
-  const titleKey = property + TITLE_SUFFIX;
-  if (isEmptyValue(fm[titleKey]) || typeof fm[titleKey] === "string") {
-    delete fm[titleKey];
-  }
+  removeOwnText(fm, property + TITLE_SUFFIX);
   const doneKey = property + DONE_SUFFIX;
   if (isEmptyValue(fm[doneKey]) || parseTimeValue(fm[doneKey]) != null) {
     delete fm[doneKey];
   }
-  const repeatKey = property + REPEAT_SUFFIX;
-  if (isEmptyValue(fm[repeatKey]) || typeof fm[repeatKey] === "string") {
-    delete fm[repeatKey];
-  }
+  removeOwnText(fm, property + REPEAT_SUFFIX);
   removeOccurrence(fm, property);
   return "applied";
 }
