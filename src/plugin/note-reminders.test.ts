@@ -1,5 +1,6 @@
 import { PropertyNoteReminderFormat } from "model/note/property-format";
 import { NoteReminderReader } from "model/note/reader";
+import { TaskNotesNoteReminderFormat } from "model/note/tasknotes-format";
 import type { Frontmatter, NoteReminderAction } from "model/note/format";
 import { parseTimeValue } from "model/note/value";
 import { Reminder } from "model/reminder";
@@ -26,7 +27,14 @@ function done(expected: string): NoteReminderAction {
  * reads JSON, which is enough to exercise the service: the YAML dialect is
  * Obsidian's business.
  */
-function setup(initial: Frontmatter | null) {
+type Offer = { format: string; property: string; value: unknown };
+
+function setup(
+  initial: Frontmatter | null,
+  // What the other plugin does with an offered property; absent when the
+  // plugin layer has no such plugin to offer to.
+  onOffer?: (offer: Offer, state: { fm: Frontmatter | null }) => boolean,
+) {
   const state = {
     fm: initial,
     parseCalls: 0,
@@ -63,12 +71,36 @@ function setup(initial: Frontmatter | null) {
       state.writes++;
     },
   };
+  const offers: Array<Offer> = [];
+  if (onOffer != null) {
+    deps.writeExternalProperty = async (format, _path, property, value) => {
+      const offer = { format, property, value };
+      offers.push(offer);
+      return onOffer(offer, state);
+    };
+  }
   const reader = new NoteReminderReader([
     new PropertyNoteReminderFormat(() => [
       { property: "follow-up", managed: false, since: "" },
     ]),
+    new TaskNotesNoteReminderFormat(() => ({
+      enabled: true,
+      identification: "tag",
+      taskTag: "task",
+      taskProperty: "",
+      taskPropertyValue: "",
+      completedStatuses: ["done"],
+      archiveTag: "archived",
+      properties: {},
+      since: "",
+    })),
   ]);
-  return { state, content, service: new NoteReminderService(reader, deps) };
+  return {
+    state,
+    content,
+    offers,
+    service: new NoteReminderService(reader, deps),
+  };
 }
 
 describe("NoteReminderService#read()", (): void => {
@@ -204,5 +236,164 @@ describe("NoteReminderService#readFrontmatter() and write()", (): void => {
       }),
     ).resolves.toBe("applied");
     expect(state.fm).toStrictEqual({ other: 1, reminder: "2026-11-21" });
+  });
+});
+
+describe("NoteReminderService#applyAt() with a property of another plugin", (): void => {
+  const TASK_ORIGIN = {
+    kind: "note",
+    format: "tasknotes",
+    key: "rem_1",
+    label: "TaskNotes",
+  } as const;
+  const SNOOZE_ID = "obsidian-reminder-snooze-rem_1";
+  const task = (): Frontmatter => ({
+    tags: ["task"],
+    reminders: [
+      { id: "rem_1", type: "absolute", absoluteTime: "2026-11-20T09:45:00" },
+    ],
+  });
+  const time = (text: string) => parseTimeValue(text)!;
+  const snooze: NoteReminderAction = {
+    type: "snooze",
+    expected: time("2026-11-20T09:45"),
+    time: time("2026-11-20T10:15"),
+  };
+  const idsOf = (value: unknown): Array<unknown> =>
+    (value as Array<Record<string, unknown>>).map((e) => e["id"]);
+
+  // The other plugin writes the property into the note itself.
+  const taking = (offer: Offer, state: { fm: Frontmatter | null }): boolean => {
+    state.fm = { ...state.fm, [offer.property]: offer.value };
+    return true;
+  };
+
+  test("a changed list is offered first; the note ends the same either way", async (): Promise<void> => {
+    const taken = setup(task(), taking);
+    const refused = setup(task(), () => false);
+    const direct = setup(task());
+    for (const { service } of [taken, refused, direct]) {
+      expect(await service.applyAt("task.md", TASK_ORIGIN, snooze)).toBe(
+        "applied",
+      );
+    }
+
+    expect(taken.offers).toHaveLength(1);
+    expect(taken.offers[0]!.format).toBe("tasknotes");
+    expect(taken.offers[0]!.property).toBe("reminders");
+    expect(idsOf(taken.offers[0]!.value)).toStrictEqual(["rem_1", SNOOZE_ID]);
+    expect(refused.offers).toHaveLength(1);
+    expect(direct.offers).toHaveLength(0);
+
+    expect(direct.state.fm!["reminders-done"]).toStrictEqual([
+      "rem_1@2026-11-20T09:45:00",
+    ]);
+    expect(taken.state.fm).toStrictEqual(direct.state.fm);
+    expect(refused.state.fm).toStrictEqual(direct.state.fm);
+  });
+
+  test("actions on a snoozed reminder end the same either way", async (): Promise<void> => {
+    // `fn` can't be applied twice here: the first application removes or
+    // moves the very entry the second would look for.
+    const snoozed = (): Frontmatter => ({
+      tags: ["task"],
+      reminders: [
+        { id: "rem_1", type: "absolute", absoluteTime: "2026-11-20T09:45:00" },
+        {
+          id: SNOOZE_ID,
+          type: "absolute",
+          absoluteTime: "2026-11-20T10:15:00",
+        },
+      ],
+      "reminders-done": ["rem_1@2026-11-20T09:45:00"],
+    });
+    const origin = { ...TASK_ORIGIN, key: SNOOZE_ID };
+    const actions: Array<NoteReminderAction> = [
+      {
+        type: "done",
+        expected: time("2026-11-20T10:15"),
+        now: time("2026-11-20T10:20"),
+      },
+      {
+        type: "snooze",
+        expected: time("2026-11-20T10:15"),
+        time: time("2026-11-21T09:00"),
+      },
+    ];
+    for (const action of actions) {
+      const taken = setup(snoozed(), taking);
+      const direct = setup(snoozed());
+      expect(await taken.service.applyAt("task.md", origin, action)).toBe(
+        "applied",
+      );
+      expect(await direct.service.applyAt("task.md", origin, action)).toBe(
+        "applied",
+      );
+      expect(taken.offers).toHaveLength(1);
+      expect(taken.state.fm).toStrictEqual(direct.state.fm);
+    }
+  });
+
+  test("a property the other plugin wrote differently is written again", async (): Promise<void> => {
+    // The other plugin says it took the list but the note holds something
+    // else, so the action is applied to the note as it is.
+    const { service, state } = setup(task(), (offer, st) => {
+      st.fm = { ...st.fm, [offer.property]: [] };
+      return true;
+    });
+    expect(await service.applyAt("task.md", TASK_ORIGIN, snooze)).toBe(
+      "missing",
+    );
+    expect(state.fm!["reminders-done"]).toBeUndefined();
+  });
+
+  test("Done leaves the list alone, so nothing is offered", async (): Promise<void> => {
+    const { service, offers, state } = setup(task(), taking);
+    const action: NoteReminderAction = {
+      type: "done",
+      expected: time("2026-11-20T09:45"),
+      now: time("2026-11-20T09:50"),
+    };
+    expect(await service.applyAt("task.md", TASK_ORIGIN, action)).toBe(
+      "applied",
+    );
+    expect(offers).toHaveLength(0);
+    expect(state.fm!["reminders-done"]).toStrictEqual([
+      "rem_1@2026-11-20T09:45:00",
+    ]);
+  });
+
+  test("nothing is offered when there is nothing to write", async (): Promise<void> => {
+    const { service, offers, state } = setup(task(), taking);
+    const stale: NoteReminderAction = {
+      ...snooze,
+      expected: time("2026-11-20T08:00"),
+    };
+    expect(await service.applyAt("task.md", TASK_ORIGIN, stale)).toBe("stale");
+    expect(offers).toHaveLength(0);
+    expect(state.writes).toBe(0);
+  });
+
+  test("a format without such properties is never offered", async (): Promise<void> => {
+    const { service, offers } = setup({ "follow-up": "2026-11-20" }, taking);
+    expect(await service.applyAt("note.md", ORIGIN, done("2026-11-20"))).toBe(
+      "applied",
+    );
+    expect(offers).toHaveLength(0);
+  });
+
+  test("an offer that throws does not fail the action", async (): Promise<void> => {
+    const debug = jest.spyOn(console, "debug").mockImplementation(() => {});
+    try {
+      const { service, state } = setup(task(), () => {
+        throw new Error("boom");
+      });
+      expect(await service.applyAt("task.md", TASK_ORIGIN, snooze)).toBe(
+        "applied",
+      );
+      expect(idsOf(state.fm!["reminders"])).toStrictEqual(["rem_1", SNOOZE_ID]);
+    } finally {
+      debug.mockRestore();
+    }
   });
 });

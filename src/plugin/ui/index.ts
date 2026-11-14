@@ -7,6 +7,7 @@ import {
 } from "model/note/property-format";
 import { DONE_SUFFIX, REPEAT_SUFFIX } from "model/note/sources";
 import type { NoteReminderAction } from "model/note/format";
+import { TASKNOTES_FORMAT_ID } from "model/note/tasknotes-format";
 import { snoozeTimeFor } from "model/note/value";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
@@ -509,7 +510,14 @@ export class ReminderPluginUI {
         this.plugin.reminders.unmute(reminder);
         return;
       }
-      this.reportNoteWrite(reminder.file, noteKeyOf(reminder), result);
+      this.reportNoteWrite(
+        reminder.file,
+        noteKeyOf(
+          reminder,
+          this.plugin.settings.taskNotesOptions().properties.reminders ?? "",
+        ),
+        result,
+      );
       if (result === "applied" && action.type === "done") {
         this.checkRepeatRule(reminder);
       }
@@ -579,8 +587,19 @@ export class ReminderPluginUI {
   }
 }
 
-function noteKeyOf(reminder: Reminder): string {
-  return reminder.origin.kind === "note" ? reminder.origin.key : "";
+/**
+ * The property a notice about `reminder` names: its own for a property
+ * reminder, the reminders list (`taskNotesReminders`, as TaskNotes names it)
+ * for a TaskNotes one, whose key is the id of an entry in that list.
+ */
+function noteKeyOf(reminder: Reminder, taskNotesReminders: string): string {
+  const origin = reminder.origin;
+  if (origin.kind !== "note") {
+    return "";
+  }
+  return origin.format === TASKNOTES_FORMAT_ID
+    ? taskNotesReminders
+    : origin.key;
 }
 
 class EditDetector {

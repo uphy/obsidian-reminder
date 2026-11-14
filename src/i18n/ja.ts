@@ -360,4 +360,62 @@ export const ja: Record<string, string> = {
     "このルールは読み取れません。例: 「every day」「every week on Monday」「every month」",
   "The repeat rule in “{property}” of {file} is not understood, so the reminder will not repeat":
     "{file} の「{property}」の繰り返しルールを読み取れないため、このリマインダーは繰り返しません",
+
+  // --- Note reminders: TaskNotes ---------------------------------------------
+  "TaskNotes plugin": "TaskNotes プラグイン",
+  "Read TaskNotes reminders": "TaskNotes のリマインダーを読む",
+  "Show the reminders the TaskNotes plugin keeps in its task notes. TaskNotes shows its own notifications for the same reminders, so turn notifications off in one of the two plugins. The settings below follow TaskNotes' own settings; fill one in only to use another value.":
+    "TaskNotes プラグインがタスクノートに持つリマインダーを表示します。同じリマインダーを TaskNotes も通知するので、どちらかのプラグインの通知をオフにしてください。下の設定は TaskNotes の設定に従います。別の値を使いたい項目だけ入力してください。",
+  "Task tag": "タスクのタグ",
+  "The tag that marks a note as a TaskNotes task. A tag nested under it counts as well.":
+    "ノートが TaskNotes のタスクであることを示すタグ。その下の階層のタグも対象です。",
+  "Completed statuses": "完了を表すステータス",
+  "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders. Empty uses the statuses TaskNotes marks as completed.":
+    "タスクの完了を表すステータスの値（カンマ区切り）。完了したタスクのリマインダーは読みません。空にすると、TaskNotes で完了に設定したステータスを使います。",
+  "Ignore TaskNotes reminders before":
+    "この日より前の TaskNotes のリマインダーを読まない",
+  "Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.":
+    "これより前のリマインダーは読みません。過去のリマインダーが一斉に通知されないよう、読み取りをオンにした日が入ります。空にするとすべての日付を読みます。",
+  "Identify tasks by": "タスクの見分け方",
+  "How TaskNotes tells a task note from other notes (TaskNotes: Task identification).":
+    "TaskNotes がタスクノートをほかのノートと見分ける方法（TaskNotes の Task identification）。",
+  Tag: "タグ",
+  "Task property": "タスクのプロパティ",
+  "The property that marks a note as a TaskNotes task.":
+    "ノートが TaskNotes のタスクであることを示すプロパティ。",
+  "Task property value": "タスクのプロパティの値",
+  "The value the task property holds in a task note. Empty means any note that has the property.":
+    "タスクノートでそのプロパティが持つ値。空にすると、そのプロパティを持つノートすべてがタスクになります。",
+  "Archive tag": "アーカイブのタグ",
+  "The tag of an archived task. Archived tasks have no reminders.":
+    "アーカイブしたタスクのタグ。アーカイブしたタスクのリマインダーは読みません。",
+  "Reminders property": "リマインダーのプロパティ",
+  'The list of a task\'s reminders. Handled reminders are recorded in this name with "-done" appended.':
+    "タスクのリマインダーのリスト。処理したリマインダーは、この名前に「-done」を付けたプロパティに記録します。",
+  "Due property": "期日のプロパティ",
+  'The date a reminder "before due" counts from.':
+    "「期日の何分前」のリマインダーが基準にする日付。",
+  "Scheduled property": "予定日のプロパティ",
+  'The date a reminder "before scheduled" counts from.':
+    "「予定日の何分前」のリマインダーが基準にする日付。",
+  "Status property": "ステータスのプロパティ",
+  "Compared with the completed statuses.": "完了を表すステータスと比べる値。",
+  "Title property": "タイトルのプロパティ",
+  "Shown as the notification's title. Without it, the note's name is shown.":
+    "通知のタイトルに表示します。無ければノート名を表示します。",
+  "Recurrence property": "繰り返しのプロパティ",
+  "A task with a value here is recurring: a completed date does not complete it, and occurrences completed or skipped in TaskNotes have no reminder.":
+    "ここに値があるタスクは繰り返しタスクです。完了日があっても完了とは見なさず、TaskNotes で完了・スキップした回のリマインダーは読みません。",
+  "Same as TaskNotes": "TaskNotes と同じ",
+  "TaskNotes is not enabled here. Using its settings as last seen.":
+    "この端末では TaskNotes が有効になっていません。最後に読み取った TaskNotes の設定を使っています。",
+  "TaskNotes is not enabled here and its settings were never seen. Using TaskNotes' defaults.":
+    "この端末では TaskNotes が有効になっておらず、設定を読み取ったこともありません。TaskNotes の既定値を使っています。",
+  "TaskNotes: tag “{tag}”": "TaskNotes: タグ「{tag}」",
+  "TaskNotes: property “{property}”": "TaskNotes: プロパティ「{property}」",
+  "TaskNotes: property “{property}” with value “{value}”":
+    "TaskNotes: プロパティ「{property}」の値が「{value}」",
+  "Completed date property": "完了日のプロパティ",
+  "A task with a date here is completed, like one with a completed status.":
+    "ここに日付があるタスクは、完了を表すステータスのタスクと同じく完了として扱います。",
 };

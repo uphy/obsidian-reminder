@@ -68,4 +68,10 @@ export class NoteReminderReader {
     const format = this.formats.find((s) => s.id === origin.format);
     return format == null ? "missing" : format.apply(fm, origin.key, action);
   }
+
+  /** The properties of `origin`'s format that belong to another plugin. */
+  externalProperties(origin: NoteReminderOrigin): Array<string> {
+    const format = this.formats.find((s) => s.id === origin.format);
+    return format?.externalProperties?.() ?? [];
+  }
 }

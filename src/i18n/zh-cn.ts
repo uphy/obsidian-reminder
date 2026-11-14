@@ -341,4 +341,60 @@ export const zhCN: Record<string, string> = {
     "无法识别此规则。示例：“every day”、“every week on Monday”、“every month”。",
   "The repeat rule in “{property}” of {file} is not understood, so the reminder will not repeat":
     "无法识别 {file} 中“{property}”的重复规则，因此该提醒不会重复",
+
+  // --- Note reminders: TaskNotes ---------------------------------------------
+  "TaskNotes plugin": "TaskNotes 插件",
+  "Read TaskNotes reminders": "读取 TaskNotes 的提醒",
+  "Show the reminders the TaskNotes plugin keeps in its task notes. TaskNotes shows its own notifications for the same reminders, so turn notifications off in one of the two plugins. The settings below follow TaskNotes' own settings; fill one in only to use another value.":
+    "显示 TaskNotes 插件保存在任务笔记中的提醒。TaskNotes 也会为同样的提醒发出通知，请关闭其中一个插件的通知。下面的设置跟随 TaskNotes 自身的设置；只有想使用其他值时才需要填写。",
+  "Task tag": "任务标签",
+  "The tag that marks a note as a TaskNotes task. A tag nested under it counts as well.":
+    "将笔记标记为 TaskNotes 任务的标签。其下的子标签也算。",
+  "Completed statuses": "表示已完成的状态",
+  "Status values that mean a task is completed, separated by commas. Completed tasks have no reminders. Empty uses the statuses TaskNotes marks as completed.":
+    "表示任务已完成的状态值，用逗号分隔。已完成的任务没有提醒。留空则使用 TaskNotes 中标记为已完成的状态。",
+  "Ignore TaskNotes reminders before": "忽略此日期之前的 TaskNotes 提醒",
+  "Reminders dated earlier are not read. Set to the day TaskNotes reading was turned on, so that past reminders do not all notify at once. Empty reads every date.":
+    "早于此日期的提醒不会被读取。为避免过去的提醒同时发出通知，开启读取时会填入当天的日期。留空则读取所有日期。",
+  "Identify tasks by": "任务识别方式",
+  "How TaskNotes tells a task note from other notes (TaskNotes: Task identification).":
+    "TaskNotes 区分任务笔记与其他笔记的方式（TaskNotes 的 Task identification）。",
+  Tag: "标签",
+  "Task property": "任务属性",
+  "The property that marks a note as a TaskNotes task.":
+    "将笔记标记为 TaskNotes 任务的属性。",
+  "Task property value": "任务属性的值",
+  "The value the task property holds in a task note. Empty means any note that has the property.":
+    "任务笔记中该属性的值。留空表示任何带有该属性的笔记都是任务。",
+  "Archive tag": "归档标签",
+  "The tag of an archived task. Archived tasks have no reminders.":
+    "已归档任务的标签。已归档的任务没有提醒。",
+  "Reminders property": "提醒属性",
+  'The list of a task\'s reminders. Handled reminders are recorded in this name with "-done" appended.':
+    "任务的提醒列表。已处理的提醒记录在此名称加上“-done”的属性中。",
+  "Due property": "截止日期属性",
+  'The date a reminder "before due" counts from.': "“截止前”提醒所依据的日期。",
+  "Scheduled property": "计划日期属性",
+  'The date a reminder "before scheduled" counts from.':
+    "“计划前”提醒所依据的日期。",
+  "Status property": "状态属性",
+  "Compared with the completed statuses.": "与表示已完成的状态进行比较。",
+  "Title property": "标题属性",
+  "Shown as the notification's title. Without it, the note's name is shown.":
+    "显示为通知的标题。没有时显示笔记名称。",
+  "Recurrence property": "重复属性",
+  "A task with a value here is recurring: a completed date does not complete it, and occurrences completed or skipped in TaskNotes have no reminder.":
+    "此处有值的任务是重复任务：完成日期不会使其视为已完成，在 TaskNotes 中已完成或已跳过的那一次没有提醒。",
+  "Same as TaskNotes": "与 TaskNotes 相同",
+  "TaskNotes is not enabled here. Using its settings as last seen.":
+    "此设备未启用 TaskNotes。正在使用上次读取到的 TaskNotes 设置。",
+  "TaskNotes is not enabled here and its settings were never seen. Using TaskNotes' defaults.":
+    "此设备未启用 TaskNotes，也从未读取过其设置。正在使用 TaskNotes 的默认值。",
+  "TaskNotes: tag “{tag}”": "TaskNotes：标签“{tag}”",
+  "TaskNotes: property “{property}”": "TaskNotes：属性“{property}”",
+  "TaskNotes: property “{property}” with value “{value}”":
+    "TaskNotes：属性“{property}”的值为“{value}”",
+  "Completed date property": "完成日期属性",
+  "A task with a date here is completed, like one with a completed status.":
+    "此处有日期的任务与处于已完成状态的任务一样，视为已完成。",
 };
