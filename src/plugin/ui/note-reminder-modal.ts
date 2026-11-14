@@ -66,12 +66,25 @@ export function openNoteReminderModal(plugin: ReminderPlugin, file: TFile) {
 }
 
 /**
+ * The dialogs that are open now. A dialog left open would outlive the plugin
+ * instance that owns it (and keep writing through it) when the plugin is
+ * disabled or reloaded, so `closeNoteReminderModals()` closes them at unload.
+ */
+const openModals = new Set<Modal>();
+
+/** Closes every open note reminder dialog. Called when the plugin unloads. */
+export function closeNoteReminderModals() {
+  for (const modal of [...openModals]) {
+    modal.close();
+  }
+}
+
+/**
  * Creates, edits, completes or removes the reminder of one note. The
  * counterpart of the calendar popup for task lines.
  */
 class NoteReminderModal extends Modal {
   private component?: NoteReminderEditor;
-  private readonly closeOnUnload = () => this.close();
 
   constructor(
     private plugin: ReminderPlugin,
@@ -84,9 +97,7 @@ class NoteReminderModal extends Modal {
   }
 
   override onOpen() {
-    // A dialog left open would outlive the plugin instance that owns it (and
-    // keep writing through it) when the plugin is disabled or reloaded.
-    this.plugin.register(this.closeOnUnload);
+    openModals.add(this);
     if (Platform.isDesktop) {
       this.modalEl.addClass("reminder-date-chooser-modal");
     }
@@ -157,6 +168,7 @@ class NoteReminderModal extends Modal {
   }
 
   override onClose() {
+    openModals.delete(this);
     this.component?.$destroy();
     this.component = undefined;
     this.contentEl.empty();
@@ -173,7 +185,7 @@ class AddManagedPropertyModal extends Modal {
   }
 
   override onOpen() {
-    this.plugin.register(() => this.close());
+    openModals.add(this);
     this.setTitle(t("Set reminder for this note"));
     this.contentEl.createEl("p", {
       text: t(
@@ -212,6 +224,7 @@ class AddManagedPropertyModal extends Modal {
   }
 
   override onClose() {
+    openModals.delete(this);
     this.contentEl.empty();
   }
 }

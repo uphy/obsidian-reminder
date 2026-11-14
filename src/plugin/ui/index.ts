@@ -28,6 +28,7 @@ import { findLeafShowingFile } from "./find-leaf-showing-file";
 import { NoteReminderIndicator } from "./note-reminder-indicator";
 import {
   canSetNoteReminder,
+  closeNoteReminderModals,
   openNoteReminderModal,
 } from "./note-reminder-modal";
 import { OverdueStatusBar } from "./overdue-status-bar";
@@ -190,6 +191,7 @@ export class ReminderPluginUI {
   onunload() {
     this.detachReminderList();
     this.reminderNotifier.destroy();
+    closeNoteReminderModals();
   }
 
   isEditing(): boolean {
