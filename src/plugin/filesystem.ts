@@ -85,14 +85,25 @@ export class ReminderPluginFileSystem {
     // as the plugin registers its commands, and the notification worker runs
     // its initial scan on its first tick. Parsing every file before the
     // settings are restored would use the default reminder formats and
-    // excluded paths, and the reminders `load()` restores afterwards would
-    // undo the `clear()` below (`Reminders.replaceFile()` carries the
-    // restored mute flags over onto freshly parsed reminders).
+    // excluded paths.
     await this.dataLoaded();
     console.debug("Reload all files and collect reminders");
-    this.reminders.clear();
+    // Reload file by file instead of clearing first. `replaceFile()` carries
+    // the mute flag over to a reminder that comes back unchanged, so a rescan
+    // (which every parsing-related setting change triggers) neither notifies
+    // again about reminders the user already dismissed nor disturbs a
+    // notification that is on screen.
+    const scanned = new Set<string>();
     for (const file of this.vault.getMarkdownFiles()) {
+      scanned.add(file.path);
       await this.reloadRemindersInFile(file);
+    }
+    // What is left belongs to files that no longer exist (excluded files were
+    // already dropped by `reloadRemindersInFile()`).
+    for (const path of [...this.reminders.fileToReminders.keys()]) {
+      if (!scanned.has(path)) {
+        this.reminders.removeByFile(path);
+      }
     }
     this.onRemindersChanged();
   }

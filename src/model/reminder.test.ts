@@ -174,6 +174,58 @@ describe("Reminders#muteExpiredReminders()", (): void => {
   });
 });
 
+describe("Reminders#replaceFile()", (): void => {
+  function makeReminder(title: string, time: string): Reminder {
+    return new Reminder("file.md", title, DateTime.parse(time), 0, false);
+  }
+
+  test("an equal list reports no change and keeps the mute flag", (): void => {
+    const reminders = new Reminders(() => {});
+    const original = makeReminder("task", "2021-09-08 10:00");
+    reminders.replaceFile("file.md", [original]);
+    original.muteNotification = true;
+
+    const changed = reminders.replaceFile("file.md", [
+      makeReminder("task", "2021-09-08 10:00"),
+    ]);
+
+    expect(changed).toBe(false);
+    expect(reminders.reminders[0]?.muteNotification).toBe(true);
+  });
+
+  test("a reminder that comes back with the same key stays muted", (): void => {
+    const reminders = new Reminders(() => {});
+    const original = makeReminder("task", "2021-09-08 10:00");
+    reminders.replaceFile("file.md", [original]);
+    original.muteNotification = true;
+
+    const changed = reminders.replaceFile("file.md", [
+      makeReminder("task", "2021-09-08 10:00"),
+      makeReminder("another", "2021-09-09 10:00"),
+    ]);
+
+    expect(changed).toBe(true);
+    const byTitle = new Map(
+      reminders.reminders.map((r) => [r.title, r.muteNotification]),
+    );
+    expect(byTitle.get("task")).toBe(true);
+    expect(byTitle.get("another")).toBe(false);
+  });
+
+  test("a reminder whose time changed is not muted", (): void => {
+    const reminders = new Reminders(() => {});
+    const original = makeReminder("task", "2021-09-08 10:00");
+    reminders.replaceFile("file.md", [original]);
+    original.muteNotification = true;
+
+    reminders.replaceFile("file.md", [
+      makeReminder("task", "2021-09-08 11:00"),
+    ]);
+
+    expect(reminders.reminders[0]?.muteNotification).toBe(false);
+  });
+});
+
 describe("Reminders#timeOfDay()", (): void => {
   function remindersAt(reminderTime: string): Reminders {
     const reminders = new Reminders(() => {});
