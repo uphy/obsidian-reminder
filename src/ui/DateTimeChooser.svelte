@@ -23,7 +23,14 @@
   let time = initialTime?.hasTimePart
     ? initialTime.format("HH:mm")
     : (reminders.reminderTime?.value.toString() ?? "10:00");
-  let timeIsFocused = initialTime?.hasTimePart ?? false;
+  // Whether the time shown is part of the result. By default it is only
+  // once the time input has been focused (or the initial value had a time),
+  // so that picking a day alone gives a date. A caller can decide the
+  // initial state instead, and with `timeToggle` the state is a visible
+  // checkbox next to the time: what is shown is then what is saved.
+  export let initialTimeSelected: boolean | undefined = undefined;
+  export let timeToggle = false;
+  let timeIsFocused = initialTimeSelected ?? initialTime?.hasTimePart ?? false;
 
   type Mode = "calendar" | "quickpick";
   let mode: Mode = "calendar";
@@ -170,7 +177,18 @@
       </CalendarView>
     </div>
     <div class="dtchooser-wrapper">
-      <div class="dtchooser-time-picker">
+      <div
+        class="dtchooser-time-picker"
+        class:is-unset={timeToggle && !timeIsFocused}
+      >
+        {#if timeToggle}
+          <input
+            type="checkbox"
+            class="dtchooser-time-toggle"
+            aria-label={t("Set a time")}
+            bind:checked={timeIsFocused}
+          />
+        {/if}
         <span>{t("Time:")}</span>
         <TimePicker
           bind:value={time}
@@ -318,6 +336,14 @@
     display: inline-flex;
     flex-direction: row;
     align-items: center;
+  }
+  /* Without a time the value shown is not saved: the reminder is a date. */
+  .dtchooser-time-picker.is-unset :global(select),
+  .dtchooser-time-picker.is-unset span {
+    opacity: 0.45;
+  }
+  .dtchooser-time-toggle {
+    margin-right: 0.4rem;
   }
   .dtchooser-time-picker span {
     color: var(--text-muted);
