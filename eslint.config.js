@@ -186,6 +186,7 @@ const deferredFindings = [
       'src/plugin/ui/cm6-datetime-chooser.ts',
       'src/plugin/ui/editor-reminder-display/pill-widget.ts',
       'src/plugin/ui/editor-reminder-display/rendered-block-post-processor.ts',
+      'src/plugin/ui/note-reminder-modal.ts',
       'src/plugin/ui/reminder-list.ts',
       'src/plugin/ui/reminder-toast.ts',
     ],
