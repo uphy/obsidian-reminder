@@ -331,7 +331,7 @@ as for date-only task lines.
 | Action | Applies to | Checks first | Writes |
 | --- | --- | --- | --- |
 | Done | every source | stale check; `p-done` check | `p-done` = the time shown |
-| Snooze | every source | stale check | `p` = the new time in the shape of the old value; removes `p-done` if it equals the new time |
+| Snooze | every source | stale check; the new time differs from the value in `p` | `p` = the new time in the shape of the old value; removes `p-done` if it equals the new time |
 | Dialog: OK | managed | `p` is empty or a time | `p` = the chosen time; sets or removes `p-title`; removes `p-done` if the time was changed and `p-done` equals the new time |
 | Dialog: Mark as Done | managed | stale check; `p-done` check | as Done |
 | Dialog: Remind again | managed | `p-done` equals `p` | removes `p-done` |
@@ -404,6 +404,7 @@ type NoteReminderAction =
 
 type ApplyOutcome =
   | "applied"   // the frontmatter object was changed
+  | "unchanged" // a snooze chose the time the reminder already has
   | "stale"     // the reminder exists but is not pending at `expected`
   | "missing"   // the reminder is gone
   | "blocked";  // the `p-done` check failed
@@ -558,6 +559,7 @@ sequenceDiagram
 | Result | UI |
 | --- | --- |
 | `applied` | Nothing. Verified: the write emits `modify`, the file is reloaded, and the reminder leaves the list or moves. |
+| `unchanged` | Nothing is written and the reminder is unmuted, so it is shown again like a snoozed line reminder whose time did not move. Example: "Next Saturday" chosen on a Saturday for a date-only value. |
 | `stale`, `missing` | The file is reloaded. No notice. |
 | `blocked` | A notice names the `p-done` property. The reminder stays muted and overdue in the list. |
 | `failed` | A notice names the note. The reminder stays muted and overdue in the list. |
