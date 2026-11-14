@@ -1,7 +1,12 @@
-import { onLanguageChange, tn } from "i18n";
+import { onLanguageChange, t, tn } from "i18n";
 import type ReminderPlugin from "main";
+import { noteNameOf } from "model/note/reader";
+import { DONE_SUFFIX } from "model/note/sources";
+import type { NoteReminderAction } from "model/note/store";
+import { snoozeTimeFor } from "model/note/value";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
+import { DateTime } from "model/time";
 import {
   App,
   Editor,
@@ -13,6 +18,7 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { refreshCommandNames, registerCommands } from "plugin/commands";
+import type { WriteResult } from "plugin/note-reminders";
 import { showPauseDurationChooser } from "plugin/dnd";
 import { rebuildMarkdownViews } from "plugin/obsidian-hack/leaf";
 import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
@@ -325,9 +331,27 @@ export class ReminderPluginUI {
 
   showReminder(reminder: Reminder) {
     reminder.muteNotification = true;
+    // The time this notification is shown for. An action on a note reminder
+    // carries it, so that it writes nothing when the note has moved on.
+    const shownTime = reminder.time;
     const actions: ReminderActions = {
       remindMeLater: (time) => {
         console.debug("Remind me later: time=%o", time);
+        if (reminder.isNote()) {
+          // `reminder.time` is not touched: the reload after the write
+          // replaces the reminder, and another surface showing it must keep
+          // seeing the time it was shown for.
+          this.applyToNote(reminder, {
+            type: "snooze",
+            expected: shownTime,
+            time: snoozeTimeFor(
+              shownTime,
+              time,
+              this.plugin.settings.reminderTime.value,
+            ),
+          });
+          return;
+        }
         reminder.time = time;
         reminder.muteNotification = false;
         // Callback is synchronous; both calls are fire-and-forget here.
@@ -336,6 +360,14 @@ export class ReminderPluginUI {
       },
       done: () => {
         console.debug("done");
+        if (reminder.isNote()) {
+          this.applyToNote(reminder, {
+            type: "done",
+            expected: shownTime,
+            now: DateTime.now(),
+          });
+          return;
+        }
         reminder.muteNotification = false;
         // Callback is synchronous; both calls are fire-and-forget here.
         void this.plugin.fileSystem.updateReminder(reminder, true);
@@ -404,6 +436,54 @@ export class ReminderPluginUI {
     };
     this.reminderNotifier.show(reminder, actions);
   }
+
+  /**
+   * Writes "Done" / "Remind me later" of a note reminder to its note. The
+   * reminder stays muted (it was muted when it was shown) until the write
+   * lands and the note's reload removes or moves it.
+   *
+   * - `stale` / `missing`: the note has moved on (another plugin changed the
+   *   date, another device handled it). Nothing was written; the note is
+   *   reloaded so the outdated reminder goes away.
+   * - `blocked` / `failed`: the user is told. The reminder stays muted and
+   *   overdue in the list: unmuting it would show the same notification
+   *   again within seconds, for a cause the user has to fix in the note.
+   */
+  private applyToNote(reminder: Reminder, action: NoteReminderAction) {
+    void this.plugin.noteReminders.apply(reminder, action).then((result) => {
+      this.reportNoteWrite(reminder.file, noteKeyOf(reminder), result);
+    });
+  }
+
+  /** Tells the user about a write that did not happen; see `applyToNote`. */
+  reportNoteWrite(path: string, property: string, result: WriteResult) {
+    const note = noteNameOf(path);
+    if (result === "blocked") {
+      new Notice(
+        t(
+          '"{property}" in {file} holds a value that is not a date, so "Done" was not recorded',
+          { property: property + DONE_SUFFIX, file: note },
+        ),
+      );
+    } else if (result === "failed") {
+      new Notice(t("Could not update the reminder in {file}", { file: note }));
+    } else if (result !== "applied") {
+      const file = this.plugin.app.vault.getAbstractFileByPath(path);
+      if (file != null) {
+        void this.plugin.fileSystem
+          .reloadRemindersInFile(file)
+          .then((changed) => {
+            if (changed) {
+              this.reload(true);
+            }
+          });
+      }
+    }
+  }
+}
+
+function noteKeyOf(reminder: Reminder): string {
+  return reminder.origin.kind === "note" ? reminder.origin.key : "";
 }
 
 class EditDetector {

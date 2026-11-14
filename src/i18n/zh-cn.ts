@@ -283,4 +283,30 @@ export const zhCN: Record<string, string> = {
   "Date and time format": "日期和时间格式",
   "Strict date format": "严格日期格式",
   "Strictly parse the date and time": "严格解析日期和时间",
+
+  // --- Note reminders --------------------------------------------------------
+  "Note reminders": "笔记提醒",
+  "Properties to remind from": "用作提醒的属性",
+  'Add the name of a date or date & time property. A note with a value in it gets a reminder at that time. "Done" records the handled date in "<property>-done" and leaves the property itself alone.':
+    "添加日期或日期和时间属性的名称。该属性有值的笔记会在那个时间提醒。“完成”会把已处理的日期记录在“<属性名>-done”中，不会修改属性本身。",
+  Add: "添加",
+  Managed: "托管",
+  'Managed: "Set reminder for this note" creates and edits this property.':
+    "托管：“为此笔记设置提醒”会创建和编辑此属性。",
+  "Read only: its value is never created or removed here.":
+    "只读：此插件不会创建或删除它的值。",
+  "{count} earlier values in the vault are ignored.":
+    "库中 {count} 个更早的值会被忽略。",
+  '"{property}" already holds other values in {count} notes, so "Done" can\'t be recorded there.':
+    "“{property}”在 {count} 个笔记中已有其他值，无法在那里记录“完成”。",
+  "Ignore dates before": "忽略早于此日期的值",
+  "Enter a property name.": "请输入属性名称。",
+  "This property is already listed.": "此属性已在列表中。",
+  "This name is used by another listed property for its done or title value.":
+    "此名称已被列表中另一个属性用于记录完成或标题。",
+  Remove: "删除",
+  "Could not update the reminder in {file}": "无法更新 {file} 中的提醒",
+  '"{property}" in {file} holds a value that is not a date, so "Done" was not recorded':
+    "{file} 中的“{property}”不是日期，未能记录“完成”",
+  "Property name": "属性名称",
 };

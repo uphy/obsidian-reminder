@@ -12,6 +12,20 @@ interface ReminderData {
 }
 
 /**
+ * A cached note reminder. Kept under its own key in data.json, apart from
+ * `ReminderData`, so that a plugin version that predates note reminders
+ * never loads one as a line reminder.
+ */
+interface NoteReminderData {
+  title: string;
+  time: string;
+  muted?: boolean;
+  store: string;
+  key: string;
+  label: string;
+}
+
+/**
  * The minimal persistence surface `PluginData` needs. This matches the
  * signatures of Obsidian's `Plugin.loadData()`/`Plugin.saveData()`, so a
  * concrete `Plugin` instance is assignable here structurally without
@@ -117,6 +131,7 @@ export class PluginData {
           dndUntil?: number | null;
           settings?: Record<string, unknown>;
           reminders?: Record<string, Array<ReminderData>>;
+          noteReminders?: Record<string, Array<NoteReminderData>>;
         }
       | undefined;
     if (!data) {
@@ -141,29 +156,41 @@ export class PluginData {
     // nothing to carry over.
     const restoreMuted = !this.settings.reNotifyMutedOnStartup.value;
 
-    const remindersData = data.reminders;
-    if (remindersData) {
-      Object.keys(remindersData).forEach((filePath) => {
-        const remindersInFile = remindersData[filePath];
-        if (!remindersInFile) {
-          return;
-        }
-        this.reminders.replaceFile(
+    const remindersData = data.reminders ?? {};
+    const noteRemindersData = data.noteReminders ?? {};
+    const filePaths = new Set([
+      ...Object.keys(remindersData),
+      ...Object.keys(noteRemindersData),
+    ]);
+    filePaths.forEach((filePath) => {
+      // Both kinds go into one `replaceFile()` call, because that call
+      // replaces everything stored for the file.
+      const restored: Array<Reminder> = [];
+      for (const d of remindersData[filePath] ?? []) {
+        const reminder = Reminder.ofLine(
           filePath,
-          remindersInFile.map((d) => {
-            const reminder = Reminder.ofLine(
-              filePath,
-              d.title,
-              DateTime.parse(d.time),
-              d.rowNumber,
-              false,
-            );
-            reminder.muteNotification = restoreMuted && (d.muted ?? false);
-            return reminder;
-          }),
+          d.title,
+          DateTime.parse(d.time),
+          d.rowNumber,
+          false,
         );
-      });
-    }
+        reminder.muteNotification = restoreMuted && (d.muted ?? false);
+        restored.push(reminder);
+      }
+      for (const d of noteRemindersData[filePath] ?? []) {
+        const reminder = Reminder.ofNote(
+          filePath,
+          d.title,
+          DateTime.parse(d.time),
+          { kind: "note", store: d.store, key: d.key, label: d.label },
+        );
+        reminder.muteNotification = restoreMuted && (d.muted ?? false);
+        restored.push(reminder);
+      }
+      if (restored.length > 0) {
+        this.reminders.replaceFile(filePath, restored);
+      }
+    });
     this.changed = false;
     if (this.restoring) {
       this.restoring = false;
@@ -180,22 +207,35 @@ export class PluginData {
       this.changed,
     );
     const remindersData: Record<string, Array<ReminderData>> = {};
+    const noteRemindersData: Record<string, Array<NoteReminderData>> = {};
     this.reminders.fileToReminders.forEach((r, filePath) => {
       const lines: Array<ReminderData> = [];
+      const notes: Array<NoteReminderData> = [];
       for (const rr of r) {
-        const row = rr.row();
-        if (row === undefined) {
-          continue;
+        const origin = rr.origin;
+        if (origin.kind === "line") {
+          lines.push({
+            title: rr.title,
+            time: rr.time.toString(),
+            rowNumber: origin.row,
+            muted: rr.muteNotification,
+          });
+        } else {
+          notes.push({
+            title: rr.title,
+            time: rr.time.toString(),
+            muted: rr.muteNotification,
+            store: origin.store,
+            key: origin.key,
+            label: origin.label,
+          });
         }
-        lines.push({
-          title: rr.title,
-          time: rr.time.toString(),
-          rowNumber: row,
-          muted: rr.muteNotification,
-        });
       }
       if (lines.length > 0) {
         remindersData[filePath] = lines;
+      }
+      if (notes.length > 0) {
+        noteRemindersData[filePath] = notes;
       }
     });
     const settings: Record<string, unknown> = {};
@@ -211,6 +251,7 @@ export class PluginData {
         scanned: this.scanned.value,
         seededTaskStatuses: this.seededTaskStatusesText,
         reminders: remindersData,
+        noteReminders: noteRemindersData,
         debug: this.debug.value,
         dndUntil: this.dndUntil.value?.getTimeInMillis() ?? null,
         settings,

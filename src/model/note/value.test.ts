@@ -1,4 +1,4 @@
-import { DateTime } from "model/time";
+import { DateTime, Time } from "model/time";
 import {
   formatTimeValue,
   inShapeOf,
@@ -6,6 +6,7 @@ import {
   isEmptyValue,
   parseTimeValue,
   sameTime,
+  snoozeTimeFor,
 } from "./value";
 
 function parsed(value: unknown): string | null {
@@ -117,5 +118,29 @@ describe("inShapeOf()", (): void => {
   test("a matching shape is returned as is", (): void => {
     const original = time("2026-11-21T09:30");
     expect(inShapeOf(original, true)).toBe(original);
+  });
+});
+
+describe("snoozeTimeFor()", (): void => {
+  const time = (text: string): DateTime => parseTimeValue(text)!;
+  const reminderTime = Time.parse("09:00");
+  const snoozed = (current: string, chosen: string): string =>
+    formatTimeValue(snoozeTimeFor(time(current), time(chosen), reminderTime));
+
+  test("a whole-day choice for a date-time gets the reminder time", (): void => {
+    expect(snoozed("2026-11-20T14:30", "2026-11-21")).toBe(
+      "2026-11-21T09:00:00",
+    );
+  });
+
+  test("a date stays a date", (): void => {
+    expect(snoozed("2026-11-20", "2026-11-21")).toBe("2026-11-21");
+    expect(snoozed("2026-11-20", "2026-11-21T15:00")).toBe("2026-11-21");
+  });
+
+  test("a timed choice for a date-time is kept", (): void => {
+    expect(snoozed("2026-11-20T14:30", "2026-11-20T15:00")).toBe(
+      "2026-11-20T15:00:00",
+    );
   });
 });

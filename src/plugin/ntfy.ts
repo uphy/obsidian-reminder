@@ -60,6 +60,11 @@ export interface NtfyControllerDeps {
   /** The current (non-done) reminders across the whole vault. */
   reminders(): Array<Reminder>;
   defaultTime(): Time;
+  /**
+   * Whether this device reads note reminders (at least one source is
+   * configured). See `ComputeNtfySyncPlanParams.ownsNoteReminderIds`.
+   */
+  hasNoteReminderSources(): boolean;
   vaultName(): string;
   registerInterval(id: number): void;
   /** Must not throw on HTTP error statuses; see `NtfyRequest`. */
@@ -150,6 +155,10 @@ export class NtfyController {
   // Whether the user has already been told about an authentication failure
   // (see `noteAuthFailure`). Reset by `notifySettingsChanged()`.
   private authFailureNotified = false;
+  // Stays true once this session has seen a note reminder source. Removing
+  // the last source must still let the next sync delete the messages that
+  // were scheduled for it.
+  private sawNoteReminderSources = false;
 
   constructor(private deps: NtfyControllerDeps) {}
 
@@ -353,7 +362,11 @@ export class NtfyController {
         serverUrl,
         topic,
       );
+      if (this.deps.hasNoteReminderSources()) {
+        this.sawNoteReminderSources = true;
+      }
       const plan = computeNtfySyncPlan({
+        ownsNoteReminderIds: this.sawNoteReminderSources,
         reminders: this.deps.reminders(),
         serverPending: pending,
         serverDelivered: delivered,
@@ -530,7 +543,7 @@ export class NtfyController {
       body: JSON.stringify({
         topic,
         title: action.reminder.title,
-        message: noteNameFromPath(action.reminder.file),
+        message: messageOf(action.reminder),
         click: this.buildClickUrl(action.reminder),
         delay: String(action.atSeconds),
       }),
@@ -743,4 +756,14 @@ export async function testNtfyConnection(
       }),
     };
   }
+}
+
+/**
+ * The message text under the title: the note name, and for a note reminder
+ * also the label of the property it comes from.
+ */
+function messageOf(reminder: Reminder): string {
+  const noteName = noteNameFromPath(reminder.file);
+  const origin = reminder.origin;
+  return origin.kind === "note" ? `${noteName} · ${origin.label}` : noteName;
 }

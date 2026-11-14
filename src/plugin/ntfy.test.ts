@@ -36,6 +36,7 @@ function createDeps(
     accessToken: () => "",
     reminders: () => [],
     defaultTime: () => Time.parse("08:00"),
+    hasNoteReminderSources: () => false,
     vaultName: () => "vault",
     registerInterval: () => {},
     request: async () => ({ status: 200, text: "" }),
@@ -366,5 +367,54 @@ describe("testNtfyConnection()", (): void => {
     expect(result.ok).toBe(false);
     expect(result.message).toContain("Could not reach https://ntfy.invalid");
     expect(result.message).toContain("ERR_NAME_NOT_RESOLVED");
+  });
+});
+
+describe("NtfyController with note reminders", (): void => {
+  function noteReminder(): Reminder {
+    return Reminder.ofNote(
+      "notes/Call Alice.md",
+      "Call Alice",
+      DateTime.ofEpochMillis(Date.now() + 60 * 60 * 1000),
+      { kind: "note", store: "property", key: "follow-up", label: "follow-up" },
+    );
+  }
+
+  test("the message names the note and the property", async (): Promise<void> => {
+    const server = new FakeServer();
+    const controller = new NtfyController(
+      createDeps({
+        request: server.request,
+        hasNoteReminderSources: () => true,
+        reminders: () => [noteReminder()],
+      }),
+    );
+
+    await callDoSync(controller);
+
+    const publish = server.requests.find((r) => r.method === "POST");
+    const body = JSON.parse(publish?.body ?? "{}") as {
+      title: string;
+      message: string;
+    };
+    expect(body.title).toBe("Call Alice");
+    expect(body.message).toBe("Call Alice · follow-up");
+    expect(publish?.headers?.["X-Sequence-ID"]).toMatch(/^obrn-/);
+  });
+
+  test("the message of a line reminder is the note name", async (): Promise<void> => {
+    const server = new FakeServer();
+    const controller = new NtfyController(
+      createDeps({
+        request: server.request,
+        reminders: () => [reminderInMinutes("Buy milk", 60)],
+      }),
+    );
+
+    await callDoSync(controller);
+
+    const publish = server.requests.find((r) => r.method === "POST");
+    const body = JSON.parse(publish?.body ?? "{}") as { message: string };
+    expect(body.message).toBe("Todo");
   });
 });

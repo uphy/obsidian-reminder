@@ -1,6 +1,10 @@
 import type { Reminder } from "model/reminder";
 import type { DateTime, Time } from "model/time";
-import { assignSequenceIds, isObsidianReminderSequenceId } from "./sequence-id";
+import {
+  assignSequenceIds,
+  isNoteReminderSequenceId,
+  isObsidianReminderSequenceId,
+} from "./sequence-id";
 
 /** A scheduled ("delayed") message ntfy currently has pending for our topic. */
 export interface NtfyPendingServerEntry {
@@ -55,6 +59,14 @@ export interface ComputeNtfySyncPlanParams {
   defaultTime?: Time;
   minLeadSeconds?: number;
   horizonSeconds?: number;
+  /**
+   * Whether this device reads note reminders (at least one source is
+   * configured). Only then are the server's note-reminder messages treated
+   * as this plugin's own and deleted when no reminder matches them: a device
+   * without sources has no note reminders, so every such message would look
+   * orphaned to it, including the ones another device scheduled.
+   */
+  ownsNoteReminderIds?: boolean;
 }
 
 /**
@@ -94,7 +106,11 @@ export function computeNtfySyncPlan(
     defaultTime,
     minLeadSeconds = DEFAULT_MIN_LEAD_SECONDS,
     horizonSeconds = DEFAULT_HORIZON_SECONDS,
+    ownsNoteReminderIds = false,
   } = params;
+  const isOwn = (sequenceId: string): boolean =>
+    isObsidianReminderSequenceId(sequenceId) ||
+    (ownsNoteReminderIds && isNoteReminderSequenceId(sequenceId));
 
   const nowMillis = now.getTimeInMillis(defaultTime);
   const minMillis = nowMillis + minLeadSeconds * 1000;
@@ -170,7 +186,7 @@ export function computeNtfySyncPlan(
   }
 
   for (const entry of serverPending) {
-    if (!isObsidianReminderSequenceId(entry.sequenceId)) {
+    if (!isOwn(entry.sequenceId)) {
       // Never touch another app/device's scheduled messages on the same
       // topic.
       continue;
@@ -189,7 +205,7 @@ export function computeNtfySyncPlan(
     // schedule alone, even if it's now inside the lead window (this is the
     // fix: `minLeadSeconds` only limits when a schedule can be *created*,
     // not whether an already-published one is still wanted).
-    if (isStaleServerEntry(entry, reminderAtSecondsBySequenceId)) {
+    if (isStaleServerEntry(entry, reminderAtSecondsBySequenceId, isOwn)) {
       queueDelete(entry.sequenceId);
     }
   }
@@ -204,7 +220,7 @@ export function computeNtfySyncPlan(
     // republished for its new time, the stale delivered entry for the old
     // time needs an explicit delete to make already-shown notifications on
     // other devices go away.
-    if (isStaleServerEntry(entry, reminderAtSecondsBySequenceId)) {
+    if (isStaleServerEntry(entry, reminderAtSecondsBySequenceId, isOwn)) {
       queueDelete(entry.sequenceId);
     }
   }
@@ -217,13 +233,15 @@ export function computeNtfySyncPlan(
  * current reminder set and should be deleted: either its reminder is gone
  * entirely (done/deleted), or the reminder still exists but its delivery
  * time has changed since this entry was created. Entries not created by
- * this plugin are never considered stale (see `isObsidianReminderSequenceId`).
+ * this plugin, or not owned by this device (`isOwn`), are never considered
+ * stale.
  */
 function isStaleServerEntry(
   entry: NtfyPendingServerEntry,
   reminderAtSecondsBySequenceId: ReadonlyMap<string, number>,
+  isOwn: (sequenceId: string) => boolean,
 ): boolean {
-  if (!isObsidianReminderSequenceId(entry.sequenceId)) {
+  if (!isOwn(entry.sequenceId)) {
     return false;
   }
   const currentAtSeconds = reminderAtSecondsBySequenceId.get(entry.sequenceId);
@@ -232,8 +250,8 @@ function isStaleServerEntry(
 
 /**
  * From the server's current pending scheduled messages, returns the
- * sequence IDs of the ones this plugin created (see
- * `isObsidianReminderSequenceId`). Used when the user disables ntfy sync
+ * sequence IDs of the ones this plugin created, for line reminders and for
+ * note reminders alike. Used when the user disables ntfy sync
  * (`ntfyEnabled` going from true to false): every one of our own pending
  * schedules on the topic should be deleted so disabling the feature
  * actually stops notifications, while another app/device's schedules on
@@ -244,5 +262,7 @@ export function selectOwnPendingSequenceIds(
 ): Array<string> {
   return serverPending
     .map((entry) => entry.sequenceId)
-    .filter(isObsidianReminderSequenceId);
+    .filter(
+      (id) => isObsidianReminderSequenceId(id) || isNoteReminderSequenceId(id),
+    );
 }

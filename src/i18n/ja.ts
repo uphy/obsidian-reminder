@@ -301,4 +301,31 @@ export const ja: Record<string, string> = {
   "Date and time format": "日時の書式",
   "Strict date format": "日付の書式を厳密に扱う",
   "Strictly parse the date and time": "日付と時刻を厳密に解析します",
+
+  // --- Note reminders --------------------------------------------------------
+  "Note reminders": "ノートのリマインダー",
+  "Properties to remind from": "リマインダーとして読むプロパティ",
+  'Add the name of a date or date & time property. A note with a value in it gets a reminder at that time. "Done" records the handled date in "<property>-done" and leaves the property itself alone.':
+    "日付、または日付と時刻のプロパティの名前を追加します。値が入っているノートは、その日時にリマインドされます。「完了」は済ませた日付を「<プロパティ名>-done」に記録し、元のプロパティは変更しません。",
+  Add: "追加",
+  Managed: "管理する",
+  'Managed: "Set reminder for this note" creates and edits this property.':
+    "管理する: 「このノートにリマインダーを設定」がこのプロパティを作成・変更します。",
+  "Read only: its value is never created or removed here.":
+    "読むだけ: このプラグインが値を作ったり消したりすることはありません。",
+  "{count} earlier values in the vault are ignored.":
+    "保管庫内の、これより前の値 {count} 件は無視されます。",
+  '"{property}" already holds other values in {count} notes, so "Done" can\'t be recorded there.':
+    "「{property}」には {count} 件のノートで別の値が入っているため、「完了」を記録できません。",
+  "Ignore dates before": "この日より前の日付を無視",
+  "Enter a property name.": "プロパティの名前を入力してください。",
+  "This property is already listed.": "このプロパティは追加済みです。",
+  "This name is used by another listed property for its done or title value.":
+    "この名前は、追加済みのプロパティが完了やタイトルの記録に使っています。",
+  Remove: "削除",
+  "Could not update the reminder in {file}":
+    "{file} のリマインダーを更新できませんでした",
+  '"{property}" in {file} holds a value that is not a date, so "Done" was not recorded':
+    "{file} の「{property}」に日付でない値が入っているため、「完了」を記録できませんでした",
+  "Property name": "プロパティの名前",
 };

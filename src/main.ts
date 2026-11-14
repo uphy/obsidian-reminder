@@ -1,4 +1,5 @@
 import {
+  NoteReminderService,
   NotificationWorker,
   NtfyController,
   PluginData,
@@ -6,13 +7,19 @@ import {
   ReminderPluginUI,
 } from "plugin";
 import { isNotificationPaused } from "model/dnd";
+import { isPathExcluded } from "model/exclusion";
+import { PropertyNoteReminderStore } from "model/note/property-store";
+import { NoteReminderReader } from "model/note/reader";
+import { DONE_SUFFIX, validateSourceName } from "model/note/sources";
+import type { NoteReminderSource } from "model/note/sources";
+import { isBeforeDay, isEmptyValue, parseTimeValue } from "model/note/value";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
 import { setSeededTaskStatuses } from "plugin/settings";
 import { formatStatusSetting } from "model/format/status";
 import type { TaskStatus } from "model/format/status";
-import { App, Notice, Plugin, requestUrl } from "obsidian";
+import { App, Notice, Plugin, TFile, parseYaml, requestUrl } from "obsidian";
 import type { PluginManifest } from "obsidian";
 
 export default class ReminderPlugin extends Plugin {
@@ -25,6 +32,8 @@ export default class ReminderPlugin extends Plugin {
   private _ui: ReminderPluginUI;
   private _reminders: Reminders;
   private _fileSystem: ReminderPluginFileSystem;
+  private _noteReminders: NoteReminderService;
+  private _noteReminderReader: NoteReminderReader;
   private _notificationWorker: NotificationWorker;
   private _ntfyController: NtfyController;
   constructor(app: App, manifest: PluginManifest) {
@@ -55,6 +64,26 @@ export default class ReminderPlugin extends Plugin {
       this.settings.strictDateFormat,
     );
 
+    this._noteReminderReader = new NoteReminderReader([
+      new PropertyNoteReminderStore(() => this.noteReminderSources()),
+    ]);
+    const fileAt = (path: string): TFile => {
+      const file = this.app.vault.getAbstractFileByPath(path);
+      if (!(file instanceof TFile)) {
+        throw new Error(`Not a file: ${path}`);
+      }
+      return file;
+    };
+    this._noteReminders = new NoteReminderService(this._noteReminderReader, {
+      parseYaml: (yaml): unknown => parseYaml(yaml),
+      readFile: async (path) => this.app.vault.read(fileAt(path)),
+      processFrontMatter: async (path, fn) => {
+        await this.app.fileManager.processFrontMatter(fileAt(path), fn);
+      },
+    });
+    this.settings.noteReminderStats = (source) =>
+      this.noteReminderStats(source);
+
     this._ui = new ReminderPluginUI(this);
     this._fileSystem = new ReminderPluginFileSystem(
       app.vault,
@@ -64,6 +93,7 @@ export default class ReminderPlugin extends Plugin {
       },
       () => this.settings.excludedPaths.value,
       () => this.data.loaded,
+      (path, content) => this.noteReminders.read(path, content),
     );
     this._notificationWorker = new NotificationWorker({
       registerInterval: (id) => this.registerInterval(id),
@@ -101,6 +131,7 @@ export default class ReminderPlugin extends Plugin {
       accessToken: () => this.settings.ntfyAccessToken.value,
       reminders: () => this.reminders.reminders,
       defaultTime: () => this.settings.reminderTime.value,
+      hasNoteReminderSources: () => this.noteReminderSources().length > 0,
       vaultName: () => this.app.vault.getName(),
       registerInterval: (id) => this.registerInterval(id),
       // `throw: false` so an HTTP error status comes back as a response the
@@ -205,6 +236,79 @@ export default class ReminderPlugin extends Plugin {
 
   get fileSystem() {
     return this._fileSystem;
+  }
+
+  /** Reads and writes the reminders kept in a note's properties. */
+  get noteReminders() {
+    return this._noteReminders;
+  }
+
+  get noteReminderReader() {
+    return this._noteReminderReader;
+  }
+
+  /** The rows of the "Properties to remind from" setting. */
+  noteReminderSources(): Array<NoteReminderSource> {
+    return this.settings.noteReminderSources.value;
+  }
+
+  /** The sources the reminder dialog may create, edit and remove. */
+  managedNoteReminderSources(): Array<NoteReminderSource> {
+    return this.noteReminderSources().filter((source) => source.managed);
+  }
+
+  /**
+   * Lets the reminder dialog manage `property`: adds it as a managed source
+   * with today as its cut-off, or switches an existing row to managed.
+   * Returns false when the name can't be a source (it is a companion of
+   * another row).
+   */
+  addManagedNoteReminderSource(property: string): boolean {
+    const rows = this.noteReminderSources();
+    const index = rows.findIndex((row) => row.property === property);
+    if (index >= 0) {
+      this.settings.noteReminderSources.rawValue.value = rows.map((row, i) =>
+        i === index ? { ...row, managed: true } : row,
+      );
+      return true;
+    }
+    if (validateSourceName(rows, -1, property) != null) {
+      return false;
+    }
+    this.settings.noteReminderSources.rawValue.value = [
+      ...rows,
+      { property, managed: true, since: DateTime.now().format("YYYY-MM-DD") },
+    ];
+    return true;
+  }
+
+  /**
+   * Display-only numbers for the settings page, taken from Obsidian's
+   * metadata cache (which may lag a just-edited note by a moment). Notes
+   * under an excluded path are not read, so they are not counted.
+   */
+  private noteReminderStats(source: NoteReminderSource) {
+    let ignored = 0;
+    let foreignDone = 0;
+    const excluded = this.settings.excludedPaths.value;
+    for (const file of this.app.vault.getMarkdownFiles()) {
+      if (isPathExcluded(file.path, excluded)) {
+        continue;
+      }
+      const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      if (fm == null) {
+        continue;
+      }
+      const time = parseTimeValue(fm[source.property]);
+      if (time != null && isBeforeDay(time, source.since)) {
+        ignored++;
+      }
+      const done: unknown = fm[source.property + DONE_SUFFIX];
+      if (!isEmptyValue(done) && parseTimeValue(done) == null) {
+        foreignDone++;
+      }
+    }
+    return { ignored, foreignDone };
   }
 
   get data() {

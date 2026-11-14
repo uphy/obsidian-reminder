@@ -1,6 +1,7 @@
 import { t } from "i18n";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
+import { latersFor } from "model/time";
 import type { Later } from "model/time";
 import { Platform } from "obsidian";
 import { electron } from "./electron";
@@ -66,7 +67,7 @@ export class SystemNotifier {
     const Notification = electron.remote.Notification;
     const n = new Notification({
       title: t("Obsidian Reminder"),
-      body: reminder.title,
+      body: bodyOf(reminder),
       // "never" keeps the notification on screen (Windows/Linux only, see
       // Electron docs -- ignored on macOS) until the user interacts with
       // it, which is required for `notification.close()` to be able to
@@ -113,7 +114,10 @@ export class SystemNotifier {
       // Rendered on macOS and, since Electron 40, on Windows
       {
         const laters = systemNotificationLaters(
-          this.laters.value,
+          latersFor(
+            reminder.isNote() && !reminder.time.hasTimePart,
+            this.laters.value,
+          ),
           Platform.isWin,
           this.keepSystemNotificationOnScreen.value,
         );
@@ -179,4 +183,15 @@ export class SystemNotifier {
     this.systemNotifications.delete(key);
     tracked.notification.close();
   }
+}
+
+/**
+ * The notification text: the title, and for a note reminder a second line
+ * naming the property it comes from.
+ */
+function bodyOf(reminder: Reminder): string {
+  const origin = reminder.origin;
+  return origin.kind === "note"
+    ? `${reminder.title}\n${origin.label}`
+    : reminder.title;
 }

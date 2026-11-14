@@ -38,3 +38,26 @@
 .reminder-setting-info {
   color: var(--text-faint);
 }
+
+.reminder-note-sources {
+  margin-left: var(--size-4-4);
+  border-left: 2px solid var(--background-modifier-border);
+  padding-left: var(--size-4-3);
+}
+
+.reminder-note-sources .reminder-note-source {
+  padding: var(--size-4-2) 0;
+}
+
+.reminder-note-sources:empty {
+  display: none;
+}
+
+.reminder-note-sources-error {
+  color: var(--text-error);
+}
+
+.reminder-note-source-label {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}

@@ -14,6 +14,20 @@ export function isObsidianReminderSequenceId(id: string): boolean {
   return id.startsWith(NTFY_SEQUENCE_ID_PREFIX);
 }
 
+/**
+ * Prefix for the sequence IDs of note reminders (reminders read from a
+ * note's properties). It is deliberately not covered by
+ * `NTFY_SEQUENCE_ID_PREFIX`: a device that reads no note reminders, or runs
+ * a version that predates them, must not treat these messages as its own and
+ * delete them as orphans.
+ */
+export const NTFY_NOTE_SEQUENCE_ID_PREFIX = "obrn-";
+
+/** Whether `id` belongs to a note reminder. */
+export function isNoteReminderSequenceId(id: string): boolean {
+  return id.startsWith(NTFY_NOTE_SEQUENCE_ID_PREFIX);
+}
+
 // Two unrelated 32-bit FNV-1a offset-basis constants. Hashing the same input
 // once per constant and concatenating the results (base36) gives a compact,
 // crypto-free fingerprint wide enough that collisions between the small
@@ -72,12 +86,42 @@ export function computeSequenceId(
 }
 
 /**
+ * Derives the sequence ID of a note reminder from its file, the store and
+ * key that identify it inside the note, and its title.
+ *
+ * A note has at most one reminder per store and key, so no index is needed.
+ * As for line reminders, the time is excluded so that a snooze republishes
+ * under the same ID. The title is included: a published message cannot be
+ * edited, so a new title has to become a new message, and the old one is
+ * then deleted as an orphan.
+ */
+export function computeNoteSequenceId(
+  file: string,
+  store: string,
+  key: string,
+  title: string,
+): string {
+  // Line breaks would let two different sets of fields join into the same
+  // string.
+  const input = [file, store, key, title]
+    .map((field) => field.replace(/[\r\n]+/g, " "))
+    .join(FIELD_SEPARATOR);
+  const h1 = fnv1a(input, FNV_OFFSET_BASIS_1).toString(36);
+  const h2 = fnv1a(input, FNV_OFFSET_BASIS_2).toString(36);
+  return `${NTFY_NOTE_SEQUENCE_ID_PREFIX}${h1}${h2}`;
+}
+
+/**
  * Assigns a sequence ID to every reminder in `reminders`, disambiguating
  * reminders that share the same `file` + `title` with a deterministic index
  * (0, 1, 2, ...). The index is derived by sorting a copy of `reminders` by
  * file path, then row number, so every device computes the same assignment
  * for the same vault state regardless of the order `reminders` was passed
  * in.
+ *
+ * Note reminders get their own kind of ID (`computeNoteSequenceId`) and take
+ * no part in the index counting, so adding one to a note never shifts the ID
+ * of a line reminder.
  */
 export function assignSequenceIds(
   reminders: ReadonlyArray<Reminder>,
@@ -92,6 +136,19 @@ export function assignSequenceIds(
   const nextIndexByKey = new Map<string, number>();
   const result = new Map<Reminder, string>();
   for (const reminder of sorted) {
+    const origin = reminder.origin;
+    if (origin.kind === "note") {
+      result.set(
+        reminder,
+        computeNoteSequenceId(
+          reminder.file,
+          origin.store,
+          origin.key,
+          reminder.title,
+        ),
+      );
+      continue;
+    }
     const key = hashKey(reminder.file, reminder.title);
     const index = nextIndexByKey.get(key) ?? 0;
     nextIndexByKey.set(key, index + 1);

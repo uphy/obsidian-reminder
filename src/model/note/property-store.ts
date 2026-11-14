@@ -125,8 +125,12 @@ export type PropertyReminderEdit = {
   title: string;
 };
 
+// A multi-line YAML string would break the single-line places a title is
+// shown in, so line breaks become spaces.
 function textOf(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
+  return typeof value === "string"
+    ? value.replace(/\s*[\r\n]+\s*/g, " ").trim()
+    : "";
 }
 
 export function readPropertyReminderState(

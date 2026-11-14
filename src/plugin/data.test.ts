@@ -1,4 +1,5 @@
-import { Reminders } from "model/reminder";
+import { Reminder, Reminders } from "model/reminder";
+import { DateTime } from "model/time";
 import { getLanguage, getLanguageSetting, setLanguage } from "i18n";
 import { PluginData } from "./data";
 import type { DataStore } from "./data";
@@ -202,5 +203,121 @@ describe("PluginData", (): void => {
     await expect(data.save()).rejects.toThrow("disk full");
 
     expect(data.changed).toBe(true);
+  });
+
+  test("note reminders are cached apart from line reminders and keep their mute flag", async (): Promise<void> => {
+    let saved:
+      | {
+          reminders: Record<string, Array<{ title: string }>>;
+          noteReminders: Record<string, Array<Record<string, unknown>>>;
+        }
+      | undefined;
+    const store: DataStore = {
+      loadData: async () => saved,
+      saveData: async (data) => {
+        saved = data as typeof saved;
+      },
+    };
+    const reminders = new Reminders(() => {});
+    const line = Reminder.ofLine(
+      "both.md",
+      "Line",
+      DateTime.parse("2021-09-08 10:00"),
+      3,
+      false,
+    );
+    const note = Reminder.ofNote(
+      "both.md",
+      "both",
+      DateTime.parse("2021-09-09"),
+      { kind: "note", store: "property", key: "follow-up", label: "follow-up" },
+    );
+    note.muteNotification = true;
+    const noteOnly = Reminder.ofNote(
+      "note.md",
+      "Send the report",
+      DateTime.parse("2021-09-10 09:00"),
+      { kind: "note", store: "property", key: "reminder", label: "reminder" },
+    );
+    reminders.replaceFile("both.md", [line, note]);
+    reminders.replaceFile("note.md", [noteOnly]);
+
+    await new PluginData(store, reminders).save(true);
+
+    // An older version reads `reminders` only, and must not find a note
+    // reminder there.
+    expect(saved?.reminders).toStrictEqual({
+      "both.md": [
+        { title: "Line", time: "2021-09-08 10:00", rowNumber: 3, muted: false },
+      ],
+    });
+    expect(saved?.noteReminders).toStrictEqual({
+      "both.md": [
+        {
+          title: "both",
+          time: "2021-09-09",
+          muted: true,
+          store: "property",
+          key: "follow-up",
+          label: "follow-up",
+        },
+      ],
+      "note.md": [
+        {
+          title: "Send the report",
+          time: "2021-09-10 09:00",
+          muted: false,
+          store: "property",
+          key: "reminder",
+          label: "reminder",
+        },
+      ],
+    });
+
+    const restored = new Reminders(() => {});
+    await new PluginData(store, restored).load();
+
+    expect(
+      restored.reminders.map((r) => [
+        r.file,
+        r.title,
+        r.origin.kind,
+        r.muteNotification,
+      ]),
+    ).toStrictEqual([
+      ["both.md", "Line", "line", false],
+      ["both.md", "both", "note", true],
+      ["note.md", "Send the report", "note", false],
+    ]);
+    expect(restored.fileToReminders.get("both.md")?.length).toBe(2);
+  });
+
+  test("the sources setting is read through normalisation and saved as rows", async (): Promise<void> => {
+    let saved: { settings: Record<string, unknown> } | undefined;
+    const store: DataStore = {
+      loadData: async () =>
+        savedData({
+          noteReminderSources: [
+            { property: " follow-up ", managed: true, since: "2026-11-14" },
+            "broken",
+          ],
+        }),
+      saveData: async (data) => {
+        saved = data as typeof saved;
+      },
+    };
+    const data = new PluginData(store, new Reminders(() => {}));
+    expect(data.settings.noteReminderSources.value).toStrictEqual([]);
+
+    await data.load();
+
+    expect(data.settings.noteReminderSources.value).toStrictEqual([
+      { property: "follow-up", managed: true, since: "2026-11-14" },
+    ]);
+    await data.save(true);
+    expect(saved?.settings["noteReminderSources"]).toStrictEqual([
+      { property: " follow-up ", managed: true, since: "2026-11-14" },
+      "broken",
+    ]);
   });
 });

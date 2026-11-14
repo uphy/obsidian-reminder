@@ -1,5 +1,6 @@
 import { moment } from "model/moment";
 import { DateTime } from "model/time";
+import type { Time } from "model/time";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const DATE_TIME = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/;
@@ -83,4 +84,24 @@ export function inShapeOf(time: DateTime, hasTimePart: boolean): DateTime {
   }
   const m = time.moment().clone();
   return new DateTime(hasTimePart ? m.startOf("day") : m, hasTimePart);
+}
+
+/**
+ * The time a snooze writes for a reminder currently at `current`.
+ *
+ * A whole-day choice ("Tomorrow") for a reminder that has a time of day gets
+ * `defaultTime` (the "Reminder Time" setting) on that day, as a date-only
+ * task line would be notified. Everything else is put in the shape of
+ * `current` (see `inShapeOf`).
+ */
+export function snoozeTimeFor(
+  current: DateTime,
+  chosen: DateTime,
+  defaultTime: Time,
+): DateTime {
+  if (current.hasTimePart && !chosen.hasTimePart) {
+    const day = moment(chosen.format("YYYY-MM-DD"), "YYYY-MM-DD", true);
+    return new DateTime(day.add(defaultTime.minutes, "minutes"), true);
+  }
+  return inShapeOf(chosen, current.hasTimePart);
 }

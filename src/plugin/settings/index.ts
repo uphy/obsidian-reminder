@@ -20,6 +20,8 @@ import {
   unknownStatusTypes,
 } from "model/format/status";
 import type { TaskStatus } from "model/format/status";
+import { normalizeSources } from "model/note/sources";
+import type { NoteReminderSource } from "model/note/sources";
 import { DateTime, Later, Time } from "model/time";
 import { isValidNtfyTopic } from "model/ntfy";
 import {
@@ -41,6 +43,8 @@ import {
   TimeSerde,
 } from "./helper";
 import type { SettingModel, SettingModelBase } from "./helper";
+import { renderNoteReminderSources } from "./note-reminder-sources";
+import type { NoteReminderSourceStats } from "./note-reminder-sources";
 
 export const TAG_RESCAN = "re-scan";
 
@@ -78,6 +82,15 @@ export class Settings {
   strictDateFormat: SettingModel<boolean, boolean>;
   autoCompleteTrigger: SettingModel<string, string>;
   convertNonTaskLines: SettingModel<boolean, boolean>;
+  /** The properties read as note reminders. Empty by default. */
+  noteReminderSources: SettingModel<unknown, Array<NoteReminderSource>>;
+  /**
+   * Counts, for the settings page, the values a source ignores and the notes
+   * whose done property it can't use. Replaced by the plugin, which has the
+   * vault; the settings code itself never reaches Obsidian's `app`.
+   */
+  noteReminderStats: (source: NoteReminderSource) => NoteReminderSourceStats =
+    () => ({ ignored: 0, foreignDone: 0 });
   editorReminderDisplay: SettingModel<boolean, boolean>;
   primaryFormat: SettingModel<string, ReminderFormatType>;
   excludedPaths: SettingModel<string, Array<string>>;
@@ -339,6 +352,25 @@ export class Settings {
       )
       .toggle(true)
       .build(new RawSerde());
+
+    this.noteReminderSources = this.settings
+      .newSettingBuilder()
+      .key("noteReminderSources")
+      .name("Properties to remind from")
+      .desc(
+        'Add the name of a date or date & time property. A note with a value in it gets a reminder at that time. "Done" records the handled date in "<property>-done" and leaves the property itself alone.',
+      )
+      .tag(TAG_RESCAN)
+      .custom<unknown>(
+        [],
+        renderNoteReminderSources((source) => this.noteReminderStats(source)),
+      )
+      // Whatever was persisted (or edited by hand) is read through
+      // `normalizeSources`, so the rest of the plugin only sees valid rows.
+      .build({
+        unmarshal: normalizeSources,
+        marshal: (value: Array<NoteReminderSource>) => value,
+      });
 
     this.editorReminderDisplay = this.settings
       .newSettingBuilder()
@@ -687,6 +719,10 @@ export class Settings {
     reminderFormatsPage
       .newGroup("Kanban plugin format")
       .addSettings(reminderFormatSettings.enableKanbanPluginReminderFormat);
+    this.settings
+      .newPage("Note reminders")
+      .newGroup()
+      .addSettings(this.noteReminderSources);
     this.settings.newPage("Display").newGroup().addSettings(
       // First in this tab on purpose: it changes how every other label on
       // this page reads.
