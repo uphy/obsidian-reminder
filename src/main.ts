@@ -87,6 +87,8 @@ export default class ReminderPlugin extends Plugin {
     });
     this.settings.noteReminderStats = (source) =>
       this.noteReminderStats(source);
+    this.settings.noteReminderNewCutOff = (property, today) =>
+      this.newNoteReminderCutOff(property, today);
 
     this._ui = new ReminderPluginUI(this);
     this._fileSystem = new ReminderPluginFileSystem(
@@ -272,15 +274,33 @@ export default class ReminderPlugin extends Plugin {
     const rows = withManagedSource(
       this.noteReminderSources(),
       property,
-      newSourceCutOff(property, DateTime.now().format("YYYY-MM-DD"), (source) =>
-        this.noteReminderStats(source),
-      ),
+      this.newNoteReminderCutOff(property, DateTime.now().format("YYYY-MM-DD")),
     );
     if (rows == null) {
       return false;
     }
     this.settings.noteReminderSources.rawValue.value = rows;
     return true;
+  }
+
+  /**
+   * The cut-off for a property that is being added. Every note counts,
+   * also under an excluded path: its values are read once the path is no
+   * longer excluded. A note Obsidian has not indexed yet makes the answer
+   * unknown, which `newSourceCutOff` turns into today.
+   */
+  private newNoteReminderCutOff(property: string, today: string): string {
+    const frontmatters: Array<Frontmatter> = [];
+    for (const file of this.app.vault.getMarkdownFiles()) {
+      const cache = this.app.metadataCache.getFileCache(file);
+      if (cache == null) {
+        return newSourceCutOff(property, today, null);
+      }
+      if (cache.frontmatter != null) {
+        frontmatters.push(cache.frontmatter);
+      }
+    }
+    return newSourceCutOff(property, today, frontmatters);
   }
 
   /**
