@@ -2,7 +2,9 @@
   import { t } from "i18n";
   import type { DateTime } from "model/time";
   import type { Reminder } from "model/reminder";
+  import IconText from "./IconText.svelte";
   import Markdown from "./Markdown.svelte";
+  import { listOrigin } from "./reminder-origin";
 
   export let reminders: Array<Reminder>;
   export let onOpenReminder: (reminder: Reminder) => void = () => {};
@@ -41,11 +43,16 @@
             {timeToString(reminder.time)}
           </span>
           <div class="reminder-title-container">
+            {#if reminder.isNote()}
+              <span class="reminder-note-icon" aria-label={t("Note reminder")}
+                ><IconText icon="file-text" /></span
+              >
+            {/if}
             <span class="reminder-title">
               <Markdown markdown={reminder.title} sourcePath={reminder.file} />
             </span>
             <span class="reminder-file">
-              {reminder.getFileName()}
+              {listOrigin(reminder)}
             </span>
           </div>
         </button>
@@ -55,6 +62,14 @@
 </div>
 
 <style>
+  .reminder-note-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    margin-right: 0.25rem;
+    color: var(--text-faint);
+    --icon-size: 13px;
+  }
+
   button {
     background-color: transparent;
     box-shadow: none;

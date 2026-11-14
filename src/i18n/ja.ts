@@ -328,4 +328,5 @@ export const ja: Record<string, string> = {
   '"{property}" in {file} holds a value that is not a date, so "Done" was not recorded':
     "{file} の「{property}」に日付でない値が入っているため、「完了」を記録できませんでした",
   "Property name": "プロパティの名前",
+  "Note reminder": "ノートのリマインダー",
 };

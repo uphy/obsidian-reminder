@@ -309,4 +309,5 @@ export const zhCN: Record<string, string> = {
   '"{property}" in {file} holds a value that is not a date, so "Done" was not recorded':
     "{file} 中的“{property}”不是日期，未能记录“完成”",
   "Property name": "属性名称",
+  "Note reminder": "笔记提醒",
 };

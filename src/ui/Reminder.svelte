@@ -5,6 +5,7 @@
   import type { DateTime, Later } from "model/time";
   import IconText from "./IconText.svelte";
   import Markdown from "./Markdown.svelte";
+  import { originLine } from "./reminder-origin";
 
   export let reminder: Reminder;
   export let onRemindMeLater: (time: DateTime) => void;
@@ -35,7 +36,10 @@
   let selectedIndex: number;
   export let laters: Array<Later> = [];
   let doneButton: HTMLButtonElement;
-  let laterSelect: HTMLSelectElement;
+  // Absent when there is no snooze option to offer (see `laters`).
+  let laterSelect: HTMLSelectElement | undefined;
+  // For a note reminder: the property it comes from and its time.
+  $: origin = originLine(reminder);
   let containerEl: HTMLElement;
 
   // Translated labels. The keyboard mnemonics below refer to the English
@@ -91,7 +95,7 @@
       case "KeyS":
         evt.preventDefault();
         evt.stopPropagation();
-        laterSelect.focus();
+        laterSelect?.focus();
         break;
     }
   }
@@ -135,6 +139,11 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
   <h3 class="reminder-title" aria-label={reminder.title}>
     <Markdown markdown={reminder.title} sourcePath={reminder.file} />
   </h3>
+  {#if origin != null}
+    <div class="reminder-note-origin">
+      <IconText icon="bell" text={origin} />
+    </div>
+  {/if}
   <button
     class="reminder-file"
     on:click={onOpenFile}
@@ -168,21 +177,24 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
           )}{:else}{muteLabel}{/if}</span
       >
     </button>
-    <select
-      class="dropdown later-select"
-      bind:value={selectedIndex}
-      bind:this={laterSelect}
-      on:change={remindMeLater}
-      title="Alt+S / Ctrl+S"
-      aria-keyshortcuts="Alt+S Control+S"
-    >
-      <!-- placeholder -->
-      <option selected disabled hidden>{t("Snooze")}</option>
-      <!-- options -->
-      {#each laters as later, i (i)}
-        <option value={i} selected={selectedIndex === i}>{later.label}</option>
-      {/each}
-    </select>
+    {#if laters.length > 0}
+      <select
+        class="dropdown later-select"
+        bind:value={selectedIndex}
+        bind:this={laterSelect}
+        on:change={remindMeLater}
+        title="Alt+S / Ctrl+S"
+        aria-keyshortcuts="Alt+S Control+S"
+      >
+        <!-- placeholder -->
+        <option selected disabled hidden>{t("Snooze")}</option>
+        <!-- options -->
+        {#each laters as later, i (i)}
+          <option value={i} selected={selectedIndex === i}>{later.label}</option
+          >
+        {/each}
+      </select>
+    {/if}
   </div>
   {#if variant === "modal"}
     <div class="reminder-secondary-actions">
@@ -222,6 +234,12 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
 
   .reminder-title {
     margin: 0.3rem 0;
+  }
+
+  .reminder-note-origin {
+    color: var(--text-faint);
+    font-size: var(--font-ui-small);
+    margin-bottom: 0.2rem;
   }
 
   .reminder-file {
