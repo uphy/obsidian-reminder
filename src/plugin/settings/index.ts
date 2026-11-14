@@ -85,6 +85,7 @@ export class Settings {
   convertNonTaskLines: SettingModel<boolean, boolean>;
   /** The properties read as note reminders. Empty by default. */
   noteReminderSources: SettingModel<unknown, Array<NoteReminderSource>>;
+  noteReminderHeaderBell: SettingModel<boolean, boolean>;
   /**
    * Counts, for the settings page, the values a source ignores and the notes
    * whose done property it can't use. Replaced by the plugin, which has the
@@ -376,6 +377,16 @@ export class Settings {
         unmarshal: normalizeSources,
         marshal: (value: Array<NoteReminderSource>) => value,
       });
+
+    this.noteReminderHeaderBell = this.settings
+      .newSettingBuilder()
+      .key("noteReminderHeaderBell")
+      .name("Show a bell in every note's header")
+      .desc(
+        "A note without a reminder gets a faint bell that opens the reminder dialog. When off, the bell is shown only while a reminder is waiting. The bell needs a managed property.",
+      )
+      .toggle(true)
+      .build(new RawSerde());
 
     this.taskNotesEnabled = this.settings
       .newSettingBuilder()
@@ -800,7 +811,9 @@ export class Settings {
       .newGroup("Kanban plugin format")
       .addSettings(reminderFormatSettings.enableKanbanPluginReminderFormat);
     const noteRemindersPage = this.settings.newPage("Note reminders");
-    noteRemindersPage.newGroup().addSettings(this.noteReminderSources);
+    noteRemindersPage
+      .newGroup()
+      .addSettings(this.noteReminderSources, this.noteReminderHeaderBell);
     noteRemindersPage
       .newGroup("TaskNotes plugin")
       .addSettings(

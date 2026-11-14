@@ -103,7 +103,7 @@ If the date in the note is no longer the one a notification was shown for (anoth
 
 For a **managed** property, you do not have to type the property yourself.
 
-1. Run the command **Set reminder for this note**, or right-click a note and choose the same item.
+1. Click the bell in the note's header. You can also run the command **Set reminder for this note**, or right-click a note and choose the same item (it reads **Edit this note's reminder** when the note already has one).
 2. The first time, the plugin offers to keep note reminders in a property named `reminder`. Accepting adds it to the settings as a managed property. (You can instead add your own property in the settings and turn on **Managed**.)
 3. Pick a date, optionally a time, a title and a [repeat rule](#repeat-a-reminder), and click **OK**.
 
@@ -116,7 +116,15 @@ reminder-title: Send the report
 
 The title is used in the notification and the list. Without one, the note's name is used.
 
-While a note has a waiting reminder on a managed property, a bell is shown in the note's header. Click it to open the dialog again, where you can change the time or title, **Mark as Done**, or **Remove reminder**.
+The bell in the note's header shows the state of the note and opens the dialog, where you can change the time or title, **Mark as Done**, or **Remove reminder**:
+
+| Bell                  | The note has                                          |
+| --------------------- | ----------------------------------------------------- |
+| Ringing bell          | A waiting reminder. Hover to see its time.            |
+| Faint bell            | A reminder that is done, or dated before the cut-off. |
+| Faint bell with a "+" | No reminder yet.                                      |
+
+The faint bells appear once you have a managed property. If you would rather keep note headers empty, turn off [Show a bell in every note's header](/setting/#show-a-bell-in-every-note-s-header): the bell is then shown only while a reminder is waiting.
 
 Whether a reminder has a time is decided by what you pick: leave the time field untouched for a date, or choose a time for a date and time.
 

@@ -37,6 +37,7 @@ import { NoteReminderIndicator } from "./note-reminder-indicator";
 import {
   canSetNoteReminder,
   closeNoteReminderModals,
+  hasNoteReminder,
   openNoteReminderModal,
 } from "./note-reminder-modal";
 import { OverdueStatusBar } from "./overdue-status-bar";
@@ -116,10 +117,17 @@ export class ReminderPluginUI {
         ) {
           return;
         }
+        // Built each time the menu opens, so it can say which of the two
+        // the dialog will do for this note.
+        const edit = hasNoteReminder(this.plugin, file);
         menu.addItem((item) => {
           item
-            .setTitle(t("Set reminder for this note"))
-            .setIcon("bell-plus")
+            .setTitle(
+              edit
+                ? t("Edit this note's reminder")
+                : t("Set reminder for this note"),
+            )
+            .setIcon(edit ? "bell" : "bell-plus")
             .onClick(() => {
               openNoteReminderModal(this.plugin, file);
             });

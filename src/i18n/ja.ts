@@ -328,6 +328,10 @@ export const ja: Record<string, string> = {
     "{file} の「{property}」に日付でない値が入っているため、「完了」を記録できませんでした",
   "Property name": "プロパティの名前",
   "Note reminder": "ノートのリマインダー",
+  "Edit this note's reminder": "このノートのリマインダーを編集",
+  "Show a bell in every note's header": "すべてのノートのヘッダーにベルを表示",
+  "A note without a reminder gets a faint bell that opens the reminder dialog. When off, the bell is shown only while a reminder is waiting. The bell needs a managed property.":
+    "リマインダーが無いノートには、リマインダーのダイアログを開く薄いベルを表示します。オフのときは、未完了のリマインダーがあるときだけベルを表示します。ベルの表示には、管理するプロパティが必要です。",
   "Set reminder for this note": "このノートにリマインダーを設定",
   "Reminder for {note}": "{note} のリマインダー",
   "Scheduled:": "予定:",
