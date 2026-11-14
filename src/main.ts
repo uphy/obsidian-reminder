@@ -73,8 +73,20 @@ export default class ReminderPlugin extends Plugin {
       new PropertyNoteReminderFormat(() => this.noteReminderSources()),
       new TaskNotesNoteReminderFormat(() => ({
         enabled: this.settings.taskNotesEnabled.value,
+        identification: this.settings.taskNotesIdentification.value,
         taskTag: this.settings.taskNotesTaskTag.value,
+        taskProperty: this.settings.taskNotesTaskProperty.value,
+        taskPropertyValue: this.settings.taskNotesTaskPropertyValue.value,
         completedStatuses: this.settings.taskNotesCompletedStatuses.value,
+        archiveTag: this.settings.taskNotesArchiveTag.value,
+        properties: {
+          title: this.settings.taskNotesPropertyNames.title.value,
+          status: this.settings.taskNotesPropertyNames.status.value,
+          due: this.settings.taskNotesPropertyNames.due.value,
+          scheduled: this.settings.taskNotesPropertyNames.scheduled.value,
+          reminders: this.settings.taskNotesPropertyNames.reminders.value,
+          recurrence: this.settings.taskNotesPropertyNames.recurrence.value,
+        },
         since: this.settings.taskNotesSince.value,
       })),
     ]);
@@ -96,6 +108,11 @@ export default class ReminderPlugin extends Plugin {
       this.noteReminderStats(source);
     this.settings.noteReminderNewCutOff = (property, today) =>
       this.newNoteReminderCutOff(property, today);
+    // TaskNotes keeps its settings on the plugin instance. That is not an
+    // API, so what comes back is checked field by field before use
+    // (`importTaskNotesSettings`).
+    this.settings.taskNotesSettingsSource = () =>
+      this.app.plugins.plugins["tasknotes"]?.settings;
 
     this._ui = new ReminderPluginUI(this);
     this._fileSystem = new ReminderPluginFileSystem(

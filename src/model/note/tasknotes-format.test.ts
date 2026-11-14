@@ -9,8 +9,13 @@ const time = (text: string): DateTime => parseTimeValue(text)!;
 function formatOf(options: Partial<TaskNotesOptions> = {}) {
   return new TaskNotesNoteReminderFormat(() => ({
     enabled: true,
+    identification: "tag",
     taskTag: "task",
+    taskProperty: "",
+    taskPropertyValue: "",
     completedStatuses: ["done"],
+    archiveTag: "archived",
+    properties: {},
     since: "",
     ...options,
   }));
@@ -190,6 +195,133 @@ describe("TaskNotesNoteReminderFormat#read()", (): void => {
     expect(
       read(format, task({ tags: ["todo"], status: "cancelled" })),
     ).toStrictEqual([]);
+  });
+
+  test("a tag nested under the task tag identifies a task, as in TaskNotes", (): void => {
+    const format = formatOf();
+    expect(read(format, task({ tags: ["task/work"] }))).toHaveLength(1);
+    expect(read(format, task({ tags: ["tasks"] }))).toStrictEqual([]);
+  });
+
+  test("a task can be identified by a property instead of a tag", (): void => {
+    const byValue = formatOf({
+      identification: "property",
+      taskProperty: "type",
+      taskPropertyValue: "task",
+    });
+    expect(read(byValue, task())).toStrictEqual([]);
+    expect(read(byValue, task({ tags: [], type: "task" }))).toHaveLength(1);
+    expect(
+      read(byValue, task({ tags: [], type: ["note", "task"] })),
+    ).toHaveLength(1);
+    expect(read(byValue, task({ tags: [], type: "note" }))).toStrictEqual([]);
+
+    const checkbox = formatOf({
+      identification: "property",
+      taskProperty: "isTask",
+      taskPropertyValue: "true",
+    });
+    expect(read(checkbox, task({ isTask: true }))).toHaveLength(1);
+    expect(read(checkbox, task({ isTask: false }))).toStrictEqual([]);
+
+    const anyValue = formatOf({
+      identification: "property",
+      taskProperty: "isTask",
+      taskPropertyValue: "",
+    });
+    expect(read(anyValue, task({ isTask: null }))).toHaveLength(1);
+    expect(read(anyValue, task())).toStrictEqual([]);
+
+    const noProperty = formatOf({ identification: "property" });
+    expect(read(noProperty, task())).toStrictEqual([]);
+  });
+
+  test("the archive tag comes from the settings", (): void => {
+    const format = formatOf({ archiveTag: "#shelved" });
+    expect(read(format, task({ tags: ["task", "shelved"] }))).toStrictEqual([]);
+    expect(read(format, task({ tags: ["task", "archived"] }))).toHaveLength(1);
+  });
+
+  describe("with renamed properties", (): void => {
+    const renamed = () =>
+      formatOf({
+        properties: {
+          title: "name",
+          status: "state",
+          due: "deadline",
+          scheduled: "start",
+          reminders: "alerts",
+          recurrence: "repeat",
+        },
+      });
+    const renamedTask = (extra: Frontmatter = {}): Frontmatter => ({
+      tags: ["task"],
+      name: "Send the report",
+      state: "open",
+      deadline: "2026-11-20T10:00",
+      alerts: [
+        {
+          id: "rem_1",
+          type: "relative",
+          relatedTo: "due",
+          offset: "-PT15M",
+          description: "15 min before",
+        },
+      ],
+      ...extra,
+    });
+
+    test("reads the list, the base date and the title under their names", (): void => {
+      const format = renamed();
+      expect(format.keys()).toStrictEqual(["alerts"]);
+      expect(read(format, renamedTask())).toStrictEqual([
+        {
+          key: "rem_1",
+          time: "2026-11-20T09:45:00",
+          title: "Send the report",
+          label: "15 min before",
+        },
+      ]);
+      // The default names mean nothing to this user's TaskNotes.
+      expect(read(format, task())).toStrictEqual([]);
+    });
+
+    test("a relative entry on scheduled reads the renamed property", (): void => {
+      const fm = renamedTask({ start: "2026-11-21T08:00" });
+      (fm["alerts"] as Array<Record<string, unknown>>)[0]!["relatedTo"] =
+        "scheduled";
+      expect(read(renamed(), fm).map((e) => e.time)).toStrictEqual([
+        "2026-11-21T07:45:00",
+      ]);
+    });
+
+    test("status and recurrence are read under their names", (): void => {
+      const format = renamed();
+      expect(read(format, renamedTask({ state: "done" }))).toStrictEqual([]);
+      expect(read(format, renamedTask({ repeat: "FREQ=DAILY" }))).toStrictEqual(
+        [],
+      );
+      // A property that merely has TaskNotes' default name is not the status.
+      expect(read(format, renamedTask({ status: "done" }))).toHaveLength(1);
+    });
+
+    test("Done records in <reminders property>-done", (): void => {
+      const format = renamed();
+      const fm = renamedTask();
+      expect(format.apply(fm, "rem_1", done("2026-11-20T09:45"))).toBe(
+        "applied",
+      );
+      expect(fm["alerts-done"]).toStrictEqual(["rem_1@2026-11-20T09:45:00"]);
+      expect(fm["reminders-done"]).toBeUndefined();
+      expect(fm["reminders"]).toBeUndefined();
+      expect(read(format, fm)).toStrictEqual([]);
+    });
+
+    test("an empty name falls back to the default", (): void => {
+      const format = formatOf({ properties: { reminders: "  ", due: "" } });
+      expect(format.keys()).toStrictEqual(["reminders"]);
+      expect(read(format, task())).toHaveLength(1);
+    });
   });
 
   test("a reminders value that is not a list of mappings yields nothing", (): void => {

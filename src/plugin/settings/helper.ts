@@ -3,6 +3,7 @@ import { Reference } from "model/ref";
 import type { ReadOnlyReference } from "model/ref";
 import { Later, Time, parseLaters } from "model/time";
 import { AbstractTextComponent, Setting } from "obsidian";
+import type { DropdownComponent } from "obsidian";
 import { ReminderFormatType, ReminderFormatTypes } from "model/format";
 import "./settings-tab.css";
 
@@ -460,12 +461,15 @@ class DropdownSettingModelBuilder extends AbstractSettingModelBuilder<string> {
   }
 
   build<E>(serde: Serde<string, E>): SettingModel<string, E> {
-    return new SettingModelImpl(
+    // The dropdown of the latest render (see `TextSettingModelBuilder`).
+    let rendered: DropdownComponent | undefined;
+    const model = new SettingModelImpl(
       this.context,
       serde,
       this.initValue,
       ({ setting, rawValue }) => {
         setting.addDropdown((d) => {
+          rendered = d;
           this.options.forEach((option) => {
             d.addOption(option.value, resolveText(option.label));
           });
@@ -477,6 +481,17 @@ class DropdownSettingModelBuilder extends AbstractSettingModelBuilder<string> {
         });
       },
     );
+    // A value set from outside the dropdown (the TaskNotes import) has to
+    // show in it.
+    model.rawValue.onChanged(() => {
+      if (
+        rendered !== undefined &&
+        rendered.getValue() !== model.rawValue.value
+      ) {
+        rendered.setValue(model.rawValue.value);
+      }
+    });
+    return model;
   }
 }
 

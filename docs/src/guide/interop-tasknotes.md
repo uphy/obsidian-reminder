@@ -33,13 +33,21 @@ TaskNotes shows its own notification for the same reminders. With both on, you a
 
 ## Which notes and reminders are read
 
-- The note has the task tag (`task` unless you change [Task tag](/setting/#task-tag)).
-- Its `status` is not a completed one (`done` unless you change [Completed statuses](/setting/#completed-statuses)), and it does not have the tag `archived`.
+- The note is a TaskNotes task: it has the task tag (`task`, or a tag nested under it such as `task/work`), or, when TaskNotes identifies tasks by a property, it has that property with that value.
+- Its status is not a completed one, and it does not have the archive tag (`archived`).
 - It is not a recurring task (no `recurrence`). A recurring task moves its own dates when it is completed, so its reminders are left to TaskNotes.
 - A relative reminder needs the date it refers to (`due` or `scheduled`). A date without a time counts from midnight, so `-PT15M` before `due: 2026-11-20` is November 19 at 23:45.
 - Reminders dated before [Ignore TaskNotes reminders before](/setting/#ignore-tasknotes-reminders-before) are not read. The date is set to the day you turn reading on, so that reminders already in the past do not all notify at once.
 
-Only TaskNotes' default property names (`tags`, `status`, `due`, `scheduled`, `reminders`) are supported. A time written with a UTC offset or `Z` is not read.
+A time written with a UTC offset or `Z` is not read.
+
+## When you changed TaskNotes' settings
+
+TaskNotes lets you rename its properties (**Task properties**), choose how a task note is identified (**Task identification**: a tag or a property), and define your own statuses. This plugin has a setting for each of those it reads: [Identify tasks by](/setting/#identify-tasks-by), [Task tag](/setting/#task-tag), [Task property](/setting/#task-property), [Completed statuses](/setting/#completed-statuses), [Archive tag](/setting/#archive-tag) and the [TaskNotes property names](/setting/#tasknotes-property-names).
+
+You do not have to fill them in by hand. They are copied from TaskNotes when you turn [Read TaskNotes reminders](/setting/#read-tasknotes-reminders) on. After changing something in TaskNotes later, press **Copy from TaskNotes** next to that switch. The copy needs TaskNotes to be installed and enabled on the device; the copied values are saved with this plugin's settings, so a device without TaskNotes still reads the task notes.
+
+With a renamed reminders property, handled reminders are recorded under that name: `alerts` gets `alerts-done`.
 
 ## What Done and Remind me later write
 

@@ -376,13 +376,48 @@ Shows the reminders the [TaskNotes plugin](/guide/interop-tasknotes.html) keeps 
 
 TaskNotes notifies for the same reminders itself, so turn notifications off in one of the two plugins.
 
+The settings below have to match TaskNotes' own settings. They are copied from TaskNotes when this is turned on, and the `Copy from TaskNotes` button copies them again, for example after you renamed a property in TaskNotes. The button reports when TaskNotes is not installed or not enabled.
+
+### Identify tasks by
+
+How TaskNotes tells a task note from other notes (TaskNotes: Task identification).
+
+- Tag: a note with the [task tag](#task-tag) is a task.
+- Property: a note whose [task property](#task-property) holds the [task property value](#task-property-value) is a task.
+- Default: Tag
+
 ### Task tag
 
-The tag that marks a note as a TaskNotes task. Default: `task`
+The tag that marks a note as a TaskNotes task. A tag nested under it (`task/work`) counts as well. Default: `task`
+
+### Task property
+
+The property that marks a note as a TaskNotes task, when tasks are identified by a property.
+
+### Task property value
+
+The value the task property holds in a task note. A list matches when it contains the value, and a checkbox matches `true` or `false`. Empty means any note that has the property.
 
 ### Completed statuses
 
-The `status` values that mean a task is completed, separated by commas. A completed task has no reminders. Default: `done`
+The status values that mean a task is completed, separated by commas. A completed task has no reminders. Default: `done`
+
+### Archive tag
+
+The tag of an archived task. An archived task has no reminders. Default: `archived`
+
+### TaskNotes property names
+
+The names of the properties this plugin reads from a task note. Change them only if you renamed them in TaskNotes (Task properties); an emptied field goes back to the default.
+
+| Setting | Default | Used for |
+| --- | --- | --- |
+| Reminders property | `reminders` | The list of a task's reminders. Handled reminders are recorded in this name with `-done` appended |
+| Due property | `due` | The date a reminder "before due" counts from |
+| Scheduled property | `scheduled` | The date a reminder "before scheduled" counts from |
+| Status property | `status` | Compared with the completed statuses |
+| Title property | `title` | The notification's title; without it the note's name is shown |
+| Recurrence property | `recurrence` | A task with a value here is recurring and is not read |
 
 ### Ignore TaskNotes reminders before
 

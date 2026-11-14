@@ -831,10 +831,31 @@ one. A date-only base counts from midnight.
     default), the task tag (default `task`), the statuses that mean completed
     (default `done`), and a cut-off date that is set to today when the switch
     is turned on with the cut-off empty. A cut-off the user emptied afterwards
-    stays empty and means "read every date". Only TaskNotes' default property names
-    are supported; the settings description says so.
-*   Read: a note that has the tag, whose status is not a completed one, that
-    does not have the tag `archived`, and that has no `recurrence`. Each entry
+    stays empty and means "read every date".
+*   TaskNotes lets the user rename its properties, identify a task by a
+    property instead of a tag, rename the archive tag and define statuses.
+    The format takes all of these from its options, and the settings group
+    has a field for each: how a task is identified (tag, or property and
+    value), the archive tag, and the names of `title`, `status`, `due`,
+    `scheduled`, `reminders` and `recurrence`. The record of handled
+    reminders is the reminders property with `-done` appended.
+    *   The fields are this plugin's own settings, filled by copying from
+        the running TaskNotes plugin's settings object: when the switch is
+        turned on, and with a "Copy from TaskNotes" button. They are not read
+        from TaskNotes on every scan, because TaskNotes may be missing on a
+        device that syncs the vault, may load after this plugin, and offers
+        no event for a settings change; a saved copy reads the same on every
+        device.
+    *   That settings object is not an API. `importTaskNotesSettings` checks
+        each field's type and falls back to TaskNotes' default for anything
+        missing or of another type, so a TaskNotes that renames a key
+        degrades to the defaults.
+    *   Not taken over: TaskNotes' excluded folders. A format sees a note's
+        frontmatter only, and this plugin's own excluded paths cover the
+        need.
+*   Read: a note that is identified as a task, whose status is not a
+    completed one, that does not have the archive tag, and that has no
+    `recurrence`. Each entry
     with an id and an effective time on or after the cut-off is a reminder,
     unless `reminders-done` holds its record. An entry of another type, or
     whose time cannot be computed, is skipped; of entries that share an id
