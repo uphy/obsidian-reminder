@@ -135,6 +135,28 @@ describe("TaskNotesNoteReminderFormat#read()", (): void => {
     ]);
   });
 
+  test("a title or description over several lines is shown as one", (): void => {
+    const fm = task({
+      title: "Send\n  the report",
+      reminders: [
+        {
+          id: "rem_1",
+          type: "absolute",
+          absoluteTime: "2026-11-18T09:00:00",
+          description: "first\nwarning",
+        },
+      ],
+    });
+    expect(read(formatOf(), fm)).toStrictEqual([
+      {
+        key: "rem_1",
+        time: "2026-11-18T09:00:00",
+        title: "Send the report",
+        label: "first warning",
+      },
+    ]);
+  });
+
   test("reads nothing while it is turned off, and asks for no key", (): void => {
     const format = formatOf({ enabled: false });
     expect(format.keys()).toStrictEqual([]);

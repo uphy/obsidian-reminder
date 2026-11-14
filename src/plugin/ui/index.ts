@@ -7,7 +7,10 @@ import {
 } from "model/note/property-format";
 import { DONE_SUFFIX, REPEAT_SUFFIX } from "model/note/sources";
 import type { NoteReminderAction } from "model/note/format";
-import { TASKNOTES_REMINDERS } from "model/note/tasknotes-format";
+import {
+  TASKNOTES_FORMAT_ID,
+  TASKNOTES_REMINDERS,
+} from "model/note/tasknotes-format";
 import { snoozeTimeFor } from "model/note/value";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
@@ -582,7 +585,9 @@ function noteKeyOf(reminder: Reminder): string {
   if (origin.kind !== "note") {
     return "";
   }
-  return origin.format === "tasknotes" ? TASKNOTES_REMINDERS : origin.key;
+  return origin.format === TASKNOTES_FORMAT_ID
+    ? TASKNOTES_REMINDERS
+    : origin.key;
 }
 
 class EditDetector {

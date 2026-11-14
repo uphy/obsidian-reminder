@@ -14,8 +14,11 @@ import {
   isEmptyValue,
   parseTimeValue,
   sameTime,
+  textValue,
 } from "./value";
 
+/** The id of this format, as kept in a reminder's origin. */
+export const TASKNOTES_FORMAT_ID = "tasknotes";
 /** The list property TaskNotes keeps a task's reminders in. */
 export const TASKNOTES_REMINDERS = "reminders";
 /** Where this plugin records which of those reminders were handled. */
@@ -68,7 +71,7 @@ type TaskNote = {
  *   every write removes the ones that no longer count.
  */
 export class TaskNotesNoteReminderFormat implements NoteReminderFormat {
-  readonly id = "tasknotes";
+  readonly id = TASKNOTES_FORMAT_ID;
 
   constructor(private options: () => TaskNotesOptions) {}
 
@@ -81,18 +84,15 @@ export class TaskNotesNoteReminderFormat implements NoteReminderFormat {
     if (note == null) {
       return [];
     }
-    const title = typeof fm["title"] === "string" ? fm["title"].trim() : "";
+    const title = textValue(fm["title"]);
     const entries: Array<NoteReminderEntry> = [];
     for (const { entry, time } of this.pending(fm, note)) {
-      const description = entry["description"];
+      const description = textValue(entry["description"]);
       entries.push({
         key: idOf(entry),
         time,
         title: title !== "" ? title : undefined,
-        label:
-          typeof description === "string" && description.trim() !== ""
-            ? description.trim()
-            : "TaskNotes",
+        label: description !== "" ? description : "TaskNotes",
       });
     }
     return entries;

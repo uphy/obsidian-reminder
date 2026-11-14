@@ -22,6 +22,7 @@ import {
 import type { TaskStatus } from "model/format/status";
 import { normalizeSources } from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
+import { isDay } from "model/note/value";
 import { DateTime, Later, Time } from "model/time";
 import { isValidNtfyTopic } from "model/ntfy";
 import {
@@ -437,8 +438,7 @@ export class Settings {
       })
       .build({
         // Anything that is not a date is read as "no cut-off".
-        unmarshal: (raw: string) =>
-          /^\d{4}-\d{2}-\d{2}$/.test(raw.trim()) ? raw.trim() : "",
+        unmarshal: (raw: string) => (isDay(raw.trim()) ? raw.trim() : ""),
         marshal: (value: string) => value,
       });
     // Turning the reading on without a cut-off sets it to today. This runs
