@@ -90,7 +90,7 @@ export function renderNoteReminderSources(
           title.descEl.createDiv({
             cls: "reminder-note-sources-error",
             text: t(
-              '"{property}" already holds other values in {count} notes, so "Done" can\'t be recorded there.',
+              '"{property}" already holds other values (notes: {count}), so "Done" can\'t be recorded there.',
               {
                 property: source.property + "-done",
                 count: String(counted.foreignDone),
@@ -125,7 +125,7 @@ export function renderNoteReminderSources(
         ];
         if (counted.ignored > 0) {
           sinceNotes.push(
-            t("{count} earlier values in the vault are ignored.", {
+            t("Earlier values in the vault that are ignored: {count}.", {
               count: String(counted.ignored),
             }),
           );
