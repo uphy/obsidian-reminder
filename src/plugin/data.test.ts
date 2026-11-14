@@ -154,4 +154,53 @@ describe("PluginData", (): void => {
     expect(getLanguageSetting()).toBe("auto");
     expect(getLanguage()).toBe("en");
   });
+
+  test("a change made while a save is in flight is written by the next save", async (): Promise<void> => {
+    const writes: Array<{ debug?: boolean }> = [];
+    let finishWrite: () => void = () => {};
+    const store: DataStore = {
+      loadData: async () => savedData(),
+      saveData: (data) => {
+        writes.push(data as { debug?: boolean });
+        return new Promise<void>((resolve) => {
+          finishWrite = resolve;
+        });
+      },
+    };
+    const data = new PluginData(store, new Reminders(() => {}));
+    await data.load();
+
+    data.changed = true;
+    const firstSave = data.save();
+    // Arrives after the first write captured its snapshot.
+    data.debug.value = true;
+    data.changed = true;
+    finishWrite();
+    await firstSave;
+
+    expect(data.changed).toBe(true);
+    const secondSave = data.save();
+    finishWrite();
+    await secondSave;
+
+    expect(writes.length).toBe(2);
+    expect(writes[1]?.debug).toBe(true);
+    expect(data.changed).toBe(false);
+  });
+
+  test("a failed save leaves the data flagged as changed", async (): Promise<void> => {
+    const store: DataStore = {
+      loadData: async () => savedData(),
+      saveData: async () => {
+        throw new Error("disk full");
+      },
+    };
+    const data = new PluginData(store, new Reminders(() => {}));
+    await data.load();
+    data.changed = true;
+
+    await expect(data.save()).rejects.toThrow("disk full");
+
+    expect(data.changed).toBe(true);
+  });
 });
