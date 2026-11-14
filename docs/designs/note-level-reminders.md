@@ -646,7 +646,15 @@ Mitigations.
         else the first row.
     *   A title field. Its placeholder is the note name.
     *   The existing calendar and time chooser. Its "OK" saves and closes. With
-        no existing value it starts at the chooser's usual default.
+        no existing value it starts at the chooser's usual default. Here the
+        time has a checkbox, and what the dialog shows is what "OK" saves:
+        ticked, the value is a date and time; unticked, the time is dimmed
+        and the value is a date. A new reminder starts ticked with the
+        "Reminder time", an existing value starts in its own shape. (In the
+        chooser for task lines the time counts once its field has been
+        focused, with nothing on screen saying so; a date saved from a dialog
+        that showed 09:00 then read as 00:00 in a property typed "Date &
+        time".)
     *   When the property holds a time: "Remove reminder" on the left; on the
         right "Mark as Done" when the reminder is pending, or "Remind again"
         when it is done.

@@ -104,7 +104,10 @@
     </div>
   {:else}
     <!-- Re-created per property: the chooser and its time list read the
-         initial time only once. -->
+         initial time only once. The time has a checkbox: a new reminder
+         starts with it on, so pressing OK saves the time that is shown
+         (the Reminder time), and an existing value starts in its own
+         shape. -->
     {#key property}
       <div class="note-reminder-chooser">
         <DateTimeChooser
@@ -112,6 +115,8 @@
           {timeStep}
           {weekStart}
           initialTime={existing}
+          timeToggle
+          initialTimeSelected={existing == null ? true : existing.hasTimePart}
           onSelect={(time) => {
             // Stay open on a rule that can't be read, so it can be fixed.
             if (!repeatInvalid) {
