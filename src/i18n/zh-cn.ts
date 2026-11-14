@@ -309,6 +309,10 @@ export const zhCN: Record<string, string> = {
     "{file} 中的“{property}”不是日期，未能记录“完成”",
   "Property name": "属性名称",
   "Note reminder": "笔记提醒",
+  "Edit this note's reminder": "编辑此笔记的提醒",
+  "Show a bell in every note's header": "在每个笔记的标题栏显示铃铛",
+  "A note without a reminder gets a faint bell that opens the reminder dialog. When off, the bell is shown only while a reminder is waiting. The bell needs a managed property.":
+    "没有提醒的笔记会显示一个淡色铃铛，点击可打开提醒对话框。关闭后，仅在有待处理的提醒时显示铃铛。铃铛需要至少一个托管属性。",
   "Set reminder for this note": "为此笔记设置提醒",
   "Reminder for {note}": "{note} 的提醒",
   "Scheduled:": "已安排：",

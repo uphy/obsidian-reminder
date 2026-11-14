@@ -1,5 +1,6 @@
 import {
   countSourceStats,
+  hasManagedValue,
   newSourceCutOff,
   normalizeSources,
   validateSourceName,
@@ -171,5 +172,27 @@ describe("newSourceCutOff()", (): void => {
 
   test("empty when the property is not used yet", (): void => {
     expect(newSourceCutOff("reminder", "2026-11-14", statsOver([]))).toBe("");
+  });
+});
+
+describe("hasManagedValue()", (): void => {
+  test("true for a time in a managed property, pending or done", (): void => {
+    expect(hasManagedValue(rows, { reminder: "2026-11-20" })).toBe(true);
+    expect(
+      hasManagedValue(rows, {
+        reminder: "2026-11-20",
+        "reminder-done": "2026-11-20",
+      }),
+    ).toBe(true);
+  });
+
+  test("false for a property that is only read", (): void => {
+    expect(hasManagedValue(rows, { "follow-up": "2026-11-20" })).toBe(false);
+  });
+
+  test("false without a time", (): void => {
+    expect(hasManagedValue(rows, { reminder: "soon" })).toBe(false);
+    expect(hasManagedValue(rows, {})).toBe(false);
+    expect(hasManagedValue(rows, undefined)).toBe(false);
   });
 });
