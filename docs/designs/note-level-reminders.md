@@ -1,7 +1,7 @@
 # Note-level reminders (reminders from properties)
 
 *   **Author:** uphy
-*   **Status:** Proposed
+*   **Status:** First release implemented on the branch `note-reminder-spec`; second and third releases proposed
 *   **Date:** 2026-11-14
 
 ## Overview
@@ -176,11 +176,28 @@ Across releases:
 
 ## Open Questions
 
-*   **Phone layout of the dialog.** Under Obsidian's mobile emulation at tablet
-    width the dialog works, but the calendar is left-aligned and the action row
-    is below the fold. Nothing was run at phone width or on a device. Change 8
-    must lay the dialog out for a narrow screen and be checked on a phone
-    before the first release.
+*   **Phone layout of the dialog (first release).** Under Obsidian's mobile
+    emulation at tablet width the calendar is centred and the action row stays
+    in view. Nothing was run at phone width or on a device. To check on a
+    phone before the first release ships.
+*   **Recurrence: a hand edit after a snooze (second release).** As specified
+    in section 11, `p-occurrence` survives when the user edits `p` by hand
+    after a snooze, so the next "Done" continues the series from the old
+    occurrence instead of the edited date. Proposed fix: store the snoozed-to
+    time with the occurrence and use the occurrence only while `p` still
+    equals it. To settle before the second release is implemented.
+*   **Recurrence: the next occurrence can equal the time just completed
+    (second release).** With `start` = `p-occurrence`, `nextOccurrence` can
+    return the snoozed time itself (a daily reminder snoozed to tomorrow and
+    completed today), which would then count as done. Proposed fix: require
+    the next occurrence to be after the time shown. To settle with the
+    previous point.
+*   **TaskNotes: leftover snooze entries (third release).** Section 12 removes
+    a no-longer-valid entry "on the next write", which may never come, and
+    does not say what a snooze does while such an entry exists. Proposed fix:
+    every write first removes the plugin's invalid entries, and a snooze
+    replaces an existing entry for the same original. To settle before the
+    third release is implemented.
 
 ## Critical User Journeys (CUJs)
 
@@ -315,9 +332,10 @@ as for date-only task lines.
 | --- | --- | --- | --- |
 | Done | every source | stale check; `p-done` check | `p-done` = the time shown |
 | Snooze | every source | stale check | `p` = the new time in the shape of the old value; removes `p-done` if it equals the new time |
-| Dialog: OK | managed | `p` is empty or a time | `p` = the chosen time; sets or removes `p-title`; removes `p-done` if it equals the chosen time |
+| Dialog: OK | managed | `p` is empty or a time | `p` = the chosen time; sets or removes `p-title`; removes `p-done` if the time was changed and `p-done` equals the new time |
 | Dialog: Mark as Done | managed | stale check; `p-done` check | as Done |
-| Dialog: Remove | managed | none | removes `p` and `p-title`; removes `p-done` if it is empty or a time |
+| Dialog: Remind again | managed | `p-done` equals `p` | removes `p-done` |
+| Dialog: Remove | managed | `p` is a time | removes `p` and `p-title`; removes `p-done` if it is empty or a time |
 
 *   **Stale check.** "Done" and snooze carry the time the notification (or the
     dialog) was showing. If `p` is no longer equal to that time, or the
@@ -330,13 +348,18 @@ as for date-only task lines.
 *   Snooze removes an equal `p-done` because otherwise the user's chosen time
     would count as handled and never be shown.
 *   A date-time reminder snoozed with a whole-day option ("Tomorrow") gets the
-    "Reminder Time" setting as its time. A date reminder is only offered
-    whole-day options (section 7).
+    "Reminder Time" setting as its time. The notification handler computes
+    that time before it calls the store (`snoozeTimeFor` in `value.ts`); the
+    store only keeps the shape. A date reminder is only offered whole-day
+    options (section 7).
+*   "OK" with an unchanged time keeps `p-done`, so editing only the title of
+    a finished reminder does not make it pending again. "Remind again" is the
+    explicit way to do that.
 
 **Limits that follow from the rule.** After "Done", writing the same date into
 `p` again does not make the reminder pending. To be reminded for the same date
 the user removes `p-done` in the properties panel, or, for a managed property,
-presses "OK" in the dialog. "Done" on an external property is undone the same
+presses "Remind again" in the dialog. "Done" on an external property is undone the same
 way.
 
 ### 2. Layers
@@ -397,10 +420,12 @@ interface NoteReminderStore {
 applies its own cut-off in `read`, because the property store has one per row
 and the TaskNotes store has one for the whole store.
 
-The dialog's create, edit and remove are three functions exported by
-`property-store.ts` (`readPropertyReminderState`, `setPropertyReminder`,
-`removePropertyReminder`). They are not part of the interface, so the TaskNotes
-store does not have to answer for them.
+The dialog's read, create, edit, re-arm and remove are functions exported by
+`property-store.ts` (`readPropertyReminderState`, `pickInitialProperty`,
+`setPropertyReminder`, `rearmPropertyReminder`, `removePropertyReminder`). The
+three that write return an `ApplyOutcome`, so the dialog passes them to the
+service's `write` as it passes a store action. They are not part of the
+interface, so the TaskNotes store does not have to answer for them.
 
 The service adds one result that no store returns:
 
@@ -592,7 +617,7 @@ Mitigations.
 *   The snooze list comes from the existing "Remind me later" setting. For a
     date-only note reminder, only the options whose result has no time part
     are offered. With the default list those are "Tomorrow" and "Next week";
-    "In 30 minutes", "In 1 hour" and "In 1 day" produce a time and are left
+    "In 30 minutes", "In 1 hour" and "In 3 hours" produce a time and are left
     out. When none is left, the snooze control is hidden.
 *   A snooze never changes a value's shape.
 *   The dialog uses the existing calendar and time chooser unchanged. Leaving
@@ -619,16 +644,17 @@ Mitigations.
 *   **Dialog.** It reads the note's text through the service when it opens.
     From top to bottom:
     *   A heading, "Reminder for <note name>".
-    *   A status line when the property holds a time: "Scheduled: <time>" or
-        "Done: <time>".
+    *   A status line when the property holds a time: "Scheduled: <time>",
+        "Done: <time>", or "Not shown (before the cut-off): <time>".
     *   A property dropdown when there are several managed rows. Preselected:
         the first row with a pending reminder, else the first row with a time,
         else the first row.
     *   A title field. Its placeholder is the note name.
     *   The existing calendar and time chooser. Its "OK" saves and closes. With
         no existing value it starts at the chooser's usual default.
-    *   When the property holds a time: "Remove reminder" on the left, and
-        "Mark as Done" on the right when the reminder is pending.
+    *   When the property holds a time: "Remove reminder" on the left; on the
+        right "Mark as Done" when the reminder is pending, or "Remind again"
+        when it is done.
     *   When the property holds a value that is not a time: a message showing
         the value, and no chooser and no buttons.
     *   Every button closes the dialog. A result of `blocked` or `failed` then
@@ -636,8 +662,9 @@ Mitigations.
     *   When the chosen time is before the row's cut-off, a notice says the
         reminder was saved but will not be shown, and names the setting.
     *   The dialog closes when the plugin is unloaded.
-    *   On a narrow screen the calendar spans the dialog's width and the action
-        row stays visible without scrolling (see Open Questions).
+    *   The calendar is centred in a dialog wider than it. On mobile the
+        action row is sticky at the bottom of the dialog, so it stays in view
+        while the content scrolls (see Open Questions).
 *   **Header bell.** A view action in the header of a Markdown view whose note
     has a pending reminder on a managed property. Its tooltip lists the time
     and the property. Clicking opens the dialog. The set of bells is refreshed
@@ -655,7 +682,9 @@ Mitigations.
 *   **Reminder list.** Note reminders appear among line reminders with a note
     icon, and the label after the note name. Dragging one into a note inserts
     a link to the note, preceded by the title and " - " when the note has a
-    `p-title`. The tooltip is unchanged.
+    `p-title` (told by the title differing from the note name). When the
+    title is the note name, the list shows the label alone instead of
+    repeating the name. The tooltip is unchanged.
 *   **Calendar popup for task lines** (opened by the `(@` trigger and the pill).
     Its behaviour is unchanged. The list of the selected day's reminders at its
     bottom shows note reminders too, since it lists everything due that day.
@@ -688,8 +717,13 @@ for reminders that share both.
     title change gives a new id: the old message is deleted as an orphan and a
     new one is published, with the existing sync plan unchanged.
 *   Line reminders keep their ids.
+*   Turning ntfy off deletes the device's pending `obr-` and `obrn-` messages
+    alike.
 *   A device deletes orphaned `obrn-` messages only when it has at least one
-    source configured (a row, or TaskNotes reading). Otherwise a device that
+    source configured (a row, or TaskNotes reading), or had one earlier in the
+    same session, so that removing the last source still cleans up. A message
+    scheduled before a restart that followed the removal stays until it fires;
+    messages are scheduled at most 24 hours ahead. Otherwise a device that
     does not use note reminders would delete the messages another device
     scheduled. Devices that both use note reminders must have the same rows and
     cut-offs, as they must already share the other settings that decide what is
@@ -850,6 +884,12 @@ turning the asynchronous format code synchronous, which is outside this design.
     reminder would be shown again. Verified not to happen with Spaced
     Repetition 1.15.4 (a review keeps `sr-due-done`) and TaskNotes 4.18.2. For
     another plugin the effect is a repeated notification, not data loss.
+*   **The write guard depends on how Obsidian treats a throwing callback.**
+    That `processFrontMatter` writes nothing when its callback throws was
+    observed on Obsidian 1.15.0 only, while the plugin's minimum version is
+    1.7.2. If an older version wrote anyway, the effect would be a reformatted
+    but otherwise unchanged block, because the store changes nothing unless it
+    returns `applied`.
 *   **Obsidian or another plugin writes the note at the same moment.** The
     frontmatter API reads and writes in one step, and the store checks the
     value again inside it (section 5).
@@ -1154,12 +1194,32 @@ Run in the vault:
 *   The Bases state formula (Additional Resources) on date-time values.
 *   The dialog under mobile emulation at tablet width.
 
+Run again with the implementation of the first release (changes 1 to 9 on
+the branch `note-reminder-spec`), same vault and method:
+
+*   With no source: 94 line reminders, no note reminder.
+*   Adding a source: values on or after the cut-off are read, an earlier one
+    is not, and the settings row counts it; a muted line reminder stays muted
+    across the rescan.
+*   The toast: the origin line; a date-only reminder lists "Tomorrow" and
+    "Next week" only; "Done" writes `p-done` only; "Done" with a checkbox in
+    `p-done` writes nothing and shows the notice; a 08:00 reminder snoozed
+    with "Tomorrow" becomes the next day at the "Reminder Time".
+*   An action for a time the note no longer holds returns `stale` and writes
+    nothing.
+*   The first-use prompt, the dialog (save with a title and a time, "Mark as
+    Done", a title-only save that stays done, "Remind again", "Remove
+    reminder", a value that is not a date), and the header bell appearing and
+    disappearing.
+*   The dialog under mobile emulation at tablet width: calendar centred,
+    action row in view.
+*   The Bases example of the user guide: the state column shows done, overdue
+    and scheduled.
+
 Not run anywhere:
 
-*   The typed origin (the spike uses `rowNumber = -1`), the note-reminder ntfy
-    ids, and the rescan fix.
-*   The dialog without the property-type lookup and with the unchanged chooser
-    (the spike has both).
+*   ntfy with note reminders against a server (the ids and the sync plan are
+    covered by unit tests only).
 *   Phone width, a real mobile device, and clicking a system notification on
     screen (the notification's handler was called directly).
 *   Vaults larger than about 2,500 notes.
@@ -1190,6 +1250,25 @@ Not run anywhere:
     `Vault.process`.
 
 ## Detailed Implementation Plan
+
+**Status: changes 1 to 9 are implemented**, one commit each, on the branch
+`note-reminder-spec`. Where the implementation differs from the items below:
+
+*   `latersFor` and its use (items 7.1 to 7.3) are part of change 6, so that
+    the snooze list is never wrong between two changes.
+*   The text shown for a note reminder (origin line, list label, dragged
+    Markdown) is in a tested helper, `src/ui/reminder-origin.ts`.
+*   `src/model/note/value.ts` also has `inShapeOf` and `snoozeTimeFor`;
+    `property-store.ts` also has `pickInitialProperty` and
+    `rearmPropertyReminder`, and `readPropertyReminderState` takes the cut-off
+    and returns `pending`.
+*   The service has `applyAt(path, origin, action)`; its deps interface is
+    `NoteReminderServiceDeps`.
+*   `NtfyControllerDeps` has `hasNoteReminderSources()`, and
+    `src/plugin/ntfy.test.ts` covers the message text.
+*   `src/model/reminder.test.ts` is among the tests converted in change 4,
+    and a test pins the ntfy id of a line reminder to a literal value.
+*   The settings tab sits after "Reminder formats".
 
 The fixes are changes 1 to 3. The first release is changes 4 to 9. Each change
 is one pull request, in this order. Paths are relative to the repository root.

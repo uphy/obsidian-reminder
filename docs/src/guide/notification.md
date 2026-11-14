@@ -29,6 +29,10 @@ The date and time in the markdown will be updated according to your choice.
 
 The `Remind Me Later`'s option is customizable with [Remind Me Later](/setting/#remind-me-later) setting.
 
+### Note reminders
+
+A [note reminder](/guide/note-reminders.html) is shown in the same popup. Under the title, it also shows the property it comes from and its time (for example `follow-up · 2026-11-20`). `Mark as Done` and `Remind Me Later` write to the note's properties instead of a task line; see [What Done and Remind me later do](/guide/note-reminders.html#what-done-and-remind-me-later-do).
+
 ### Keyboard shortcuts
 
 Because the popup can appear at any time while you're doing something else, it no longer focuses the `Done` button by default: a keypress you were already mid-typing (like <kbd>Enter</kbd>) could otherwise complete a reminder you never actually read. Enable [Focus Done button on popup](/setting/#focus-done-button-on-popup) to restore the old behavior.
