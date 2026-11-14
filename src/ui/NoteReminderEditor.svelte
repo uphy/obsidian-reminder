@@ -120,6 +120,19 @@
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+    /* About the calendar's width, for the state without a calendar (a
+       value that is not a date), where only text is left to size by. */
+    min-width: 16.5rem;
+  }
+  /* The dialog is as wide as the calendar. Text must not widen it: a long
+     note name or an error message would otherwise stretch the dialog and
+     leave the calendar floating in the middle. With no width of its own,
+     the text takes the width the calendar gives the dialog. */
+  .note-reminder-heading,
+  .note-reminder-status,
+  .note-reminder-error {
+    width: 0;
+    min-width: 100%;
   }
   .note-reminder-heading {
     font-weight: var(--font-semibold);
@@ -160,6 +173,9 @@
   .note-reminder-chooser {
     display: flex;
     justify-content: center;
+    /* The chooser carries the z-index of the popup it also is. Kept to
+       itself here, or it would paint over the sticky actions below. */
+    isolation: isolate;
   }
   .note-reminder-error {
     color: var(--text-error);
@@ -180,6 +196,12 @@
     bottom: 0;
     padding: 0.5rem 0;
     background-color: var(--modal-background, var(--background-primary));
+    border-top: 1px solid var(--background-modifier-border);
+    z-index: 1;
+  }
+  /* The close button is larger there. */
+  :global(.is-mobile) .note-reminder-heading {
+    padding-right: 2.5rem;
   }
   .note-reminder-remove {
     padding: 0;
