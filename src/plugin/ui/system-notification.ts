@@ -114,10 +114,7 @@ export class SystemNotifier {
       // Rendered on macOS and, since Electron 40, on Windows
       {
         const laters = systemNotificationLaters(
-          latersFor(
-            reminder.isNote() && !reminder.time.hasTimePart,
-            this.laters.value,
-          ),
+          latersFor(reminder.isDateOnlyNote(), this.laters.value),
           Platform.isWin,
           this.keepSystemNotificationOnScreen.value,
         );

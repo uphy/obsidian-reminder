@@ -71,7 +71,7 @@ export class ReminderNotifier {
   }
 
   private showBuiltinReminder(reminder: Reminder, actions: ReminderActions) {
-    const laters = latersFor(isDateOnlyNote(reminder), this.laters.value);
+    const laters = latersFor(reminder.isDateOnlyNote(), this.laters.value);
     if (this.notificationPopupStyle.value === "toast") {
       this.toastManager.show(reminder, laters, actions);
       return;
@@ -91,12 +91,4 @@ export class ReminderNotifier {
     }
     return this.useSystemNotification.value;
   }
-}
-
-/**
- * A note reminder whose property holds a date without a time. Snoozing it
- * writes a date back, so it is only offered whole-day options.
- */
-export function isDateOnlyNote(reminder: Reminder): boolean {
-  return reminder.isNote() && !reminder.time.hasTimePart;
 }

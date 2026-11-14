@@ -43,6 +43,23 @@ describe("Reminder", (): void => {
     expect(note("a", "title").isNote()).toBe(true);
   });
 
+  test("isDateOnlyNote() is true only for a note reminder with a date", (): void => {
+    const note = (time: string): Reminder =>
+      Reminder.ofNote("file.md", "title", DateTime.parse(time), {
+        kind: "note",
+        store: "property",
+        key: "due",
+        label: "due",
+      });
+    const line = (time: string): Reminder =>
+      Reminder.ofLine("file.md", "title", DateTime.parse(time), 0, false);
+
+    expect(note("2021-09-08").isDateOnlyNote()).toBe(true);
+    expect(note("2021-09-08 10:00").isDateOnlyNote()).toBe(false);
+    expect(line("2021-09-08").isDateOnlyNote()).toBe(false);
+    expect(line("2021-09-08 10:00").isDateOnlyNote()).toBe(false);
+  });
+
   test("equals() tells a line reminder from a note reminder", (): void => {
     const time = DateTime.parse("2021-09-08");
     const line = Reminder.ofLine("file.md", "title", time, 0, false);

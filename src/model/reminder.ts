@@ -75,6 +75,15 @@ export class Reminder {
   }
 
   /**
+   * A note reminder whose property holds a date without a time. Snoozing it
+   * writes a date back, so it is only offered whole-day options (see
+   * `latersFor()`).
+   */
+  isDateOnlyNote(): boolean {
+    return this.isNote() && !this.time.hasTimePart;
+  }
+
+  /**
    * Identifies the reminder for mute flags and open notifications.
    *
    * The line form must not change: mute flags saved by earlier versions are
