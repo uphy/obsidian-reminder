@@ -101,7 +101,14 @@ export function snoozeTimeFor(
 ): DateTime {
   if (current.hasTimePart && !chosen.hasTimePart) {
     const day = moment(chosen.format("YYYY-MM-DD"), "YYYY-MM-DD", true);
-    return new DateTime(day.add(defaultTime.minutes, "minutes"), true);
+    // The wall-clock time is set rather than added to midnight as minutes:
+    // on a day when the clocks change, midnight plus nine hours is not 09:00,
+    // and the value is written to the note.
+    const minutes = defaultTime.minutes;
+    return new DateTime(
+      day.hours(Math.floor(minutes / 60)).minutes(minutes % 60),
+      true,
+    );
   }
   return inShapeOf(chosen, current.hasTimePart);
 }

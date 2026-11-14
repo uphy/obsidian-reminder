@@ -133,6 +133,18 @@ describe("snoozeTimeFor()", (): void => {
     );
   });
 
+  test("the reminder time is the wall-clock time on a day the clocks change", (): void => {
+    // Only tells something in a zone with daylight saving time, e.g. under
+    // `TZ=America/New_York`, where 2027-03-14 has 23 hours and 2027-11-07
+    // has 25. Elsewhere these are ordinary days.
+    expect(snoozed("2027-03-13T09:00", "2027-03-14")).toBe(
+      "2027-03-14T09:00:00",
+    );
+    expect(snoozed("2027-11-06T09:00", "2027-11-07")).toBe(
+      "2027-11-07T09:00:00",
+    );
+  });
+
   test("a date stays a date", (): void => {
     expect(snoozed("2026-11-20", "2026-11-21")).toBe("2026-11-21");
     expect(snoozed("2026-11-20", "2026-11-21T15:00")).toBe("2026-11-21");
