@@ -68,6 +68,58 @@ export function isBeforeDay(time: DateTime, since: string): boolean {
   return time.format("YYYY-MM-DD") < since;
 }
 
+/** True for text that is a day, `YYYY-MM-DD` (the form of a cut-off). */
+export function isDay(text: string): boolean {
+  return DATE.test(text);
+}
+
+/**
+ * A frontmatter value as one line of text; "" when it is not text. A
+ * multi-line YAML string would break the single-line places a title is
+ * shown in, so line breaks become spaces.
+ */
+export function textValue(value: unknown): string {
+  return typeof value === "string"
+    ? value.replace(/\s*[\r\n]+\s*/g, " ").trim()
+    : "";
+}
+
+/**
+ * True for a companion value the plugin may replace or remove as text:
+ * nothing, or text. Anything else (a number, a list, a checkbox) is someone
+ * else's value and stays as it is.
+ */
+export function isOwnText(value: unknown): boolean {
+  return isEmptyValue(value) || typeof value === "string";
+}
+
+/**
+ * Writes `text` to the companion `key`, or removes it when `text` is empty.
+ * Does nothing when the companion holds a value that is not the plugin's.
+ */
+export function writeOwnText(
+  fm: Record<string, unknown>,
+  key: string,
+  text: string,
+) {
+  if (!isOwnText(fm[key])) {
+    return;
+  }
+  const line = textValue(text);
+  if (line === "") {
+    delete fm[key];
+  } else {
+    fm[key] = line;
+  }
+}
+
+/** Removes the companion `key` unless it holds a value that is not the plugin's. */
+export function removeOwnText(fm: Record<string, unknown>, key: string) {
+  if (isOwnText(fm[key])) {
+    delete fm[key];
+  }
+}
+
 /** True for a property that is absent or holds nothing. */
 export function isEmptyValue(value: unknown): boolean {
   return value == null || value === "";

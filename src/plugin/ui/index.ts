@@ -1,7 +1,10 @@
 import { onLanguageChange, t, tn } from "i18n";
 import type ReminderPlugin from "main";
 import { noteNameOf } from "model/note/reader";
-import { hasUnreadableRepeatRule } from "model/note/property-format";
+import {
+  hasUnreadableRepeatRule,
+  propertyOf,
+} from "model/note/property-format";
 import { DONE_SUFFIX, REPEAT_SUFFIX } from "model/note/sources";
 import type { NoteReminderAction } from "model/note/format";
 import { snoozeTimeFor } from "model/note/value";
@@ -511,21 +514,20 @@ export class ReminderPluginUI {
    * and will not come back.
    */
   private checkRepeatRule(reminder: Reminder) {
-    const origin = reminder.origin;
+    const property = propertyOf(reminder);
     if (
-      origin.kind !== "note" ||
-      origin.format !== "property" ||
+      property == null ||
       !this.plugin
         .managedNoteReminderSources()
-        .some((source) => source.property === origin.key)
+        .some((source) => source.property === property)
     ) {
       return;
     }
     void this.plugin.noteReminders
       .readFrontmatter(reminder.file)
       .then((fm) => {
-        if (hasUnreadableRepeatRule(fm, origin.key)) {
-          this.reportUnreadableRepeatRule(reminder.file, origin.key);
+        if (hasUnreadableRepeatRule(fm, property)) {
+          this.reportUnreadableRepeatRule(reminder.file, property);
         }
       })
       .catch(() => {
