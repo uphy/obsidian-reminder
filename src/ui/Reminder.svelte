@@ -242,6 +242,15 @@ instances (older toasts; see `shortcutsEnabled`) are excluded inside
     margin-bottom: 0.2rem;
   }
 
+  /* The icon's span is an inline box with the line's height, in which the
+     SVG sits on the text baseline and so above the middle of the row. As a
+     flex box it has the SVG's own height and is centred with the text. The
+     icon is also sized down to match the small text. */
+  .reminder-note-origin :global(.icon) {
+    display: inline-flex;
+    --icon-size: var(--icon-xs);
+  }
+
   .reminder-file {
     color: var(--text-muted);
     cursor: pointer;
