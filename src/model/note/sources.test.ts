@@ -186,6 +186,10 @@ describe("hasManagedValue()", (): void => {
     ).toBe(true);
   });
 
+  test("true for a time dated before the property's cut-off", (): void => {
+    expect(hasManagedValue(rows, { reminder: "2026-10-01" })).toBe(true);
+  });
+
   test("false for a property that is only read", (): void => {
     expect(hasManagedValue(rows, { "follow-up": "2026-11-20" })).toBe(false);
   });
