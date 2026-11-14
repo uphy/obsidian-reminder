@@ -182,6 +182,23 @@ export class Reminders {
     return count;
   }
 
+  /**
+   * Unmutes a reminder so that it is notified again. `reminder` may be an
+   * object captured when its notification was shown: a reload of the note in
+   * the meantime (`replaceFile()`) stores new objects and copies the mute
+   * flag onto them by key, so the flag is cleared on the stored reminder with
+   * the same key as well as on the given object.
+   */
+  public unmute(reminder: Reminder) {
+    reminder.muteNotification = false;
+    const key = reminder.key();
+    for (const stored of this.fileToReminders.get(reminder.file) ?? []) {
+      if (stored.key() === key) {
+        stored.muteNotification = false;
+      }
+    }
+  }
+
   public byDate(date: DateTime) {
     return this.reminders.filter(
       (reminder) => reminder.time.toYYYYMMDD() === date.toYYYYMMDD(),

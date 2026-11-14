@@ -490,7 +490,9 @@ export class ReminderPluginUI {
   private applyToNote(reminder: Reminder, action: NoteReminderAction) {
     void this.plugin.noteReminders.apply(reminder, action).then((result) => {
       if (result === "unchanged") {
-        reminder.muteNotification = false;
+        // The note may have been reloaded while the notification was open,
+        // so `reminder` is not necessarily the object the worker looks at.
+        this.plugin.reminders.unmute(reminder);
         return;
       }
       this.reportNoteWrite(reminder.file, noteKeyOf(reminder), result);

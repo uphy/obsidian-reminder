@@ -238,6 +238,58 @@ describe("Reminders#muteExpiredReminders()", (): void => {
   });
 });
 
+describe("Reminders#unmute()", (): void => {
+  function makeNote(key: string): Reminder {
+    return Reminder.ofNote("file.md", "title", DateTime.parse("2021-09-08"), {
+      kind: "note",
+      store: "property",
+      key,
+      label: key,
+    });
+  }
+
+  test("unmutes the stored reminder", (): void => {
+    const reminders = new Reminders(() => {});
+    const shown = makeNote("remind");
+    reminders.replaceFile("file.md", [shown]);
+    shown.muteNotification = true;
+
+    reminders.unmute(shown);
+
+    expect(shown.muteNotification).toBe(false);
+  });
+
+  test("unmutes the reminder that replaced the given one on a reload", (): void => {
+    const reminders = new Reminders(() => {});
+    const shown = makeNote("remind");
+    reminders.replaceFile("file.md", [shown]);
+    shown.muteNotification = true;
+    // The note is reloaded with one more reminder while the notification is
+    // open: the mute flag moves to a new object with the same key.
+    const reloaded = makeNote("remind");
+    const other = makeNote("other");
+    other.muteNotification = true;
+    reminders.replaceFile("file.md", [reloaded, other]);
+    expect(reloaded.muteNotification).toBe(true);
+
+    reminders.unmute(shown);
+
+    expect(reloaded.muteNotification).toBe(false);
+    expect(shown.muteNotification).toBe(false);
+    expect(other.muteNotification).toBe(true);
+  });
+
+  test("unmutes the given reminder when its note is no longer stored", (): void => {
+    const reminders = new Reminders(() => {});
+    const shown = makeNote("remind");
+    shown.muteNotification = true;
+
+    reminders.unmute(shown);
+
+    expect(shown.muteNotification).toBe(false);
+  });
+});
+
 describe("Reminders#replaceFile()", (): void => {
   function makeReminder(title: string, time: string): Reminder {
     return Reminder.ofLine("file.md", title, DateTime.parse(time), 0, false);
