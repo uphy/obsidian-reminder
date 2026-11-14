@@ -13,6 +13,7 @@ import type {
   PropertyReminderEdit,
   PropertyReminderState,
 } from "model/note/property-format";
+import { hasManagedValue } from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
 import type { Frontmatter } from "model/note/format";
 import { isBeforeDay } from "model/note/value";
@@ -32,6 +33,18 @@ export function canSetNoteReminder(plugin: ReminderPlugin, file: TFile) {
   return (
     file.extension.toLowerCase() === "md" &&
     !isPathExcluded(file.path, plugin.settings.excludedPaths.value)
+  );
+}
+
+/**
+ * Whether `file` already holds a time in a managed property (pending or
+ * not), read from Obsidian's metadata cache. The entry points to the dialog
+ * use it to say "edit" instead of "set".
+ */
+export function hasNoteReminder(plugin: ReminderPlugin, file: TFile) {
+  return hasManagedValue(
+    plugin.managedNoteReminderSources(),
+    plugin.app.metadataCache.getFileCache(file)?.frontmatter,
   );
 }
 

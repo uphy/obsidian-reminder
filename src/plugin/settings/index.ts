@@ -84,6 +84,7 @@ export class Settings {
   convertNonTaskLines: SettingModel<boolean, boolean>;
   /** The properties read as note reminders. Empty by default. */
   noteReminderSources: SettingModel<unknown, Array<NoteReminderSource>>;
+  noteReminderHeaderBell: SettingModel<boolean, boolean>;
   /**
    * Counts, for the settings page, the values a source ignores and the notes
    * whose done property it can't use. Replaced by the plugin, which has the
@@ -371,6 +372,16 @@ export class Settings {
         unmarshal: normalizeSources,
         marshal: (value: Array<NoteReminderSource>) => value,
       });
+
+    this.noteReminderHeaderBell = this.settings
+      .newSettingBuilder()
+      .key("noteReminderHeaderBell")
+      .name("Show a bell in every note's header")
+      .desc(
+        "A note without a reminder gets a faint bell that opens the reminder dialog. When off, the bell is shown only while a reminder is waiting. The bell needs a managed property.",
+      )
+      .toggle(true)
+      .build(new RawSerde());
 
     this.editorReminderDisplay = this.settings
       .newSettingBuilder()
@@ -722,7 +733,7 @@ export class Settings {
     this.settings
       .newPage("Note reminders")
       .newGroup()
-      .addSettings(this.noteReminderSources);
+      .addSettings(this.noteReminderSources, this.noteReminderHeaderBell);
     this.settings.newPage("Display").newGroup().addSettings(
       // First in this tab on purpose: it changes how every other label on
       // this page reads.

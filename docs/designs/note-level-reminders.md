@@ -226,7 +226,7 @@ Across releases:
     cut-off. The note has `reminder: <tomorrow>T09:00:00` and
     `reminder-title: Send the report`. A bell appears in the note header. At
     09:00 the notification is titled "Send the report". After "Done" the bell
-    is gone.
+    turns faint.
 
 ### CUJ 3: Another plugin moves the date under an open notification
 
@@ -674,12 +674,22 @@ Mitigations.
     *   The calendar is centred in a dialog wider than it. On mobile the
         action row is sticky at the bottom of the dialog, so it stays in view
         while the content scrolls (see Open Questions).
-*   **Header bell.** A view action in the header of a Markdown view whose note
-    has a pending reminder on a managed property. Its tooltip lists the time
-    and the property. Clicking opens the dialog. The set of bells is refreshed
-    when reminders change and when a view shows another file, at most once per
-    animation frame because a full rescan reports a change per file. Bells are
-    removed on unload.
+*   **Header bell.** A view action in the header of a Markdown view. Clicking
+    opens the dialog. It has three states: a ringing bell for a note with a
+    pending reminder on a managed property (its tooltip lists the time and
+    the property); a faint bell for a note that holds a time in a managed
+    property that is not pending (done, or before the cut-off); a faint bell
+    with a plus for a note with none. The two faint states exist so that the
+    way to add a note reminder is on screen and not only in the command
+    palette and the file menu. They are shown when at least one property is
+    managed and the "Show a bell in every note's header" setting is on
+    (default); with it off only the ringing bell is shown. The file-menu item
+    follows the same distinction: "Set reminder for this note" or "Edit this
+    note's reminder". The command keeps one name, because a command's name
+    is not evaluated per note. The set of bells is refreshed when reminders,
+    a note's properties or the setting change and when a view shows another
+    file, coalesced because a full rescan reports a change per file. Bells
+    are removed on unload.
 *   **Notifications.**
     *   Toast and modal: under the title, one line "<label> · <time>". The file
         button below it stays. Clicking it opens the note without a line jump.

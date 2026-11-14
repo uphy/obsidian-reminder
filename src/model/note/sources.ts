@@ -166,3 +166,21 @@ export function newSourceCutOff(
   const past = stats({ property, managed: false, since: today }).ignored;
   return past > 0 ? today : "";
 }
+
+/**
+ * Whether the note already holds a time in one of the managed properties,
+ * pending or not. It decides how the entry points to the reminder dialog
+ * read: "set a reminder" for a note without one, "edit" for a note with one.
+ */
+export function hasManagedValue(
+  sources: ReadonlyArray<NoteReminderSource>,
+  frontmatter: Frontmatter | undefined,
+): boolean {
+  if (frontmatter == null) {
+    return false;
+  }
+  return sources.some(
+    (source) =>
+      source.managed && parseTimeValue(frontmatter[source.property]) != null,
+  );
+}
