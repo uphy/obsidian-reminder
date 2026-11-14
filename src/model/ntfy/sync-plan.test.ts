@@ -383,7 +383,12 @@ describe("computeNtfySyncPlan() with note reminders", (): void => {
       "a.md",
       title,
       DateTime.ofEpochMillis(NOW.getTimeInMillis() + seconds * 1000),
-      { kind: "note", store: "property", key: "follow-up", label: "follow-up" },
+      {
+        kind: "note",
+        format: "property",
+        key: "follow-up",
+        label: "follow-up",
+      },
     );
   }
 

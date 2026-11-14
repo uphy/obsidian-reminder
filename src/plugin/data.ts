@@ -20,7 +20,7 @@ interface NoteReminderData {
   title: string;
   time: string;
   muted?: boolean;
-  store: string;
+  format: string;
   key: string;
   label: string;
 }
@@ -182,7 +182,7 @@ export class PluginData {
           filePath,
           d.title,
           DateTime.parse(d.time),
-          { kind: "note", store: d.store, key: d.key, label: d.label },
+          { kind: "note", format: d.format, key: d.key, label: d.label },
         );
         reminder.muteNotification = restoreMuted && (d.muted ?? false);
         restored.push(reminder);
@@ -225,7 +225,7 @@ export class PluginData {
             title: rr.title,
             time: rr.time.toString(),
             muted: rr.muteNotification,
-            store: origin.store,
+            format: origin.format,
             key: origin.key,
             label: origin.label,
           });

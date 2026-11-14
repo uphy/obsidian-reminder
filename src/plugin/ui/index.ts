@@ -1,9 +1,9 @@
 import { onLanguageChange, t, tn } from "i18n";
 import type ReminderPlugin from "main";
 import { noteNameOf } from "model/note/reader";
-import { hasUnreadableRepeatRule } from "model/note/property-store";
+import { hasUnreadableRepeatRule } from "model/note/property-format";
 import { DONE_SUFFIX, REPEAT_SUFFIX } from "model/note/sources";
-import type { NoteReminderAction } from "model/note/store";
+import type { NoteReminderAction } from "model/note/format";
 import { snoozeTimeFor } from "model/note/value";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";
@@ -514,7 +514,7 @@ export class ReminderPluginUI {
     const origin = reminder.origin;
     if (
       origin.kind !== "note" ||
-      origin.store !== "property" ||
+      origin.format !== "property" ||
       !this.plugin
         .managedNoteReminderSources()
         .some((source) => source.property === origin.key)

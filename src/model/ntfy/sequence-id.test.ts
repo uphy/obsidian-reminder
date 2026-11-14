@@ -128,7 +128,7 @@ function makeNoteReminder(
 ): Reminder {
   return Reminder.ofNote(file, title, DateTime.parse(time), {
     kind: "note",
-    store: "property",
+    format: "property",
     key,
     label: key,
   });
@@ -157,7 +157,7 @@ describe("computeNoteSequenceId()", (): void => {
     expect(isObsidianReminderSequenceId(id)).toBe(false);
   });
 
-  test("differs across files, stores, properties and titles", (): void => {
+  test("differs across files, formats, properties and titles", (): void => {
     const base = computeNoteSequenceId("a.md", "property", "p", "t");
     expect(computeNoteSequenceId("b.md", "property", "p", "t")).not.toBe(base);
     expect(computeNoteSequenceId("a.md", "other", "p", "t")).not.toBe(base);

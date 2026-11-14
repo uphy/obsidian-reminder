@@ -1,6 +1,6 @@
-import { PropertyNoteReminderStore } from "model/note/property-store";
+import { PropertyNoteReminderFormat } from "model/note/property-format";
 import { NoteReminderReader } from "model/note/reader";
-import type { Frontmatter, NoteReminderAction } from "model/note/store";
+import type { Frontmatter, NoteReminderAction } from "model/note/format";
 import { parseTimeValue } from "model/note/value";
 import { Reminder } from "model/reminder";
 import { NoteReminderService } from "./note-reminders";
@@ -8,7 +8,7 @@ import type { NoteReminderServiceDeps } from "./note-reminders";
 
 const ORIGIN = {
   kind: "note" as const,
-  store: "property",
+  format: "property",
   key: "follow-up",
   label: "follow-up",
 };
@@ -64,7 +64,7 @@ function setup(initial: Frontmatter | null) {
     },
   };
   const reader = new NoteReminderReader([
-    new PropertyNoteReminderStore(() => [
+    new PropertyNoteReminderFormat(() => [
       { property: "follow-up", managed: false, since: "" },
     ]),
   ]);

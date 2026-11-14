@@ -54,10 +54,12 @@ attach.
     reminder. The "Mute" button and closing a notification leave the flag set.
     Mute flags are saved in `data.json`. Mute is not "done": the reminder stays
     overdue in the reminder list.
-*   **Origin**: where a reminder comes from: a line number, or a store and a
+*   **Origin**: where a reminder comes from: a line number, or a format and a
     key inside the note. Its **label** is the short text shown to the user
     (`follow-up`).
-*   **Store**: the code that knows one frontmatter format. There are two: plain
+*   **Note reminder format** (short: format): the code that reads and writes
+    one way of keeping reminders in frontmatter, as a line format does for
+    task lines. There are two: plain
     properties, and TaskNotes.
 *   **The spike**: a throwaway implementation on the local branch
     `spike/note-reminders`. It is evidence, not the change to merge.
@@ -147,8 +149,9 @@ Third release:
 
 Across releases:
 
-*   The code that knows a frontmatter format (a store) is separate from the
-    code that schedules, notifies and writes. Adding the TaskNotes store
+*   The code that knows one way of keeping reminders in frontmatter (a note
+    reminder format) is separate from the
+    code that schedules, notifies and writes. Adding the TaskNotes format
     changes no file outside its own, the settings and the plugin's wiring.
 
 ## Non-Goals
@@ -168,7 +171,7 @@ Across releases:
 *   Reading TaskNotes' settings or calling its internal functions; TaskNotes
     recurring tasks; completing a TaskNotes task from a notification;
     suppressing TaskNotes' own notifications.
-*   A public API for stores written by third parties.
+*   A public API for formats written by third parties.
 *   Preserving YAML comments, quoting and inline list style when the plugin
     writes to a note's frontmatter (see Risks & Mitigations).
 *   Ordering or guarding line writes beyond what exists today (see section
@@ -337,8 +340,8 @@ as for date-only task lines.
     would count as handled and never be shown.
 *   A date-time reminder snoozed with a whole-day option ("Tomorrow") gets the
     "Reminder Time" setting as its time. The notification handler computes
-    that time before it calls the store (`snoozeTimeFor` in `value.ts`); the
-    store only keeps the shape. A date reminder is only offered whole-day
+    that time before it calls the format (`snoozeTimeFor` in `value.ts`); the
+    format only keeps the shape. A date reminder is only offered whole-day
     options (section 7).
 *   "OK" with an unchanged time keeps `p-done`, so editing only the title of
     a finished reminder does not make it pending again. "Remind again" is the
@@ -357,11 +360,11 @@ way.
  ┌───────────────────────────────────────────────────────────────┐
  │ value.ts          parse, format and compare a time value      │
  │ sources.ts        the source row type and its validation      │
- │ store.ts          the store interface and the outcome type    │
- │ property-store.ts plain properties                            │
- │ tasknotes-store.ts TaskNotes entries (third release)          │
+ │ format.ts         the format interface and the outcome type   │
+ │ property-format.ts plain properties                           │
+ │ tasknotes-format.ts TaskNotes entries (third release)         │
  │ reader.ts         frontmatter object -> Reminder[];           │
- │                   routes an action to the store of a reminder │
+ │                   routes an action to the format of a reminder│
  └───────────────────────────────────────────────────────────────┘
  src/plugin/               depends on Obsidian
  ┌───────────────────────────────────────────────────────────────┐
@@ -373,7 +376,7 @@ way.
  └───────────────────────────────────────────────────────────────┘
 ```
 
-The store interface (types, not code to copy):
+The format interface (types, not code to copy):
 
 ```ts
 type Frontmatter = Record<string, unknown>;
@@ -397,7 +400,7 @@ type ApplyOutcome =
   | "missing"   // the reminder is gone
   | "blocked";  // the `p-done` check failed
 
-interface NoteReminderStore {
+interface NoteReminderFormat {
   readonly id: string;                  // "property" | "tasknotes"
   keys(): string[];                     // names to look for in the YAML text
   read(fm: Frontmatter): NoteReminderEntry[];   // pending entries
@@ -405,25 +408,25 @@ interface NoteReminderStore {
 }
 ```
 
-`apply` leaves the object untouched unless it returns `applied`. A store
-applies its own cut-off in `read`, because the property store has one per row
-and the TaskNotes store has one for the whole store.
+`apply` leaves the object untouched unless it returns `applied`. A format
+applies its own cut-off in `read`, because the property format has one per row
+and the TaskNotes format has one for the whole format.
 
 The dialog's read, create, edit, re-arm and remove are functions exported by
-`property-store.ts` (`readPropertyReminderState`, `pickInitialProperty`,
+`property-format.ts` (`readPropertyReminderState`, `pickInitialProperty`,
 `setPropertyReminder`, `rearmPropertyReminder`, `removePropertyReminder`). The
 three that write return an `ApplyOutcome`, so the dialog passes them to the
-service's `write` as it passes a store action. They are not part of the
-interface, so the TaskNotes store does not have to answer for them.
+service's `write` as it passes a format action. They are not part of the
+interface, so the TaskNotes format does not have to answer for them.
 
-The service adds one result that no store returns:
+The service adds one result that no format returns:
 
 ```ts
 type WriteResult = ApplyOutcome | "failed";   // failed: the note could not be
                                               // read or written at all
 ```
 
-The interface was run with both stores on the spike: the TaskNotes store was
+The interface was run with both formats on the spike: the TaskNotes format was
 added without changing the reader or the service.
 
 ### 3. The reminder model
@@ -433,16 +436,16 @@ added without changing the reader or the service.
 ```ts
 type ReminderOrigin =
   | { kind: "line"; row: number }
-  | { kind: "note"; store: string; key: string; label: string };
+  | { kind: "note"; format: string; key: string; label: string };
 ```
 
 *   `Reminder.key()` identifies a reminder for mute flags and open
     notifications. For a line reminder it stays `file + title + time`, byte for
     byte, so saved mute flags keep matching. For a note reminder it is file,
-    store, key-in-note and time, joined by the character U+0001. The title is
+    format, key-in-note and time, joined by the character U+0001. The title is
     not part of it, so editing `p-title` does not unmute.
 *   `Reminder.equals()` decides whether a reload changed anything. For a note
-    reminder it compares file, store, key-in-note, label, title and time, so a
+    reminder it compares file, format, key-in-note, label, title and time, so a
     title edit refreshes the list.
 *   Code that needs a line asks for it through `row(): number | undefined`: the
     editor pill (the date chip drawn on a task line in the editor), the
@@ -460,7 +463,7 @@ sequenceDiagram
   participant F as filesystem.ts
   participant C as Content (parses task lines)
   participant S as NoteReminderService
-  participant R as reader and stores
+  participant R as reader and formats
   participant M as Reminders
   V->>F: file changed
   F->>F: cachedRead(file) gives the text
@@ -489,7 +492,7 @@ sequenceDiagram
 *   The frontmatter block is the text between a first line that is exactly
     `---` and the next line that is `---` followed only by spaces. YAML is
     parsed only when the block's text contains one of the names from
-    `store.keys()`. Verified: Obsidian's `parseYaml` returns `2026-11-20` and
+    `format.keys()`. Verified: Obsidian's `parseYaml` returns `2026-11-20` and
     `2026-11-20T09:00:00` as strings.
 *   `replaceFile` is called once per file with both kinds of reminder, because
     a second call would replace the first one's reminders.
@@ -510,12 +513,12 @@ sequenceDiagram
   participant O as FileManager.processFrontMatter
   U->>UI: Done
   UI->>S: apply(reminder, {done, expected: time shown, now})
-  S->>S: read the file, parse, run the store on that copy
+  S->>S: read the file, parse, run the format on that copy
   alt the copy says stale / missing / blocked
     S-->>UI: that outcome (nothing was written)
   else the copy says applied
     S->>O: processFrontMatter(file, callback)
-    O->>S: callback(frontmatter): run the store again
+    O->>S: callback(frontmatter): run the format again
     alt applied
       O-->>S: written
       S-->>UI: applied
@@ -529,7 +532,7 @@ sequenceDiagram
 *   `FileManager.processFrontMatter` reads, changes and saves the frontmatter
     in one step, so two actions on one note cannot overwrite each other, and
     neither can an edit by Obsidian's property editor. No queue is needed.
-*   The store runs twice. Verified: `processFrontMatter` rewrites the block,
+*   The format runs twice. Verified: `processFrontMatter` rewrites the block,
     dropping comments and quotes, even when the callback changes nothing, and
     it writes nothing when the callback throws. So the first run on a copy
     avoids entering `processFrontMatter` for an action that will not write, and
@@ -683,7 +686,7 @@ Mitigations.
 ### 9. Cache in `data.json`
 
 Note reminders are cached under a new top-level key, `noteReminders`:
-`{ [file]: { store, key, label, title, time, muted }[] }`. Line reminders keep
+`{ [file]: { format, key, label, title, time, muted }[] }`. Line reminders keep
 the `reminders` key and its shape.
 
 *   On load, the two lists of a file are merged before the single
@@ -702,7 +705,7 @@ the id is `obr-` plus a hash of file and title, plus an index (by row order)
 for reminders that share both.
 
 *   A note reminder's id is `obrn-` plus the same two hashes computed over
-    `file`, store, key-in-note and title, joined by line breaks. It takes no
+    `file`, format, key-in-note and title, joined by line breaks. It takes no
     index. A snooze changes the time, which republishes under the same id. A
     title change gives a new id: the old message is deleted as an orphan and a
     new one is published, with the existing sync plan unchanged.
@@ -759,11 +762,11 @@ for reminders that share both.
 *   A `p-occurrence` that is neither empty nor two times is someone else's
     value and is never removed. "Remove" in the dialog removes `p-repeat` and
     a `p-occurrence` the plugin wrote.
-*   Changed files: the "done" and "snooze" branches of the property store,
+*   Changed files: the "done" and "snooze" branches of the property format,
     `isValidRecurrence` in `recurrence.ts`, one field in the dialog, and one
     notice in `plugin/ui/index.ts`.
 
-Verified in the store's unit tests: the sequence of CUJ 8 including the second
+Verified in the format's unit tests: the sequence of CUJ 8 including the second
 cycle, the hand edit after a snooze, and the daily reminder completed ahead of
 time.
 
@@ -793,7 +796,7 @@ The **effective time** of an entry is `absoluteTime` for an absolute entry, and
 the value of the property named by `relatedTo` plus `offset` for a relative
 one. A date-only base counts from midnight.
 
-*   A second store, `tasknotes`, with its own settings group: a switch (off by
+*   A second format, `tasknotes`, with its own settings group: a switch (off by
     default), the task tag (default `task`), the statuses that mean completed
     (default `done`), and a cut-off date that is set to today when the switch
     is turned on with the cut-off empty. Only TaskNotes' default property names
@@ -897,10 +900,10 @@ turning the asynchronous format code synchronous, which is outside this design.
     That `processFrontMatter` writes nothing when its callback throws was
     observed on Obsidian 1.15.0 only, while the plugin's minimum version is
     1.7.2. If an older version wrote anyway, the effect would be a reformatted
-    but otherwise unchanged block, because the store changes nothing unless it
+    but otherwise unchanged block, because the format changes nothing unless it
     returns `applied`.
 *   **Obsidian or another plugin writes the note at the same moment.** The
-    frontmatter API reads and writes in one step, and the store checks the
+    frontmatter API reads and writes in one step, and the format checks the
     value again inside it (section 5).
 *   **Scale.** One run on the author's Mac, in a test vault of a few hundred
     notes plus 2,000 added notes of which 500 hold a reminder property, with
@@ -1140,13 +1143,13 @@ turning the asynchronous format code synchronous, which is outside this design.
 *   **Reason for Rejection**: Rejected by author: a type makes the compiler
     list the places to change.
 
-#### F3: Capability flags on each store (can snooze, can complete, can edit)
+#### F3: Capability flags on each format (can snooze, can complete, can edit)
 
-*   **Pros**: A future read-only store needs no special handling.
-*   **Cons**: Both stores support "Done" and snooze. The one difference,
+*   **Pros**: A future read-only format needs no special handling.
+*   **Cons**: Both formats support "Done" and snooze. The one difference,
     editing from the dialog, is between managed and external properties, not
-    between stores.
-*   **Reason for Rejection**: Rejected by author: no store would set a flag
+    between formats.
+*   **Reason for Rejection**: Rejected by author: no format would set a flag
     differently from the other.
 
 ### Property types
@@ -1278,7 +1281,7 @@ Not run anywhere:
 *   The text shown for a note reminder (origin line, list label, dragged
     Markdown) is in a tested helper, `src/ui/reminder-origin.ts`.
 *   `src/model/note/value.ts` also has `inShapeOf` and `snoozeTimeFor`;
-    `property-store.ts` also has `pickInitialProperty` and
+    `property-format.ts` also has `pickInitialProperty` and
     `rearmPropertyReminder`, and `readPropertyReminderState` takes the cut-off
     and returns `pending`.
 *   The service has `applyAt(path, origin, action)`; its deps interface is
@@ -1472,16 +1475,16 @@ Pure code, covered by jest. Nothing calls it yet.
     including a companion relation in both directions; `normalizeSources` on
     malformed input and on `undefined`.
 
-##### 5.5 `src/model/note/store.ts` (Create)
+##### 5.5 `src/model/note/format.ts` (Create)
 
 *   **Type / Scope**: Types only (no test file).
 *   **Proposed Changes**: The types of section 2.
 
-##### 5.6 `src/model/note/property-store.ts` (Create)
+##### 5.6 `src/model/note/property-format.ts` (Create)
 
-*   **Type / Scope**: Store for plain properties.
+*   **Type / Scope**: Format for plain properties.
 *   **Proposed Changes**:
-    `PropertyNoteReminderStore(sources: () => NoteReminderSource[])` with
+    `PropertyNoteReminderFormat(sources: () => NoteReminderSource[])` with
     `id = "property"`. `read` and `apply` follow the "What each action writes"
     table and the two checks in section 1, without the `p-repeat` and
     `p-occurrence` parts. Also exported: `readPropertyReminderState(fm, property)`
@@ -1491,7 +1494,7 @@ Pure code, covered by jest. Nothing calls it yet.
     change when the property holds a foreign value);
     `removePropertyReminder(fm, property)`.
 
-##### 5.7 `src/model/note/property-store.test.ts` (Create)
+##### 5.7 `src/model/note/property-format.test.ts` (Create)
 
 *   **Type / Scope**: Unit test.
 *   **Proposed Changes**: Reads a date and a date-time; ignores non-times; a
@@ -1511,12 +1514,12 @@ Pure code, covered by jest. Nothing calls it yet.
 
 *   **Type / Scope**: Domain service.
 *   **Proposed Changes**: `extractFrontmatterText(content): string | null`
-    (section 4). `NoteReminderReader(stores)` with
-    `mightContainReminders(text)` (some key of some store occurs in the text),
+    (section 4). `NoteReminderReader(formats)` with
+    `mightContainReminders(text)` (some key of some format occurs in the text),
     `read(path, fm): Reminder[]` (each entry becomes
     `Reminder.ofNote(path, entry.title ?? <note name>, entry.time, {...})`,
     the note name being the last path segment without a final `.md`), and
-    `apply(fm, origin, action): ApplyOutcome` (`missing` when no store has the
+    `apply(fm, origin, action): ApplyOutcome` (`missing` when no format has the
     origin's id).
 
 ##### 5.9 `src/model/note/reader.test.ts` (Create)
@@ -1525,7 +1528,7 @@ Pure code, covered by jest. Nothing calls it yet.
 *   **Proposed Changes**: Extraction: no block, a block not at the first line,
     an unterminated block, CRLF line ends, spaces after the closing `---`. The
     title falls back to the note name, without folder and without `.md`.
-    `apply` reaches the store named in the origin.
+    `apply` reaches the format named in the origin.
 
 #### Change 6: wiring and the sources setting
 
@@ -1578,7 +1581,7 @@ ntfy message unchanged by the upgrade.
 ##### 6.6 `src/model/ntfy/sequence-id.ts`, `src/model/ntfy/sync-plan.ts` (Modify)
 
 *   **Type / Scope**: ntfy.
-*   **Proposed Changes**: Section 10. `computeNoteSequenceId(file, store, key, title)`;
+*   **Proposed Changes**: Section 10. `computeNoteSequenceId(file, format, key, title)`;
     `assignSequenceIds` uses it for note reminders and leaves them out of the
     index counting. The sync plan takes a flag saying whether any source is
     configured, and treats `obrn-` ids as the plugin's own only when it is set.
@@ -1639,7 +1642,7 @@ ntfy message unchanged by the upgrade.
 ##### 6.14 `src/main.ts` (Modify)
 
 *   **Type / Scope**: Plugin entry point.
-*   **Proposed Changes**: Build the property store, the reader and the service
+*   **Proposed Changes**: Build the property format, the reader and the service
     (`parseYaml` from `obsidian`, `app.vault.read`,
     `app.fileManager.processFrontMatter`). Expose `noteReminders`,
     `noteReminderSources()`, `managedNoteReminderProperties()` and
@@ -1725,7 +1728,7 @@ phone.
 *   **Proposed Changes**: `openNoteReminderModal(plugin, file)`: with no
     managed property it opens the first-use prompt, else it reads the
     frontmatter through the service and opens the dialog. The dialog writes
-    with `service.write` and the three property-store functions, passing the
+    with `service.write` and the three property-format functions, passing the
     time it showed as `expected` for "Mark as Done", shows the notices of
     section 8, and registers its own close with the plugin.
 
@@ -1814,11 +1817,11 @@ phone.
 #### Later releases (attach points only)
 
 *   **Recurrence**: `src/model/note/sources.ts` (two suffixes),
-    `src/model/note/property-store.ts` and its test,
+    `src/model/note/property-format.ts` and its test,
     `src/ui/NoteReminderEditor.svelte` (one field),
     `docs/src/guide/note-reminders.md`, both translation files.
-*   **TaskNotes**: `src/model/note/tasknotes-store.ts` and its test (new),
-    `src/plugin/settings/index.ts` (one group), `src/main.ts` (one more store
+*   **TaskNotes**: `src/model/note/tasknotes-format.ts` and its test (new),
+    `src/plugin/settings/index.ts` (one group), `src/main.ts` (one more format
     and the ntfy flag), `docs/src/guide/interop-tasknotes.md` (new),
     `docs/src/.vuepress/config.js`, both translation files.
 
@@ -1827,7 +1830,7 @@ phone.
 *   **Compilation/Build**: `mise run main:build` (the repository's wrapper for
     `npm run build`).
 *   **Unit Tests**: `mise run main:test` (jest). Every new file with logic has
-    the test file listed next to it; `store.ts` holds types only.
+    the test file listed next to it; `format.ts` holds types only.
 *   **Static Analysis & Linting**: `mise run main:lint:fix` (eslint,
     `tsc --noEmit`, `svelte-check`) with no errors. It covers test files, so
     each change must compile on its own.

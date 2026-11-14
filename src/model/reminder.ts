@@ -6,13 +6,13 @@ import { DateTime, Time } from "model/time";
  * Where a reminder comes from.
  *
  * - `line`: a task line in the note's body, addressed by its row.
- * - `note`: the note's frontmatter. `store` names the code that understands
+ * - `note`: the note's frontmatter. `format` names the code that understands
  *   the format, `key` identifies the reminder inside the note (a property
  *   name, for instance), and `label` is the short text shown to the user.
  */
 export type ReminderOrigin =
   | { kind: "line"; row: number }
-  | { kind: "note"; store: string; key: string; label: string };
+  | { kind: "note"; format: string; key: string; label: string };
 
 export type NoteReminderOrigin = Extract<ReminderOrigin, { kind: "note" }>;
 
@@ -94,7 +94,7 @@ export class Reminder {
     if (this.origin.kind === "note") {
       return [
         this.file,
-        this.origin.store,
+        this.origin.format,
         this.origin.key,
         this.time.toString(),
       ].join(KEY_SEPARATOR);
@@ -120,7 +120,7 @@ export class Reminder {
       a.kind === "line"
         ? b.kind === "line" && a.row === b.row
         : b.kind === "note" &&
-          a.store === b.store &&
+          a.format === b.format &&
           a.key === b.key &&
           a.label === b.label;
     return (

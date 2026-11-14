@@ -4,8 +4,8 @@ import type {
   ApplyOutcome,
   Frontmatter,
   NoteReminderAction,
-  NoteReminderStore,
-} from "./store";
+  NoteReminderFormat,
+} from "./format";
 
 // The empty block (the closing line right after the opening one) is its own
 // alternative, tried first: as an optional group it would only be reached
@@ -29,28 +29,28 @@ export function noteNameOf(path: string): string {
   return segments[segments.length - 1]!.replace(/\.md$/i, "");
 }
 
-/** Turns frontmatter into `Reminder`s through every configured store. */
+/** Turns frontmatter into `Reminder`s through every configured format. */
 export class NoteReminderReader {
-  constructor(private stores: Array<NoteReminderStore>) {}
+  constructor(private formats: Array<NoteReminderFormat>) {}
 
   /**
    * Cheap pre-check on the raw YAML text, so that a note that cannot hold a
    * note reminder is never parsed.
    */
   mightContainReminders(frontmatterText: string): boolean {
-    return this.stores.some((store) =>
-      store.keys().some((key) => frontmatterText.includes(key)),
+    return this.formats.some((format) =>
+      format.keys().some((key) => frontmatterText.includes(key)),
     );
   }
 
   read(file: string, fm: Frontmatter): Array<Reminder> {
     const reminders: Array<Reminder> = [];
-    for (const store of this.stores) {
-      for (const entry of store.read(fm)) {
+    for (const format of this.formats) {
+      for (const entry of format.read(fm)) {
         reminders.push(
           Reminder.ofNote(file, entry.title ?? noteNameOf(file), entry.time, {
             kind: "note",
-            store: store.id,
+            format: format.id,
             key: entry.key,
             label: entry.label,
           }),
@@ -65,7 +65,7 @@ export class NoteReminderReader {
     origin: NoteReminderOrigin,
     action: NoteReminderAction,
   ): ApplyOutcome {
-    const store = this.stores.find((s) => s.id === origin.store);
-    return store == null ? "missing" : store.apply(fm, origin.key, action);
+    const format = this.formats.find((s) => s.id === origin.format);
+    return format == null ? "missing" : format.apply(fm, origin.key, action);
   }
 }

@@ -3,10 +3,10 @@ import type { DateTime } from "model/time";
 /** A note's parsed frontmatter. Values are whatever the YAML parser returned. */
 export type Frontmatter = Record<string, unknown>;
 
-/** One note-level reminder as a store read it from a note's frontmatter. */
+/** One note-level reminder as a format read it from a note's frontmatter. */
 export type NoteReminderEntry = {
   /**
-   * Identifies the reminder within its note and store (a property name).
+   * Identifies the reminder within its note and format (a property name).
    * Stable across edits of the time.
    */
   key: string;
@@ -42,19 +42,19 @@ export type ApplyOutcome =
 /**
  * A way of writing note-level reminders in frontmatter.
  *
- * A store is a pair of pure functions over a frontmatter object: it never
+ * A format is a pair of pure functions over a frontmatter object: it never
  * touches the vault, so it can be tested with plain objects. The plugin layer
  * (`plugin/note-reminders.ts`) does the reading and writing of files.
  */
-export interface NoteReminderStore {
+export interface NoteReminderFormat {
   readonly id: string;
   /**
-   * Frontmatter keys this store reads. A note whose frontmatter text contains
+   * Frontmatter keys this format reads. A note whose frontmatter text contains
    * none of them is skipped without parsing its YAML.
    */
   keys(): Array<string>;
   /**
-   * Pending (not yet handled) reminders in `fm`. The store applies its own
+   * Pending (not yet handled) reminders in `fm`. The format applies its own
    * cut-off here.
    */
   read(fm: Frontmatter): Array<NoteReminderEntry>;

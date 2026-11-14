@@ -8,11 +8,11 @@ import {
 } from "plugin";
 import { isNotificationPaused } from "model/dnd";
 import { isPathExcluded } from "model/exclusion";
-import { PropertyNoteReminderStore } from "model/note/property-store";
+import { PropertyNoteReminderFormat } from "model/note/property-format";
 import { NoteReminderReader } from "model/note/reader";
 import { countSourceStats, withManagedSource } from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
-import type { Frontmatter } from "model/note/store";
+import type { Frontmatter } from "model/note/format";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
@@ -65,7 +65,7 @@ export default class ReminderPlugin extends Plugin {
     );
 
     this._noteReminderReader = new NoteReminderReader([
-      new PropertyNoteReminderStore(() => this.noteReminderSources()),
+      new PropertyNoteReminderFormat(() => this.noteReminderSources()),
     ]);
     const fileAt = (path: string): TFile => {
       const file = this.app.vault.getAbstractFileByPath(path);

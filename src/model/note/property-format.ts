@@ -13,8 +13,8 @@ import type {
   Frontmatter,
   NoteReminderAction,
   NoteReminderEntry,
-  NoteReminderStore,
-} from "./store";
+  NoteReminderFormat,
+} from "./format";
 import {
   formatTimeValue,
   inShapeOf,
@@ -44,7 +44,7 @@ import {
  *   `p` still holds the snoozed time, so a date edited by hand afterwards
  *   starts the series from that date.
  */
-export class PropertyNoteReminderStore implements NoteReminderStore {
+export class PropertyNoteReminderFormat implements NoteReminderFormat {
   readonly id = "property";
 
   constructor(private sources: () => Array<NoteReminderSource>) {}

@@ -86,10 +86,10 @@ export function computeSequenceId(
 }
 
 /**
- * Derives the sequence ID of a note reminder from its file, the store and
+ * Derives the sequence ID of a note reminder from its file, the format and
  * key that identify it inside the note, and its title.
  *
- * A note has at most one reminder per store and key, so no index is needed.
+ * A note has at most one reminder per format and key, so no index is needed.
  * As for line reminders, the time is excluded so that a snooze republishes
  * under the same ID. The title is included: a published message cannot be
  * edited, so a new title has to become a new message, and the old one is
@@ -97,13 +97,13 @@ export function computeSequenceId(
  */
 export function computeNoteSequenceId(
   file: string,
-  store: string,
+  format: string,
   key: string,
   title: string,
 ): string {
   // Line breaks would let two different sets of fields join into the same
   // string.
-  const input = [file, store, key, title]
+  const input = [file, format, key, title]
     .map((field) => field.replace(/[\r\n]+/g, " "))
     .join(FIELD_SEPARATOR);
   const h1 = fnv1a(input, FNV_OFFSET_BASIS_1).toString(36);
@@ -142,7 +142,7 @@ export function assignSequenceIds(
         reminder,
         computeNoteSequenceId(
           reminder.file,
-          origin.store,
+          origin.format,
           origin.key,
           reminder.title,
         ),
