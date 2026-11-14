@@ -34,12 +34,12 @@ TaskNotes shows its own notification for the same reminders. With both on, you a
 ## Which notes and reminders are read
 
 - The note is a TaskNotes task: it has the task tag (`task`, or a tag nested under it such as `task/work`), or, when TaskNotes identifies tasks by a property, it has that property with that value.
-- Its status is not a completed one, and it does not have the archive tag (`archived`).
+- It is not completed: its status is not a completed one (a checkbox status counts as completed when ticked), and it has no completed date (`completedDate`). It does not have the archive tag (`archived`) either.
 - It is not a recurring task (no `recurrence`). A recurring task moves its own dates when it is completed, so its reminders are left to TaskNotes.
 - A relative reminder needs the date it refers to (`due` or `scheduled`). A date without a time counts from midnight, so `-PT15M` before `due: 2026-11-20` is November 19 at 23:45.
 - Reminders dated before [Ignore TaskNotes reminders before](/setting/#ignore-tasknotes-reminders-before) are not read. The date is set to the day you turn reading on, so that reminders already in the past do not all notify at once.
 
-A time written with a UTC offset or `Z` is not read.
+A time with `Z` or a UTC offset (`2026-11-20T01:00:00Z`), as TaskNotes' API and CLI can write it, is read as the local time of that moment. An offset is an ISO 8601 duration; years, months, weeks and days count as calendar units, so one month before March 31 is the last day of February.
 
 ## When you changed TaskNotes' settings
 

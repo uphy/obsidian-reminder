@@ -24,8 +24,14 @@ export const TASKNOTES_DONE_SUFFIX = "-done";
 /** Id prefix of the one kind of entry this plugin adds to `reminders`. */
 export const SNOOZE_ID_PREFIX = "obsidian-reminder-snooze-";
 
+// An ISO 8601 duration with a sign: years, months, weeks, days, then hours,
+// minutes and seconds after `T`.
 const OFFSET =
-  /^([-+]?)P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/;
+  /^([-+]?)P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)(?:\.\d+)?S)?)?$/;
+// A date-time that says its zone (`Z` or an offset), or has fractional
+// seconds: what TaskNotes' API and CLI accept besides local times.
+const ZONED_TIME =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[-+]\d{2}:?\d{2})?$/i;
 
 /**
  * The frontmatter properties this format reads, by the name TaskNotes gives
@@ -38,6 +44,7 @@ export type TaskNotesProperties = {
   scheduled: string;
   reminders: string;
   recurrence: string;
+  completedDate: string;
 };
 
 /** The names TaskNotes uses unless the user renamed them. */
@@ -48,6 +55,7 @@ export const DEFAULT_TASKNOTES_PROPERTIES: TaskNotesProperties = {
   scheduled: "scheduled",
   reminders: "reminders",
   recurrence: "recurrence",
+  completedDate: "completedDate",
 };
 
 /** How TaskNotes tells a task note from another note. */
@@ -253,12 +261,7 @@ export class TaskNotesNoteReminderFormat implements NoteReminderFormat {
     if (archiveTag !== "" && tags.includes(archiveTag)) {
       return null;
     }
-    const rawStatus = fm[names.status];
-    const status =
-      typeof rawStatus === "string" ? rawStatus.trim().toLowerCase() : "";
-    if (
-      options.completedStatuses.some((s) => s.trim().toLowerCase() === status)
-    ) {
+    if (isCompleted(fm, names, options.completedStatuses)) {
       return null;
     }
     if (!isEmptyValue(fm[names.recurrence])) {
@@ -356,8 +359,8 @@ function originalTimeOf(
 /**
  * When an entry fires: its `absoluteTime`, or the task's due / scheduled
  * date (read from the property of that name in `names`) plus its offset. A date without a time counts from midnight. Null
- * when it can't be computed (another type, a missing base date, a time with
- * a UTC offset, an offset this format can't read).
+ * when it can't be computed (another type, a missing base date, an offset
+ * that is not an ISO 8601 duration).
  */
 export function effectiveTime(
   entry: Entry,
@@ -365,7 +368,7 @@ export function effectiveTime(
   names: TaskNotesProperties = DEFAULT_TASKNOTES_PROPERTIES,
 ): DateTime | null {
   if (entry["type"] === "absolute") {
-    const time = parseTimeValue(entry["absoluteTime"]);
+    const time = parseTaskNotesTime(entry["absoluteTime"]);
     return time == null ? null : inShapeOf(time, true);
   }
   if (entry["type"] !== "relative") {
@@ -376,7 +379,7 @@ export function effectiveTime(
     return null;
   }
   // `relatedTo` names TaskNotes' field; the property may be called otherwise.
-  const base = parseTimeValue(fm[names[relatedTo]]);
+  const base = parseTaskNotesTime(fm[names[relatedTo]]);
   const offset = entry["offset"];
   if (base == null || typeof offset !== "string") {
     return null;
@@ -387,14 +390,73 @@ export function effectiveTime(
   }
   const sign = match[1] === "-" ? -1 : 1;
   const m = inShapeOf(base, true).moment().clone();
-  // Weeks and days are added as calendar units, so "one day before" a
-  // 10:00 deadline stays at 10:00 across a clock change.
-  m.add(sign * Number(match[2] ?? 0), "weeks");
-  m.add(sign * Number(match[3] ?? 0), "days");
-  m.add(sign * Number(match[4] ?? 0), "hours");
-  m.add(sign * Number(match[5] ?? 0), "minutes");
-  m.add(sign * Number(match[6] ?? 0), "seconds");
+  // Years down to days are added as calendar units, so "one day before" a
+  // 10:00 deadline stays at 10:00 across a clock change, and "one month
+  // before" March 31 is the last day of February.
+  m.add(sign * Number(match[2] ?? 0), "years");
+  m.add(sign * Number(match[3] ?? 0), "months");
+  m.add(sign * Number(match[4] ?? 0), "weeks");
+  m.add(sign * Number(match[5] ?? 0), "days");
+  m.add(sign * Number(match[6] ?? 0), "hours");
+  m.add(sign * Number(match[7] ?? 0), "minutes");
+  m.add(sign * Number(match[8] ?? 0), "seconds");
   return new DateTime(moment(m).seconds(0), true);
+}
+
+/**
+ * A time as TaskNotes writes it. Besides the local dates and date-times the
+ * other formats read, TaskNotes' API and CLI accept a full ISO timestamp, so
+ * a time with `Z`, a UTC offset or fractional seconds is read as the local
+ * time of that moment.
+ *
+ * That is safe here and not for a plain property, because this format never
+ * writes such a value back: the entries and base dates of TaskNotes are left
+ * alone, and what this format adds (a record, a snooze entry) is written in
+ * local time.
+ */
+function parseTaskNotesTime(value: unknown): DateTime | null {
+  const local = parseTimeValue(value);
+  if (local != null || typeof value !== "string") {
+    return local;
+  }
+  const text = value.trim();
+  if (!ZONED_TIME.test(text)) {
+    return null;
+  }
+  const m = moment(text, moment.ISO_8601, true);
+  return m.isValid()
+    ? new DateTime(m.local().seconds(0).milliseconds(0), true)
+    : null;
+}
+
+/**
+ * Whether TaskNotes takes the task for completed: its status is one of the
+ * completed ones (a checkbox status counts when ticked), or -- for a task
+ * that does not recur -- it has a completed date, which TaskNotes sets on
+ * completion and clears when the task is reopened.
+ */
+function isCompleted(
+  fm: Frontmatter,
+  names: TaskNotesProperties,
+  completedStatuses: Array<string>,
+): boolean {
+  const raw = fm[names.status];
+  if (raw === true) {
+    return true;
+  }
+  const status =
+    typeof raw === "string" || typeof raw === "boolean"
+      ? String(raw).trim().toLowerCase()
+      : "";
+  if (
+    status !== "" &&
+    completedStatuses.some((s) => s.trim().toLowerCase() === status)
+  ) {
+    return true;
+  }
+  return (
+    isEmptyValue(fm[names.recurrence]) && !isEmptyValue(fm[names.completedDate])
+  );
 }
 
 function isRecorded(

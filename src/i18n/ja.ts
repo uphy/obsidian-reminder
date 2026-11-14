@@ -415,4 +415,7 @@ export const ja: Record<string, string> = {
   "TaskNotes: property “{property}”": "TaskNotes: プロパティ「{property}」",
   "TaskNotes: property “{property}” with value “{value}”":
     "TaskNotes: プロパティ「{property}」の値が「{value}」",
+  "Completed date property": "完了日のプロパティ",
+  "A task with a date here is completed, like one with a completed status.":
+    "ここに日付があるタスクは、完了を表すステータスのタスクと同じく完了として扱います。",
 };

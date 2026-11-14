@@ -1,3 +1,4 @@
+import { moment } from "model/moment";
 import type { DateTime } from "model/time";
 import type { Frontmatter, NoteReminderAction } from "./format";
 import { TaskNotesNoteReminderFormat, effectiveTime } from "./tasknotes-format";
@@ -87,9 +88,48 @@ describe("effectiveTime()", (): void => {
     expect(relative("scheduled", "-P1D")).toBe("2026-11-18T00:00:00");
   });
 
+  test("an absolute time with a zone is read as the local time of that moment", (): void => {
+    const local = (iso: string) =>
+      formatTimeValue(
+        parseTimeValue(moment(iso).format("YYYY-MM-DDTHH:mm:00"))!,
+      );
+    for (const iso of [
+      "2026-11-18T09:00:00Z",
+      "2026-11-18T09:00:00.000Z",
+      "2026-11-18T09:00:00+05:30",
+      "2026-11-18T09:00-0800",
+    ]) {
+      expect(at({ type: "absolute", absoluteTime: iso })).toBe(local(iso));
+    }
+    expect(
+      at({ type: "absolute", absoluteTime: "2026-11-18T09:00:30.250" }),
+    ).toBe("2026-11-18T09:00:00");
+  });
+
+  test("a base date with a zone is read the same way", (): void => {
+    const due = "2026-11-20T10:00:00Z";
+    expect(
+      at({ type: "relative", relatedTo: "due", offset: "-PT15M" }, { due }),
+    ).toBe(moment(due).subtract(15, "minutes").format("YYYY-MM-DDTHH:mm:00"));
+  });
+
+  test("months and years are calendar units", (): void => {
+    const relative = (offset: string, due: string) =>
+      at({ type: "relative", relatedTo: "due", offset }, { due });
+    expect(relative("-P1M", "2026-03-31T10:00")).toBe("2026-02-28T10:00:00");
+    expect(relative("-P1Y", "2026-11-20T10:00")).toBe("2025-11-20T10:00:00");
+    expect(relative("P1Y2M3DT4H", "2026-01-01T00:00")).toBe(
+      "2027-03-04T04:00:00",
+    );
+    expect(relative("-PT30.5S", "2026-11-20T10:00")).toBe(
+      "2026-11-20T09:59:00",
+    );
+  });
+
   test("what can't be computed has no time", (): void => {
     const fm = { due: "2026-11-20T10:00" };
-    expect(at({ type: "absolute", absoluteTime: "2026-11-18T09:00:00Z" })).toBe(
+    expect(at({ type: "absolute", absoluteTime: "next Tuesday" })).toBe(null);
+    expect(at({ type: "absolute", absoluteTime: "2026-13-40T09:00Z" })).toBe(
       null,
     );
     expect(at({ type: "absolute" })).toBe(null);
@@ -103,7 +143,7 @@ describe("effectiveTime()", (): void => {
     expect(
       at({ type: "relative", relatedTo: "due", offset: "15 minutes" }, fm),
     ).toBe(null);
-    expect(at({ type: "relative", relatedTo: "due", offset: "-P1M" }, fm)).toBe(
+    expect(at({ type: "relative", relatedTo: "due", offset: "-P1X" }, fm)).toBe(
       null,
     );
   });
@@ -195,6 +235,26 @@ describe("TaskNotesNoteReminderFormat#read()", (): void => {
     expect(
       read(format, task({ tags: ["todo"], status: "cancelled" })),
     ).toStrictEqual([]);
+  });
+
+  test("a ticked checkbox status and a completed date mean completed", (): void => {
+    const format = formatOf();
+    expect(read(format, task({ status: true }))).toStrictEqual([]);
+    expect(read(format, task({ status: false }))).toHaveLength(1);
+    expect(read(format, task({ completedDate: "2026-11-19" }))).toStrictEqual(
+      [],
+    );
+    expect(read(format, task({ completedDate: "" }))).toHaveLength(1);
+
+    // A checkbox status can be listed by its value as well.
+    const unticked = formatOf({ completedStatuses: ["false"] });
+    expect(read(unticked, task({ status: false }))).toStrictEqual([]);
+
+    const renamed = formatOf({ properties: { completedDate: "finished" } });
+    expect(read(renamed, task({ finished: "2026-11-19" }))).toStrictEqual([]);
+    expect(read(renamed, task({ completedDate: "2026-11-19" }))).toHaveLength(
+      1,
+    );
   });
 
   test("a tag nested under the task tag identifies a task, as in TaskNotes", (): void => {

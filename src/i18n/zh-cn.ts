@@ -394,4 +394,7 @@ export const zhCN: Record<string, string> = {
   "TaskNotes: property “{property}”": "TaskNotes：属性“{property}”",
   "TaskNotes: property “{property}” with value “{value}”":
     "TaskNotes：属性“{property}”的值为“{value}”",
+  "Completed date property": "完成日期属性",
+  "A task with a date here is completed, like one with a completed status.":
+    "此处有日期的任务与处于已完成状态的任务一样，视为已完成。",
 };

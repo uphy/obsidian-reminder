@@ -24,6 +24,7 @@ const RENAMED: ImportedTaskNotesSettings = {
     scheduled: "start",
     reminders: "alerts",
     recurrence: "repeat",
+    completedDate: "finished",
   },
 };
 
@@ -62,6 +63,7 @@ describe("importTaskNotesSettings()", (): void => {
         scheduled: "start",
         reminders: "alerts",
         recurrence: "repeat",
+        completedDate: "finished",
         archiveTag: "#shelved",
         priority: "prio",
       },
@@ -86,6 +88,7 @@ describe("importTaskNotesSettings()", (): void => {
         scheduled: "start",
         reminders: "alerts",
         recurrence: "repeat",
+        completedDate: "finished",
       },
     });
   });

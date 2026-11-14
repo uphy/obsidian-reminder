@@ -626,6 +626,11 @@ export class Settings {
         "Recurrence property",
         "A task with a value here is recurring, and its reminders are left to TaskNotes.",
       ),
+      completedDate: propertyName(
+        "completedDate",
+        "Completed date property",
+        "A task with a date here is completed, like one with a completed status.",
+      ),
     };
 
     this.taskNotesSince = this.settings
@@ -1023,6 +1028,7 @@ export class Settings {
         this.taskNotesPropertyNames.status,
         this.taskNotesPropertyNames.title,
         this.taskNotesPropertyNames.recurrence,
+        this.taskNotesPropertyNames.completedDate,
       );
     this.settings.newPage("Display").newGroup().addSettings(
       // First in this tab on purpose: it changes how every other label on
@@ -1079,6 +1085,7 @@ export class Settings {
             scheduled: names.scheduled.value,
             reminders: names.reminders.value,
             recurrence: names.recurrence.value,
+            completedDate: names.completedDate.value,
           },
         },
         // Not asked for while the reading is off: this runs for every note

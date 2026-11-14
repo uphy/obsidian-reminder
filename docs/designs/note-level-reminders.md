@@ -827,6 +827,22 @@ The **effective time** of an entry is `absoluteTime` for an absolute entry, and
 the value of the property named by `relatedTo` plus `offset` for a relative
 one. A date-only base counts from midnight.
 
+*   `absoluteTime` and the base date may carry `Z` or a UTC offset, because
+    TaskNotes' API and CLI accept a full ISO timestamp. Such a value is read
+    as the local time of that moment. This is the one place a zoned value
+    is read (a plain property is not, see "Values with a UTC offset"): this
+    format never writes a TaskNotes time back, and what it adds (a record, a
+    snooze entry) is written in local time. A record written on a device in
+    another time zone names another local time, so the reminder is pending
+    again there; that is accepted.
+*   `offset` is an ISO 8601 duration with a sign. Years, months, weeks and
+    days are added as calendar units.
+*   A task is completed when its status is one of the completed ones (a
+    checkbox status when ticked), or when it does not recur and has a
+    completed date. TaskNotes sets that date on completion and clears it
+    when the task is reopened, so it agrees with the status; it is read for
+    notes whose status was edited by hand.
+
 *   A second format, `tasknotes`, with its own settings group: a switch (off by
     default), the task tag (default `task`), the statuses that mean completed
     (default `done`), and a cut-off date that is set to today when the switch
