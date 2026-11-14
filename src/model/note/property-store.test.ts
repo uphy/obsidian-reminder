@@ -684,6 +684,64 @@ describe("PropertyNoteReminderStore with a repeat rule", (): void => {
     expect(moved["reminder-occurrence"]).toBeUndefined();
   });
 
+  test("setPropertyReminder() drops the postponed occurrence when the rule is removed", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20T09:30:00",
+      "reminder-repeat": "every month",
+      "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
+    };
+    setPropertyReminder(fm, "reminder", {
+      time: time("2026-11-20T09:30"),
+      title: "",
+      repeat: "",
+    });
+    expect(fm).toStrictEqual({ reminder: "2026-11-20T09:30:00" });
+  });
+
+  test("a snooze without a rule removes a leftover occurrence", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20T09:30:00",
+      "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
+    };
+    expect(
+      store.apply(
+        fm,
+        "reminder",
+        snooze("2026-11-20T09:30", "2026-11-21T08:00"),
+      ),
+    ).toBe("applied");
+    expect(fm).toStrictEqual({ reminder: "2026-11-21T08:00:00" });
+  });
+
+  test("a rule that is not text is left alone", (): void => {
+    const edited: Frontmatter = {
+      reminder: "2026-11-20",
+      "reminder-repeat": ["x"],
+    };
+    setPropertyReminder(edited, "reminder", {
+      time: time("2026-11-21"),
+      title: "",
+      repeat: "every day",
+    });
+    expect(edited).toStrictEqual({
+      reminder: "2026-11-21",
+      "reminder-repeat": ["x"],
+    });
+    setPropertyReminder(edited, "reminder", {
+      time: time("2026-11-21"),
+      title: "",
+      repeat: "",
+    });
+    expect(edited["reminder-repeat"]).toStrictEqual(["x"]);
+
+    const removed: Frontmatter = {
+      reminder: "2026-11-20",
+      "reminder-repeat": 3,
+    };
+    expect(removePropertyReminder(removed, "reminder")).toBe("applied");
+    expect(removed).toStrictEqual({ "reminder-repeat": 3 });
+  });
+
   test("removePropertyReminder() removes the rule and the occurrence", (): void => {
     const fm: Frontmatter = {
       reminder: "2026-11-20T09:30:00",
