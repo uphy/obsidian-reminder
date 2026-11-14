@@ -117,6 +117,11 @@ export type PropertyReminderState = {
   title: string;
   /** True when `time` is set and already recorded as done. */
   done: boolean;
+  /**
+   * True when `time` is set, not done, and not before the cut-off: the
+   * reminder exists and will be (or was) shown.
+   */
+  pending: boolean;
 };
 
 export type PropertyReminderEdit = {
@@ -133,13 +138,19 @@ function textOf(value: unknown): string {
     : "";
 }
 
+/**
+ * Reads the state of the reminder in `property`. `since` is the cut-off of
+ * its source (empty for none).
+ */
 export function readPropertyReminderState(
   fm: Frontmatter,
   property: string,
+  since: string = "",
 ): PropertyReminderState {
   const value = fm[property];
   const time = parseTimeValue(value);
-  const done = parseTimeValue(fm[property + DONE_SUFFIX]);
+  const doneTime = parseTimeValue(fm[property + DONE_SUFFIX]);
+  const done = time != null && doneTime != null && sameTime(time, doneTime);
   return {
     time,
     foreignValue:
@@ -149,49 +160,104 @@ export function readPropertyReminderState(
           : JSON.stringify(value)
         : null,
     title: textOf(fm[property + TITLE_SUFFIX]),
-    done: time != null && done != null && sameTime(time, done),
+    done,
+    pending: time != null && !done && !isBeforeDay(time, since),
   };
 }
 
 /**
- * Sets (creates or edits) the reminder in `property`. Setting a time that is
- * already recorded as done clears the record: choosing a time is a request
- * to be reminded at it. Returns false, leaving `fm` untouched, when the
- * property holds a value that is not a time.
+ * The property the dialog starts on: the first with a pending reminder, else
+ * the first that holds a time, else the first.
+ */
+export function pickInitialProperty(
+  properties: ReadonlyArray<string>,
+  states: Readonly<Record<string, PropertyReminderState>>,
+): string | undefined {
+  return (
+    properties.find((p) => states[p]?.pending) ??
+    properties.find((p) => states[p]?.time != null) ??
+    properties[0]
+  );
+}
+
+/**
+ * Sets (creates or edits) the reminder in `property`.
+ *
+ * Moving the reminder onto a time that is recorded as done clears the
+ * record: choosing a time is a request to be reminded at it. Saving without
+ * changing the time keeps the record, so that editing only the title of a
+ * finished reminder does not bring it back (`rearmPropertyReminder` is the
+ * explicit way to do that).
+ *
+ * Returns `blocked`, leaving `fm` untouched, when the property holds a value
+ * that is not a time.
  */
 export function setPropertyReminder(
   fm: Frontmatter,
   property: string,
   edit: PropertyReminderEdit,
-): boolean {
+): ApplyOutcome {
   const value = fm[property];
-  if (!isEmptyValue(value) && parseTimeValue(value) == null) {
-    return false;
+  const current = parseTimeValue(value);
+  if (!isEmptyValue(value) && current == null) {
+    return "blocked";
   }
   fm[property] = formatTimeValue(edit.time);
   const titleKey = property + TITLE_SUFFIX;
   if (isEmptyValue(fm[titleKey]) || typeof fm[titleKey] === "string") {
     // A title that is not text is someone else's value: leave it alone.
-    const title = edit.title.trim();
+    const title = textOf(edit.title);
     if (title === "") {
       delete fm[titleKey];
     } else {
       fm[titleKey] = title;
     }
   }
+  const moved = current == null || !sameTime(current, edit.time);
   const done = parseTimeValue(fm[property + DONE_SUFFIX]);
-  if (done != null && sameTime(done, edit.time)) {
+  if (moved && done != null && sameTime(done, edit.time)) {
     delete fm[property + DONE_SUFFIX];
   }
-  return true;
+  return "applied";
+}
+
+/**
+ * Makes a reminder that is recorded as done pending again at the same time,
+ * by removing the record. `stale` when there is nothing to undo.
+ */
+export function rearmPropertyReminder(
+  fm: Frontmatter,
+  property: string,
+): ApplyOutcome {
+  const time = parseTimeValue(fm[property]);
+  if (time == null) {
+    return "missing";
+  }
+  const done = parseTimeValue(fm[property + DONE_SUFFIX]);
+  if (done == null || !sameTime(done, time)) {
+    return "stale";
+  }
+  delete fm[property + DONE_SUFFIX];
+  return "applied";
 }
 
 /**
  * Removes the reminder in `property` together with the companions the plugin
  * wrote. A companion that holds something the plugin would not have written
- * stays.
+ * stays. Returns `blocked`, leaving `fm` untouched, when the property holds
+ * a value that is not a time, and `missing` when it holds nothing.
  */
-export function removePropertyReminder(fm: Frontmatter, property: string) {
+export function removePropertyReminder(
+  fm: Frontmatter,
+  property: string,
+): ApplyOutcome {
+  const value = fm[property];
+  if (isEmptyValue(value) && !(property in fm)) {
+    return "missing";
+  }
+  if (!isEmptyValue(value) && parseTimeValue(value) == null) {
+    return "blocked";
+  }
   delete fm[property];
   const titleKey = property + TITLE_SUFFIX;
   if (isEmptyValue(fm[titleKey]) || typeof fm[titleKey] === "string") {
@@ -201,4 +267,5 @@ export function removePropertyReminder(fm: Frontmatter, property: string) {
   if (isEmptyValue(fm[doneKey]) || parseTimeValue(fm[doneKey]) != null) {
     delete fm[doneKey];
   }
+  return "applied";
 }

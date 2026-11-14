@@ -329,4 +329,23 @@ export const ja: Record<string, string> = {
     "{file} の「{property}」に日付でない値が入っているため、「完了」を記録できませんでした",
   "Property name": "プロパティの名前",
   "Note reminder": "ノートのリマインダー",
+  "Set reminder for this note": "このノートにリマインダーを設定",
+  "Reminder for {note}": "{note} のリマインダー",
+  "Scheduled:": "予定:",
+  "Done:": "完了済み:",
+  "Not shown (before the cut-off):": "通知しない（無視する日付より前）:",
+  Property: "プロパティ",
+  Title: "タイトル",
+  "Remove reminder": "リマインダーを削除",
+  "Remind again": "もう一度リマインドする",
+  "Reminder: {time} ({property})": "リマインダー: {time} ({property})",
+  "“{property}” holds “{value}”, which is not a date. Change it in the note's properties before setting a reminder here.":
+    "「{property}」には日付でない値「{value}」が入っています。ノートのプロパティで直してから、ここでリマインダーを設定してください。",
+  "Note reminders are kept in a property of the note. No property is set up for this yet. Use “{property}”?":
+    "ノートのリマインダーは、ノートのプロパティに保存します。保存先のプロパティがまだ決まっていません。「{property}」を使いますか？",
+  "Use “{property}”": "「{property}」を使う",
+  "Saved, but it will not be shown: dates before {date} are ignored for “{property}” (Settings → Note reminders).":
+    "保存しましたが、通知されません。「{property}」は {date} より前の日付を無視する設定です（設定 → ノートのリマインダー）。",
+  "“{property}” can't be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on “Managed”.":
+    "「{property}」は使えません。追加済みのプロパティがその名前を使っています。設定 → ノートのリマインダーでプロパティを追加し、「管理する」をオンにしてください。",
 };

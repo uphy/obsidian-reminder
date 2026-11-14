@@ -310,4 +310,23 @@ export const zhCN: Record<string, string> = {
     "{file} 中的“{property}”不是日期，未能记录“完成”",
   "Property name": "属性名称",
   "Note reminder": "笔记提醒",
+  "Set reminder for this note": "为此笔记设置提醒",
+  "Reminder for {note}": "{note} 的提醒",
+  "Scheduled:": "已安排：",
+  "Done:": "已完成：",
+  "Not shown (before the cut-off):": "不提醒（早于忽略日期）：",
+  Property: "属性",
+  Title: "标题",
+  "Remove reminder": "删除提醒",
+  "Remind again": "再次提醒",
+  "Reminder: {time} ({property})": "提醒：{time}（{property}）",
+  "“{property}” holds “{value}”, which is not a date. Change it in the note's properties before setting a reminder here.":
+    "“{property}”的值“{value}”不是日期。请先在笔记属性中修改，再在此设置提醒。",
+  "Note reminders are kept in a property of the note. No property is set up for this yet. Use “{property}”?":
+    "笔记提醒保存在笔记的属性中。尚未设置用于保存的属性。使用“{property}”吗？",
+  "Use “{property}”": "使用“{property}”",
+  "Saved, but it will not be shown: dates before {date} are ignored for “{property}” (Settings → Note reminders).":
+    "已保存，但不会提醒：“{property}”会忽略早于 {date} 的日期（设置 → 笔记提醒）。",
+  "“{property}” can't be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on “Managed”.":
+    "无法使用“{property}”：列表中的另一个属性已使用该名称。请在 设置 → 笔记提醒 中添加属性并开启“托管”。",
 };

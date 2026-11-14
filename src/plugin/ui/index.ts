@@ -25,6 +25,11 @@ import { monkeyPatchConsole } from "plugin/obsidian-hack/obsidian-debug-mobile";
 import { VIEW_TYPE_REMINDER_LIST } from "./constants";
 import { DndStatusBar } from "./dnd-status-bar";
 import { findLeafShowingFile } from "./find-leaf-showing-file";
+import { NoteReminderIndicator } from "./note-reminder-indicator";
+import {
+  canSetNoteReminder,
+  openNoteReminderModal,
+} from "./note-reminder-modal";
 import { OverdueStatusBar } from "./overdue-status-bar";
 import { ReminderListItemViewProxy } from "./reminder-list";
 import { AutoComplete } from "./autocomplete";
@@ -48,6 +53,7 @@ export class ReminderPluginUI {
   private viewProxy: ReminderListItemViewProxy;
   private dndStatusBar: DndStatusBar;
   private overdueStatusBar: OverdueStatusBar;
+  private noteReminderIndicator: NoteReminderIndicator;
   // Kept so a language change can re-render the open settings tab.
   private settingTab?: ReminderSettingTab;
   constructor(private plugin: ReminderPlugin) {
@@ -86,11 +92,31 @@ export class ReminderPluginUI {
     );
     this.dndStatusBar = new DndStatusBar(plugin);
     this.overdueStatusBar = new OverdueStatusBar(plugin);
+    this.noteReminderIndicator = new NoteReminderIndicator(plugin);
   }
 
   onload() {
     this.dndStatusBar.onload();
     this.overdueStatusBar.onload();
+    this.noteReminderIndicator.onload();
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("file-menu", (menu, file) => {
+        if (
+          !(file instanceof TFile) ||
+          !canSetNoteReminder(this.plugin, file)
+        ) {
+          return;
+        }
+        menu.addItem((item) => {
+          item
+            .setTitle(t("Set reminder for this note"))
+            .setIcon("bell-plus")
+            .onClick(() => {
+              openNoteReminderModal(this.plugin, file);
+            });
+        });
+      }),
+    );
 
     // Reminder List
     this.plugin.registerView(VIEW_TYPE_REMINDER_LIST, (leaf: WorkspaceLeaf) => {
@@ -191,6 +217,7 @@ export class ReminderPluginUI {
       }, 0);
     }
     this.overdueStatusBar.refresh();
+    this.noteReminderIndicator.refresh();
     this.dndStatusBar.refresh();
     if (Platform.isDesktopApp) {
       // The pills are editor widgets whose `eq()` compares only what is

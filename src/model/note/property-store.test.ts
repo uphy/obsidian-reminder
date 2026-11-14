@@ -1,7 +1,9 @@
 import { DateTime } from "model/time";
 import {
   PropertyNoteReminderStore,
+  pickInitialProperty,
   readPropertyReminderState,
+  rearmPropertyReminder,
   removePropertyReminder,
   setPropertyReminder,
 } from "./property-store";
@@ -236,12 +238,15 @@ describe("PropertyNoteReminderStore#apply() snooze", (): void => {
 });
 
 describe("the dialog's functions", (): void => {
+  const edit = (to: string, title: string = "") => ({ time: time(to), title });
+
   test("readPropertyReminderState()", (): void => {
     expect(readPropertyReminderState({}, "reminder")).toStrictEqual({
       time: null,
       foreignValue: null,
       title: "",
       done: false,
+      pending: false,
     });
     const pending = readPropertyReminderState(
       { reminder: "2026-11-20", "reminder-title": "Send" },
@@ -250,12 +255,15 @@ describe("the dialog's functions", (): void => {
     expect(pending.time && formatTimeValue(pending.time)).toBe("2026-11-20");
     expect(pending.title).toBe("Send");
     expect(pending.done).toBe(false);
-    expect(
-      readPropertyReminderState(
-        { reminder: "2026-11-20", "reminder-done": "2026-11-20" },
-        "reminder",
-      ).done,
-    ).toBe(true);
+    expect(pending.pending).toBe(true);
+
+    const finished = readPropertyReminderState(
+      { reminder: "2026-11-20", "reminder-done": "2026-11-20" },
+      "reminder",
+    );
+    expect(finished.done).toBe(true);
+    expect(finished.pending).toBe(false);
+
     expect(
       readPropertyReminderState({ reminder: "next week" }, "reminder")
         .foreignValue,
@@ -265,31 +273,93 @@ describe("the dialog's functions", (): void => {
     ).toBe('["a"]');
   });
 
+  test("a value before the cut-off is neither done nor pending", (): void => {
+    const state = readPropertyReminderState(
+      { reminder: "2026-11-19" },
+      "reminder",
+      "2026-11-20",
+    );
+    expect(state.done).toBe(false);
+    expect(state.pending).toBe(false);
+    expect(
+      readPropertyReminderState(
+        { reminder: "2026-11-20" },
+        "reminder",
+        "2026-11-20",
+      ).pending,
+    ).toBe(true);
+  });
+
+  test("a multi-line title is read as one line", (): void => {
+    expect(
+      readPropertyReminderState(
+        { "reminder-title": "Send\n  the report" },
+        "reminder",
+      ).title,
+    ).toBe("Send the report");
+  });
+
+  test("pickInitialProperty() prefers a pending reminder, then any time", (): void => {
+    const state = (fm: Frontmatter) => readPropertyReminderState(fm, "p");
+    const empty = state({});
+    const finished = state({ p: "2026-11-20", "p-done": "2026-11-20" });
+    const pending = state({ p: "2026-11-20" });
+
+    expect(
+      pickInitialProperty(["a", "b", "c"], {
+        a: empty,
+        b: finished,
+        c: pending,
+      }),
+    ).toBe("c");
+    expect(pickInitialProperty(["a", "b"], { a: empty, b: finished })).toBe(
+      "b",
+    );
+    expect(pickInitialProperty(["a", "b"], { a: empty, b: empty })).toBe("a");
+    expect(pickInitialProperty([], {})).toBeUndefined();
+  });
+
   test("setPropertyReminder() writes the time and the title", (): void => {
     const fm: Frontmatter = {};
     expect(
-      setPropertyReminder(fm, "reminder", {
-        time: time("2026-11-21T09:00"),
-        title: " Send the report ",
-      }),
-    ).toBe(true);
+      setPropertyReminder(
+        fm,
+        "reminder",
+        edit("2026-11-21T09:00", " Send the report "),
+      ),
+    ).toBe("applied");
     expect(fm).toStrictEqual({
       reminder: "2026-11-21T09:00:00",
       "reminder-title": "Send the report",
     });
   });
 
-  test("setPropertyReminder() removes an empty title and an equal done record", (): void => {
+  test("setPropertyReminder() removes an empty title", (): void => {
+    const fm: Frontmatter = { reminder: "2026-11-20", "reminder-title": "Old" };
+    setPropertyReminder(fm, "reminder", edit("2026-11-20"));
+    expect(fm).toStrictEqual({ reminder: "2026-11-20" });
+  });
+
+  test("setPropertyReminder() onto a time recorded as done clears the record", (): void => {
     const fm: Frontmatter = {
-      reminder: "2026-11-20",
-      "reminder-title": "Old",
+      reminder: "2026-11-27",
       "reminder-done": "2026-11-20",
     };
-    setPropertyReminder(fm, "reminder", {
-      time: time("2026-11-20"),
-      title: "",
-    });
+    setPropertyReminder(fm, "reminder", edit("2026-11-20"));
     expect(fm).toStrictEqual({ reminder: "2026-11-20" });
+  });
+
+  test("setPropertyReminder() with an unchanged time keeps a finished reminder finished", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20",
+      "reminder-done": "2026-11-20",
+    };
+    setPropertyReminder(fm, "reminder", edit("2026-11-20", "New title"));
+    expect(fm).toStrictEqual({
+      reminder: "2026-11-20",
+      "reminder-done": "2026-11-20",
+      "reminder-title": "New title",
+    });
   });
 
   test("setPropertyReminder() keeps a done record for another time", (): void => {
@@ -297,10 +367,7 @@ describe("the dialog's functions", (): void => {
       reminder: "2026-11-20",
       "reminder-done": "2026-11-20",
     };
-    setPropertyReminder(fm, "reminder", {
-      time: time("2026-11-27"),
-      title: "",
-    });
+    setPropertyReminder(fm, "reminder", edit("2026-11-27"));
     expect(fm).toStrictEqual({
       reminder: "2026-11-27",
       "reminder-done": "2026-11-20",
@@ -309,25 +376,36 @@ describe("the dialog's functions", (): void => {
 
   test("setPropertyReminder() refuses a value that is not a time", (): void => {
     const fm: Frontmatter = { reminder: "next week" };
-    expect(
-      setPropertyReminder(fm, "reminder", {
-        time: time("2026-11-27"),
-        title: "x",
-      }),
-    ).toBe(false);
+    expect(setPropertyReminder(fm, "reminder", edit("2026-11-27", "x"))).toBe(
+      "blocked",
+    );
     expect(fm).toStrictEqual({ reminder: "next week" });
   });
 
   test("setPropertyReminder() leaves a title that is not text", (): void => {
     const fm: Frontmatter = { "reminder-title": ["a"] };
-    setPropertyReminder(fm, "reminder", {
-      time: time("2026-11-27"),
-      title: "x",
-    });
+    setPropertyReminder(fm, "reminder", edit("2026-11-27", "x"));
     expect(fm).toStrictEqual({
       "reminder-title": ["a"],
       reminder: "2026-11-27",
     });
+  });
+
+  test("rearmPropertyReminder() removes the record of the current time", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20",
+      "reminder-done": "2026-11-20",
+    };
+    expect(rearmPropertyReminder(fm, "reminder")).toBe("applied");
+    expect(fm).toStrictEqual({ reminder: "2026-11-20" });
+    expect(rearmPropertyReminder(fm, "reminder")).toBe("stale");
+    expect(rearmPropertyReminder({}, "reminder")).toBe("missing");
+    const other: Frontmatter = {
+      reminder: "2026-11-27",
+      "reminder-done": "2026-11-20",
+    };
+    expect(rearmPropertyReminder(other, "reminder")).toBe("stale");
+    expect(other["reminder-done"]).toBe("2026-11-20");
   });
 
   test("removePropertyReminder() removes what the plugin wrote", (): void => {
@@ -337,7 +415,7 @@ describe("the dialog's functions", (): void => {
       "reminder-done": "2026-11-13",
       other: 1,
     };
-    removePropertyReminder(fm, "reminder");
+    expect(removePropertyReminder(fm, "reminder")).toBe("applied");
     expect(fm).toStrictEqual({ other: 1 });
   });
 
@@ -345,5 +423,12 @@ describe("the dialog's functions", (): void => {
     const fm: Frontmatter = { reminder: "2026-11-20", "reminder-done": true };
     removePropertyReminder(fm, "reminder");
     expect(fm).toStrictEqual({ "reminder-done": true });
+  });
+
+  test("removePropertyReminder() refuses a value that is not a time", (): void => {
+    const fm: Frontmatter = { reminder: "next week" };
+    expect(removePropertyReminder(fm, "reminder")).toBe("blocked");
+    expect(fm).toStrictEqual({ reminder: "next week" });
+    expect(removePropertyReminder({}, "reminder")).toBe("missing");
   });
 });
