@@ -292,6 +292,61 @@ describe("NoteReminderService#applyAt() with a property of another plugin", (): 
     expect(refused.state.fm).toStrictEqual(direct.state.fm);
   });
 
+  test("actions on a snoozed reminder end the same either way", async (): Promise<void> => {
+    // `fn` can't be applied twice here: the first application removes or
+    // moves the very entry the second would look for.
+    const snoozed = (): Frontmatter => ({
+      tags: ["task"],
+      reminders: [
+        { id: "rem_1", type: "absolute", absoluteTime: "2026-11-20T09:45:00" },
+        {
+          id: SNOOZE_ID,
+          type: "absolute",
+          absoluteTime: "2026-11-20T10:15:00",
+        },
+      ],
+      "reminders-done": ["rem_1@2026-11-20T09:45:00"],
+    });
+    const origin = { ...TASK_ORIGIN, key: SNOOZE_ID };
+    const actions: Array<NoteReminderAction> = [
+      {
+        type: "done",
+        expected: time("2026-11-20T10:15"),
+        now: time("2026-11-20T10:20"),
+      },
+      {
+        type: "snooze",
+        expected: time("2026-11-20T10:15"),
+        time: time("2026-11-21T09:00"),
+      },
+    ];
+    for (const action of actions) {
+      const taken = setup(snoozed(), taking);
+      const direct = setup(snoozed());
+      expect(await taken.service.applyAt("task.md", origin, action)).toBe(
+        "applied",
+      );
+      expect(await direct.service.applyAt("task.md", origin, action)).toBe(
+        "applied",
+      );
+      expect(taken.offers).toHaveLength(1);
+      expect(taken.state.fm).toStrictEqual(direct.state.fm);
+    }
+  });
+
+  test("a property the other plugin wrote differently is written again", async (): Promise<void> => {
+    // The other plugin says it took the list but the note holds something
+    // else, so the action is applied to the note as it is.
+    const { service, state } = setup(task(), (offer, st) => {
+      st.fm = { ...st.fm, [offer.property]: [] };
+      return true;
+    });
+    expect(await service.applyAt("task.md", TASK_ORIGIN, snooze)).toBe(
+      "missing",
+    );
+    expect(state.fm!["reminders-done"]).toBeUndefined();
+  });
+
   test("Done leaves the list alone, so nothing is offered", async (): Promise<void> => {
     const { service, offers, state } = setup(task(), taking);
     const action: NoteReminderAction = {

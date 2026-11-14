@@ -900,9 +900,14 @@ one. A date-only base counts from midnight.
         `reminders` list is TaskNotes' data and `reminders-done` is this
         plugin's. When a write changes the list (a snooze, or "Done" on a
         snoozed reminder) and TaskNotes is running, the new list is first
-        handed to `tasks.setReminders`. The write to the frontmatter then
-        runs as for any format: it finds the list in place and adds the
-        record. When TaskNotes is not running, has no such API or rejects
+        handed to `tasks.setReminders`. The write to the frontmatter that
+        follows then finds the list in place and writes the rest of the
+        change (the record). It does not apply the action a second time:
+        "Done" on a snoozed reminder removes the very entry a second
+        application would look for (found in the test vault, where the
+        action was reported as "missing" although the note was right). If
+        the note does not hold what was handed over, the action is applied
+        to the note as it is. When TaskNotes is not running, has no such API or rejects
         the write (it does not see the note as a task), that same write
         does everything, so the note ends up the same either way. TaskNotes
         also stamps its modification date on a note it writes.
