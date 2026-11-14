@@ -1,4 +1,4 @@
-import type { Frontmatter } from "./store";
+import type { Frontmatter } from "./format";
 import { isBeforeDay, isEmptyValue, parseTimeValue } from "./value";
 
 export const DONE_SUFFIX = "-done";

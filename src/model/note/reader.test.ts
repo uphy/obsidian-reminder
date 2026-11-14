@@ -1,4 +1,4 @@
-import { PropertyNoteReminderStore } from "./property-store";
+import { PropertyNoteReminderFormat } from "./property-format";
 import {
   NoteReminderReader,
   extractFrontmatterText,
@@ -57,11 +57,11 @@ describe("noteNameOf()", (): void => {
 });
 
 describe("NoteReminderReader", (): void => {
-  const store = new PropertyNoteReminderStore(() => [
+  const format = new PropertyNoteReminderFormat(() => [
     { property: "follow-up", managed: false, since: "" },
     { property: "reminder", managed: true, since: "" },
   ]);
-  const reader = new NoteReminderReader([store]);
+  const reader = new NoteReminderReader([format]);
 
   test("mightContainReminders() looks for a source name in the text", (): void => {
     expect(reader.mightContainReminders("follow-up: 2026-11-20")).toBe(true);
@@ -86,7 +86,7 @@ describe("NoteReminderReader", (): void => {
         "2026-11-20",
         {
           kind: "note",
-          store: "property",
+          format: "property",
           key: "follow-up",
           label: "follow-up",
         },
@@ -94,14 +94,19 @@ describe("NoteReminderReader", (): void => {
       [
         "Send the report",
         "2026-11-21 09:00",
-        { kind: "note", store: "property", key: "reminder", label: "reminder" },
+        {
+          kind: "note",
+          format: "property",
+          key: "reminder",
+          label: "reminder",
+        },
       ],
     ]);
     expect(reminders[0]?.file).toBe("dir/Call Alice.md");
     expect(reminders[0]?.done).toBe(false);
   });
 
-  test("apply() reaches the store named in the origin", (): void => {
+  test("apply() reaches the format named in the origin", (): void => {
     const fm = { "follow-up": "2026-11-20" };
     const action = {
       type: "done" as const,
@@ -112,14 +117,14 @@ describe("NoteReminderReader", (): void => {
     expect(
       reader.apply(
         fm,
-        { kind: "note", store: "unknown", key: "follow-up", label: "" },
+        { kind: "note", format: "unknown", key: "follow-up", label: "" },
         action,
       ),
     ).toBe("missing");
     expect(
       reader.apply(
         fm,
-        { kind: "note", store: "property", key: "follow-up", label: "" },
+        { kind: "note", format: "property", key: "follow-up", label: "" },
         action,
       ),
     ).toBe("applied");

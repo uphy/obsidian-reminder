@@ -2,7 +2,7 @@ import { onLanguageChange, t, tn } from "i18n";
 import type ReminderPlugin from "main";
 import { noteNameOf } from "model/note/reader";
 import { DONE_SUFFIX } from "model/note/sources";
-import type { NoteReminderAction } from "model/note/store";
+import type { NoteReminderAction } from "model/note/format";
 import { snoozeTimeFor } from "model/note/value";
 import type { ReadOnlyReference } from "model/ref";
 import type { Reminder } from "model/reminder";

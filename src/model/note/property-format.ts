@@ -6,8 +6,8 @@ import type {
   Frontmatter,
   NoteReminderAction,
   NoteReminderEntry,
-  NoteReminderStore,
-} from "./store";
+  NoteReminderFormat,
+} from "./format";
 import {
   formatTimeValue,
   inShapeOf,
@@ -30,7 +30,7 @@ import {
  * - `p-title` replaces the note name as the title, for a property the plugin
  *   manages.
  */
-export class PropertyNoteReminderStore implements NoteReminderStore {
+export class PropertyNoteReminderFormat implements NoteReminderFormat {
   readonly id = "property";
 
   constructor(private sources: () => Array<NoteReminderSource>) {}

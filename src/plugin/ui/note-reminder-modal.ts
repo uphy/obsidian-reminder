@@ -7,13 +7,13 @@ import {
   rearmPropertyReminder,
   removePropertyReminder,
   setPropertyReminder,
-} from "model/note/property-store";
+} from "model/note/property-format";
 import type {
   PropertyReminderEdit,
   PropertyReminderState,
-} from "model/note/property-store";
+} from "model/note/property-format";
 import type { NoteReminderSource } from "model/note/sources";
-import type { Frontmatter } from "model/note/store";
+import type { Frontmatter } from "model/note/format";
 import { isBeforeDay } from "model/note/value";
 import { DateTime } from "model/time";
 import { Modal, Notice, Platform, Setting, TFile } from "obsidian";
@@ -152,7 +152,7 @@ class NoteReminderModal extends Modal {
           write(property, (fm) =>
             this.plugin.noteReminderReader.apply(
               fm,
-              { kind: "note", store: "property", key: property, label: "" },
+              { kind: "note", format: "property", key: property, label: "" },
               { type: "done", expected: shown, now: DateTime.now() },
             ),
           );

@@ -13,7 +13,7 @@ const line = Reminder.ofLine(
 function note(title: string, time: string = "2026-11-20"): Reminder {
   return Reminder.ofNote("dir/Call Alice.md", title, DateTime.parse(time), {
     kind: "note",
-    store: "property",
+    format: "property",
     key: "follow-up",
     label: "follow-up",
   });
@@ -70,7 +70,7 @@ describe("a note with a dot in its name", (): void => {
       "dir/v1.2 notes.md",
       title,
       DateTime.parse("2026-11-20"),
-      { kind: "note", store: "property", key: "due", label: "due" },
+      { kind: "note", format: "property", key: "due", label: "due" },
     );
   }
 

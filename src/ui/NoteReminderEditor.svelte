@@ -1,7 +1,7 @@
 <script lang="typescript">
   import { t } from "i18n";
-  import { pickInitialProperty } from "model/note/property-store";
-  import type { PropertyReminderState } from "model/note/property-store";
+  import { pickInitialProperty } from "model/note/property-format";
+  import type { PropertyReminderState } from "model/note/property-format";
   import type { Reminders } from "model/reminder";
   import type { DateTime } from "model/time";
   import DateTimeChooser from "./DateTimeChooser.svelte";

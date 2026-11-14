@@ -97,7 +97,7 @@ export class NoteReminderIndicator {
     return (this.plugin.reminders.fileToReminders.get(path) ?? []).filter(
       (r) =>
         r.origin.kind === "note" &&
-        r.origin.store === "property" &&
+        r.origin.format === "property" &&
         managed.includes(r.origin.key),
     );
   }

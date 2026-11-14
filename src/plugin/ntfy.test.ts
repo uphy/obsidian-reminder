@@ -376,7 +376,12 @@ describe("NtfyController with note reminders", (): void => {
       "notes/Call Alice.md",
       "Call Alice",
       DateTime.ofEpochMillis(Date.now() + 60 * 60 * 1000),
-      { kind: "note", store: "property", key: "follow-up", label: "follow-up" },
+      {
+        kind: "note",
+        format: "property",
+        key: "follow-up",
+        label: "follow-up",
+      },
     );
   }
 
