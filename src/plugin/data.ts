@@ -192,15 +192,24 @@ export class PluginData {
     this.settings.forEach((setting) => {
       setting.store(settings);
     });
-    await this.store.saveData({
-      scanned: this.scanned.value,
-      seededTaskStatuses: this.seededTaskStatusesText,
-      reminders: remindersData,
-      debug: this.debug.value,
-      dndUntil: this.dndUntil.value?.getTimeInMillis() ?? null,
-      settings,
-    });
+    // Clear the flag before the write, not after it: a change that arrives
+    // while the write is in flight has to stay flagged, or the next `save()`
+    // would skip it and it would never reach the disk.
     this.changed = false;
+    try {
+      await this.store.saveData({
+        scanned: this.scanned.value,
+        seededTaskStatuses: this.seededTaskStatusesText,
+        reminders: remindersData,
+        debug: this.debug.value,
+        dndUntil: this.dndUntil.value?.getTimeInMillis() ?? null,
+        settings,
+      });
+    } catch (e) {
+      // Nothing was written, so the state is still unsaved.
+      this.changed = true;
+      throw e;
+    }
   }
 
   get settings() {
