@@ -590,8 +590,10 @@ type NoteReminderSource = {
 *   Adding a row sets `managed` to false. `since` is today when the vault
     already holds values of the property dated before today, and empty
     otherwise: the cut-off exists to stop those values from notifying at
-    once, and a date with nothing to hide only raises a question. Only the
-    user changes `since` afterwards.
+    once, and a date with nothing to hide only raises a question. The check
+    covers every note, also under an excluded path (its values are read once
+    the path is no longer excluded), and when Obsidian has not indexed every
+    note yet the answer is today. Only the user changes `since` afterwards.
 *   The setting is tagged like the other settings that change what is parsed,
     so a change triggers a full rescan.
 *   A name is rejected when it is empty, when it is already listed, or when it
