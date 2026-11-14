@@ -603,11 +603,13 @@ Evidence):
 
 *   One line with a text field and an "Add" button, with the validation message
     under it.
-*   Below it, one row per source: the property name; a description saying
-    whether it is managed or read only; "N earlier values in the vault are
-    ignored" when N > 0; a warning when some note has a `p-done` that is not a
-    time; a switch labelled "Managed"; a date input for the cut-off; a remove
-    button.
+*   Below it, one bordered box per source, so that it is clear which
+    settings belong to which property. The title line has the property name,
+    a warning when some note has a `p-done` that is not a time, and a remove
+    button. Under it, each setting has its own line with a name and a
+    description, which leaves room for more settings: "Managed" (a switch),
+    and "Ignore dates before" (a date input for the cut-off, with "N earlier
+    values in the vault are ignored" when N > 0).
 *   The two counts are display-only. They are computed when the tab is drawn,
     from Obsidian's metadata cache, by a function the plugin gives to the
     settings object. The settings code itself does not reach Obsidian's `app`.
