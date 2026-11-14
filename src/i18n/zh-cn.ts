@@ -294,9 +294,9 @@ export const zhCN: Record<string, string> = {
   '"Set reminder for this note" creates and edits this property. When off, the property is only read: its value is never created or removed here.':
     "“为此笔记设置提醒”会创建和编辑此属性。关闭时仅读取该属性，此插件不会创建或删除它的值。",
   "Values dated earlier are not read.": "不读取早于此日期的值。",
-  "{count} earlier values in the vault are ignored.":
+  "Earlier values in the vault that are ignored: {count}.":
     "库中 {count} 个更早的值会被忽略。",
-  '"{property}" already holds other values in {count} notes, so "Done" can\'t be recorded there.':
+  '"{property}" already holds other values (notes: {count}), so "Done" can\'t be recorded there.':
     "“{property}”在 {count} 个笔记中已有其他值，无法在那里记录“完成”。",
   "Ignore dates before": "忽略早于此日期的值",
   "Enter a property name.": "请输入属性名称。",
