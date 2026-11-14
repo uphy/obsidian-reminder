@@ -63,3 +63,25 @@ describe("draggedMarkdown()", (): void => {
     );
   });
 });
+
+describe("a note with a dot in its name", (): void => {
+  function dotted(title: string): Reminder {
+    return Reminder.ofNote(
+      "dir/v1.2 notes.md",
+      title,
+      DateTime.parse("2026-11-20"),
+      { kind: "note", store: "property", key: "due", label: "due" },
+    );
+  }
+
+  test("titled with the note name, it shows the label and drags as the link", (): void => {
+    expect(listOrigin(dotted("v1.2 notes"))).toBe("due");
+    expect(draggedMarkdown(dotted("v1.2 notes"), "[[v1.2 notes]]")).toBe(
+      "[[v1.2 notes]]",
+    );
+  });
+
+  test("with its own title, it shows the whole note name", (): void => {
+    expect(listOrigin(dotted("Ship it"))).toBe("v1.2 notes · due");
+  });
+});

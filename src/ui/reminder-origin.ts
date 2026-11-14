@@ -1,3 +1,4 @@
+import { noteNameOf } from "model/note/reader";
 import type { Reminder } from "model/reminder";
 
 /**
@@ -21,11 +22,12 @@ export function originLine(reminder: Reminder): string | null {
  */
 export function listOrigin(reminder: Reminder): string {
   const origin = reminder.origin;
-  const noteName = reminder.getFileName();
   if (origin.kind !== "note") {
-    return noteName;
+    return reminder.getFileName();
   }
-  return hasOwnTitle(reminder) ? `${noteName} · ${origin.label}` : origin.label;
+  return hasOwnTitle(reminder)
+    ? `${noteNameOf(reminder.file)} · ${origin.label}`
+    : origin.label;
 }
 
 /**
@@ -40,6 +42,8 @@ export function draggedMarkdown(reminder: Reminder, link: string): string {
   return `${reminder.title} - ${link}`;
 }
 
+// Compared with the name the reader titles a note reminder with, not with
+// `getFileName()`, which cuts a name such as `v1.2 notes` at its first dot.
 function hasOwnTitle(reminder: Reminder): boolean {
-  return reminder.title !== reminder.getFileName();
+  return reminder.title !== noteNameOf(reminder.file);
 }
