@@ -13,7 +13,7 @@ import { openNoteReminderModal } from "./note-reminder-modal";
  */
 export class NoteReminderIndicator {
   private actions: Map<MarkdownView, HTMLElement> = new Map();
-  private scheduled = false;
+  private timer: number | undefined;
   private unloaded = false;
 
   constructor(private plugin: ReminderPlugin) {}
@@ -28,20 +28,21 @@ export class NoteReminderIndicator {
   }
 
   /**
-   * Re-evaluates every open note, at most once per animation frame: a full
-   * rescan reports a change per file.
+   * Re-evaluates every open note, once for all the calls made in the same
+   * task: a full rescan reports a change per file. A timer is used rather
+   * than an animation frame, because the bells also live in popout windows
+   * and a minimized main window runs no animation frames.
    */
   refresh() {
-    if (this.scheduled || this.unloaded) {
+    if (this.timer !== undefined || this.unloaded) {
       return;
     }
-    this.scheduled = true;
-    window.requestAnimationFrame(() => {
-      this.scheduled = false;
+    this.timer = window.setTimeout(() => {
+      this.timer = undefined;
       if (!this.unloaded) {
         this.update();
       }
-    });
+    }, 0);
   }
 
   private update() {
@@ -103,6 +104,10 @@ export class NoteReminderIndicator {
 
   private destroy() {
     this.unloaded = true;
+    if (this.timer !== undefined) {
+      window.clearTimeout(this.timer);
+      this.timer = undefined;
+    }
     for (const el of this.actions.values()) {
       el.remove();
     }
