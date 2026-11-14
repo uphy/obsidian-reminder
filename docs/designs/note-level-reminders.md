@@ -180,12 +180,6 @@ Across releases:
     emulation at tablet width the calendar is centred and the action row stays
     in view. Nothing was run at phone width or on a device. To check on a
     phone before the first release ships.
-*   **TaskNotes: leftover snooze entries (third release).** Section 12 removes
-    a no-longer-valid entry "on the next write", which may never come, and
-    does not say what a snooze does while such an entry exists. Proposed fix:
-    every write first removes the plugin's invalid entries, and a snooze
-    replaces an existing entry for the same original. To settle before the
-    third release is implemented.
 
 ## Critical User Journeys (CUJs)
 
@@ -796,14 +790,22 @@ one. A date-only base counts from midnight.
 *   A second store, `tasknotes`, with its own settings group: a switch (off by
     default), the task tag (default `task`), the statuses that mean completed
     (default `done`), and a cut-off date that is set to today when the switch
-    is turned on with the cut-off empty. Only TaskNotes' default property names
+    is turned on with the cut-off empty. A cut-off the user emptied afterwards
+    stays empty and means "read every date". Only TaskNotes' default property names
     are supported; the settings description says so.
 *   Read: a note that has the tag, whose status is not a completed one, that
     does not have the tag `archived`, and that has no `recurrence`. Each entry
     with an id and an effective time on or after the cut-off is a reminder,
     unless `reminders-done` holds its record. An entry of another type, or
-    whose time cannot be computed, is skipped. If `reminders` contains anything
-    that is not a mapping, the note yields nothing and is never written.
+    whose time cannot be computed, is skipped; of entries that share an id
+    only the first is read. If `reminders` contains anything that is not a
+    mapping, the note yields nothing and is never written.
+*   The reminder's title is the note's `title` property (TaskNotes' task
+    title) when it is text, else the note name. Its label is the entry's
+    `description`, else "TaskNotes".
+*   A `reminders-done` that is not a list of `<id>@<time>` strings is
+    someone else's value: it is read as empty, "Done" and snooze on a
+    TaskNotes entry return `blocked`, and it is never written.
 *   "Done" appends `<id>@<effective time>` to the list property
     `reminders-done`, replacing an older record of the same id. Records whose
     entry no longer exists are dropped in the same write. Entries are not
@@ -814,10 +816,17 @@ one. A date-only base counts from midnight.
     This is the only change the plugin makes to `reminders`. An entry counts as
     the plugin's own only with that id prefix and `type: absolute`. A second
     snooze rewrites its time; "Done" on it removes it.
-*   The added entry is used only while `reminders-done` holds its original's
-    record at the original's current effective time. Otherwise (the due date
-    moved, or the original was deleted) it is ignored and removed on the next
-    write.
+*   The added entry **counts** only while `reminders-done` holds its
+    original's record at the original's current effective time. Otherwise (the
+    due date moved, or the original was deleted) it is not read.
+*   Every write to the note first removes the added entries that do not
+    count, judged on the note as it is before the change. Judging them after
+    the change would revive a leftover: after the due date moved, "Done" on
+    the original records it at its new time, which is exactly the condition
+    that makes an added entry count. A snooze of the original also replaces
+    any added entry with the same id, so there is never more than one per
+    original. A leftover in a note the plugin never writes again stays in the
+    list (TaskNotes shows it as a past reminder) and is not read here.
 *   The stale check compares the entry's effective time with the time shown.
 *   Not solved, by design: TaskNotes notifies for the same entries itself,
     including the added one. Verified that with its notifications on, both
@@ -825,9 +834,13 @@ one. A date-only base counts from midnight.
     settings description tells the user to turn one of the two off.
 *   The dialog and the bell do not apply to TaskNotes notes.
 
-Verified on the spike with TaskNotes 4.18.2: TaskNotes lists the added entry
-among the task's reminders, and keeps `reminders-done` and the added entry when
-it rewrites `due` and `priority`.
+Verified with TaskNotes 4.18.2, on the spike and again with the
+implementation: TaskNotes lists the added entry among the task's reminders, and
+keeps `reminders-done` and the added entry when `due` and `priority` are
+rewritten. With the implementation: a relative entry notified at its time,
+"Tomorrow" added the entry at 09:00 the next day, moving `due` made the
+original pending again, and "Done" then recorded the new time and removed the
+leftover entry.
 
 ### 13. Fixes to existing code
 
@@ -1819,7 +1832,8 @@ phone.
     `docs/src/guide/note-reminders.md`, both translation files.
 *   **TaskNotes**: `src/model/note/tasknotes-store.ts` and its test (new),
     `src/plugin/settings/index.ts` (one group), `src/main.ts` (one more store
-    and the ntfy flag), `docs/src/guide/interop-tasknotes.md` (new),
+    and the ntfy flag), `src/plugin/ui/index.ts` (the property a notice
+    names), `docs/src/guide/interop-tasknotes.md` (new),
     `docs/src/.vuepress/config.js`, both translation files.
 
 ### Verification Plan

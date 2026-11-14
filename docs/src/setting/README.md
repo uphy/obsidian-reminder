@@ -358,6 +358,28 @@ A name cannot be added twice, and a name that another listed property uses for i
 
 Changing this setting rescans the vault.
 
+### Read TaskNotes reminders
+
+Shows the reminders the [TaskNotes plugin](/guide/interop-tasknotes.html) keeps in its task notes.
+
+- ON: A reminder in the `reminders` property of a task note is shown at its time. `Done` records it in `reminders-done`; `Remind me later` also adds one reminder to the list.
+- OFF: Task notes are not read.
+- Default: OFF
+
+TaskNotes notifies for the same reminders itself, so turn notifications off in one of the two plugins.
+
+### Task tag
+
+The tag that marks a note as a TaskNotes task. Default: `task`
+
+### Completed statuses
+
+The `status` values that mean a task is completed, separated by commas. A completed task has no reminders. Default: `done`
+
+### Ignore TaskNotes reminders before
+
+A date (`YYYY-MM-DD`). Reminders dated earlier are not read. It is set to today when you turn on `Read TaskNotes reminders` while it is empty, so that reminders already in the past do not all notify at once. Empty reads every date.
+
 ## Display
 
 ### Language

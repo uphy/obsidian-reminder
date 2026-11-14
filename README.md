@@ -54,6 +54,7 @@ In addition to original format `@YYYY-MM-DD`, this plugin also supports followin
 
 - [Obsidian Tasks](https://uphy.github.io/obsidian-reminder/guide/interop-tasks.html) (e.g. `📅 2021-05-02`)
 - [Kanban](https://uphy.github.io/obsidian-reminder/guide/interop-kanban.html) (e.g. `@{YYYY-MM-DD}`)
+- [TaskNotes](https://uphy.github.io/obsidian-reminder/guide/interop-tasknotes.html) (reminders kept in a task note's `reminders` property)
 
 If you use the [Natural Language Dates](https://uphy.github.io/obsidian-reminder/guide/interop-nldates.html) plugin, see the guide for how to avoid the `@` autocompletion conflict.
 
