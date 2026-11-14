@@ -19,7 +19,7 @@ Nothing is read until you tell the plugin which properties to use.
 Open the plugin settings and go to the **Note reminders** tab.
 
 1. Type the name of a date or date & time property (for example `follow-up`) and click **Add**.
-2. The property appears as a row below, with two controls:
+2. The property appears as a block below, with a line for each of its settings:
    - **Managed**: whether the plugin may create, edit and remove the value. See [Managed and read-only properties](#managed-and-read-only-properties).
    - **Ignore dates before**: values dated before this day are not read. See [Past dates](#past-dates).
 
@@ -47,7 +47,7 @@ Leave a property read-only when something else owns its value: a follow-up colum
 
 ### Past dates
 
-When you add a property, **Ignore dates before** is set to today. Without it, a property that already holds years of dates across your vault would notify you about all of them at once. The row tells you how many values it currently ignores.
+When you add a property, **Ignore dates before** is set to today. Without it, a property that already holds years of dates across your vault would notify you about all of them at once. The setting tells you how many values it currently ignores.
 
 You can move the date back to be reminded about older values, or clear it to read everything.
 
@@ -83,7 +83,7 @@ follow-up-done: 2026-11-20
 To be reminded again about the **same** date, delete `<property>-done` in the note's properties. For a managed property you can also open the dialog and click **Remind again**.
 
 :::tip
-If your vault already uses a property named `<property>-done` for something else (a checkbox column, for example), **Done** cannot record anything there: it shows a notice and leaves the note alone. The settings row warns you when it finds such values. Use a different property name for the reminder, or rename your column.
+If your vault already uses a property named `<property>-done` for something else (a checkbox column, for example), **Done** cannot record anything there: it shows a notice and leaves the note alone. The property's block in the settings warns you when it finds such values. Use a different property name for the reminder, or rename your column.
 :::
 
 ### Remind me later

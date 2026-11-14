@@ -45,8 +45,17 @@
   padding-left: var(--size-4-3);
 }
 
+/* One block per property: its name, then its settings. */
 .reminder-note-sources .reminder-note-source {
-  padding: var(--size-4-2) 0;
+  margin-bottom: var(--size-4-4);
+}
+
+.reminder-note-sources .reminder-note-source:last-child {
+  margin-bottom: 0;
+}
+
+.reminder-note-source-title .setting-item-name {
+  font-weight: var(--font-semibold);
 }
 
 .reminder-note-sources:empty {
@@ -55,13 +64,4 @@
 
 .reminder-note-sources-error {
   color: var(--text-error);
-}
-
-/* The control side of a row is narrow, and a label in a language without
-   spaces (Japanese, Chinese) would otherwise wrap one character per line. */
-.reminder-note-source-label {
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
