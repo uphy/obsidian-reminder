@@ -3,31 +3,35 @@ import type { Reminder } from "model/reminder";
 
 /**
  * The line shown under the title of a notification for a note reminder: the
- * label of the property it comes from and the time it is shown for. Null for
- * a line reminder, whose notification is unchanged.
+ * label of the property it comes from (when it has one) and the time it is
+ * shown for. Null for a line reminder, whose notification is unchanged.
  */
 export function originLine(reminder: Reminder): string | null {
   const origin = reminder.origin;
   if (origin.kind !== "note") {
     return null;
   }
-  return `${origin.label} · ${reminder.time.toString()}`;
+  const time = reminder.time.toString();
+  return origin.label === "" ? time : `${origin.label} · ${time}`;
 }
 
 /**
  * What the reminder list shows after the title: the note name, and for a note
  * reminder the label of its property. A note reminder is titled with the
  * note name unless it has a title of its own, and then repeating the name
- * says nothing, so only the label is shown.
+ * says nothing, so only the label is shown. A reminder without a label
+ * (the only listed property) then shows nothing here.
  */
 export function listOrigin(reminder: Reminder): string {
   const origin = reminder.origin;
   if (origin.kind !== "note") {
     return reminder.getFileName();
   }
-  return hasOwnTitle(reminder)
-    ? `${noteNameOf(reminder.file)} · ${origin.label}`
-    : origin.label;
+  const parts = hasOwnTitle(reminder) ? [noteNameOf(reminder.file)] : [];
+  if (origin.label !== "") {
+    parts.push(origin.label);
+  }
+  return parts.join(" · ");
 }
 
 /**

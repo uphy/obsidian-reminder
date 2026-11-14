@@ -188,7 +188,7 @@ export class SystemNotifier {
  */
 function bodyOf(reminder: Reminder): string {
   const origin = reminder.origin;
-  return origin.kind === "note"
+  return origin.kind === "note" && origin.label !== ""
     ? `${reminder.title}\n${origin.label}`
     : reminder.title;
 }

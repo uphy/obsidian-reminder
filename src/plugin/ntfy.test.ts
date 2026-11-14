@@ -371,7 +371,7 @@ describe("testNtfyConnection()", (): void => {
 });
 
 describe("NtfyController with note reminders", (): void => {
-  function noteReminder(): Reminder {
+  function noteReminder(label: string = "follow-up"): Reminder {
     return Reminder.ofNote(
       "notes/Call Alice.md",
       "Call Alice",
@@ -380,10 +380,27 @@ describe("NtfyController with note reminders", (): void => {
         kind: "note",
         format: "property",
         key: "follow-up",
-        label: "follow-up",
+        label,
       },
     );
   }
+
+  test("without a label the message names the note alone", async (): Promise<void> => {
+    const server = new FakeServer();
+    const controller = new NtfyController(
+      createDeps({
+        request: server.request,
+        hasNoteReminderSources: () => true,
+        reminders: () => [noteReminder("")],
+      }),
+    );
+
+    await callDoSync(controller);
+
+    const publish = server.requests.find((r) => r.method === "POST");
+    const body = JSON.parse(publish?.body ?? "{}") as { message: string };
+    expect(body.message).toBe("Call Alice");
+  });
 
   test("the message names the note and the property", async (): Promise<void> => {
     const server = new FakeServer();
