@@ -1,3 +1,6 @@
+import type { Frontmatter } from "./store";
+import { isBeforeDay, isEmptyValue, parseTimeValue } from "./value";
+
 export const DONE_SUFFIX = "-done";
 export const TITLE_SUFFIX = "-title";
 
@@ -90,4 +93,59 @@ export function validateSourceName(
     }
   }
   return null;
+}
+
+/**
+ * The rows after letting the reminder dialog manage `property`: an existing
+ * row is switched to managed, keeping its cut-off (resetting it would hide
+ * the reminders the property already holds on earlier days), and a new name
+ * is added as a managed row with `today` (`YYYY-MM-DD`) as its cut-off.
+ * Null when the name can't be a source (it is a companion of another row).
+ */
+export function withManagedSource(
+  rows: ReadonlyArray<NoteReminderSource>,
+  property: string,
+  today: string,
+): Array<NoteReminderSource> | null {
+  const index = rows.findIndex((row) => row.property === property);
+  if (index >= 0) {
+    return rows.map((row, i) =>
+      i === index ? { ...row, managed: true } : row,
+    );
+  }
+  if (validateSourceName(rows, -1, property) != null) {
+    return null;
+  }
+  return [...rows, { property, managed: true, since: today }];
+}
+
+/** Display-only numbers about a source, shown on the settings page. */
+export type NoteReminderSourceCounts = {
+  /** Notes whose value is a time before the cut-off, so it is not read. */
+  ignored: number;
+  /**
+   * Notes whose `-done` property holds something that is not a time (the
+   * user's own checkbox or text), so "Done" can't be recorded there.
+   */
+  foreignDone: number;
+};
+
+/** Counts, over the frontmatter of the notes given, what `source` skips. */
+export function countSourceStats(
+  source: NoteReminderSource,
+  frontmatters: Iterable<Frontmatter>,
+): NoteReminderSourceCounts {
+  let ignored = 0;
+  let foreignDone = 0;
+  for (const fm of frontmatters) {
+    const time = parseTimeValue(fm[source.property]);
+    if (time != null && isBeforeDay(time, source.since)) {
+      ignored++;
+    }
+    const done = fm[source.property + DONE_SUFFIX];
+    if (!isEmptyValue(done) && parseTimeValue(done) == null) {
+      foreignDone++;
+    }
+  }
+  return { ignored, foreignDone };
 }

@@ -10,9 +10,9 @@ import { isNotificationPaused } from "model/dnd";
 import { isPathExcluded } from "model/exclusion";
 import { PropertyNoteReminderStore } from "model/note/property-store";
 import { NoteReminderReader } from "model/note/reader";
-import { DONE_SUFFIX, validateSourceName } from "model/note/sources";
+import { countSourceStats, withManagedSource } from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
-import { isBeforeDay, isEmptyValue, parseTimeValue } from "model/note/value";
+import type { Frontmatter } from "model/note/store";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
@@ -264,21 +264,15 @@ export default class ReminderPlugin extends Plugin {
    * another row).
    */
   addManagedNoteReminderSource(property: string): boolean {
-    const rows = this.noteReminderSources();
-    const index = rows.findIndex((row) => row.property === property);
-    if (index >= 0) {
-      this.settings.noteReminderSources.rawValue.value = rows.map((row, i) =>
-        i === index ? { ...row, managed: true } : row,
-      );
-      return true;
-    }
-    if (validateSourceName(rows, -1, property) != null) {
+    const rows = withManagedSource(
+      this.noteReminderSources(),
+      property,
+      DateTime.now().format("YYYY-MM-DD"),
+    );
+    if (rows == null) {
       return false;
     }
-    this.settings.noteReminderSources.rawValue.value = [
-      ...rows,
-      { property, managed: true, since: DateTime.now().format("YYYY-MM-DD") },
-    ];
+    this.settings.noteReminderSources.rawValue.value = rows;
     return true;
   }
 
@@ -288,27 +282,18 @@ export default class ReminderPlugin extends Plugin {
    * under an excluded path are not read, so they are not counted.
    */
   private noteReminderStats(source: NoteReminderSource) {
-    let ignored = 0;
-    let foreignDone = 0;
+    const frontmatters: Array<Frontmatter> = [];
     const excluded = this.settings.excludedPaths.value;
     for (const file of this.app.vault.getMarkdownFiles()) {
       if (isPathExcluded(file.path, excluded)) {
         continue;
       }
       const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
-      if (fm == null) {
-        continue;
-      }
-      const time = parseTimeValue(fm[source.property]);
-      if (time != null && isBeforeDay(time, source.since)) {
-        ignored++;
-      }
-      const done: unknown = fm[source.property + DONE_SUFFIX];
-      if (!isEmptyValue(done) && parseTimeValue(done) == null) {
-        foreignDone++;
+      if (fm != null) {
+        frontmatters.push(fm);
       }
     }
-    return { ignored, foreignDone };
+    return countSourceStats(source, frontmatters);
   }
 
   get data() {

@@ -1,4 +1,9 @@
-import { normalizeSources, validateSourceName } from "./sources";
+import {
+  countSourceStats,
+  normalizeSources,
+  validateSourceName,
+  withManagedSource,
+} from "./sources";
 import type { NoteReminderSource } from "./sources";
 
 const rows: Array<NoteReminderSource> = [
@@ -60,5 +65,83 @@ describe("normalizeSources()", (): void => {
       { property: "reminder", managed: true, since: "2026-11-14" },
       { property: "review", managed: false, since: "" },
     ]);
+  });
+});
+
+describe("withManagedSource()", (): void => {
+  test("an existing row is switched to managed and keeps its cut-off", (): void => {
+    const existing: Array<NoteReminderSource> = [
+      { property: "follow-up", managed: false, since: "2026-01-01" },
+      { property: "due", managed: false, since: "" },
+    ];
+    expect(
+      withManagedSource(existing, "follow-up", "2026-11-14"),
+    ).toStrictEqual([
+      { property: "follow-up", managed: true, since: "2026-01-01" },
+      { property: "due", managed: false, since: "" },
+    ]);
+    expect(withManagedSource(existing, "due", "2026-11-14")![1]).toStrictEqual({
+      property: "due",
+      managed: true,
+      since: "",
+    });
+    // The rows passed in are not edited.
+    expect(existing[0]!.managed).toBe(false);
+  });
+
+  test("a companion of another row is rejected", (): void => {
+    expect(withManagedSource(rows, "follow-up-done", "2026-11-14")).toBeNull();
+  });
+
+  test("a new name is added as a managed row cut off at today", (): void => {
+    expect(withManagedSource(rows, "sr-due", "2026-11-20")).toStrictEqual([
+      ...rows,
+      { property: "sr-due", managed: true, since: "2026-11-20" },
+    ]);
+  });
+});
+
+describe("countSourceStats()", (): void => {
+  const source: NoteReminderSource = {
+    property: "due",
+    managed: false,
+    since: "2026-11-14",
+  };
+
+  test("a time before the cut-off counts as ignored", (): void => {
+    expect(
+      countSourceStats(source, [
+        { due: "2026-11-13" },
+        { due: "2026-11-13T23:59" },
+        { due: "2026-11-14" },
+        { due: "some text" },
+        {},
+      ]),
+    ).toStrictEqual({ ignored: 2, foreignDone: 0 });
+  });
+
+  test("without a cut-off nothing is ignored", (): void => {
+    expect(
+      countSourceStats({ ...source, since: "" }, [{ due: "2020-01-01" }]),
+    ).toStrictEqual({ ignored: 0, foreignDone: 0 });
+  });
+
+  test("a done property that is not a time counts as foreign", (): void => {
+    expect(
+      countSourceStats(source, [
+        { due: "2026-11-20", "due-done": true },
+        { "due-done": "yes" },
+      ]),
+    ).toStrictEqual({ ignored: 0, foreignDone: 2 });
+  });
+
+  test("an empty or recorded done property is not foreign", (): void => {
+    expect(
+      countSourceStats(source, [
+        { due: "2026-11-20", "due-done": "" },
+        { due: "2026-11-20", "due-done": null },
+        { due: "2026-11-20", "due-done": "2026-11-20" },
+      ]),
+    ).toStrictEqual({ ignored: 0, foreignDone: 0 });
   });
 });
