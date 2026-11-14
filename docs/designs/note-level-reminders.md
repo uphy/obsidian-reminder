@@ -804,7 +804,7 @@ Each ships as its own change before the feature:
 
 ## Detailed Implementation Plan
 
-The first release is seven code changes and one documentation change, each a
+The first release is nine code changes and one documentation change, each a
 separate pull request, in this order. The file list below is grouped by change.
 Paths are relative to the repository root. The second and third releases are
 listed at the end with the files they add; they are planned in detail when
@@ -905,7 +905,11 @@ No file is deleted.
 *   **Proposed Changes**: Create one `WriteQueue` and pass it to
     `ReminderPluginFileSystem`.
 
-#### Change 5: core (typed location, stores, read and write)
+#### Change 5: typed location (refactor, no behaviour change)
+
+Verified by the existing tests and by a pass over line reminders in the test
+vault: notify, "Done", snooze, the pill, the toggle command, the jump to the
+line, ntfy ids before and after.
 
 ##### 13. `src/model/reminder.ts` (Modify)
 
@@ -915,7 +919,8 @@ No file is deleted.
     `Reminder.ofLine(file, title, time, row, done)` and
     `Reminder.ofNote(file, title, time, ref)`. `key()` and `equals()` branch on
     `location.kind`; the line branch of `key()` returns exactly today's string.
-    Add `isNote()` and `row(): number | undefined`.
+    Add `isNote()` and `row(): number | undefined`. Nothing creates a note
+    reminder yet, so this change alters no behaviour.
 
 ##### 14. `src/model/reminder.test.ts` (Modify)
 
@@ -940,37 +945,43 @@ No file is deleted.
 ##### 17. `src/model/ntfy/sequence-id.ts` (Modify)
 
 *   **Type / Scope**: ntfy id derivation.
-*   **Proposed Changes**: `assignSequenceIds` splits the input. Line reminders
-    keep today's hash and index. A note reminder gets
-    `computeNoteSequenceId(file, store, key)`, a new function that hashes those
-    three fields with a separator that cannot occur in a line reminder's hash
-    input, and takes no index.
+*   **Proposed Changes**: The sort tie-break in `assignSequenceIds` reads the row through
+    `row()`. Ids are unchanged.
 
-##### 18. `src/model/ntfy/sequence-id.test.ts` (Modify)
-
-*   **Type / Scope**: Unit test.
-*   **Proposed Changes**: Ids of line reminders are unchanged when note
-    reminders are added to the same file; a note id is stable across a time
-    change and a title change; two properties of one note get different ids.
-
-##### 19. `src/model/ntfy/sync-plan.test.ts`, `src/plugin/ntfy.test.ts`, `src/plugin/notification-worker.test.ts` (Modify)
+##### 18. `src/model/ntfy/sync-plan.test.ts`, `src/plugin/ntfy.test.ts`, `src/plugin/notification-worker.test.ts` (Modify)
 
 *   **Type / Scope**: Unit tests.
 *   **Proposed Changes**: Construct reminders with `Reminder.ofLine`. No
     behaviour change.
 
-##### 20. `src/plugin/commands/toggle-checklist-status.ts` (Modify)
+##### 19. `src/plugin/commands/toggle-checklist-status.ts` (Modify)
 
 *   **Type / Scope**: Command.
 *   **Proposed Changes**: Match on `r.row() === lineNumber`.
 
-##### 21. `src/plugin/ui/editor-reminder-display/spans.ts`, `src/plugin/ui/editor-reminder-display/edit-reminder.ts` (Modify)
+##### 20. `src/plugin/ui/editor-reminder-display/spans.ts`, `src/plugin/ui/editor-reminder-display/edit-reminder.ts` (Modify)
 
 *   **Type / Scope**: Editor pill.
 *   **Proposed Changes**: Skip reminders without a row; read the row through
     `row()`.
 
-##### 22. `src/model/note/value.ts` (Create)
+##### 21. `src/plugin/data.ts` (Modify)
+
+*   **Type / Scope**: Persistence.
+*   **Proposed Changes**: Restore cached reminders with `Reminder.ofLine` and save the row
+    from `row()`. The shape of `data.json` is unchanged.
+
+##### 22. `src/plugin/ui/index.ts` (Modify)
+
+*   **Type / Scope**: UI controller.
+*   **Proposed Changes**: `openReminderFile` reads the row through `row()` and skips the
+    line jump when there is none.
+
+#### Change 6: note model (stores and reader)
+
+Pure code under `src/model/note/`, covered by jest only. Nothing calls it yet.
+
+##### 23. `src/model/note/value.ts` (Create)
 
 *   **Type / Scope**: Domain helper.
 *   **Proposed Changes**: `parseTimeValue(value: unknown): DateTime | null`,
@@ -978,7 +989,7 @@ No file is deleted.
     minute-precision instant), `isBeforeDay(time, since): boolean`. Rules in
     section 1 of the Technical Plan.
 
-##### 23. `src/model/note/value.test.ts` (Create)
+##### 24. `src/model/note/value.test.ts` (Create)
 
 *   **Type / Scope**: Unit test.
 *   **Proposed Changes**: Date, date-time with `T` and with a space, seconds,
@@ -986,14 +997,14 @@ No file is deleted.
     invalid calendar date; a date and its midnight date-time are not the same;
     seconds are ignored in comparison.
 
-##### 24. `src/model/note/store.ts` (Create)
+##### 25. `src/model/note/store.ts` (Create)
 
 *   **Type / Scope**: Types.
 *   **Proposed Changes**: `Frontmatter`, `NoteReminderEntry`,
     `NoteReminderAction`, `ApplyOutcome`, `NoteReminderStore` as in section 2
     of the Technical Plan.
 
-##### 25. `src/model/note/property-store.ts` (Create)
+##### 26. `src/model/note/property-store.ts` (Create)
 
 *   **Type / Scope**: Store for plain properties.
 *   **Proposed Changes**: `PropertyNoteReminderStore(sources: () => NoteReminderSource[])`
@@ -1004,7 +1015,7 @@ No file is deleted.
     `removePropertyReminder(fm, property)`; the last two refuse a property that
     is not managed or holds a non-time value.
 
-##### 26. `src/model/note/property-store.test.ts` (Create)
+##### 27. `src/model/note/property-store.test.ts` (Create)
 
 *   **Type / Scope**: Unit test.
 *   **Proposed Changes**: Pending, done, re-armed after a value change; "done"
@@ -1014,19 +1025,19 @@ No file is deleted.
     `p-done`; title ignored on an external row; `set` and `remove` refuse an
     external row; `remove` deletes all four keys.
 
-##### 27. `src/model/note/sources.ts` (Create)
+##### 28. `src/model/note/sources.ts` (Create)
 
 *   **Type / Scope**: Domain helper.
 *   **Proposed Changes**: The `NoteReminderSource` type and
     `validateSources(rows): string | null` (empty name, duplicate, a name that
     is another row's companion).
 
-##### 28. `src/model/note/sources.test.ts` (Create)
+##### 29. `src/model/note/sources.test.ts` (Create)
 
 *   **Type / Scope**: Unit test.
 *   **Proposed Changes**: One case per rejection, and an accepted list.
 
-##### 29. `src/model/note/reader.ts` (Create)
+##### 30. `src/model/note/reader.ts` (Create)
 
 *   **Type / Scope**: Domain service.
 *   **Proposed Changes**: `extractFrontmatterText(content): string | null`.
@@ -1035,14 +1046,19 @@ No file is deleted.
     cut-off, builds `Reminder.ofNote`), and
     `apply(fm, reminder, action): ApplyOutcome`.
 
-##### 30. `src/model/note/reader.test.ts` (Create)
+##### 31. `src/model/note/reader.test.ts` (Create)
 
 *   **Type / Scope**: Unit test.
 *   **Proposed Changes**: Frontmatter extraction (none, unterminated, CRLF);
     cut-off drops earlier values and keeps the cut-off day; the title falls
     back to the file name; `apply` routes to the store named in the reminder.
 
-##### 31. `src/plugin/note-reminders.ts` (Create)
+#### Change 7: wiring and the sources setting
+
+After this change the feature works end to end with plain presentation, so it
+can be verified in the test vault on its own.
+
+##### 32. `src/plugin/note-reminders.ts` (Create)
 
 *   **Type / Scope**: Plugin service, dependencies injected.
 *   **Proposed Changes**: `NoteReminderService(reader, queue, deps)` where
@@ -1052,7 +1068,7 @@ No file is deleted.
     writing sequence in section 5. `edit(path, fn)` runs a dialog write through
     the same queue.
 
-##### 32. `src/plugin/note-reminders.test.ts` (Create)
+##### 33. `src/plugin/note-reminders.test.ts` (Create)
 
 *   **Type / Scope**: Unit test with a fake `deps`.
 *   **Proposed Changes**: No YAML parse when no configured name is in the
@@ -1060,7 +1076,7 @@ No file is deleted.
     for `stale`, `missing`, `blocked`; a throwing write gives `failed`; two
     actions on one path run in order.
 
-##### 33. `src/plugin/filesystem.ts` (Modify)
+##### 34. `src/plugin/filesystem.ts` (Modify)
 
 *   **Type / Scope**: Vault access.
 *   **Proposed Changes**: The constructor takes the service.
@@ -1069,7 +1085,7 @@ No file is deleted.
     the single `replaceFile`, and on `unreadable` reuses the note reminders the
     file had.
 
-##### 34. `src/plugin/data.ts` (Modify)
+##### 35. `src/plugin/data.ts` (Modify)
 
 *   **Type / Scope**: Persistence.
 *   **Proposed Changes**: Save note reminders under `noteReminders`
@@ -1077,142 +1093,155 @@ No file is deleted.
     them with `Reminder.ofNote`. Line reminders keep the `reminders` key and
     its shape.
 
-##### 35. `src/plugin/data.test.ts` (Modify)
+##### 36. `src/plugin/data.test.ts` (Modify)
 
 *   **Type / Scope**: Unit test.
 *   **Proposed Changes**: Round trip of a note reminder with its mute flag;
     data without `noteReminders` loads; `reminders` never contains a note
     reminder.
 
-##### 36. `src/plugin/ui/index.ts` (Modify)
+##### 37. `src/model/ntfy/sequence-id.ts` (Modify)
+
+*   **Type / Scope**: ntfy id derivation.
+*   **Proposed Changes**: `assignSequenceIds` splits its input. Line reminders keep today's
+    hash and index. A note reminder gets
+    `computeNoteSequenceId(file, store, key)`, a new function that hashes those
+    three fields with a separator that cannot occur in a line reminder's hash
+    input, and takes no index.
+
+##### 38. `src/model/ntfy/sequence-id.test.ts` (Modify)
+
+*   **Type / Scope**: Unit test.
+*   **Proposed Changes**: Ids of line reminders are unchanged when note
+    reminders are added to the same file; a note id is stable across a time
+    change and a title change; two properties of one note get different ids.
+
+##### 39. `src/plugin/ui/index.ts` (Modify)
 
 *   **Type / Scope**: UI controller.
-*   **Proposed Changes**: In `showReminder`, "done" and "remind me later" on a
-    note reminder call `service.apply` with `expected: reminder.time` and
-    handle the outcome as in section 5. `openReminderFile` opens the note and
-    skips the line jump for a note reminder.
+*   **Proposed Changes**: In `showReminder`, "done" and "remind me later" on a note
+    reminder call `service.apply` with `expected: reminder.time` and handle the
+    outcome as in section 5 of the Technical Plan.
 
-##### 37. `src/main.ts` (Modify)
+##### 40. `src/main.ts` (Modify)
 
 *   **Type / Scope**: Plugin entry point.
 *   **Proposed Changes**: Build the property store, the reader and the service
     (`parseYaml` from `obsidian`, `app.vault.read`,
     `app.fileManager.processFrontMatter`) and pass the service to the file
-    system and the UI. In this change the source list comes from a setting that
-    has no UI yet, so the default empty list keeps the feature off.
+    system and the UI. The source list comes from the new setting.
 
-##### 38. `src/plugin/settings/index.ts` (Modify)
-
-*   **Type / Scope**: Settings.
-*   **Proposed Changes**: Declare `noteReminderSources` (array, default `[]`,
-    tagged `TAG_RESCAN`) without adding it to a page.
-
-#### Change 6: sources setting and presentation
-
-##### 39. `src/plugin/settings/helper.ts` (Modify)
+##### 41. `src/plugin/settings/helper.ts` (Modify)
 
 *   **Type / Scope**: Settings DSL.
 *   **Proposed Changes**: A `rows<T>()` builder kind: stores an array, renders
     one line of controls per row through a caller-supplied renderer, with add
     and remove buttons, and runs a validator before accepting a change.
 
-##### 40. `src/plugin/settings/index.ts` (Modify)
+##### 42. `src/plugin/settings/index.ts` (Modify)
 
 *   **Type / Scope**: Settings.
-*   **Proposed Changes**: A "Note reminders" page with the source rows: name,
-    a "managed by Reminder" toggle, the "ignore dates before" date (prefilled
+*   **Proposed Changes**: Declare `noteReminderSources` (array, default `[]`, tagged
+    `TAG_RESCAN`) and a "Note reminders" page with the source rows: name, a
+    "managed by Reminder" toggle, the "ignore dates before" date (prefilled
     with today on add), the ignored-value count and the foreign-companion
     warning, both computed from `metadataCache` when the page renders.
 
-##### 41. `src/plugin/settings/settings-tab.css` (Modify)
+##### 43. `src/plugin/settings/settings-tab.css` (Modify)
 
 *   **Type / Scope**: Styles.
 *   **Proposed Changes**: Layout of a source row, using Obsidian's theme
     variables.
 
-##### 42. `src/model/time.ts` (Modify)
+##### 44. `src/i18n/ja.ts`, `src/i18n/zh-cn.ts` (Modify)
+
+*   **Type / Scope**: Translations.
+*   **Proposed Changes**: Keys for the settings page and the notices (`blocked`, `failed`).
+    The parity test requires both files.
+
+#### Change 8: presentation
+
+##### 45. `src/model/time.ts` (Modify)
 
 *   **Type / Scope**: Domain model.
 *   **Proposed Changes**: `latersFor(reminder, laters, now): Later[]` returns
     all options for a line or date-time reminder, and for a date-only note
     reminder only those that land on a later day.
 
-##### 43. `src/model/time.test.ts` (Modify)
+##### 46. `src/model/time.test.ts` (Modify)
 
 *   **Type / Scope**: Unit test.
 *   **Proposed Changes**: "In 30 minutes" is dropped and "Tomorrow" kept for a
     date-only note reminder; nothing is dropped for a line reminder.
 
-##### 44. `src/plugin/ui/reminder-notifier.ts`, `src/plugin/ui/system-notification.ts` (Modify)
+##### 47. `src/plugin/ui/reminder-notifier.ts`, `src/plugin/ui/system-notification.ts` (Modify)
 
 *   **Type / Scope**: Notification surfaces.
 *   **Proposed Changes**: Pass `latersFor(...)` instead of the raw list. The
     system notification appends the origin line to the body of a note reminder.
 
-##### 45. `src/ui/Reminder.svelte` (Modify)
+##### 48. `src/ui/Reminder.svelte` (Modify)
 
 *   **Type / Scope**: Svelte component (toast and modal body).
 *   **Proposed Changes**: An origin line under the title for a note reminder;
     the snooze control is hidden when the option list is empty.
 
-##### 46. `src/ui/ReminderListByDate.svelte`, `src/plugin/ui/reminder-list.ts` (Modify)
+##### 49. `src/ui/ReminderListByDate.svelte`, `src/plugin/ui/reminder-list.ts` (Modify)
 
 *   **Type / Scope**: Reminder list.
 *   **Proposed Changes**: A note icon and the origin as trailing text for a
     note reminder; the copied or dragged Markdown for it is the note link
     without a title prefix when the title is the note name.
 
-##### 47. `src/plugin/ntfy.ts` (Modify)
+##### 50. `src/plugin/ntfy.ts` (Modify)
 
 *   **Type / Scope**: ntfy publisher.
 *   **Proposed Changes**: Append the origin to the message of a note reminder.
-    Ids come from change 5.
+    Ids come from change 7.
 
-##### 48. `src/i18n/ja.ts`, `src/i18n/zh-cn.ts` (Modify)
+##### 51. `src/i18n/ja.ts`, `src/i18n/zh-cn.ts` (Modify)
 
 *   **Type / Scope**: Translations.
-*   **Proposed Changes**: Keys for the settings page, the notices
-    (`blocked`, `failed`) and the origin line. The parity test requires both
-    files.
+*   **Proposed Changes**: Keys for the origin line and the note icon label.
 
-#### Change 7: dialog, command, file menu, header bell
+#### Change 9: dialog, command, file menu, header bell
 
-##### 49. `src/plugin/obsidian-hack/property-type.ts` (Create)
+##### 52. `src/plugin/obsidian-hack/property-type.ts` (Create)
 
 *   **Type / Scope**: Wrapper around an internal Obsidian object.
 *   **Proposed Changes**: `propertyTypeOf(app, name): "date" | "datetime" | "unknown"`,
     reading `app.metadataTypeManager` inside `try`/`catch`. The only place that
     touches it.
 
-##### 50. `src/ui/note-reminder-form.ts` (Create)
+##### 53. `src/ui/note-reminder-form.ts` (Create)
 
 *   **Type / Scope**: TypeScript logic for the dialog.
 *   **Proposed Changes**: `initialForm(state, propertyType, now)` decides the
     date or date-time mode in the order of section 7 and the initial values;
     `canSave(form)`.
 
-##### 51. `src/ui/note-reminder-form.test.ts` (Create)
+##### 54. `src/ui/note-reminder-form.test.ts` (Create)
 
 *   **Type / Scope**: Unit test.
 *   **Proposed Changes**: Mode from an existing date, from an existing
     date-time, from each property type with an empty value, and the date-time
     fallback; a non-time value disables saving.
 
-##### 52. `src/ui/NoteReminderEditor.svelte` (Create)
+##### 55. `src/ui/NoteReminderEditor.svelte` (Create)
 
 *   **Type / Scope**: Svelte component.
 *   **Proposed Changes**: Property dropdown (when several managed rows), the
     calendar and time picker, the title field, and the buttons "Save", "Mark as
     Done", "Remove reminder".
 
-##### 53. `src/ui/DateTimeChooser.svelte` (Modify)
+##### 56. `src/ui/DateTimeChooser.svelte` (Modify)
 
 *   **Type / Scope**: Svelte component.
 *   **Proposed Changes**: A `timeMode` prop (`"optional" | "always" | "never"`,
     default `"optional"`, today's behaviour) so the dialog can force a date or
     a date-time.
 
-##### 54. `src/plugin/ui/note-reminder-modal.ts` (Create)
+##### 57. `src/plugin/ui/note-reminder-modal.ts` (Create)
 
 *   **Type / Scope**: Obsidian modal.
 *   **Proposed Changes**: Reads the note text through the service, mounts the
@@ -1220,7 +1249,7 @@ No file is deleted.
     own close with the plugin so it does not outlive an unload. With no managed
     row it asks whether to add `reminder` and adds the row on confirmation.
 
-##### 55. `src/plugin/ui/note-reminder-indicator.ts` (Create)
+##### 58. `src/plugin/ui/note-reminder-indicator.ts` (Create)
 
 *   **Type / Scope**: Header bell.
 *   **Proposed Changes**: Keeps one `addAction` element per Markdown view whose
@@ -1228,28 +1257,28 @@ No file is deleted.
     `ReminderPluginUI.invalidate()` and on `file-open` and `layout-change`;
     removes every element on unload.
 
-##### 56. `src/plugin/commands/set-note-reminder.ts` (Create), `src/plugin/commands/index.ts` (Modify)
+##### 59. `src/plugin/commands/set-note-reminder.ts` (Create), `src/plugin/commands/index.ts` (Modify)
 
 *   **Type / Scope**: Command.
 *   **Proposed Changes**: Command `set-note-reminder`, available when a
     Markdown file is active. Added to `COMMAND_IDS` so its name follows the
     language setting.
 
-##### 57. `src/plugin/ui/index.ts` (Modify)
+##### 60. `src/plugin/ui/index.ts` (Modify)
 
 *   **Type / Scope**: UI controller.
 *   **Proposed Changes**: Register the `file-menu` item for Markdown files,
     create and refresh the indicator.
 
-##### 58. `src/i18n/ja.ts`, `src/i18n/zh-cn.ts` (Modify)
+##### 61. `src/i18n/ja.ts`, `src/i18n/zh-cn.ts` (Modify)
 
 *   **Type / Scope**: Translations.
 *   **Proposed Changes**: Keys for the command, the menu item, the dialog and
     the bell tooltip.
 
-#### Change 8: documentation
+#### Change 10: documentation
 
-##### 59. `docs/src/guide/note-reminders.md` (Create)
+##### 62. `docs/src/guide/note-reminders.md` (Create)
 
 *   **Type / Scope**: User guide page.
 *   **Proposed Changes**: Setup (add a source, managed or external, the
@@ -1258,34 +1287,34 @@ No file is deleted.
     the limits: values before the cut-off are ignored, one date per property,
     one property type per name in a vault.
 
-##### 60. `docs/src/.vuepress/config.js` (Modify)
+##### 63. `docs/src/.vuepress/config.js` (Modify)
 
 *   **Type / Scope**: Docs site configuration.
 *   **Proposed Changes**: Add `note-reminders` to the "Guide" sidebar group.
 
-##### 61. `docs/src/setting/README.md` (Modify)
+##### 64. `docs/src/setting/README.md` (Modify)
 
 *   **Type / Scope**: Settings reference.
 *   **Proposed Changes**: The "Note reminders" page and its row fields.
 
-##### 62. `docs/src/guide/notification.md`, `docs/src/guide/list-reminders.md` (Modify)
+##### 65. `docs/src/guide/notification.md`, `docs/src/guide/list-reminders.md` (Modify)
 
 *   **Type / Scope**: User guide pages.
 *   **Proposed Changes**: One paragraph each on how a note reminder appears.
 
-##### 63. `README.md` (Modify)
+##### 66. `README.md` (Modify)
 
 *   **Type / Scope**: Repository README.
 *   **Proposed Changes**: A "Note reminders" entry in the feature list, linking
     to the guide page.
 
-##### 64. `CLAUDE.md`, `.claude/rules/testing.md` (Modify)
+##### 67. `CLAUDE.md`, `.claude/rules/testing.md` (Modify)
 
 *   **Type / Scope**: Contributor instructions.
 *   **Proposed Changes**: Add `src/model/note/` and `NoteReminderService` to
     the architecture section and to the list of injected-dependency classes.
 
-##### 65. `.claude/agents/review-reminder-format.md`, `.claude/agents/review-time-notification.md` (Modify)
+##### 68. `.claude/agents/review-reminder-format.md`, `.claude/agents/review-time-notification.md` (Modify)
 
 *   **Type / Scope**: Review agents.
 *   **Proposed Changes**: Add the "Done never edits the value" rule and the
@@ -1315,7 +1344,7 @@ No file is deleted.
     test, and the line-reminder key and ntfy id are pinned by literal-value
     tests.
 *   **E2E/Integration**: In the test vault through the `obsidian-e2e` skill,
-    before each of changes 5, 6 and 7 is opened as a pull request:
+    before each of changes 7, 8 and 9 is opened as a pull request:
     *   CUJ 1 to CUJ 6 as written.
     *   Spaced Repetition installed: "Done" on `sr-due`, then a review; the new
         date reminds and `sr-due-done` is kept.
