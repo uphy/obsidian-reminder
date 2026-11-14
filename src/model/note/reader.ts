@@ -7,7 +7,11 @@ import type {
   NoteReminderStore,
 } from "./store";
 
-const FRONTMATTER = /^---\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|$)/;
+// The empty block (the closing line right after the opening one) is its own
+// alternative, tried first: as an optional group it would only be reached
+// when no later `---` line exists, and body text up to that line would be
+// read as frontmatter.
+const FRONTMATTER = /^---\r?\n(?:---|([\s\S]*?)\r?\n---)[ \t]*(?:\r?\n|$)/;
 
 /**
  * Returns the YAML text of a note's frontmatter block: what is between a

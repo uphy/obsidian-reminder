@@ -29,6 +29,14 @@ describe("extractFrontmatterText()", (): void => {
 
   test("an empty block", (): void => {
     expect(extractFrontmatterText("---\n---\nbody")).toBe("");
+    expect(extractFrontmatterText("---\n---")).toBe("");
+    expect(extractFrontmatterText("---\r\n---  \r\nbody")).toBe("");
+  });
+
+  test("an empty block does not run on to a later rule in the body", (): void => {
+    expect(extractFrontmatterText("---\n---\ndue: 2026-11-20\n---\nmore")).toBe(
+      "",
+    );
   });
 
   test("CRLF line ends and spaces after the closing line", (): void => {
