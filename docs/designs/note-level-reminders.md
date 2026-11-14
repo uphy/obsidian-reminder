@@ -171,7 +171,8 @@ Across releases:
 *   Reading a property's type from Obsidian. There is no public API for it.
 *   Calling TaskNotes' internal functions; completing a TaskNotes task from
     a notification; suppressing TaskNotes' own notifications. (TaskNotes'
-    settings object is read, type-checked, for the names it uses.)
+    settings are read through its runtime API, type-checked, for the names
+    it uses.)
 *   A public API for formats written by third parties.
 *   Preserving YAML comments, quoting and inline list style when the plugin
     writes to a note's frontmatter (see Risks & Mitigations).
@@ -883,7 +884,18 @@ one. A date-only base counts from midnight.
         and differ from it; a difference forces a rescan while the reading
         is on, because notes were read under the old names (the same
         pattern as the statuses seeded from the Tasks plugin).
-    *   That settings object is not an API. `importTaskNotesSettings` checks
+    *   TaskNotes publishes a versioned runtime API on its plugin instance
+        (`api`, `apiVersion: 1`, with a capability check). Its
+        `settings.snapshot()` is how the settings are read; a TaskNotes
+        without it is read through the `settings` field of the plugin
+        instance, which holds the same object. The snapshot is a deep copy
+        of all settings, so one answer is reused for a second.
+    *   The API is used for the settings only. Task notes are read from
+        their frontmatter, not through `tasks.get`: the reading has to work
+        on a device without TaskNotes, it runs synchronously with the file
+        scan, and the record of handled reminders is not part of TaskNotes'
+        task.
+    *   The shape of the settings is not promised either way. `importTaskNotesSettings` checks
         each field's type and falls back to TaskNotes' default for anything
         missing or of another type, so a TaskNotes that renames a key
         degrades to the defaults. The saved copy is read back through the

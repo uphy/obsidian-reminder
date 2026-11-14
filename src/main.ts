@@ -20,6 +20,7 @@ import type { Frontmatter } from "model/note/format";
 import { TaskNotesNoteReminderFormat } from "model/note/tasknotes-format";
 import {
   exportTaskNotesSettings,
+  readTaskNotesSettings,
   taskNotesDefaults,
 } from "model/note/tasknotes-settings";
 import { Reminders } from "model/reminder";
@@ -43,6 +44,10 @@ export default class ReminderPlugin extends Plugin {
   private _fileSystem: ReminderPluginFileSystem;
   private _noteReminders: NoteReminderService;
   private _noteReminderReader: NoteReminderReader;
+  private taskNotesDefaultsCache?: {
+    at: number;
+    defaults: ReturnType<typeof taskNotesDefaults>;
+  };
   private _notificationWorker: NotificationWorker;
   private _ntfyController: NtfyController;
   constructor(app: App, manifest: PluginManifest) {
@@ -299,20 +304,30 @@ export default class ReminderPlugin extends Plugin {
    * for the sessions (and synced devices) where it is not there, e.g.
    * because it loads after this plugin or is not installed.
    *
-   * TaskNotes keeps its settings on the plugin instance. That is not an API,
-   * so they are checked field by field before use (`importTaskNotesSettings`).
+   * TaskNotes' settings come through its runtime API where it has one
+   * (`readTaskNotesSettings`), and are checked field by field before use
+   * (`importTaskNotesSettings`).
    */
   private taskNotesDefaults() {
-    const defaults = taskNotesDefaults(
-      this.app.plugins.plugins.tasknotes?.settings,
-      this.data.knownTaskNotesSettings,
-    );
-    if (defaults.source === "tasknotes") {
-      this.data.updateKnownTaskNotesSettings(
-        exportTaskNotesSettings(defaults.settings),
+    // This runs for every note that is read, and the API hands out a deep
+    // copy of all of TaskNotes' settings, so one answer serves a second.
+    const now = Date.now();
+    if (
+      this.taskNotesDefaultsCache == null ||
+      now - this.taskNotesDefaultsCache.at >= 1000
+    ) {
+      const defaults = taskNotesDefaults(
+        readTaskNotesSettings(this.app.plugins.plugins.tasknotes),
+        this.data.knownTaskNotesSettings,
       );
+      if (defaults.source === "tasknotes") {
+        this.data.updateKnownTaskNotesSettings(
+          exportTaskNotesSettings(defaults.settings),
+        );
+      }
+      this.taskNotesDefaultsCache = { at: now, defaults };
     }
-    return defaults;
+    return this.taskNotesDefaultsCache.defaults;
   }
 
   /**

@@ -22,10 +22,10 @@ declare module "obsidian" {
         "obsidian-tasks-plugin"?: Plugin;
         /**
          * Read for how its task notes are identified and which property
-         * names it uses; see `model/note/tasknotes-settings`. `unknown`
-         * because the shape belongs to that plugin.
+         * names it uses; see `readTaskNotesSettings` in
+         * `model/note/tasknotes-settings`, which checks the shape itself.
          */
-        tasknotes?: { settings?: unknown };
+        tasknotes?: unknown;
       };
     };
   }
