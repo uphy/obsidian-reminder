@@ -696,7 +696,12 @@ Mitigations.
     a note's properties or the setting change and when a view shows another
     file, coalesced because a full rescan reports a change per file. Bells
     are removed on unload.
-*   **Notifications.**
+*   **Notifications.** The label of a property reminder is the property
+    name, and it is empty when only one property is listed: there is then
+    nothing to tell apart, and the same name on every notification is noise.
+    Every place below leaves an empty label out together with its
+    separator. (A TaskNotes label is the entry's description and is always
+    there.)
     *   Toast and modal: under the title, one line "<label> · <time>". The file
         button below it stays. Clicking it opens the note without a line jump.
         The Alt+S shortcut does nothing when the snooze control is hidden.

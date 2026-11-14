@@ -54,12 +54,27 @@ describe("PropertyNoteReminderFormat#read()", (): void => {
         key: "follow-up",
         time: "2026-11-20",
         title: undefined,
-        label: "follow-up",
+        label: "",
       },
     ]);
     expect(read(format, { "follow-up": "2026-11-20T09:00:00" })[0]?.time).toBe(
       "2026-11-20T09:00:00",
     );
+  });
+
+  test("the label names the property only when several are listed", (): void => {
+    const two = formatOf({ property: "follow-up" }, { property: "renewal" });
+    expect(
+      read(two, { "follow-up": "2026-11-20", renewal: "2026-12-01" }).map(
+        (e) => e.label,
+      ),
+    ).toStrictEqual(["follow-up", "renewal"]);
+    // The other property is listed but empty in this note: the label is
+    // still needed, because another note may hold it.
+    expect(read(two, { "follow-up": "2026-11-20" })[0]?.label).toBe(
+      "follow-up",
+    );
+    expect(read(format, { "follow-up": "2026-11-20" })[0]?.label).toBe("");
   });
 
   test("a value that is not a time, or a property that is not listed, is ignored", (): void => {

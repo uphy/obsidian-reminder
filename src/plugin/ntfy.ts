@@ -765,5 +765,7 @@ export async function testNtfyConnection(
 function messageOf(reminder: Reminder): string {
   const noteName = noteNameFromPath(reminder.file);
   const origin = reminder.origin;
-  return origin.kind === "note" ? `${noteName} · ${origin.label}` : noteName;
+  return origin.kind === "note" && origin.label !== ""
+    ? `${noteName} · ${origin.label}`
+    : noteName;
 }
