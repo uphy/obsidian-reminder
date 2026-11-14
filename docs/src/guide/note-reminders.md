@@ -124,7 +124,7 @@ The bell in the note's header shows the state of the note and opens the dialog, 
 | Faint bell            | A reminder that is done, or dated before the cut-off. |
 | Faint bell with a "+" | No reminder yet.                                      |
 
-The faint bells appear once you have a managed property. If you would rather keep note headers empty, turn off [Show a bell in every note's header](/setting/#show-a-bell-in-every-note-s-header): the bell is then shown only while a reminder is waiting.
+If you would rather keep note headers empty, turn off [Show a bell in every note's header](/setting/#show-a-bell-in-every-note-s-header): the bell is then shown only while a reminder is waiting.
 
 Whether a reminder has a time is decided by what you pick: leave the time field untouched for a date, or choose a time for a date and time.
 

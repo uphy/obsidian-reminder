@@ -30,10 +30,12 @@ const BELL_ICONS: Record<BellState, string> = {
  * plugins have no supported way to decorate.
  *
  * A note with a pending reminder on a managed property always gets the bell.
- * With the "Show a bell in every note's header" setting on, and at least one
- * managed property configured, the other notes get a faint one, so that the
- * way to add a note reminder is on screen and not only in the command
- * palette and the file menu.
+ * With the "Show a bell in every note's header" setting on, the other notes
+ * get a faint one, so that the way to add a note reminder is on screen and
+ * not only in the command palette and the file menu. That holds before any
+ * property is managed too: the dialog then starts with its offer to set one
+ * up, and a user who has not found the feature yet is the one who needs the
+ * bell most.
  */
 export class NoteReminderIndicator {
   private actions: Map<MarkdownView, HTMLElement> = new Map();
@@ -139,7 +141,6 @@ export class NoteReminderIndicator {
     }
     if (
       !this.plugin.settings.noteReminderHeaderBell.value ||
-      this.plugin.managedNoteReminderSources().length === 0 ||
       !canSetNoteReminder(this.plugin, file)
     ) {
       return null;

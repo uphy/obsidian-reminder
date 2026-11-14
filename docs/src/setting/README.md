@@ -356,7 +356,7 @@ Type a property name and click `Add`. Each property then has its own block: its 
 
 ### Show a bell in every note's header
 
-Shows a bell in the header of every note once a property is `Managed`. Clicking it opens the [reminder dialog](/guide/note-reminders.html#set-a-reminder-from-a-dialog). A note without a reminder gets a faint bell.
+Shows a bell in the header of every note. Clicking it opens the [reminder dialog](/guide/note-reminders.html#set-a-reminder-from-a-dialog). A note without a reminder gets a faint bell.
 
 - ON: Every note has the bell.
 - OFF: The bell is shown only while a reminder is waiting.
