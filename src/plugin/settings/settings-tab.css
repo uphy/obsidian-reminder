@@ -57,7 +57,11 @@
   color: var(--text-error);
 }
 
+/* The control side of a row is narrow, and a label in a language without
+   spaces (Japanese, Chinese) would otherwise wrap one character per line. */
 .reminder-note-source-label {
   color: var(--text-muted);
   font-size: var(--font-ui-small);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
