@@ -1,5 +1,6 @@
 <script lang="typescript">
   import { t } from "i18n";
+  import { isValidRecurrence } from "model/format/recurrence";
   import { pickInitialProperty } from "model/note/property-store";
   import type { PropertyReminderState } from "model/note/property-store";
   import type { Reminders } from "model/reminder";
@@ -16,7 +17,7 @@
   export let weekStart = 0;
   export let onSave: (
     property: string,
-    edit: { time: DateTime; title: string },
+    edit: { time: DateTime; title: string; repeat: string },
   ) => void;
   export let onDone: (property: string) => void;
   export let onRemindAgain: (property: string) => void;
@@ -24,13 +25,19 @@
 
   let property = pickInitialProperty(properties, states) ?? "";
   let title = "";
+  let repeat = "";
   let loadedProperty: string | undefined = undefined;
 
   // Load the title of the selected property (on open and on switching).
   $: if (property !== loadedProperty) {
     loadedProperty = property;
     title = states[property]?.title ?? "";
+    repeat = states[property]?.repeat ?? "";
   }
+
+  // Checked as the user types: a rule that can't be read would otherwise
+  // only show up when "Done" fails to bring the reminder back.
+  $: repeatInvalid = repeat.trim() !== "" && !isValidRecurrence(repeat);
 
   $: state = states[property];
   $: existing = state?.time ?? undefined;
@@ -70,6 +77,22 @@
         <span>{t("Title")}</span>
         <input type="text" bind:value={title} placeholder={noteName} />
       </label>
+      <label>
+        <span>{t("Repeat")}</span>
+        <input
+          type="text"
+          bind:value={repeat}
+          placeholder={t("Does not repeat")}
+          aria-invalid={repeatInvalid}
+        />
+      </label>
+      {#if repeatInvalid}
+        <div class="note-reminder-error">
+          {t(
+            "This rule is not understood. Examples: “every day”, “every week on Monday”, “every month”.",
+          )}
+        </div>
+      {/if}
     {/if}
   </div>
   {#if state?.foreignValue != null}
@@ -89,7 +112,12 @@
           {timeStep}
           {weekStart}
           initialTime={existing}
-          onSelect={(time) => onSave(property, { time, title })}
+          onSelect={(time) => {
+            // Stay open on a rule that can't be read, so it can be fixed.
+            if (!repeatInvalid) {
+              onSave(property, { time, title, repeat });
+            }
+          }}
         />
       </div>
     {/key}

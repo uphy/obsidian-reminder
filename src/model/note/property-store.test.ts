@@ -1,6 +1,7 @@
 import { DateTime } from "model/time";
 import {
   PropertyNoteReminderStore,
+  hasUnreadableRepeatRule,
   pickInitialProperty,
   readPropertyReminderState,
   rearmPropertyReminder,
@@ -261,13 +262,18 @@ describe("PropertyNoteReminderStore#apply() snooze", (): void => {
 });
 
 describe("the dialog's functions", (): void => {
-  const edit = (to: string, title: string = "") => ({ time: time(to), title });
+  const edit = (to: string, title: string = "", repeat: string = "") => ({
+    time: time(to),
+    title,
+    repeat,
+  });
 
   test("readPropertyReminderState()", (): void => {
     expect(readPropertyReminderState({}, "reminder")).toStrictEqual({
       time: null,
       foreignValue: null,
       title: "",
+      repeat: "",
       done: false,
       pending: false,
     });
@@ -453,5 +459,239 @@ describe("the dialog's functions", (): void => {
     expect(removePropertyReminder(fm, "reminder")).toBe("blocked");
     expect(fm).toStrictEqual({ reminder: "next week" });
     expect(removePropertyReminder({}, "reminder")).toBe("missing");
+  });
+});
+
+describe("PropertyNoteReminderStore with a repeat rule", (): void => {
+  const store = storeOf(
+    { property: "reminder", managed: true },
+    { property: "due" },
+  );
+  const at = (now: string, expected: string): NoteReminderAction => ({
+    type: "done",
+    expected: time(expected),
+    now: time(now),
+  });
+
+  test("a monthly reminder that was snoozed keeps its day (CUJ 8)", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20T09:00:00",
+      "reminder-repeat": "every month",
+    };
+    expect(
+      store.apply(
+        fm,
+        "reminder",
+        snooze("2026-11-20T09:00", "2026-11-20T09:30"),
+      ),
+    ).toBe("applied");
+    expect(fm).toStrictEqual({
+      reminder: "2026-11-20T09:30:00",
+      "reminder-repeat": "every month",
+      "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
+    });
+
+    expect(
+      store.apply(fm, "reminder", at("2026-11-20T09:40", "2026-11-20T09:30")),
+    ).toBe("applied");
+    expect(fm).toStrictEqual({
+      reminder: "2026-12-20T09:00:00",
+      "reminder-repeat": "every month",
+      "reminder-done": "2026-11-20T09:30:00",
+    });
+
+    expect(
+      store.apply(fm, "reminder", at("2026-12-20T09:05", "2026-12-20T09:00")),
+    ).toBe("applied");
+    expect(fm["reminder"]).toBe("2027-01-20T09:00:00");
+    expect(fm["reminder-done"]).toBe("2026-12-20T09:00:00");
+    expect(read(store, fm)[0]?.time).toBe("2027-01-20T09:00:00");
+  });
+
+  test("a second snooze keeps the first occurrence", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20T09:30:00",
+      "reminder-repeat": "every month",
+      "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
+    };
+    store.apply(fm, "reminder", snooze("2026-11-20T09:30", "2026-11-21T08:00"));
+    expect(fm["reminder-occurrence"]).toBe(
+      "2026-11-20T09:00:00/2026-11-21T08:00:00",
+    );
+  });
+
+  test("a date edited by hand after a snooze starts the series from that date", (): void => {
+    const fm: Frontmatter = {
+      // Snoozed to 09:30, then moved to the 25th in the properties panel.
+      reminder: "2026-11-25T09:00:00",
+      "reminder-repeat": "every month",
+      "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
+    };
+    store.apply(fm, "reminder", at("2026-11-25T09:10", "2026-11-25T09:00"));
+    expect(fm).toStrictEqual({
+      reminder: "2026-12-25T09:00:00",
+      "reminder-repeat": "every month",
+      "reminder-done": "2026-11-25T09:00:00",
+    });
+  });
+
+  test("a snooze after a hand edit postpones the edited date", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-25T09:00:00",
+      "reminder-repeat": "every month",
+      "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
+    };
+    store.apply(fm, "reminder", snooze("2026-11-25T09:00", "2026-11-25T10:00"));
+    expect(fm["reminder-occurrence"]).toBe(
+      "2026-11-25T09:00:00/2026-11-25T10:00:00",
+    );
+  });
+
+  test("the next occurrence is never the time just completed", (): void => {
+    // A daily reminder snoozed to tomorrow, then completed today from the
+    // dialog: stepping from the occurrence gives tomorrow 09:00 again, which
+    // is the time being recorded as done.
+    const fm: Frontmatter = {
+      reminder: "2026-11-21T09:00:00",
+      "reminder-repeat": "every day",
+      "reminder-occurrence": "2026-11-20T09:00:00/2026-11-21T09:00:00",
+    };
+    store.apply(fm, "reminder", at("2026-11-20T10:00", "2026-11-21T09:00"));
+    expect(fm["reminder"]).toBe("2026-11-22T09:00:00");
+    expect(fm["reminder-done"]).toBe("2026-11-21T09:00:00");
+    expect(read(store, fm)).toHaveLength(1);
+  });
+
+  test("a date-only reminder stays a date", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20",
+      "reminder-repeat": "every week",
+    };
+    store.apply(fm, "reminder", at("2026-11-20T09:40", "2026-11-20"));
+    expect(fm["reminder"]).toBe("2026-11-27");
+    expect(fm["reminder-done"]).toBe("2026-11-20");
+  });
+
+  test("occurrences already past are skipped, as for a task line", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20",
+      "reminder-repeat": "every week",
+    };
+    store.apply(fm, "reminder", at("2026-12-10T09:00", "2026-11-20"));
+    expect(fm["reminder"]).toBe("2026-12-11");
+  });
+
+  test("when done steps from the day it was completed", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20",
+      "reminder-repeat": "every week when done",
+    };
+    store.apply(fm, "reminder", at("2026-11-23T09:00", "2026-11-20"));
+    expect(fm["reminder"]).toBe("2026-11-30");
+  });
+
+  test("a rule that is not understood only records done", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20",
+      "reminder-repeat": "now and then",
+    };
+    expect(hasUnreadableRepeatRule(fm, "reminder")).toBe(true);
+    expect(store.apply(fm, "reminder", done("2026-11-20"))).toBe("applied");
+    expect(fm).toStrictEqual({
+      reminder: "2026-11-20",
+      "reminder-repeat": "now and then",
+      "reminder-done": "2026-11-20",
+    });
+  });
+
+  test("a rule that has ended completes the reminder", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20",
+      "reminder-repeat": "every week until 2026-11-22",
+    };
+    expect(hasUnreadableRepeatRule(fm, "reminder")).toBe(false);
+    store.apply(fm, "reminder", done("2026-11-20"));
+    expect(fm["reminder"]).toBe("2026-11-20");
+    expect(read(store, fm)).toStrictEqual([]);
+  });
+
+  test("the rule is ignored on a property the plugin does not manage", (): void => {
+    const fm: Frontmatter = { due: "2026-11-20", "due-repeat": "every week" };
+    store.apply(fm, "due", snooze("2026-11-20", "2026-11-21"));
+    expect(fm["due-occurrence"]).toBeUndefined();
+    store.apply(fm, "due", at("2026-11-21T10:00", "2026-11-21"));
+    expect(fm).toStrictEqual({
+      due: "2026-11-21",
+      "due-repeat": "every week",
+      "due-done": "2026-11-21",
+    });
+  });
+
+  test("an occurrence value the plugin did not write is left alone", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20",
+      "reminder-repeat": "every week",
+      "reminder-occurrence": "third",
+    };
+    store.apply(fm, "reminder", done("2026-11-20"));
+    expect(fm["reminder-occurrence"]).toBe("third");
+    expect(fm["reminder"]).toBe("2026-11-27");
+  });
+
+  test("setPropertyReminder() writes and removes the rule", (): void => {
+    const fm: Frontmatter = {};
+    setPropertyReminder(fm, "reminder", {
+      time: time("2026-11-20"),
+      title: "",
+      repeat: " every month ",
+    });
+    expect(fm).toStrictEqual({
+      reminder: "2026-11-20",
+      "reminder-repeat": "every month",
+    });
+    expect(readPropertyReminderState(fm, "reminder").repeat).toBe(
+      "every month",
+    );
+    setPropertyReminder(fm, "reminder", {
+      time: time("2026-11-20"),
+      title: "",
+      repeat: "",
+    });
+    expect(fm).toStrictEqual({ reminder: "2026-11-20" });
+  });
+
+  test("setPropertyReminder() drops the postponed occurrence only when the time moves", (): void => {
+    const snoozed = (): Frontmatter => ({
+      reminder: "2026-11-20T09:30:00",
+      "reminder-repeat": "every month",
+      "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
+    });
+    const titleOnly = snoozed();
+    setPropertyReminder(titleOnly, "reminder", {
+      time: time("2026-11-20T09:30"),
+      title: "Pay rent",
+      repeat: "every month",
+    });
+    expect(titleOnly["reminder-occurrence"]).toBe(
+      "2026-11-20T09:00:00/2026-11-20T09:30:00",
+    );
+    const moved = snoozed();
+    setPropertyReminder(moved, "reminder", {
+      time: time("2026-11-22T09:00"),
+      title: "",
+      repeat: "every month",
+    });
+    expect(moved["reminder-occurrence"]).toBeUndefined();
+  });
+
+  test("removePropertyReminder() removes the rule and the occurrence", (): void => {
+    const fm: Frontmatter = {
+      reminder: "2026-11-20T09:30:00",
+      "reminder-repeat": "every month",
+      "reminder-occurrence": "2026-11-20T09:00:00/2026-11-20T09:30:00",
+      other: 1,
+    };
+    removePropertyReminder(fm, "reminder");
+    expect(fm).toStrictEqual({ other: 1 });
   });
 });

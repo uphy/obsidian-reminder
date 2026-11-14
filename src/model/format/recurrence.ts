@@ -3,6 +3,24 @@ import type { Moment } from "moment";
 import { RRule } from "rrule";
 
 /**
+ * Whether `recurrence` is a rule `nextOccurrence` can read. Lets a caller
+ * tell a rule that was not understood from one that has simply ended (both
+ * make `nextOccurrence` return undefined).
+ */
+export function isValidRecurrence(recurrence: string): boolean {
+  const cleaned = recurrence.replace(/\bwhen\s+done\b/gi, "").trim();
+  if (cleaned === "") {
+    return false;
+  }
+  try {
+    const options = RRule.parseText(cleaned);
+    return options != null && options.freq != null;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Compute the next occurrence of a recurrence rule after `dtStart` and `now`.
  *
  * By default, recurrence is anchored to `dtStart` (preserving its weekday /

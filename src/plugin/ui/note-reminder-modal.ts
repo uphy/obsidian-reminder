@@ -3,6 +3,7 @@ import { t } from "i18n";
 import type ReminderPlugin from "main";
 import { isPathExcluded } from "model/exclusion";
 import {
+  hasUnreadableRepeatRule,
   readPropertyReminderState,
   rearmPropertyReminder,
   removePropertyReminder,
@@ -156,6 +157,9 @@ class NoteReminderModal extends Modal {
               { type: "done", expected: shown, now: DateTime.now() },
             ),
           );
+          if (hasUnreadableRepeatRule(this.fm, property)) {
+            this.plugin.ui.reportUnreadableRepeatRule(path, property);
+          }
         },
         onRemindAgain: (property: string) => {
           write(property, (fm) => rearmPropertyReminder(fm, property));

@@ -1,5 +1,12 @@
-import type { DateTime } from "model/time";
-import { DONE_SUFFIX, TITLE_SUFFIX } from "./sources";
+import { isValidRecurrence, nextOccurrence } from "model/format/recurrence";
+import { moment } from "model/moment";
+import { DateTime } from "model/time";
+import {
+  DONE_SUFFIX,
+  OCCURRENCE_SUFFIX,
+  REPEAT_SUFFIX,
+  TITLE_SUFFIX,
+} from "./sources";
 import type { NoteReminderSource } from "./sources";
 import type {
   ApplyOutcome,
@@ -29,6 +36,13 @@ import {
  *   makes it pending again without anyone having to clear a flag.
  * - `p-title` replaces the note name as the title, for a property the plugin
  *   manages.
+ * - `p-repeat` holds a recurrence rule (`every month`), for a property the
+ *   plugin manages. "Done" then also moves `p` to the next occurrence.
+ * - `p-occurrence` exists between a snooze and the next "Done" of a
+ *   repeating reminder: `<occurrence>/<snoozed time>`. It keeps the series
+ *   on its own dates when one occurrence was postponed. It counts only while
+ *   `p` still holds the snoozed time, so a date edited by hand afterwards
+ *   starts the series from that date.
  */
 export class PropertyNoteReminderStore implements NoteReminderStore {
   readonly id = "property";
@@ -67,7 +81,8 @@ export class PropertyNoteReminderStore implements NoteReminderStore {
     key: string,
     action: NoteReminderAction,
   ): ApplyOutcome {
-    if (!this.sources().some((source) => source.property === key)) {
+    const source = this.sources().find((source) => source.property === key);
+    if (source == null) {
       return "missing";
     }
     const current = parseTimeValue(fm[key]);
@@ -96,10 +111,19 @@ export class PropertyNoteReminderStore implements NoteReminderStore {
         // because the reload after the write finds nothing changed.
         return "unchanged";
       }
+      const rule = source.managed ? repeatRuleOf(fm, key) : "";
+      const occurrence = postponedOccurrence(fm, key, current) ?? current;
       fm[key] = formatTimeValue(next);
       if (done != null && sameTime(done, next)) {
         // Otherwise the chosen time would count as handled and never show.
         delete fm[key + DONE_SUFFIX];
+      }
+      if (rule !== "") {
+        // A second snooze keeps the occurrence the first one postponed.
+        fm[key + OCCURRENCE_SUFFIX] =
+          formatTimeValue(occurrence) + "/" + formatTimeValue(next);
+      } else if (source.managed) {
+        removeOccurrence(fm, key);
       }
       return "applied";
     }
@@ -109,9 +133,111 @@ export class PropertyNoteReminderStore implements NoteReminderStore {
       // or text column of that name). It is not ours to overwrite.
       return "blocked";
     }
+    if (source.managed) {
+      const rule = repeatRuleOf(fm, key);
+      if (isValidRecurrence(rule)) {
+        const start = postponedOccurrence(fm, key, current) ?? current;
+        const next = nextOccurrenceAfter(rule, start, action.now, current);
+        if (next != null) {
+          fm[key] = formatTimeValue(next);
+        }
+        // No next occurrence: the rule has ended, and the reminder is done.
+      }
+      removeOccurrence(fm, key);
+    }
     fm[key + DONE_SUFFIX] = formatTimeValue(current);
     return "applied";
   }
+}
+
+/** The recurrence rule kept next to `property`, or "" when there is none. */
+function repeatRuleOf(fm: Frontmatter, property: string): string {
+  return textOf(fm[property + REPEAT_SUFFIX]);
+}
+
+/**
+ * True when `property` has a recurrence rule the plugin can't read. "Done"
+ * then only records the reminder as done, and the user should be told that
+ * it will not come back.
+ */
+export function hasUnreadableRepeatRule(
+  fm: Frontmatter,
+  property: string,
+): boolean {
+  const rule = repeatRuleOf(fm, property);
+  return rule !== "" && !isValidRecurrence(rule);
+}
+
+function parseOccurrence(
+  value: unknown,
+): { occurrence: DateTime; snoozed: DateTime } | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const parts = value.split("/");
+  if (parts.length !== 2) {
+    return null;
+  }
+  const occurrence = parseTimeValue(parts[0]);
+  const snoozed = parseTimeValue(parts[1]);
+  return occurrence == null || snoozed == null ? null : { occurrence, snoozed };
+}
+
+/**
+ * The occurrence a snooze postponed to `current`, or null when `current` is
+ * not a snoozed time (no record, or the date was changed since the snooze).
+ */
+function postponedOccurrence(
+  fm: Frontmatter,
+  property: string,
+  current: DateTime,
+): DateTime | null {
+  const record = parseOccurrence(fm[property + OCCURRENCE_SUFFIX]);
+  return record != null && sameTime(record.snoozed, current)
+    ? record.occurrence
+    : null;
+}
+
+/** Removes `p-occurrence` unless it holds something the plugin didn't write. */
+function removeOccurrence(fm: Frontmatter, property: string) {
+  const key = property + OCCURRENCE_SUFFIX;
+  if (
+    key in fm &&
+    (isEmptyValue(fm[key]) || parseOccurrence(fm[key]) != null)
+  ) {
+    delete fm[key];
+  }
+}
+
+function isAfter(a: DateTime, b: DateTime): boolean {
+  const format = a.hasTimePart ? "YYYY-MM-DDTHH:mm" : "YYYY-MM-DD";
+  return a.format(format) > b.format(format);
+}
+
+/**
+ * The occurrence of `rule` that follows the one just completed: the series
+ * is stepped from `start`, skipping what is already past `now`, and the
+ * result has to be later than `shown` (the time "Done" was pressed for).
+ *
+ * Without that last condition a reminder completed ahead of time could land
+ * on the very time it was completed for, which is recorded as done: a daily
+ * reminder snoozed to tomorrow and completed today would never show again.
+ */
+function nextOccurrenceAfter(
+  rule: string,
+  start: DateTime,
+  now: DateTime,
+  shown: DateTime,
+): DateTime | null {
+  const step = (from: DateTime): DateTime | null => {
+    const date = nextOccurrence(rule, start.moment(), from);
+    return date == null ? null : new DateTime(moment(date), start.hasTimePart);
+  };
+  let next = step(now);
+  if (next != null && !isAfter(next, shown)) {
+    next = step(shown);
+  }
+  return next != null && isAfter(next, shown) ? next : null;
 }
 
 /** What a note currently says about the reminder in `property`. */
@@ -123,6 +249,8 @@ export type PropertyReminderState = {
    */
   foreignValue: string | null;
   title: string;
+  /** The recurrence rule as written in the note; "" when there is none. */
+  repeat: string;
   /** True when `time` is set and already recorded as done. */
   done: boolean;
   /**
@@ -136,6 +264,8 @@ export type PropertyReminderEdit = {
   time: DateTime;
   /** Empty removes the title property. */
   title: string;
+  /** A recurrence rule. Empty removes the repeat property. */
+  repeat: string;
 };
 
 // A multi-line YAML string would break the single-line places a title is
@@ -168,6 +298,7 @@ export function readPropertyReminderState(
           : JSON.stringify(value)
         : null,
     title: textOf(fm[property + TITLE_SUFFIX]),
+    repeat: repeatRuleOf(fm, property),
     done,
     pending: time != null && !done && !isBeforeDay(time, since),
   };
@@ -221,10 +352,23 @@ export function setPropertyReminder(
       fm[titleKey] = title;
     }
   }
+  const repeatKey = property + REPEAT_SUFFIX;
+  if (isEmptyValue(fm[repeatKey]) || typeof fm[repeatKey] === "string") {
+    const repeat = textOf(edit.repeat);
+    if (repeat === "") {
+      delete fm[repeatKey];
+    } else {
+      fm[repeatKey] = repeat;
+    }
+  }
   const moved = current == null || !sameTime(current, edit.time);
   const done = parseTimeValue(fm[property + DONE_SUFFIX]);
   if (moved && done != null && sameTime(done, edit.time)) {
     delete fm[property + DONE_SUFFIX];
+  }
+  if (moved || repeatRuleOf(fm, property) === "") {
+    // A time chosen here starts the series from that time.
+    removeOccurrence(fm, property);
   }
   return "applied";
 }
@@ -275,5 +419,10 @@ export function removePropertyReminder(
   if (isEmptyValue(fm[doneKey]) || parseTimeValue(fm[doneKey]) != null) {
     delete fm[doneKey];
   }
+  const repeatKey = property + REPEAT_SUFFIX;
+  if (isEmptyValue(fm[repeatKey]) || typeof fm[repeatKey] === "string") {
+    delete fm[repeatKey];
+  }
+  removeOccurrence(fm, property);
   return "applied";
 }
