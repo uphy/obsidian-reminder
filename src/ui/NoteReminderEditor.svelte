@@ -160,17 +160,20 @@
     color: var(--text-error);
     font-size: var(--font-ui-smaller);
   }
-  /* Stays in view while the dialog's content scrolls: on a small screen the
-     calendar and the day's reminder list are taller than the dialog. */
   .note-reminder-actions {
     display: flex;
     gap: 0.5rem;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
+  }
+  /* On a phone or tablet the dialog fills the screen and its content
+     scrolls: the calendar and the day's reminder list are taller than the
+     dialog. The actions stay in view there. */
+  :global(.is-mobile) .note-reminder-actions {
     position: sticky;
     bottom: 0;
-    padding: 0.4rem 0;
+    padding: 0.5rem 0;
     background-color: var(--modal-background, var(--background-primary));
   }
   .note-reminder-remove {

@@ -236,6 +236,7 @@ export class ReminderPluginUI {
   invalidate() {
     this.viewProxy.invalidate();
     this.overdueStatusBar.refresh();
+    this.noteReminderIndicator.refresh();
     this.reminderNotifier.sync(
       new Set(
         this.plugin.reminders.reminders.map((reminder) => reminder.key()),
