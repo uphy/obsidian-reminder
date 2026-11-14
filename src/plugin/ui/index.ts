@@ -1,7 +1,11 @@
 import { onLanguageChange, t, tn } from "i18n";
 import type ReminderPlugin from "main";
 import { noteNameOf } from "model/note/reader";
-import { DONE_SUFFIX } from "model/note/sources";
+import {
+  hasUnreadableRepeatRule,
+  propertyOf,
+} from "model/note/property-format";
+import { DONE_SUFFIX, REPEAT_SUFFIX } from "model/note/sources";
 import type { NoteReminderAction } from "model/note/format";
 import { snoozeTimeFor } from "model/note/value";
 import type { ReadOnlyReference } from "model/ref";
@@ -506,7 +510,46 @@ export class ReminderPluginUI {
         return;
       }
       this.reportNoteWrite(reminder.file, noteKeyOf(reminder), result);
+      if (result === "applied" && action.type === "done") {
+        this.checkRepeatRule(reminder);
+      }
     });
+  }
+
+  /**
+   * After "Done" on a managed property: tells the user when its repeat rule
+   * could not be read, because the reminder was then only recorded as done
+   * and will not come back.
+   */
+  private checkRepeatRule(reminder: Reminder) {
+    const property = propertyOf(reminder);
+    if (
+      property == null ||
+      !this.plugin
+        .managedNoteReminderSources()
+        .some((source) => source.property === property)
+    ) {
+      return;
+    }
+    void this.plugin.noteReminders
+      .readFrontmatter(reminder.file)
+      .then((fm) => {
+        if (hasUnreadableRepeatRule(fm, property)) {
+          this.reportUnreadableRepeatRule(reminder.file, property);
+        }
+      })
+      .catch(() => {
+        // The note is gone or unreadable; there is nothing to warn about.
+      });
+  }
+
+  reportUnreadableRepeatRule(path: string, property: string) {
+    new Notice(
+      t(
+        "The repeat rule in “{property}” of {file} is not understood, so the reminder will not repeat",
+        { property: property + REPEAT_SUFFIX, file: noteNameOf(path) },
+      ),
+    );
   }
 
   /** Tells the user about a write that did not happen; see `applyToNote`. */

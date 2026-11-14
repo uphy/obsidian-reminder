@@ -1,7 +1,7 @@
 # Note-level reminders (reminders from properties)
 
 *   **Author:** uphy
-*   **Status:** First release implemented on the branch `note-reminder-spec`; second and third releases proposed
+*   **Status:** First release implemented on the branch `note-reminder-spec`, recurrence on `note-reminder-recurrence`, TaskNotes on `note-reminder-tasknotes`
 *   **Date:** 2026-11-14
 
 ## Overview
@@ -183,18 +183,6 @@ Across releases:
     emulation at tablet width the calendar is centred and the action row stays
     in view. Nothing was run at phone width or on a device. To check on a
     phone before the first release ships.
-*   **Recurrence: a hand edit after a snooze (second release).** As specified
-    in section 11, `p-occurrence` survives when the user edits `p` by hand
-    after a snooze, so the next "Done" continues the series from the old
-    occurrence instead of the edited date. Proposed fix: format the snoozed-to
-    time with the occurrence and use the occurrence only while `p` still
-    equals it. To settle before the second release is implemented.
-*   **Recurrence: the next occurrence can equal the time just completed
-    (second release).** With `start` = `p-occurrence`, `nextOccurrence` can
-    return the snoozed time itself (a daily reminder snoozed to tomorrow and
-    completed today), which would then count as done. Proposed fix: require
-    the next occurrence to be after the time shown. To settle with the
-    previous point.
 *   **TaskNotes: leftover snooze entries (third release).** Section 12 removes
     a no-longer-valid entry "on the next write", which may never come, and
     does not say what a snooze does while such an entry exists. Proposed fix:
@@ -279,7 +267,7 @@ Across releases:
 *   **When**: On November 20 the user snoozes it by 30 minutes, then presses
     "Done" at 09:40. On December 20 the user presses "Done" at 09:05.
 *   **Then**: After the snooze the note has `reminder: 2026-11-20T09:30:00` and
-    `reminder-occurrence: 2026-11-20T09:00:00`. After the first "Done" it has
+    `reminder-occurrence: 2026-11-20T09:00:00/2026-11-20T09:30:00`. After the first "Done" it has
     `reminder: 2026-12-20T09:00:00`, `reminder-done: 2026-11-20T09:30:00` and
     no `reminder-occurrence`. After the second "Done" it has
     `reminder: 2027-01-20T09:00:00`.
@@ -306,7 +294,7 @@ For a source property `p`:
 | `p-done` | The value of `p` that "Done" was last pressed for. | This plugin |
 | `p-title` | A title. Managed properties only. | The dialog, or the user |
 | `p-repeat` | A recurrence rule. Managed properties only. Second release. | The dialog, or the user |
-| `p-occurrence` | The occurrence a snooze postponed. Exists only between a snooze and the next "Done" on a repeating reminder. Second release. | This plugin |
+| `p-occurrence` | The occurrence a snooze postponed and the time it was postponed to, as `<occurrence>/<snoozed time>`. Exists only between a snooze and the next "Done" on a repeating reminder. Second release. | This plugin |
 
 **Time values.** A value is a time when it is a string in one of two shapes:
 
@@ -779,26 +767,45 @@ for reminders that share both.
     function steps the series from `start`, skips occurrences that are already
     past `now`, and supports the `when done` suffix. Note reminders behave the
     same as line reminders in all three respects.
-*   On "Done": `p-done` = the time shown; `p` = `nextOccurrence(rule, start,
-    now)` with `start` = `p-occurrence` if it is a time, else the time shown;
-    `p-occurrence` is removed.
-*   On snooze, when `p-repeat` is set and `p-occurrence` is not a time:
-    `p-occurrence` = the time shown. Then `p` = the new time. A second snooze
-    keeps the first `p-occurrence`.
-*   "OK" in the dialog removes `p-occurrence`: a time chosen there starts the
-    series from that time. An edit of `p` by hand has no `p-occurrence` either,
-    so it also restarts the series from the new time.
+*   `p-occurrence` holds two times joined by `/` (the ISO 8601 form of an
+    interval): the occurrence a snooze postponed, and the time it was
+    postponed to. The record **counts** only while `p` equals its second
+    time. That is how a snooze is told from a date changed by hand: after a
+    hand edit `p` no longer equals the snoozed time, so the record is ignored
+    and the series starts from the edited date.
+*   On "Done": `p-done` = the time shown; `p` = the next occurrence, stepped
+    from `start` = the occurrence in a `p-occurrence` that counts, else the
+    time shown; `p-occurrence` is removed.
+*   The next occurrence must be later than the time shown. `nextOccurrence`
+    is first called with the real `now`; if its result is not later than the
+    time shown, it is called again with the time shown as `now`. Without
+    this, a daily reminder snoozed to tomorrow and completed today (from the
+    dialog) would land on tomorrow again, which is the time just recorded in
+    `p-done`, and would never be shown.
+*   On snooze, when `p-repeat` is set: `p-occurrence` = `<occurrence>/<new
+    time>`, where the occurrence is taken from a record that counts (a second
+    snooze keeps the first occurrence), else it is the time shown. Then `p` =
+    the new time.
+*   "OK" in the dialog removes `p-occurrence` when the time was changed: a
+    time chosen there starts the series from that time. Saving with the time
+    unchanged (a title edit) keeps it.
 *   A rule that cannot be parsed: "Done" records `p-done`, leaves `p`, and a
     notice says the rule was not understood. The dialog validates the rule as
-    the user types. A rule that has ended (an `until` date in the past)
-    completes without a notice. The two are told apart by parsing the rule
-    separately from computing the next occurrence.
+    the user types and does not save while it is invalid. A rule that has
+    ended (an `until` date in the past) completes without a notice. The two
+    are told apart by `isValidRecurrence(rule)`, which parses the rule without
+    computing an occurrence.
 *   `p-repeat` and `p-occurrence` are ignored on external properties.
-*   Attach points: the "done" and "snooze" branches of the property format, and
-    one field in the dialog.
+*   A `p-occurrence` that is neither empty nor two times is someone else's
+    value and is never removed. "Remove" in the dialog removes `p-repeat` and
+    a `p-occurrence` the plugin wrote.
+*   Changed files: the "done" and "snooze" branches of the property format,
+    `isValidRecurrence` in `recurrence.ts`, one field in the dialog, and one
+    notice in `plugin/ui/index.ts`.
 
-Verified on the spike, in the format's unit tests: the sequence of CUJ 8,
-including the second cycle.
+Verified in the format's unit tests: the sequence of CUJ 8 including the second
+cycle, the hand edit after a snooze, and the daily reminder completed ahead of
+time.
 
 ### 12. TaskNotes (third release)
 
@@ -1044,6 +1051,16 @@ turning the asynchronous format code synchronous, which is outside this design.
     "Done" would put the series back.
 *   **Reason for Rejection**: Rejected by author: an earlier draft specified
     this, and review showed the drift with a worked example.
+
+#### B4: `p-occurrence` holding only the postponed occurrence
+
+*   **Pros**: A plain time value, readable in the properties panel.
+*   **Cons**: A date edited by hand after a snooze cannot be told from the
+    snoozed time, so the next "Done" continues the series from the old
+    occurrence instead of the edited date.
+*   **Reason for Rejection**: Rejected by author: the rule "a date changed by
+    hand restarts the series" has to hold after a snooze too, and that needs
+    the snoozed time next to the occurrence.
 
 ### How past dates are kept from flooding
 

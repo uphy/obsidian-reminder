@@ -3,17 +3,18 @@ import { isBeforeDay, isDay, isEmptyValue, parseTimeValue } from "./value";
 
 export const DONE_SUFFIX = "-done";
 export const TITLE_SUFFIX = "-title";
+export const REPEAT_SUFFIX = "-repeat";
+export const OCCURRENCE_SUFFIX = "-occurrence";
 
 /**
- * Suffixes of the properties the plugin keeps next to a source property.
- * `-repeat` and `-occurrence` are reserved for recurrence, so that a source
- * can never be named after them.
+ * Suffixes of the properties the plugin keeps next to a source property. A
+ * source can never be named after one of them.
  */
 export const COMPANION_SUFFIXES = [
   DONE_SUFFIX,
   TITLE_SUFFIX,
-  "-repeat",
-  "-occurrence",
+  REPEAT_SUFFIX,
+  OCCURRENCE_SUFFIX,
 ];
 
 /** One property the user configured to be read as a reminder. */

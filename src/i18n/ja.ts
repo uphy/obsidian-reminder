@@ -352,4 +352,12 @@ export const ja: Record<string, string> = {
     "保存しましたが、通知されません。「{property}」は {date} より前の日付を無視する設定です（設定 → ノートのリマインダー）。",
   "“{property}” can't be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on “Managed”.":
     "「{property}」は使えません。追加済みのプロパティがその名前を使っています。設定 → ノートのリマインダーでプロパティを追加し、「管理する」をオンにしてください。",
+
+  // --- Note reminders: recurrence --------------------------------------------
+  Repeat: "繰り返し",
+  "Does not repeat": "繰り返さない",
+  "This rule is not understood. Examples: “every day”, “every week on Monday”, “every month”.":
+    "このルールは読み取れません。例: 「every day」「every week on Monday」「every month」",
+  "The repeat rule in “{property}” of {file} is not understood, so the reminder will not repeat":
+    "{file} の「{property}」の繰り返しルールを読み取れないため、このリマインダーは繰り返しません",
 };

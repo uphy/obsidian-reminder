@@ -333,4 +333,12 @@ export const zhCN: Record<string, string> = {
     "已保存，但不会提醒：“{property}”会忽略早于 {date} 的日期（设置 → 笔记提醒）。",
   "“{property}” can't be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on “Managed”.":
     "无法使用“{property}”：列表中的另一个属性已使用该名称。请在 设置 → 笔记提醒 中添加属性并开启“托管”。",
+
+  // --- Note reminders: recurrence --------------------------------------------
+  Repeat: "重复",
+  "Does not repeat": "不重复",
+  "This rule is not understood. Examples: “every day”, “every week on Monday”, “every month”.":
+    "无法识别此规则。示例：“every day”、“every week on Monday”、“every month”。",
+  "The repeat rule in “{property}” of {file} is not understood, so the reminder will not repeat":
+    "无法识别 {file} 中“{property}”的重复规则，因此该提醒不会重复",
 };
