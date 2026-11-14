@@ -309,10 +309,9 @@ export const ja: Record<string, string> = {
     "日付、または日付と時刻のプロパティの名前を追加します。値が入っているノートは、その日時にリマインドされます。「完了」は済ませた日付を「<プロパティ名>-done」に記録し、元のプロパティは変更しません。",
   Add: "追加",
   Managed: "管理する",
-  'Managed: "Set reminder for this note" creates and edits this property.':
-    "管理する: 「このノートにリマインダーを設定」がこのプロパティを作成・変更します。",
-  "Read only: its value is never created or removed here.":
-    "読むだけ: このプラグインが値を作ったり消したりすることはありません。",
+  '"Set reminder for this note" creates and edits this property. When off, the property is only read: its value is never created or removed here.':
+    "「このノートにリマインダーを設定」がこのプロパティを作成・変更します。オフのときは読むだけで、このプラグインが値を作ったり消したりすることはありません。",
+  "Values dated earlier are not read.": "これより前の日付の値は読みません。",
   "{count} earlier values in the vault are ignored.":
     "保管庫内の、これより前の値 {count} 件は無視されます。",
   '"{property}" already holds other values in {count} notes, so "Done" can\'t be recorded there.':
