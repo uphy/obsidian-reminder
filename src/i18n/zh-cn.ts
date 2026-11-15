@@ -290,7 +290,7 @@ export const zhCN: Record<string, string> = {
   'Add the name of a date or date & time property. A note with a value in it gets a reminder at that time. "Done" records the handled date in "<property>-done" and leaves the property itself alone.':
     "添加日期或日期和时间属性的名称。该属性有值的笔记会在那个时间提醒。“完成”会把已处理的日期记录在“<属性名>-done”中，不会修改属性本身。",
   Add: "添加",
-  Managed: "托管",
+  Managed: "由插件管理",
   '"Set reminder for this note" creates and edits this property. When off, the property is only read: its value is never created or removed here.':
     "“为此笔记设置提醒”会创建和编辑此属性。关闭时仅读取该属性，此插件不会创建或删除它的值。",
   "Values dated earlier are not read.": "不读取早于此日期的值。",
@@ -316,23 +316,24 @@ export const zhCN: Record<string, string> = {
   "Set a time": "指定时间",
   "Set reminder for this note": "为此笔记设置提醒",
   "Reminder for {note}": "{note} 的提醒",
-  "Scheduled:": "已安排：",
-  "Done:": "已完成：",
-  "Not shown (before the cut-off):": "不提醒（早于忽略日期）：",
+  "Scheduled: {time}": "已安排：{time}",
+  "Done: {time}": "已完成：{time}",
+  "Not shown (before the cut-off): {time}": "不提醒（早于忽略日期）：{time}",
   Property: "属性",
   Title: "标题",
   "Remove reminder": "删除提醒",
   "Remind again": "再次提醒",
   "Reminder: {time} ({property})": "提醒：{time}（{property}）",
-  "“{property}” holds “{value}”, which is not a date. Change it in the note's properties before setting a reminder here.":
+  "Reminder: {time}": "提醒：{time}",
+  '"{property}" holds "{value}", which is not a date. Change it in the note\'s properties before setting a reminder here.':
     "“{property}”的值“{value}”不是日期。请先在笔记属性中修改，再在此设置提醒。",
-  "Note reminders are kept in a property of the note. No property is set up for this yet. Use “{property}”?":
+  'Note reminders are kept in a property of the note. No property is set up for this yet. Use "{property}"?':
     "笔记提醒保存在笔记的属性中。尚未设置用于保存的属性。使用“{property}”吗？",
-  "Use “{property}”": "使用“{property}”",
-  "Saved, but it will not be shown: dates before {date} are ignored for “{property}” (Settings → Note reminders).":
+  'Use "{property}"': "使用“{property}”",
+  'Saved, but it will not be shown: dates before {date} are ignored for "{property}" (Settings → Note reminders).':
     "已保存，但不会提醒：“{property}”会忽略早于 {date} 的日期（设置 → 笔记提醒）。",
-  "“{property}” can't be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on “Managed”.":
-    "无法使用“{property}”：列表中的另一个属性已使用该名称。请在 设置 → 笔记提醒 中添加属性并开启“托管”。",
+  '"{property}" can\'t be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on "Managed".':
+    "无法使用“{property}”：列表中的另一个属性已使用该名称。请在 设置 → 笔记提醒 中添加属性并开启“由插件管理”。",
 
   // --- Note reminders: recurrence --------------------------------------------
   Repeat: "重复",
