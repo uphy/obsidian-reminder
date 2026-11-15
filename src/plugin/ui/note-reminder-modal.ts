@@ -150,7 +150,7 @@ class NoteReminderModal extends Modal {
           if (isBeforeDay(edit.time, since)) {
             new Notice(
               t(
-                "Saved, but it will not be shown: dates before {date} are ignored for “{property}” (Settings → Note reminders).",
+                'Saved, but it will not be shown: dates before {date} are ignored for "{property}" (Settings → Note reminders).',
                 { date: since, property },
               ),
             );
@@ -203,7 +203,7 @@ class AddManagedPropertyModal extends Modal {
     this.setTitle(t("Set reminder for this note"));
     this.contentEl.createEl("p", {
       text: t(
-        "Note reminders are kept in a property of the note. No property is set up for this yet. Use “{property}”?",
+        'Note reminders are kept in a property of the note. No property is set up for this yet. Use "{property}"?',
         { property: DEFAULT_MANAGED_PROPERTY },
       ),
     });
@@ -211,7 +211,7 @@ class AddManagedPropertyModal extends Modal {
       .addButton((button) =>
         button
           .setButtonText(
-            t("Use “{property}”", { property: DEFAULT_MANAGED_PROPERTY }),
+            t('Use "{property}"', { property: DEFAULT_MANAGED_PROPERTY }),
           )
           .setCta()
           .onClick(() => {
@@ -225,7 +225,7 @@ class AddManagedPropertyModal extends Modal {
               // title value; the user has to pick a name in the settings.
               new Notice(
                 t(
-                  "“{property}” can't be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on “Managed”.",
+                  '"{property}" can\'t be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on "Managed".',
                   { property: DEFAULT_MANAGED_PROPERTY },
                 ),
               );

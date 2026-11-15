@@ -34,14 +34,18 @@
 
   $: state = states[property];
   $: existing = state?.time ?? undefined;
+  // One string per state with the time inside, so that a translation
+  // decides what goes between the label and the time.
   $: status =
     existing == null
       ? ""
       : state?.done
-        ? t("Done:")
+        ? t("Done: {time}", { time: existing.toString() })
         : state?.pending
-          ? t("Scheduled:")
-          : t("Not shown (before the cut-off):");
+          ? t("Scheduled: {time}", { time: existing.toString() })
+          : t("Not shown (before the cut-off): {time}", {
+              time: existing.toString(),
+            });
 </script>
 
 <div class="note-reminder-editor">
@@ -51,7 +55,6 @@
   {#if existing}
     <div class="note-reminder-status" class:is-inactive={!state?.pending}>
       {status}
-      {existing.toString()}
     </div>
   {/if}
   <div class="note-reminder-fields">
@@ -75,7 +78,7 @@
   {#if state?.foreignValue != null}
     <div class="note-reminder-error">
       {t(
-        "“{property}” holds “{value}”, which is not a date. Change it in the note's properties before setting a reminder here.",
+        '"{property}" holds "{value}", which is not a date. Change it in the note\'s properties before setting a reminder here.',
         { property, value: state.foreignValue },
       )}
     </div>
