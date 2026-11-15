@@ -17,9 +17,18 @@ import {
 } from "model/note/sources";
 import type { NoteReminderSource } from "model/note/sources";
 import type { Frontmatter } from "model/note/format";
+import {
+  TASKNOTES_FORMAT_ID,
+  TaskNotesNoteReminderFormat,
+} from "model/note/tasknotes-format";
+import {
+  exportTaskNotesSettings,
+  taskNotesDefaults,
+} from "model/note/tasknotes-settings";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
+import { TaskNotesApi } from "plugin/tasknotes-api";
 import { setSeededTaskStatuses } from "plugin/settings";
 import { formatStatusSetting } from "model/format/status";
 import type { TaskStatus } from "model/format/status";
@@ -38,6 +47,13 @@ export default class ReminderPlugin extends Plugin {
   private _fileSystem: ReminderPluginFileSystem;
   private _noteReminders: NoteReminderService;
   private _noteReminderReader: NoteReminderReader;
+  private taskNotesApi = new TaskNotesApi(
+    () => this.app.plugins.plugins.tasknotes,
+  );
+  private taskNotesDefaultsCache?: {
+    at: number;
+    defaults: ReturnType<typeof taskNotesDefaults>;
+  };
   private _notificationWorker: NotificationWorker;
   private _ntfyController: NtfyController;
   constructor(app: App, manifest: PluginManifest) {
@@ -70,6 +86,7 @@ export default class ReminderPlugin extends Plugin {
 
     this._noteReminderReader = new NoteReminderReader([
       new PropertyNoteReminderFormat(() => this.noteReminderSources()),
+      new TaskNotesNoteReminderFormat(() => this.settings.taskNotesOptions()),
     ]);
     const fileAt = (path: string): TFile => {
       const file = this.app.vault.getAbstractFileByPath(path);
@@ -84,11 +101,16 @@ export default class ReminderPlugin extends Plugin {
       processFrontMatter: async (path, fn) => {
         await this.app.fileManager.processFrontMatter(fileAt(path), fn);
       },
+      // The only property of another plugin is TaskNotes' reminders list.
+      writeExternalProperty: async (format, path, _property, value) =>
+        format === TASKNOTES_FORMAT_ID &&
+        (await this.taskNotesApi.setReminders(path, value)),
     });
     this.settings.noteReminderStats = (source) =>
       this.noteReminderStats(source);
     this.settings.noteReminderNewCutOff = (property, today) =>
       this.newNoteReminderCutOff(property, today);
+    this.settings.taskNotesDefaults = () => this.taskNotesDefaults();
 
     this._ui = new ReminderPluginUI(this);
     this._fileSystem = new ReminderPluginFileSystem(
@@ -137,7 +159,9 @@ export default class ReminderPlugin extends Plugin {
       accessToken: () => this.settings.ntfyAccessToken.value,
       reminders: () => this.reminders.reminders,
       defaultTime: () => this.settings.reminderTime.value,
-      hasNoteReminderSources: () => this.noteReminderSources().length > 0,
+      hasNoteReminderSources: () =>
+        this.noteReminderSources().length > 0 ||
+        this.settings.taskNotesEnabled.value,
       vaultName: () => this.app.vault.getName(),
       registerInterval: (id) => this.registerInterval(id),
       // `throw: false` so an HTTP error status comes back as a response the
@@ -281,6 +305,39 @@ export default class ReminderPlugin extends Plugin {
     }
     this.settings.noteReminderSources.rawValue.value = rows;
     return true;
+  }
+
+  /**
+   * The defaults of the TaskNotes settings: the running TaskNotes plugin's
+   * own settings, else what it said the last time it was running, else
+   * TaskNotes' factory defaults. What TaskNotes says is recorded on the way,
+   * for the sessions (and synced devices) where it is not there, e.g.
+   * because it loads after this plugin or is not installed.
+   *
+   * TaskNotes' settings come through its runtime API where it has one
+   * (`TaskNotesApi#settings`), and are checked field by field before use
+   * (`importTaskNotesSettings`).
+   */
+  private taskNotesDefaults() {
+    // This runs for every note that is read, and the API hands out a deep
+    // copy of all of TaskNotes' settings, so one answer serves a second.
+    const now = Date.now();
+    if (
+      this.taskNotesDefaultsCache == null ||
+      now - this.taskNotesDefaultsCache.at >= 1000
+    ) {
+      const defaults = taskNotesDefaults(
+        this.taskNotesApi.settings(),
+        this.data.knownTaskNotesSettings,
+      );
+      if (defaults.source === "tasknotes") {
+        this.data.updateKnownTaskNotesSettings(
+          exportTaskNotesSettings(defaults.settings),
+        );
+      }
+      this.taskNotesDefaultsCache = { at: now, defaults };
+    }
+    return this.taskNotesDefaultsCache.defaults;
   }
 
   /**

@@ -55,6 +55,11 @@ export class PluginData {
   // a seed that CHANGED between sessions can be told apart from one that was
   // merely re-read. See `updateSeededTaskStatuses`.
   private seededTaskStatusesText = "";
+  // The part of the TaskNotes plugin's settings this plugin reads, as it was
+  // the last time TaskNotes was running (the shape `exportTaskNotesSettings`
+  // writes). Persisted so that a session or a device without TaskNotes reads
+  // task notes the same way. See `updateKnownTaskNotesSettings`.
+  private knownTaskNotes: Record<string, unknown> | null = null;
   public debug: Reference<boolean> = new Reference(false);
   // Do-not-disturb end time, or `null` while do-not-disturb is inactive.
   // Transient state (not a setting): not exposed in the settings tab, but
@@ -108,6 +113,28 @@ export class PluginData {
     this.changed = true;
   }
 
+  /** The TaskNotes settings last seen, or null when there were none. */
+  get knownTaskNotesSettings(): Record<string, unknown> | null {
+    return this.knownTaskNotes;
+  }
+
+  /**
+   * Records what the running TaskNotes plugin says about its task notes.
+   * When that differs from what was known, stored reminders may have been
+   * read under other property names, so a rescan is forced -- but only while
+   * TaskNotes reminders are read at all.
+   */
+  updateKnownTaskNotesSettings(settings: Record<string, unknown>) {
+    if (JSON.stringify(this.knownTaskNotes) === JSON.stringify(settings)) {
+      return;
+    }
+    this.knownTaskNotes = settings;
+    if (this.settings.taskNotesEnabled.value) {
+      this.scanned.value = false;
+    }
+    this.changed = true;
+  }
+
   async load() {
     try {
       await this.doLoad();
@@ -127,6 +154,7 @@ export class PluginData {
       | {
           scanned: boolean;
           seededTaskStatuses?: string;
+          taskNotesSettings?: unknown;
           debug?: boolean;
           dndUntil?: number | null;
           settings?: Record<string, unknown>;
@@ -140,6 +168,11 @@ export class PluginData {
     }
     this.scanned.value = data.scanned;
     this.seededTaskStatusesText = data.seededTaskStatuses ?? "";
+    const known = data.taskNotesSettings;
+    this.knownTaskNotes =
+      typeof known === "object" && known !== null && !Array.isArray(known)
+        ? (known as Record<string, unknown>)
+        : null;
     if (data.debug != null) {
       this.debug.value = data.debug;
     }
@@ -250,6 +283,9 @@ export class PluginData {
       await this.store.saveData({
         scanned: this.scanned.value,
         seededTaskStatuses: this.seededTaskStatusesText,
+        ...(this.knownTaskNotes != null
+          ? { taskNotesSettings: this.knownTaskNotes }
+          : {}),
         reminders: remindersData,
         noteReminders: noteRemindersData,
         debug: this.debug.value,

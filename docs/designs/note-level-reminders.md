@@ -165,12 +165,14 @@ Across releases:
 *   Showing "done" as a checkbox in the properties panel. The state is "`p`
     and `p-done` hold the same date". A Bases formula column, the header bell
     and the reminder list show it.
-*   Values with a UTC offset or `Z` (`2026-11-20T09:00:00+09:00`). They are not
-    read. Obsidian's property editor does not write them.
+*   Values with a UTC offset or `Z` (`2026-11-20T09:00:00+09:00`) in a plain
+    property. They are not read. Obsidian's property editor does not write
+    them. (TaskNotes' times are the exception, see the TaskNotes section.)
 *   Reading a property's type from Obsidian. There is no public API for it.
-*   Reading TaskNotes' settings or calling its internal functions; TaskNotes
-    recurring tasks; completing a TaskNotes task from a notification;
-    suppressing TaskNotes' own notifications.
+*   Calling TaskNotes' internal functions; completing a TaskNotes task from
+    a notification; suppressing TaskNotes' own notifications. (TaskNotes'
+    published runtime API is used for two things: reading its settings,
+    type-checked, and writing a changed `reminders` list.)
 *   A public API for formats written by third parties.
 *   Preserving YAML comments, quoting and inline list style when the plugin
     writes to a note's frontmatter (see Risks & Mitigations).
@@ -183,12 +185,6 @@ Across releases:
     emulation at tablet width the calendar is centred and the action row stays
     in view. Nothing was run at phone width or on a device. To check on a
     phone before the first release ships.
-*   **TaskNotes: leftover snooze entries (third release).** Section 12 removes
-    a no-longer-valid entry "on the next write", which may never come, and
-    does not say what a snooze does while such an entry exists. Proposed fix:
-    every write first removes the plugin's invalid entries, and a snooze
-    replaces an existing entry for the same original. To settle before the
-    third release is implemented.
 
 ## Critical User Journeys (CUJs)
 
@@ -833,17 +829,121 @@ The **effective time** of an entry is `absoluteTime` for an absolute entry, and
 the value of the property named by `relatedTo` plus `offset` for a relative
 one. A date-only base counts from midnight.
 
+*   `absoluteTime` and the base date may carry `Z` or a UTC offset, because
+    TaskNotes' API and CLI accept a full ISO timestamp. Such a value is read
+    as the local time of that moment. This is the one place a zoned value
+    is read (a plain property is not, see "Values with a UTC offset"): this
+    format never writes a TaskNotes time back, and what it adds (a record, a
+    snooze entry) is written in local time. A record written on a device in
+    another time zone names another local time, so the reminder is pending
+    again there; that is accepted.
+*   `offset` is an ISO 8601 duration with a sign. Weeks and days are added
+    as calendar days. A month is 30 days and a year 365 days, which is how
+    TaskNotes computes its own notification; calendar months would put the
+    two plugins' notifications up to two days apart.
+*   A recurring task (a value in `recurrence`) is read like any other.
+    TaskNotes keeps the next occurrence in `scheduled` (and `due`) and moves
+    them on when an occurrence is completed or skipped, so a relative
+    reminder becomes pending again through the same rule as a moved due
+    date: its record no longer matches its time. TaskNotes moves the dates
+    only for the current occurrence, so a relative reminder whose base date
+    is listed in `complete_instances` or `skipped_instances` is not read.
+    The names of those two lists follow TaskNotes' settings and have no
+    setting of their own.
+*   A task is completed when its status is one of the completed ones (a
+    checkbox status when ticked), or when it does not recur and has a
+    completed date. TaskNotes sets that date on completion and clears it
+    when the task is reopened, so it agrees with the status; it is read for
+    notes whose status was edited by hand.
+
 *   A second format, `tasknotes`, with its own settings group: a switch (off by
     default), the task tag (default `task`), the statuses that mean completed
     (default `done`), and a cut-off date that is set to today when the switch
-    is turned on with the cut-off empty. Only TaskNotes' default property names
-    are supported; the settings description says so.
-*   Read: a note that has the tag, whose status is not a completed one, that
-    does not have the tag `archived`, and that has no `recurrence`. Each entry
+    is turned on with the cut-off empty. A cut-off the user emptied afterwards
+    stays empty and means "read every date".
+*   TaskNotes lets the user rename its properties, identify a task by a
+    property instead of a tag, rename the archive tag and define statuses.
+    The format takes all of these from its options, and the settings group
+    has a field for each: how a task is identified (tag, or property and
+    value), the archive tag, and the names of `title`, `status`, `due`,
+    `scheduled`, `reminders` and `recurrence`. The record of handled
+    reminders is the reminders property with `-done` appended.
+    *   An empty field means "what TaskNotes says", and every field starts
+        empty (how a task is identified starts as "Same as TaskNotes"), so
+        the reading follows TaskNotes without any setup. A field is filled in
+        only to deviate. The value in effect is shown as the field's
+        placeholder.
+    *   "What TaskNotes says" is resolved in three steps
+        (`taskNotesDefaults`): the settings object of the running TaskNotes
+        plugin; else the copy of it saved in this plugin's data the last
+        time TaskNotes was running; else TaskNotes' factory defaults. The
+        saved copy covers a device that syncs the vault without TaskNotes
+        and a session in which TaskNotes loads after this plugin. The
+        settings tab says which step is in use when it is not the first.
+    *   The saved copy is refreshed whenever TaskNotes' settings are read
+        and differ from it; a difference forces a rescan while the reading
+        is on, because notes were read under the old names (the same
+        pattern as the statuses seeded from the Tasks plugin).
+    *   TaskNotes publishes a versioned runtime API on its plugin instance
+        (`api`, `apiVersion: 1`, with a capability check). Its
+        `settings.snapshot()` is how the settings are read; a TaskNotes
+        without it is read through the `settings` field of the plugin
+        instance, which holds the same object. The snapshot is a deep copy
+        of all settings, so one answer is reused for a second.
+    *   Task notes are read from their frontmatter, not through
+        `tasks.get`: the reading has to work on a device without TaskNotes,
+        it runs synchronously with the file scan, and the record of handled
+        reminders is not part of TaskNotes' task.
+    *   Writing. TaskNotes asks companion plugins to change task data
+        through the API instead of rewriting frontmatter, so that its
+        cache, events and views follow. Of what this format writes, the
+        `reminders` list is TaskNotes' data and `reminders-done` is this
+        plugin's. When a write changes the list (a snooze, or "Done" on a
+        snoozed reminder) and TaskNotes is running, the new list is first
+        handed to `tasks.setReminders`. The write to the frontmatter that
+        follows then finds the list in place and writes the rest of the
+        change (the record). It does not apply the action a second time:
+        "Done" on a snoozed reminder removes the very entry a second
+        application would look for (found in the test vault, where the
+        action was reported as "missing" although the note was right). If
+        the note does not hold what was handed over, the action is applied
+        to the note as it is. When TaskNotes is not running, has no such API or rejects
+        the write (it does not see the note as a task), that same write
+        does everything, so the note ends up the same either way. TaskNotes
+        also stamps its modification date on a note it writes.
+    *   Layers. The format stays a pure function over frontmatter and knows
+        TaskNotes' data, not its API: it only names the properties that
+        belong to another plugin (`externalProperties`). The service offers
+        a changed one through an injected function and does not know which
+        plugin is behind it. `plugin/tasknotes-api.ts` is the one place
+        that calls TaskNotes (the settings snapshot and `setReminders`),
+        with the version and capability checks.
+    *   The stale check that counts is still the one inside the frontmatter
+        write. The hand-over before it is checked on a read made just
+        before, so a note that changes in that moment can get the snooze
+        entry without its record; such an entry does not count and the next
+        write removes it.
+    *   The shape of the settings is not promised either way. `importTaskNotesSettings` checks
+        each field's type and falls back to TaskNotes' default for anything
+        missing or of another type, so a TaskNotes that renames a key
+        degrades to the defaults. The saved copy is read back through the
+        same function.
+    *   Not taken over: TaskNotes' excluded folders. A format sees a note's
+        frontmatter only, and this plugin's own excluded paths cover the
+        need.
+*   Read: a note that is identified as a task, that is not completed, and
+    that does not have the archive tag. Each entry
     with an id and an effective time on or after the cut-off is a reminder,
     unless `reminders-done` holds its record. An entry of another type, or
-    whose time cannot be computed, is skipped. If `reminders` contains anything
-    that is not a mapping, the note yields nothing and is never written.
+    whose time cannot be computed, is skipped; of entries that share an id
+    only the first is read. If `reminders` contains anything that is not a
+    mapping, the note yields nothing and is never written.
+*   The reminder's title is the note's `title` property (TaskNotes' task
+    title) when it is text, else the note name. Its label is the entry's
+    `description`, else "TaskNotes".
+*   A `reminders-done` that is not a list of `<id>@<time>` strings is
+    someone else's value: it is read as empty, "Done" and snooze on a
+    TaskNotes entry return `blocked`, and it is never written.
 *   "Done" appends `<id>@<effective time>` to the list property
     `reminders-done`, replacing an older record of the same id. Records whose
     entry no longer exists are dropped in the same write. Entries are not
@@ -854,10 +954,17 @@ one. A date-only base counts from midnight.
     This is the only change the plugin makes to `reminders`. An entry counts as
     the plugin's own only with that id prefix and `type: absolute`. A second
     snooze rewrites its time; "Done" on it removes it.
-*   The added entry is used only while `reminders-done` holds its original's
-    record at the original's current effective time. Otherwise (the due date
-    moved, or the original was deleted) it is ignored and removed on the next
-    write.
+*   The added entry **counts** only while `reminders-done` holds its
+    original's record at the original's current effective time. Otherwise (the
+    due date moved, or the original was deleted) it is not read.
+*   Every write to the note first removes the added entries that do not
+    count, judged on the note as it is before the change. Judging them after
+    the change would revive a leftover: after the due date moved, "Done" on
+    the original records it at its new time, which is exactly the condition
+    that makes an added entry count. A snooze of the original also replaces
+    any added entry with the same id, so there is never more than one per
+    original. A leftover in a note the plugin never writes again stays in the
+    list (TaskNotes shows it as a past reminder) and is not read here.
 *   The stale check compares the entry's effective time with the time shown.
 *   Not solved, by design: TaskNotes notifies for the same entries itself,
     including the added one. Verified that with its notifications on, both
@@ -865,9 +972,13 @@ one. A date-only base counts from midnight.
     settings description tells the user to turn one of the two off.
 *   The dialog and the bell do not apply to TaskNotes notes.
 
-Verified on the spike with TaskNotes 4.18.2: TaskNotes lists the added entry
-among the task's reminders, and keeps `reminders-done` and the added entry when
-it rewrites `due` and `priority`.
+Verified with TaskNotes 4.18.2, on the spike and again with the
+implementation: TaskNotes lists the added entry among the task's reminders, and
+keeps `reminders-done` and the added entry when `due` and `priority` are
+rewritten. With the implementation: a relative entry notified at its time,
+"Tomorrow" added the entry at 09:00 the next day, moving `due` made the
+original pending again, and "Done" then recorded the new time and removed the
+leftover entry.
 
 ### 13. Fixes to existing code
 
@@ -1860,7 +1971,8 @@ phone.
     `docs/src/guide/note-reminders.md`, both translation files.
 *   **TaskNotes**: `src/model/note/tasknotes-format.ts` and its test (new),
     `src/plugin/settings/index.ts` (one group), `src/main.ts` (one more format
-    and the ntfy flag), `docs/src/guide/interop-tasknotes.md` (new),
+    and the ntfy flag), `src/plugin/ui/index.ts` (the property a notice
+    names), `docs/src/guide/interop-tasknotes.md` (new),
     `docs/src/.vuepress/config.js`, both translation files.
 
 ### Verification Plan

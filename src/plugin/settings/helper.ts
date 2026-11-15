@@ -3,6 +3,7 @@ import { Reference } from "model/ref";
 import type { ReadOnlyReference } from "model/ref";
 import { Later, Time, parseLaters } from "model/time";
 import { AbstractTextComponent, Setting } from "obsidian";
+import type { DropdownComponent } from "obsidian";
 import { ReminderFormatType, ReminderFormatTypes } from "model/format";
 import "./settings-tab.css";
 
@@ -287,6 +288,7 @@ abstract class AbstractSettingModelBuilder<R> {
 class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
   private _placeHolder?: TranslatableText;
   private _masked = false;
+  private _date = false;
 
   constructor(
     context: SettingContext,
@@ -314,44 +316,82 @@ class TextSettingModelBuilder extends AbstractSettingModelBuilder<string> {
     return this;
   }
 
+  /**
+   * Renders the input as a date picker, whose value is a whole day
+   * (`YYYY-MM-DD`) or empty and nothing in between. A plain text input
+   * would pass every keystroke on, so a date being retyped would be in
+   * effect as whatever its first characters mean.
+   *
+   * Ignored for `textArea()` settings.
+   */
+  date() {
+    this._date = true;
+    return this;
+  }
+
   build<E>(serde: Serde<string, E>): SettingModel<string, E> {
-    return this.buildSettingModel(serde, ({ setting, rawValue, context }) => {
-      const initText = (
-        text: AbstractTextComponent<HTMLInputElement | HTMLTextAreaElement>,
-      ) => {
-        this.wireTextComponent(
-          text,
-          resolveText(this._placeHolder),
-          rawValue.value,
-          (value) => {
-            try {
-              serde.unmarshal(value);
-              rawValue.value = value;
-              context.setValidationError(null);
-              this.onValueChange();
-            } catch (e) {
-              if (e instanceof Error) {
-                context.setValidationError(e.message);
-              } else if (typeof e === "string") {
-                context.setValidationError(e);
+    // The input of the latest render. A page is rendered again on a tab click
+    // or a language change, which replaces it.
+    let rendered:
+      AbstractTextComponent<HTMLInputElement | HTMLTextAreaElement> | undefined;
+    const model = this.buildSettingModel(
+      serde,
+      ({ setting, rawValue, context }) => {
+        const initText = (
+          text: AbstractTextComponent<HTMLInputElement | HTMLTextAreaElement>,
+        ) => {
+          rendered = text;
+          this.wireTextComponent(
+            text,
+            resolveText(this._placeHolder),
+            rawValue.value,
+            (value) => {
+              try {
+                serde.unmarshal(value);
+                rawValue.value = value;
+                context.setValidationError(null);
+                this.onValueChange();
+              } catch (e) {
+                if (e instanceof Error) {
+                  context.setValidationError(e.message);
+                } else if (typeof e === "string") {
+                  context.setValidationError(e);
+                }
               }
+            },
+          );
+        };
+        if (this.longText) {
+          setting.addTextArea((textarea) => {
+            initText(textarea);
+          });
+        } else {
+          setting.addText((text) => {
+            initText(text);
+            if (this._masked) {
+              text.inputEl.type = "password";
             }
-          },
-        );
-      };
-      if (this.longText) {
-        setting.addTextArea((textarea) => {
-          initText(textarea);
-        });
-      } else {
-        setting.addText((text) => {
-          initText(text);
-          if (this._masked) {
-            text.inputEl.type = "password";
-          }
-        });
+            if (this._date) {
+              text.inputEl.type = "date";
+            }
+          });
+        }
+      },
+    );
+    // A value set from outside the input (another setting's listener, e.g.
+    // the TaskNotes cut-off filled in when its switch is turned on) has to
+    // show in the input, or the tab displays a value that is not in effect.
+    // Typing sets the value the input already holds, so nothing is written
+    // back then and the caret stays where it is.
+    model.rawValue.onChanged(() => {
+      if (
+        rendered !== undefined &&
+        rendered.getValue() !== model.rawValue.value
+      ) {
+        rendered.setValue(model.rawValue.value);
       }
     });
+    return model;
   }
 }
 
@@ -438,12 +478,15 @@ class DropdownSettingModelBuilder extends AbstractSettingModelBuilder<string> {
   }
 
   build<E>(serde: Serde<string, E>): SettingModel<string, E> {
-    return new SettingModelImpl(
+    // The dropdown of the latest render (see `TextSettingModelBuilder`).
+    let rendered: DropdownComponent | undefined;
+    const model = new SettingModelImpl(
       this.context,
       serde,
       this.initValue,
       ({ setting, rawValue }) => {
         setting.addDropdown((d) => {
+          rendered = d;
           this.options.forEach((option) => {
             d.addOption(option.value, resolveText(option.label));
           });
@@ -455,6 +498,17 @@ class DropdownSettingModelBuilder extends AbstractSettingModelBuilder<string> {
         });
       },
     );
+    // A value set from outside the dropdown (the TaskNotes import) has to
+    // show in it.
+    model.rawValue.onChanged(() => {
+      if (
+        rendered !== undefined &&
+        rendered.getValue() !== model.rawValue.value
+      ) {
+        rendered.setValue(model.rawValue.value);
+      }
+    });
+    return model;
   }
 }
 

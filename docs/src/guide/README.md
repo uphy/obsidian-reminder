@@ -18,4 +18,5 @@ This plugin is also interoperable with the date formats of other plugins.
 
 - [Obsidian Tasks Plugin](/guide/interop-tasks.md)
 - [Obsidian Kanban Plugin](/guide/interop-kanban.md)
+- [TaskNotes Plugin](/guide/interop-tasknotes.md)
 - [Natural Language Dates Plugin](/guide/interop-nldates.md)

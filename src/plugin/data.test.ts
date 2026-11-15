@@ -98,6 +98,55 @@ describe("PluginData", (): void => {
     expect(saved?.seededTaskStatuses).toBe("[ ] -> [x] TODO\n[v] -> [ ] DONE");
   });
 
+  test("the TaskNotes settings last seen are saved, and a change forces a rescan while TaskNotes is read", async (): Promise<void> => {
+    let saved: { scanned: boolean; taskNotesSettings?: unknown } | undefined;
+    const store: DataStore = {
+      loadData: async () => ({
+        ...savedData({ taskNotesEnabled: true }),
+        taskNotesSettings: { taskTag: "task" },
+      }),
+      saveData: async (data) => {
+        saved = data as typeof saved;
+      },
+    };
+    const data = new PluginData(store, new Reminders(() => {}));
+    expect(data.knownTaskNotesSettings).toBe(null);
+    await data.load();
+    expect(data.knownTaskNotesSettings).toStrictEqual({ taskTag: "task" });
+    expect(data.scanned.value).toBe(true);
+
+    // TaskNotes says what it said last session.
+    data.updateKnownTaskNotesSettings({ taskTag: "task" });
+    expect(data.scanned.value).toBe(true);
+    expect(data.changed).toBe(false);
+
+    // The tag was changed in TaskNotes: notes were read under the old one.
+    data.updateKnownTaskNotesSettings({ taskTag: "todo" });
+    expect(data.scanned.value).toBe(false);
+
+    await data.save(true);
+    expect(saved?.taskNotesSettings).toStrictEqual({ taskTag: "todo" });
+  });
+
+  test("a change in TaskNotes' settings is recorded without a rescan while TaskNotes is not read", async (): Promise<void> => {
+    const store: DataStore = {
+      loadData: async () => ({
+        ...savedData(),
+        taskNotesSettings: "broken",
+      }),
+      saveData: async () => {},
+    };
+    const data = new PluginData(store, new Reminders(() => {}));
+    await data.load();
+    // What was saved is not an object: nothing is known.
+    expect(data.knownTaskNotesSettings).toBe(null);
+
+    data.updateKnownTaskNotesSettings({ taskTag: "todo" });
+    expect(data.scanned.value).toBe(true);
+    expect(data.changed).toBe(true);
+    expect(data.knownTaskNotesSettings).toStrictEqual({ taskTag: "todo" });
+  });
+
   test("resolves `loaded` once load() has finished", async (): Promise<void> => {
     const reminders = new Reminders(() => {});
     const data = new PluginData(createStore(savedData()), reminders);

@@ -20,6 +20,12 @@ declare module "obsidian" {
          */
         "obsidian-kanban"?: { settings?: Record<string, unknown> };
         "obsidian-tasks-plugin"?: Plugin;
+        /**
+         * Read for how its task notes are identified and which property
+         * names it uses, and asked to write its reminders; see
+         * `plugin/tasknotes-api`, which checks the shape itself.
+         */
+        tasknotes?: unknown;
       };
     };
   }

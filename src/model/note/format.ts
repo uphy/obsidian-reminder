@@ -66,4 +66,11 @@ export interface NoteReminderFormat {
    * untouched unless the outcome is `applied`.
    */
   apply(fm: Frontmatter, key: string, action: NoteReminderAction): ApplyOutcome;
+  /**
+   * The properties among those `apply` changes whose data belongs to another
+   * plugin. When a write changes one, the plugin layer first offers the new
+   * value to that plugin, which may want to write its own data itself; the
+   * write to the note then follows as for any format. None when absent.
+   */
+  externalProperties?(): Array<string>;
 }

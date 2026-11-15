@@ -24,6 +24,18 @@ export interface NoteReminderServiceDeps {
     path: string,
     fn: (frontmatter: Frontmatter) => void,
   ): Promise<void>;
+  /**
+   * Offers the new `value` of `property` in the note at `path` to the plugin
+   * the property belongs to (see `NoteReminderFormat.externalProperties`),
+   * which then writes it its own way. False when that plugin did not take
+   * it, e.g. because it is not running. Must not reject.
+   */
+  writeExternalProperty?(
+    format: string,
+    path: string,
+    property: string,
+    value: unknown,
+  ): Promise<boolean>;
 }
 
 /**
@@ -98,12 +110,100 @@ export class NoteReminderService {
   }
 
   /** Writes `action` for the reminder at `origin` in the note at `path`. */
-  applyAt(
+  async applyAt(
     path: string,
     origin: NoteReminderOrigin,
     action: NoteReminderAction,
   ): Promise<WriteResult> {
-    return this.write(path, (fm) => this.reader.apply(fm, origin, action));
+    const fn = (fm: Frontmatter): ApplyOutcome =>
+      this.reader.apply(fm, origin, action);
+    const taken = await this.offerExternalProperties(path, origin, fn);
+    if (taken == null) {
+      return this.write(path, fn);
+    }
+    // The other plugin has written its properties, so the action is half
+    // done and `fn` can no longer be applied to the note as it is: it would
+    // find its own change and call the reminder stale or missing. What is
+    // left is the rest of the change `fn` made, as long as the note holds
+    // what was handed over.
+    return this.write(path, (fm) => {
+      const inPlace = taken.properties.every(
+        (p) => JSON.stringify(fm[p]) === JSON.stringify(taken.after[p]),
+      );
+      if (!inPlace) {
+        return fn(fm);
+      }
+      const keys = new Set([
+        ...Object.keys(taken.before),
+        ...Object.keys(taken.after),
+      ]);
+      for (const key of keys) {
+        if (taken.properties.includes(key)) {
+          continue;
+        }
+        const value = taken.after[key];
+        if (JSON.stringify(value) === JSON.stringify(taken.before[key])) {
+          continue;
+        }
+        if (value === undefined) {
+          delete fm[key];
+        } else {
+          fm[key] = value;
+        }
+      }
+      return "applied";
+    });
+  }
+
+  /**
+   * Hands the properties that belong to another plugin to that plugin, when
+   * `fn` changes them. Returns what was handed over when that plugin took
+   * all of it: the note before and after `fn`, and the properties taken.
+   * Null when nothing was offered or something was not taken; the note is
+   * then written as for any format.
+   *
+   * Nothing here may fail the action.
+   */
+  private async offerExternalProperties(
+    path: string,
+    origin: NoteReminderOrigin,
+    fn: (fm: Frontmatter) => ApplyOutcome,
+  ): Promise<{
+    before: Frontmatter;
+    after: Frontmatter;
+    properties: Array<string>;
+  } | null> {
+    const properties = this.reader.externalProperties(origin);
+    if (this.deps.writeExternalProperty == null || properties.length === 0) {
+      return null;
+    }
+    try {
+      const after = await this.readFrontmatter(path);
+      const before = JSON.parse(JSON.stringify(after)) as Frontmatter;
+      if (fn(after) !== "applied") {
+        return null;
+      }
+      const changed = properties.filter(
+        (p) => JSON.stringify(after[p]) !== JSON.stringify(before[p]),
+      );
+      if (changed.length === 0) {
+        return null;
+      }
+      let taken = true;
+      for (const property of changed) {
+        taken =
+          (await this.deps.writeExternalProperty(
+            origin.format,
+            path,
+            property,
+            after[property],
+          )) && taken;
+      }
+      return taken ? { before, after, properties: changed } : null;
+    } catch (e) {
+      console.debug("Cannot offer a property: path=%s, error=%o", path, e);
+      return null;
+    }
   }
 
   /**

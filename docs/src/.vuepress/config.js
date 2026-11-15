@@ -79,6 +79,7 @@ module.exports = {
             'interop-tasks',
             'interop-dataview',
             'interop-kanban',
+            'interop-tasknotes',
             'interop-nldates'
           ]
         }
