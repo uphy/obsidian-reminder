@@ -358,8 +358,8 @@ export const ja: Record<string, string> = {
   // --- Note reminders: recurrence --------------------------------------------
   Repeat: "繰り返し",
   "Does not repeat": "繰り返さない",
-  "This rule is not understood. Examples: “every day”, “every week on Monday”, “every month”.":
+  'This rule is not understood. Examples: "every day", "every week on Monday", "every month".':
     "このルールは読み取れません。例: 「every day」「every week on Monday」「every month」",
-  "The repeat rule in “{property}” of {file} is not understood, so the reminder will not repeat":
+  'The repeat rule in "{property}" of {file} is not understood, so the reminder will not repeat':
     "{file} の「{property}」の繰り返しルールを読み取れないため、このリマインダーは繰り返しません",
 };

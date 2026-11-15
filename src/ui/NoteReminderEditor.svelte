@@ -92,7 +92,7 @@
       {#if repeatInvalid}
         <div class="note-reminder-error">
           {t(
-            "This rule is not understood. Examples: “every day”, “every week on Monday”, “every month”.",
+            'This rule is not understood. Examples: "every day", "every week on Monday", "every month".',
           )}
         </div>
       {/if}

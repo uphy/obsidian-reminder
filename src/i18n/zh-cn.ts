@@ -338,8 +338,8 @@ export const zhCN: Record<string, string> = {
   // --- Note reminders: recurrence --------------------------------------------
   Repeat: "重复",
   "Does not repeat": "不重复",
-  "This rule is not understood. Examples: “every day”, “every week on Monday”, “every month”.":
+  'This rule is not understood. Examples: "every day", "every week on Monday", "every month".':
     "无法识别此规则。示例：“every day”、“every week on Monday”、“every month”。",
-  "The repeat rule in “{property}” of {file} is not understood, so the reminder will not repeat":
+  'The repeat rule in "{property}" of {file} is not understood, so the reminder will not repeat':
     "无法识别 {file} 中“{property}”的重复规则，因此该提醒不会重复",
 };
