@@ -554,7 +554,7 @@ export class ReminderPluginUI {
   reportUnreadableRepeatRule(path: string, property: string) {
     new Notice(
       t(
-        "The repeat rule in “{property}” of {file} is not understood, so the reminder will not repeat",
+        'The repeat rule in "{property}" of {file} is not understood, so the reminder will not repeat',
         { property: property + REPEAT_SUFFIX, file: noteNameOf(path) },
       ),
     );

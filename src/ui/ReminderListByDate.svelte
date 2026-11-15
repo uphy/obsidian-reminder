@@ -106,6 +106,9 @@
     align-items: center;
   }
   .reminder-title {
+    /* The title keeps at least half of the row: without this a long origin
+       squeezes it down to a few letters in a narrow list. */
+    min-width: 50%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
