@@ -335,30 +335,32 @@ export const ja: Record<string, string> = {
   "Set a time": "時刻を指定",
   "Set reminder for this note": "このノートにリマインダーを設定",
   "Reminder for {note}": "{note} のリマインダー",
-  "Scheduled:": "予定:",
-  "Done:": "完了済み:",
-  "Not shown (before the cut-off):": "通知しない（無視する日付より前）:",
+  "Scheduled: {time}": "予定: {time}",
+  "Done: {time}": "完了済み: {time}",
+  "Not shown (before the cut-off): {time}":
+    "通知しない（無視する日付より前）: {time}",
   Property: "プロパティ",
   Title: "タイトル",
   "Remove reminder": "リマインダーを削除",
   "Remind again": "もう一度リマインドする",
   "Reminder: {time} ({property})": "リマインダー: {time} ({property})",
-  "“{property}” holds “{value}”, which is not a date. Change it in the note's properties before setting a reminder here.":
+  "Reminder: {time}": "リマインダー: {time}",
+  '"{property}" holds "{value}", which is not a date. Change it in the note\'s properties before setting a reminder here.':
     "「{property}」には日付でない値「{value}」が入っています。ノートのプロパティで直してから、ここでリマインダーを設定してください。",
-  "Note reminders are kept in a property of the note. No property is set up for this yet. Use “{property}”?":
+  'Note reminders are kept in a property of the note. No property is set up for this yet. Use "{property}"?':
     "ノートのリマインダーは、ノートのプロパティに保存します。保存先のプロパティがまだ決まっていません。「{property}」を使いますか？",
-  "Use “{property}”": "「{property}」を使う",
-  "Saved, but it will not be shown: dates before {date} are ignored for “{property}” (Settings → Note reminders).":
+  'Use "{property}"': "「{property}」を使う",
+  'Saved, but it will not be shown: dates before {date} are ignored for "{property}" (Settings → Note reminders).':
     "保存しましたが、通知されません。「{property}」は {date} より前の日付を無視する設定です（設定 → ノートのリマインダー）。",
-  "“{property}” can't be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on “Managed”.":
+  '"{property}" can\'t be used: another listed property uses that name. Add a property under Settings → Note reminders and turn on "Managed".':
     "「{property}」は使えません。追加済みのプロパティがその名前を使っています。設定 → ノートのリマインダーでプロパティを追加し、「管理する」をオンにしてください。",
 
   // --- Note reminders: recurrence --------------------------------------------
   Repeat: "繰り返し",
   "Does not repeat": "繰り返さない",
-  "This rule is not understood. Examples: “every day”, “every week on Monday”, “every month”.":
+  'This rule is not understood. Examples: "every day", "every week on Monday", "every month".':
     "このルールは読み取れません。例: 「every day」「every week on Monday」「every month」",
-  "The repeat rule in “{property}” of {file} is not understood, so the reminder will not repeat":
+  'The repeat rule in "{property}" of {file} is not understood, so the reminder will not repeat':
     "{file} の「{property}」の繰り返しルールを読み取れないため、このリマインダーは繰り返しません",
 
   // --- Note reminders: TaskNotes ---------------------------------------------

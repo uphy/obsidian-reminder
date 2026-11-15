@@ -173,9 +173,14 @@ export class NoteReminderIndicator {
   }
 }
 
+// Names the property only when the reminder carries a label, which the
+// reader leaves empty while a single property is listed: the same rule the
+// notification and the reminder list follow.
 function tooltipOf(reminder: Reminder): string {
-  return t("Reminder: {time} ({property})", {
-    time: reminder.time.toString(),
-    property: propertyOf(reminder) ?? "",
-  });
+  const time = reminder.time.toString();
+  const origin = reminder.origin;
+  if (origin.kind !== "note" || origin.label === "") {
+    return t("Reminder: {time}", { time });
+  }
+  return t("Reminder: {time} ({property})", { time, property: origin.label });
 }
