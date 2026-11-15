@@ -4,6 +4,7 @@ import {
   DateTime,
   Time,
   defaultLaters,
+  latersFor,
   parseLater,
   parseLaters,
 } from "model/time";
@@ -168,5 +169,19 @@ describe("DateTime.formatForDisplay()", () => {
     expect(time.formatForDisplay("HH:mm[ on ]MMMM", Time.parse("09:30"))).toBe(
       "09:30 on November",
     );
+  });
+});
+
+describe("latersFor()", () => {
+  test("a date-only reminder is offered the whole-day options only", () => {
+    expect(latersFor(true, defaultLaters()).map((l) => l.label)).toEqual([
+      "Tomorrow",
+      "Next week",
+    ]);
+  });
+
+  test("any other reminder is offered every option", () => {
+    const laters = defaultLaters();
+    expect(latersFor(false, laters)).toBe(laters);
   });
 });

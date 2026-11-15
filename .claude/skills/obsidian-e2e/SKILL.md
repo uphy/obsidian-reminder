@@ -601,7 +601,7 @@ sel.dispatchEvent(new Event("change", { bubbles: true }));
   ```js
   const p = app.plugins.plugins["obsidian-reminder-plugin"];
   const Reminder = p._reminders.reminders[0].constructor; // any live reminder
-  const r = new Reminder("<note path>", "<title>", <a DateTime, e.g. another reminder's .time>, <0-based line>, false);
+  const r = Reminder.ofLine("<note path>", "<title>", <a DateTime, e.g. another reminder's .time>, <0-based line>, false);
   await p.fileSystem.updateReminder(r, false); // what "Remind me later" writes
   ```
 

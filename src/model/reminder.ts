@@ -2,6 +2,26 @@ import { t } from "i18n";
 import type { ReadOnlyReference } from "model/ref";
 import { DateTime, Time } from "model/time";
 
+/**
+ * Where a reminder comes from.
+ *
+ * - `line`: a task line in the note's body, addressed by its row.
+ * - `note`: the note's frontmatter. `format` names the code that understands
+ *   the format, `key` identifies the reminder inside the note (a property
+ *   name, for instance), and `label` is the short text shown to the user
+ *   to tell it from other note reminders (empty when there is nothing to
+ *   tell apart).
+ */
+export type ReminderOrigin =
+  | { kind: "line"; row: number }
+  | { kind: "note"; format: string; key: string; label: string };
+
+export type NoteReminderOrigin = Extract<ReminderOrigin, { kind: "note" }>;
+
+// Separates the parts of a note reminder's key. A control character cannot
+// appear in a path or a property name, so the parts cannot run together.
+const KEY_SEPARATOR = "\u0001";
+
 export class Reminder {
   // To avoid duplicate notification, set this flag true before notification and set false on notification done.
   public muteNotification: boolean = false;
@@ -19,11 +39,68 @@ export class Reminder {
     public file: string,
     public title: string,
     public time: DateTime,
-    public rowNumber: number,
+    public origin: ReminderOrigin,
     public done: boolean,
   ) {}
 
+  /** A reminder written on a task line. */
+  static ofLine(
+    file: string,
+    title: string,
+    time: DateTime,
+    row: number,
+    done: boolean,
+  ): Reminder {
+    return new Reminder(file, title, time, { kind: "line", row }, done);
+  }
+
+  /**
+   * A reminder read from the note's frontmatter. Such a reminder only exists
+   * while it is pending, so it is never `done`.
+   */
+  static ofNote(
+    file: string,
+    title: string,
+    time: DateTime,
+    origin: NoteReminderOrigin,
+  ): Reminder {
+    return new Reminder(file, title, time, origin, false);
+  }
+
+  /** The row of the task line, or `undefined` for a note reminder. */
+  row(): number | undefined {
+    return this.origin.kind === "line" ? this.origin.row : undefined;
+  }
+
+  isNote(): boolean {
+    return this.origin.kind === "note";
+  }
+
+  /**
+   * A note reminder whose property holds a date without a time. Snoozing it
+   * writes a date back, so it is only offered whole-day options (see
+   * `latersFor()`).
+   */
+  isDateOnlyNote(): boolean {
+    return this.isNote() && !this.time.hasTimePart;
+  }
+
+  /**
+   * Identifies the reminder for mute flags and open notifications.
+   *
+   * The line form must not change: mute flags saved by earlier versions are
+   * matched by it. A note reminder leaves the title out, so that editing the
+   * title does not make an already dismissed reminder notify again.
+   */
   key() {
+    if (this.origin.kind === "note") {
+      return [
+        this.file,
+        this.origin.format,
+        this.origin.key,
+        this.time.toString(),
+      ].join(KEY_SEPARATOR);
+    }
     return this.file + this.title + this.time.toString();
   }
 
@@ -39,8 +116,17 @@ export class Reminder {
   }
 
   equals(reminder: Reminder) {
+    const a = this.origin;
+    const b = reminder.origin;
+    const sameOrigin =
+      a.kind === "line"
+        ? b.kind === "line" && a.row === b.row
+        : b.kind === "note" &&
+          a.format === b.format &&
+          a.key === b.key &&
+          a.label === b.label;
     return (
-      this.rowNumber === reminder.rowNumber &&
+      sameOrigin &&
       this.title === reminder.title &&
       this.time.equals(reminder.time) &&
       this.file === reminder.file
@@ -96,6 +182,23 @@ export class Reminders {
       }
     }
     return count;
+  }
+
+  /**
+   * Unmutes a reminder so that it is notified again. `reminder` may be an
+   * object captured when its notification was shown: a reload of the note in
+   * the meantime (`replaceFile()`) stores new objects and copies the mute
+   * flag onto them by key, so the flag is cleared on the stored reminder with
+   * the same key as well as on the given object.
+   */
+  public unmute(reminder: Reminder) {
+    reminder.muteNotification = false;
+    const key = reminder.key();
+    for (const stored of this.fileToReminders.get(reminder.file) ?? []) {
+      if (stored.key() === key) {
+        stored.muteNotification = false;
+      }
+    }
   }
 
   /**

@@ -29,6 +29,14 @@ files, including temporary tests inside the repository.
     restart, cleared where a re-fire is intended, and keyed consistently (file
     path + title + time) so a rename or edit doesn't orphan it.
   - Startup behavior: reminders that expired while Obsidian was closed.
+- **Actions on note reminders** (`src/plugin/note-reminders.ts`,
+  `showReminder` in `src/plugin/ui/index.ts`)
+  - "Done" and "Remind me later" carry the time the notification was shown
+    for, captured when it was shown, and write nothing when the note no
+    longer holds that time. The shared `Reminder` object must not be mutated
+    before the write.
+  - Nothing may enter `processFrontMatter` for an action that will not write:
+    Obsidian reformats the frontmatter block even for a no-op callback.
 - **Notification delivery** (`src/plugin/ui/reminder-notifier.ts`,
   `system-notification.ts`, `notification-buttons.ts`, `reminder-toast.ts`,
   `src/plugin/ntfy.ts`)

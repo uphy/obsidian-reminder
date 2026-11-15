@@ -68,7 +68,8 @@ module.exports = {
           children: [
             'set-reminders',
             'list-reminders',
-            'notification'
+            'notification',
+            'note-reminders'
           ]
         },
         {

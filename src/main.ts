@@ -1,4 +1,5 @@
 import {
+  NoteReminderService,
   NotificationWorker,
   NtfyController,
   PluginData,
@@ -6,13 +7,23 @@ import {
   ReminderPluginUI,
 } from "plugin";
 import { isNotificationPaused } from "model/dnd";
+import { isPathExcluded } from "model/exclusion";
+import { PropertyNoteReminderFormat } from "model/note/property-format";
+import { NoteReminderReader } from "model/note/reader";
+import {
+  countSourceStats,
+  newSourceCutOff,
+  withManagedSource,
+} from "model/note/sources";
+import type { NoteReminderSource } from "model/note/sources";
+import type { Frontmatter } from "model/note/format";
 import { Reminders } from "model/reminder";
 import { DATE_TIME_FORMATTER, DateTime } from "model/time";
 import type { Settings } from "plugin/settings";
 import { setSeededTaskStatuses } from "plugin/settings";
 import { formatStatusSetting } from "model/format/status";
 import type { TaskStatus } from "model/format/status";
-import { App, Notice, Plugin, requestUrl } from "obsidian";
+import { App, Notice, Plugin, TFile, parseYaml, requestUrl } from "obsidian";
 import type { PluginManifest } from "obsidian";
 
 export default class ReminderPlugin extends Plugin {
@@ -25,6 +36,8 @@ export default class ReminderPlugin extends Plugin {
   private _ui: ReminderPluginUI;
   private _reminders: Reminders;
   private _fileSystem: ReminderPluginFileSystem;
+  private _noteReminders: NoteReminderService;
+  private _noteReminderReader: NoteReminderReader;
   private _notificationWorker: NotificationWorker;
   private _ntfyController: NtfyController;
   constructor(app: App, manifest: PluginManifest) {
@@ -55,6 +68,28 @@ export default class ReminderPlugin extends Plugin {
       this.settings.strictDateFormat,
     );
 
+    this._noteReminderReader = new NoteReminderReader([
+      new PropertyNoteReminderFormat(() => this.noteReminderSources()),
+    ]);
+    const fileAt = (path: string): TFile => {
+      const file = this.app.vault.getAbstractFileByPath(path);
+      if (!(file instanceof TFile)) {
+        throw new Error(`Not a file: ${path}`);
+      }
+      return file;
+    };
+    this._noteReminders = new NoteReminderService(this._noteReminderReader, {
+      parseYaml: (yaml): unknown => parseYaml(yaml),
+      readFile: async (path) => this.app.vault.read(fileAt(path)),
+      processFrontMatter: async (path, fn) => {
+        await this.app.fileManager.processFrontMatter(fileAt(path), fn);
+      },
+    });
+    this.settings.noteReminderStats = (source) =>
+      this.noteReminderStats(source);
+    this.settings.noteReminderNewCutOff = (property, today) =>
+      this.newNoteReminderCutOff(property, today);
+
     this._ui = new ReminderPluginUI(this);
     this._fileSystem = new ReminderPluginFileSystem(
       app.vault,
@@ -64,6 +99,7 @@ export default class ReminderPlugin extends Plugin {
       },
       () => this.settings.excludedPaths.value,
       () => this.data.loaded,
+      (path, content) => this.noteReminders.read(path, content),
     );
     this._notificationWorker = new NotificationWorker({
       registerInterval: (id) => this.registerInterval(id),
@@ -101,6 +137,7 @@ export default class ReminderPlugin extends Plugin {
       accessToken: () => this.settings.ntfyAccessToken.value,
       reminders: () => this.reminders.reminders,
       defaultTime: () => this.settings.reminderTime.value,
+      hasNoteReminderSources: () => this.noteReminderSources().length > 0,
       vaultName: () => this.app.vault.getName(),
       registerInterval: (id) => this.registerInterval(id),
       // `throw: false` so an HTTP error status comes back as a response the
@@ -205,6 +242,85 @@ export default class ReminderPlugin extends Plugin {
 
   get fileSystem() {
     return this._fileSystem;
+  }
+
+  /** Reads and writes the reminders kept in a note's properties. */
+  get noteReminders() {
+    return this._noteReminders;
+  }
+
+  get noteReminderReader() {
+    return this._noteReminderReader;
+  }
+
+  /** The rows of the "Properties to remind from" setting. */
+  noteReminderSources(): Array<NoteReminderSource> {
+    return this.settings.noteReminderSources.value;
+  }
+
+  /** The sources the reminder dialog may create, edit and remove. */
+  managedNoteReminderSources(): Array<NoteReminderSource> {
+    return this.noteReminderSources().filter((source) => source.managed);
+  }
+
+  /**
+   * Lets the reminder dialog manage `property`: adds it as a managed source
+   * (with today as its cut-off when the vault already holds earlier values
+   * of it), or switches an existing row to managed.
+   * Returns false when the name can't be a source (it is a companion of
+   * another row).
+   */
+  addManagedNoteReminderSource(property: string): boolean {
+    const rows = withManagedSource(
+      this.noteReminderSources(),
+      property,
+      this.newNoteReminderCutOff(property, DateTime.now().format("YYYY-MM-DD")),
+    );
+    if (rows == null) {
+      return false;
+    }
+    this.settings.noteReminderSources.rawValue.value = rows;
+    return true;
+  }
+
+  /**
+   * The cut-off for a property that is being added. Every note counts,
+   * also under an excluded path: its values are read once the path is no
+   * longer excluded. A note Obsidian has not indexed yet makes the answer
+   * unknown, which `newSourceCutOff` turns into today.
+   */
+  private newNoteReminderCutOff(property: string, today: string): string {
+    const frontmatters: Array<Frontmatter> = [];
+    for (const file of this.app.vault.getMarkdownFiles()) {
+      const cache = this.app.metadataCache.getFileCache(file);
+      if (cache == null) {
+        return newSourceCutOff(property, today, null);
+      }
+      if (cache.frontmatter != null) {
+        frontmatters.push(cache.frontmatter);
+      }
+    }
+    return newSourceCutOff(property, today, frontmatters);
+  }
+
+  /**
+   * Display-only numbers for the settings page, taken from Obsidian's
+   * metadata cache (which may lag a just-edited note by a moment). Notes
+   * under an excluded path are not read, so they are not counted.
+   */
+  private noteReminderStats(source: NoteReminderSource) {
+    const frontmatters: Array<Frontmatter> = [];
+    const excluded = this.settings.excludedPaths.value;
+    for (const file of this.app.vault.getMarkdownFiles()) {
+      if (isPathExcluded(file.path, excluded)) {
+        continue;
+      }
+      const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      if (fm != null) {
+        frontmatters.push(fm);
+      }
+    }
+    return countSourceStats(source, frontmatters);
   }
 
   get data() {

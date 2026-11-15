@@ -31,6 +31,14 @@ inside the repository.
   `🔁` producing the next occurrence's date on completion.
 - **Kanban/Dataview** — cards have no checkbox; inline fields `[key:: value]`
   and `(key:: value)`.
+- **Note reminders** (`src/model/note/`) — reminders read from a note's
+  frontmatter properties.
+  - "Done" must never edit the reminded value: it records the time shown in
+    `<property>-done`, and the reminder is pending while the two differ.
+  - A companion property (`-done`, `-title`) holding a value the plugin would
+    not have written must be left untouched.
+  - A write must keep the value's shape: a date stays a date, a date-time
+    stays a date-time.
 - **Markdown structure** — reminders inside callouts (`> - [ ]`), nested list
   items, code blocks and frontmatter (must not be parsed), CRLF line endings.
 

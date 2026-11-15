@@ -186,6 +186,18 @@ export class SettingModelBuilder {
   dropdown(initValue: string) {
     return new DropdownSettingModelBuilder(this.context, initValue);
   }
+
+  /**
+   * A setting whose value is not a single text/number/toggle (e.g. a list of
+   * rows). `initializer` builds the controls and writes `rawValue` itself.
+   */
+  custom<R>(initValue: R, initializer: SettingInitializer<R>) {
+    return new CustomSettingModelBuilder<R>(
+      this.context,
+      initValue,
+      initializer,
+    );
+  }
 }
 
 interface Serde<R, E> {
@@ -378,6 +390,20 @@ class NumberSettingModelBuilder extends AbstractSettingModelBuilder<number> {
   }
 }
 
+class CustomSettingModelBuilder<R> extends AbstractSettingModelBuilder<R> {
+  constructor(
+    context: SettingContext,
+    initValue: R,
+    private initializer: SettingInitializer<R>,
+  ) {
+    super(context, initValue);
+  }
+
+  build<E>(serde: Serde<R, E>): SettingModel<R, E> {
+    return this.buildSettingModel(serde, this.initializer);
+  }
+}
+
 class ToggleSettingModelBuilder extends AbstractSettingModelBuilder<boolean> {
   build<E>(serde: Serde<boolean, E>): SettingModel<boolean, E> {
     return new SettingModelImpl(
@@ -454,7 +480,7 @@ export interface SettingModel<R, E>
   rawValue: Reference<R>;
 }
 
-type SettingInitializer<R> = ({
+export type SettingInitializer<R> = ({
   setting,
   rawValue,
   context,

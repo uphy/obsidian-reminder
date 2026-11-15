@@ -36,6 +36,18 @@ Alternatively, you can postpone the reminder by selecting `Remind Me Later`.
 <img src="https://raw.githubusercontent.com/uphy/obsidian-reminder/main/images/reminder-notification2.png" width="600" />
 
 
+#### Note Reminders
+
+A note can also remind you from a date in its properties, without a task line. See [note reminders](https://uphy.github.io/obsidian-reminder/guide/note-reminders.html).
+
+```markdown
+---
+follow-up: 2026-11-20
+---
+```
+
+List the properties to read in the settings. This works with a date column in an Obsidian Bases table and with dates other plugins keep in properties. `Mark as Done` records the handled date in `follow-up-done` and leaves your date alone, so writing the next date reminds you again.
+
 #### Interoperability with other plugins
 
 In addition to original format `@YYYY-MM-DD`, this plugin also supports following plugin formats.

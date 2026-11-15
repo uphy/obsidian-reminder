@@ -31,6 +31,8 @@ You can change option which will be shown when you click `Remind Me Later` butto
   - Next Sunday/Monday/Tuesday/Wednesday/Thursday/Friday/Saturday/day/week/month/year
   - Tomorrow
 
+A [note reminder](/guide/note-reminders.html) whose property holds a date without a time only lists the options that move by whole days (`Tomorrow`, `Next week`, `Next Monday`, and so on).
+
 ### Enable reminder notifications
 
 Show reminder popups and system notifications when a reminder is due.
@@ -334,6 +336,35 @@ button completes to `[x]`:
 ```
 [/] -> [x] IN_PROGRESS
 ```
+
+## Note reminders
+
+Settings for [note reminders](/guide/note-reminders.html): reminders read from a note's properties.
+
+### Properties to remind from
+
+The date or date & time properties to read. A note with a value in one of them gets a reminder at that time. The list is empty by default, so no property is read until you add one.
+
+Type a property name and click `Add`. Each property then has its own block: its name with a trash button, followed by one line per setting:
+
+- `Managed`
+  - ON: The [reminder dialog](/guide/note-reminders.html#set-a-reminder-from-a-dialog) may create, edit and remove the value, the note header shows a bell while a reminder is waiting, and `<property>-title` sets the reminder's title.
+  - OFF: The value is only read. `Done` records the handled date in `<property>-done`, and `Remind me later` moves the date. The value is never created or removed.
+  - Default: OFF
+- `Ignore dates before`: A date. Values dated earlier are not read. Empty by default. When the property already has past dates in the vault at the moment you add it, it is set to that day, so that they do not all notify at once. The line shows how many values are currently ignored.
+- The trash button removes the property from the list. Notes are not changed.
+
+### Show a bell in every note's header
+
+Shows a bell in the header of every note. Clicking it opens the [reminder dialog](/guide/note-reminders.html#set-a-reminder-from-a-dialog). A note without a reminder gets a faint bell.
+
+- ON: Every note has the bell.
+- OFF: The bell is shown only while a reminder is waiting.
+- Default: ON
+
+A name cannot be added twice, and a name that another listed property uses for its `-done` or `-title` value (for example `follow-up-done` next to `follow-up`) is rejected.
+
+Changing this setting rescans the vault.
 
 ## Display
 

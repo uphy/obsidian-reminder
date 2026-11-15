@@ -16,7 +16,7 @@ async function toggleCheck(
 
   const reminder = content
     .getReminders(false)
-    .find((r) => r.rowNumber === lineNumber);
+    .find((r) => r.row() === lineNumber);
   if (reminder) {
     await content.updateReminder(reminder, {
       checked: !reminder.done,

@@ -40,7 +40,7 @@ type ResolvedReminder = {
  *
  * The reminder is always re-parsed rather than taken from whatever was
  * captured when the pill was built: after an edit elsewhere in the document
- * that captured `rowNumber` is stale, and acting on it would rewrite the
+ * that captured row is stale, and acting on it would rewrite the
  * wrong line.
  */
 function resolveReminder(
@@ -55,7 +55,7 @@ function resolveReminder(
   const filePath = view.state.field(editorInfoField, false)?.file?.path ?? "";
   const md = new MarkdownDocument(filePath, view.state.doc.toString());
   const candidates = parseReminder(md).filter(
-    (span) => span.reminder.rowNumber === lineNumber - 1,
+    (span) => span.reminder.row() === lineNumber - 1,
   );
 
   let best: ReminderSpan | null = null;
@@ -124,7 +124,10 @@ export async function openChooserAndApplyEdit(
     return;
   }
 
-  const rowNumber = current.span.reminder.rowNumber;
+  const rowNumber = current.span.reminder.row();
+  if (rowNumber === undefined) {
+    return;
+  }
   const newLine = current.md.toMarkdown().split("\n")[rowNumber] ?? "";
   const line = view.state.doc.line(rowNumber + 1);
   view.dispatch({

@@ -33,3 +33,10 @@ export { default as moment } from "moment";
 export function requestUrl(): never {
   throw new Error("requestUrl() is not available under jest");
 }
+
+/**
+ * `plugin/filesystem.ts` tells notes from folders with `instanceof TFile`.
+ * A test builds a file by assigning the fields it needs (`path`,
+ * `extension`) onto an instance.
+ */
+export class TFile {}

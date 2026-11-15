@@ -36,6 +36,7 @@ function createDeps(
     accessToken: () => "",
     reminders: () => [],
     defaultTime: () => Time.parse("08:00"),
+    hasNoteReminderSources: () => false,
     vaultName: () => "vault",
     registerInterval: () => {},
     request: async () => ({ status: 200, text: "" }),
@@ -52,7 +53,7 @@ function callDoSync(controller: NtfyController): Promise<void> {
 
 /** A reminder due `minutes` from now, i.e. inside the 24h publish horizon. */
 function reminderInMinutes(title: string, minutes: number): Reminder {
-  return new Reminder(
+  return Reminder.ofLine(
     "notes/Todo.md",
     title,
     DateTime.ofEpochMillis(Date.now() + minutes * 60 * 1000),
@@ -366,5 +367,148 @@ describe("testNtfyConnection()", (): void => {
     expect(result.ok).toBe(false);
     expect(result.message).toContain("Could not reach https://ntfy.invalid");
     expect(result.message).toContain("ERR_NAME_NOT_RESOLVED");
+  });
+});
+
+describe("NtfyController with note reminders", (): void => {
+  function noteReminder(label: string = "follow-up"): Reminder {
+    return Reminder.ofNote(
+      "notes/Call Alice.md",
+      "Call Alice",
+      DateTime.ofEpochMillis(Date.now() + 60 * 60 * 1000),
+      {
+        kind: "note",
+        format: "property",
+        key: "follow-up",
+        label,
+      },
+    );
+  }
+
+  test("without a label the message names the note alone", async (): Promise<void> => {
+    const server = new FakeServer();
+    const controller = new NtfyController(
+      createDeps({
+        request: server.request,
+        hasNoteReminderSources: () => true,
+        reminders: () => [noteReminder("")],
+      }),
+    );
+
+    await callDoSync(controller);
+
+    const publish = server.requests.find((r) => r.method === "POST");
+    const body = JSON.parse(publish?.body ?? "{}") as { message: string };
+    expect(body.message).toBe("Call Alice");
+  });
+
+  test("the message names the note and the property", async (): Promise<void> => {
+    const server = new FakeServer();
+    const controller = new NtfyController(
+      createDeps({
+        request: server.request,
+        hasNoteReminderSources: () => true,
+        reminders: () => [noteReminder()],
+      }),
+    );
+
+    await callDoSync(controller);
+
+    const publish = server.requests.find((r) => r.method === "POST");
+    const body = JSON.parse(publish?.body ?? "{}") as {
+      title: string;
+      message: string;
+    };
+    expect(body.title).toBe("Call Alice");
+    expect(body.message).toBe("Call Alice · follow-up");
+    expect(publish?.headers?.["X-Sequence-ID"]).toMatch(/^obrn-/);
+  });
+
+  /** A poll response with one note reminder message still scheduled. */
+  function pendingNoteMessage(): NtfyResponse {
+    return {
+      status: 200,
+      text: JSON.stringify({
+        event: "message",
+        sequence_id: "obrn-abc",
+        time: Math.floor(Date.now() / 1000) + 3600,
+      }),
+    };
+  }
+
+  function deletesOf(server: FakeServer): Array<string> {
+    return server.requests
+      .filter((r) => r.method === "DELETE")
+      .map((r) => r.url);
+  }
+
+  test("without a source, a scheduled note reminder message is left alone", async (): Promise<void> => {
+    // Another device may have scheduled it.
+    const server = new FakeServer(pendingNoteMessage());
+    const controller = new NtfyController(
+      createDeps({
+        request: server.request,
+        hasNoteReminderSources: () => false,
+      }),
+    );
+
+    await callDoSync(controller);
+
+    expect(deletesOf(server)).toStrictEqual([]);
+  });
+
+  test("with a source, a scheduled message without its reminder is deleted", async (): Promise<void> => {
+    const server = new FakeServer(pendingNoteMessage());
+    const controller = new NtfyController(
+      createDeps({
+        request: server.request,
+        hasNoteReminderSources: () => true,
+      }),
+    );
+
+    await callDoSync(controller);
+
+    expect(deletesOf(server)).toHaveLength(1);
+    expect(deletesOf(server)[0]).toContain("obrn-abc");
+  });
+
+  test("removing the last source still deletes its scheduled messages", async (): Promise<void> => {
+    // First sync: a source exists, nothing is scheduled. Second sync: the
+    // source is gone and its message is still on the server.
+    const server = new FakeServer(
+      { status: 200, text: "" },
+      pendingNoteMessage(),
+    );
+    let hasSources = true;
+    const controller = new NtfyController(
+      createDeps({
+        request: server.request,
+        hasNoteReminderSources: () => hasSources,
+      }),
+    );
+
+    await callDoSync(controller);
+    expect(server.requests).toHaveLength(1);
+    hasSources = false;
+    await callDoSync(controller);
+
+    expect(deletesOf(server)).toHaveLength(1);
+    expect(deletesOf(server)[0]).toContain("obrn-abc");
+  });
+
+  test("the message of a line reminder is the note name", async (): Promise<void> => {
+    const server = new FakeServer();
+    const controller = new NtfyController(
+      createDeps({
+        request: server.request,
+        reminders: () => [reminderInMinutes("Buy milk", 60)],
+      }),
+    );
+
+    await callDoSync(controller);
+
+    const publish = server.requests.find((r) => r.method === "POST");
+    const body = JSON.parse(publish?.body ?? "{}") as { message: string };
+    expect(body.message).toBe("Todo");
   });
 });
