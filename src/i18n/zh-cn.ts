@@ -391,9 +391,9 @@ export const zhCN: Record<string, string> = {
     "此设备未启用 TaskNotes。正在使用上次读取到的 TaskNotes 设置。",
   "TaskNotes is not enabled here and its settings were never seen. Using TaskNotes' defaults.":
     "此设备未启用 TaskNotes，也从未读取过其设置。正在使用 TaskNotes 的默认值。",
-  "TaskNotes: tag “{tag}”": "TaskNotes：标签“{tag}”",
-  "TaskNotes: property “{property}”": "TaskNotes：属性“{property}”",
-  "TaskNotes: property “{property}” with value “{value}”":
+  'TaskNotes: tag "{tag}"': "TaskNotes：标签“{tag}”",
+  'TaskNotes: property "{property}"': "TaskNotes：属性“{property}”",
+  'TaskNotes: property "{property}" with value "{value}"':
     "TaskNotes：属性“{property}”的值为“{value}”",
   "Completed date property": "完成日期属性",
   "A task with a date here is completed, like one with a completed status.":

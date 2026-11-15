@@ -502,12 +502,12 @@ export class Settings {
           this.taskNotesIdentification.value !== "auto"
             ? null
             : d.identification === "tag"
-              ? t("TaskNotes: tag “{tag}”", { tag: d.taskTag })
+              ? t('TaskNotes: tag "{tag}"', { tag: d.taskTag })
               : d.taskPropertyValue === ""
-                ? t("TaskNotes: property “{property}”", {
+                ? t('TaskNotes: property "{property}"', {
                     property: d.taskProperty,
                   })
-                : t("TaskNotes: property “{property}” with value “{value}”", {
+                : t('TaskNotes: property "{property}" with value "{value}"', {
                     property: d.taskProperty,
                     value: d.taskPropertyValue,
                   }),
