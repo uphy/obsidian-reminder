@@ -1,0 +1,15 @@
+document.querySelector("#qa-settings")?.remove();
+closeToasts();
+await rm("QA/prop"); await rm("QA/managed");
+setSetting("excludedPaths", "");
+setSetting("noteReminderSources", []);
+const D = "QA/managed/";
+await mk(D + "B1 first.md", "# B1\nbody\n");
+await app.workspace.getLeaf(false).openFile(file(D + "B1 first.md"));
+await sleep(800);
+const leaf = document.querySelector(".workspace-leaf.mod-active");
+out.headerActions = [...leaf.querySelectorAll(".view-actions > *")].map((e) => e.className + " | " + (e.getAttribute("aria-label") ?? ""));
+app.commands.executeCommandById("obsidian-reminder-plugin:set-note-reminder");
+await sleep(900);
+out.modal = document.querySelector(".modal-container .modal")?.outerHTML.slice(0, 3000);
+return out;
