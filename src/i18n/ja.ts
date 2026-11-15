@@ -413,9 +413,9 @@ export const ja: Record<string, string> = {
     "この端末では TaskNotes が有効になっていません。最後に読み取った TaskNotes の設定を使っています。",
   "TaskNotes is not enabled here and its settings were never seen. Using TaskNotes' defaults.":
     "この端末では TaskNotes が有効になっておらず、設定を読み取ったこともありません。TaskNotes の既定値を使っています。",
-  "TaskNotes: tag “{tag}”": "TaskNotes: タグ「{tag}」",
-  "TaskNotes: property “{property}”": "TaskNotes: プロパティ「{property}」",
-  "TaskNotes: property “{property}” with value “{value}”":
+  'TaskNotes: tag "{tag}"': "TaskNotes: タグ「{tag}」",
+  'TaskNotes: property "{property}"': "TaskNotes: プロパティ「{property}」",
+  'TaskNotes: property "{property}" with value "{value}"':
     "TaskNotes: プロパティ「{property}」の値が「{value}」",
   "Completed date property": "完了日のプロパティ",
   "A task with a date here is completed, like one with a completed status.":
