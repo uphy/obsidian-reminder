@@ -1,6 +1,36 @@
 import { DateTime } from "model/time";
 import { moment } from "model/moment";
-import { nextOccurrence } from "./recurrence";
+import { isValidRecurrence, nextOccurrence } from "./recurrence";
+
+describe("isValidRecurrence()", (): void => {
+  test("a rule, with or without 'when done', is valid", (): void => {
+    expect(isValidRecurrence("every month")).toBe(true);
+    expect(isValidRecurrence("every week when done")).toBe(true);
+    expect(isValidRecurrence("Every Week When Done")).toBe(true);
+  });
+
+  test("no rule at all is not valid", (): void => {
+    expect(isValidRecurrence("")).toBe(false);
+    expect(isValidRecurrence("   ")).toBe(false);
+    expect(isValidRecurrence("when done")).toBe(false);
+  });
+
+  test("text parseText returns null for is not valid", (): void => {
+    expect(isValidRecurrence("now and then")).toBe(false);
+  });
+
+  test("text parseText throws for is not valid, and nothing is thrown", (): void => {
+    // "every" is what the dialog sees while "every month" is being typed.
+    for (const text of ["every", "until 2026-01-01", "weekly", "monday"]) {
+      expect(isValidRecurrence(text)).toBe(false);
+    }
+  });
+
+  test("a rule that has ended is still valid", (): void => {
+    expect(isValidRecurrence("every day for 1 time")).toBe(true);
+    expect(isValidRecurrence("every week until 2020-01-01")).toBe(true);
+  });
+});
 
 describe("nextOccurrence()", (): void => {
   test("every day", (): void => {
